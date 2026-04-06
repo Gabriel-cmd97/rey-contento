@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rey Contento</title>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Cinzel:wght@400;700&family=Quicksand:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+
+    <!-- ==================== LOGIN ==================== -->
+    <div id="seccion-inicio" style="display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:100vh; padding:20px;">
+        <h1 class="medieval-font" style="font-size:50px; color:var(--oro); text-shadow:0 0 15px var(--oro-oscuro); margin-bottom:30px; text-align:center;">👑 REY CONTENTO</h1>
+
+        <div id="pantallaAuth" class="contenedor-login text-centrado">
+            <h2 class="medieval-font titulo-medieval" style="color:var(--pergamino);">Ingresa a la Corte</h2>
+            <input type="text" id="authUsername" class="medieval-input" placeholder="Nombre de usuario">
+            <input type="password" id="authPassword" class="medieval-input" placeholder="Contraseña">
+            <div style="margin-top:20px;">
+                <button id="btnLogin" class="boton-medieval full-width margin-top-10">INICIAR SESIÓN</button>
+                <button id="btnRegistro" class="boton-medieval-verde full-width margin-top-10">CREAR CUENTA NUEVA</button>
+            </div>
+        </div>
+
+        <div id="contenedorLeaderboard" class="panel-salon-fama">
+            <h3 class="medieval-font text-centrado" style="color:var(--oro); margin-top:0;">🏆 Salón de la Fama</h3>
+            <table class="tabla-medieval">
+                <thead><tr><th class="text-izq" style="color:var(--oro);">Jugador</th><th style="text-align:right; color:var(--oro);">Victorias</th></tr></thead>
+                <tbody id="cuerpoLeaderboard"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ==================== JUEGO ==================== -->
+    <div id="pantallaJuego" class="hidden">
+
+        <!-- Barra superior -->
+        <header id="barraSuperior" class="barra-top-juego">
+            <div class="barra-top-item hidden" id="infoRonda">⚔️ RND:<span id="numRonda">1</span></div>
+            <div class="barra-top-item hidden" id="infoDealer">👑 DEALER:<span id="nombreDealer">...</span></div>
+            <div class="barra-top-item"><span id="iconoUsuario">👤</span><span id="displayUsername">...</span> <span style="color:var(--verde)">🟢</span></div>
+        </header>
+
+        <!-- ==================== LOBBY ==================== -->
+        <main id="seccion-lobby" class="main-seccion-centro">
+
+            <!-- TABS -->
+            <div class="lobby-tabs" id="lobbyTabs">
+                <button class="lobby-tab active" id="tabCrear" onclick="switchTab('crear')">⚔️ CREAR</button>
+                <button class="lobby-tab" id="tabUnirse" onclick="switchTab('unirse')">🚪 UNIRSE</button>
+            </div>
+
+            <!-- PANEL CREAR -->
+            <section class="lobby-panel" id="panelConfiguracion">
+                <p class="lobby-section-label">Reglas de la casa</p>
+                <div class="config-grid-nuevo">
+                    <div class="config-item-nuevo">
+                        <span class="config-label-nuevo">🃏 Modo Rey</span>
+                        <select id="selectModo" class="selector-medieval selector-compacto">
+                            <option value="SORPRESA">Sorpresa</option>
+                            <option value="DECLARADO">Declarado</option>
+                        </select>
+                    </div>
+                    <div class="config-item-nuevo">
+                        <span class="config-label-nuevo">🔥 Reyes</span>
+                        <select id="selectReyes" class="selector-medieval selector-compacto">
+                            <option value="NORMAL">Normal</option>
+                            <option value="ALTA">Alta</option>
+                            <option value="LOCURA">Locura</option>
+                        </select>
+                    </div>
+                    <div class="config-item-nuevo">
+                        <span class="config-label-nuevo">♥️ Vidas</span>
+                        <select id="selectVidas" class="selector-medieval selector-compacto">
+                            <option value="1">1 vida</option>
+                            <option value="3" selected>3 vidas</option>
+                            <option value="5">5 vidas</option>
+                        </select>
+                    </div>
+                    <div class="config-item-nuevo">
+                        <span class="config-label-nuevo">👥 Jugadores</span>
+                        <select id="selectJugadores" class="selector-medieval selector-compacto">
+                            <option value="2">2 máx</option>
+                            <option value="3">3 máx</option>
+                            <option value="4">4 máx</option>
+                            <option value="5">5 máx</option>
+                            <option value="6">6 máx</option>
+                            <option value="7">7 máx</option>
+                            <option value="8" selected>8 máx</option>
+                        </select>
+                    </div>
+                    <div class="config-item-nuevo config-full">
+                        <span class="config-label-nuevo">🤖 Bots de relleno</span>
+                        <select id="selectBots" class="selector-medieval selector-compacto">
+                            <option value="0" selected>Sin bots</option>
+                            <option value="1">1 Bot</option>
+                            <option value="2">2 Bots</option>
+                            <option value="3">3 Bots</option>
+                            <option value="4">4 Bots</option>
+                            <option value="5">5 Bots</option>
+                            <option value="6">6 Bots</option>
+                            <option value="7">7 Bots</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="lobby-sticky-bottom">
+                    <button id="btnCrearSala" class="boton-medieval-rojo boton-lobby full-width" disabled>CREAR PARTIDA</button>
+                    <button id="btnVerReglas" class="boton-lobby-ghost full-width margin-top-10">📖 ¿Cómo se juega?</button>
+                </div>
+            </section>
+
+            <!-- PANEL UNIRSE -->
+            <section class="lobby-panel hidden" id="panelUnirse">
+                <p class="lobby-section-label">Ingresa el código de sala</p>
+                <input type="text" id="inputCodigo" class="codigo-input-nuevo" placeholder="XXXXX" maxlength="5">
+                <div class="lobby-sticky-bottom" style="margin-top: 20px;">
+                    <button id="btnUnirseSala" class="boton-medieval boton-lobby full-width">UNIRSE A LA PARTIDA</button>
+                    <p style="font-size:11px; color:rgba(255,255,255,0.3); text-align:center; margin:12px 0 0;">¿Tienes link de invitación? Ábrelo directamente y entrarás automático.</p>
+                </div>
+            </section>
+
+            <!-- PANEL JUGADORES (Lobby activo) -->
+            <section class="lobby-panel hidden" id="panelJugadores">
+
+                <!-- Código de sala arriba siempre visible -->
+                <div id="mostrarCodigo" class="sala-code-bar hidden">
+                    <div>
+                        <div class="sala-code-sublabel">Código de sala</div>
+                        <div id="codigoDisplay" class="sala-code-display">...</div>
+                    </div>
+                    <button id="btnCopiarLink" class="btn-copiar-link">🔗 COPIAR LINK</button>
+                </div>
+
+                <!-- Resumen config -->
+                <div id="resumenConfig" class="config-resumen-pill">⚙️ Cargando...</div>
+
+                <!-- Lista de jugadores -->
+                <p class="lobby-section-label" style="margin-top:12px;">Jugadores en sala</p>
+                <ul id="listaJugadores" class="lista-jugadores-nuevo medieval-font"></ul>
+
+                <!-- Slots vacíos decorativos -->
+                <div id="slotsVacios" class="slots-vacios"></div>
+
+                <!-- Botones siempre visibles -->
+                <div class="lobby-sticky-bottom" style="margin-top:12px;">
+                    <button id="btnEmpezar" class="boton-medieval-verde boton-lobby full-width hidden">¡EMPEZAR JUEGO!</button>
+                    <button id="btnSalirLobby" class="boton-lobby-ghost full-width margin-top-10">❌ Cancelar / Salir</button>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- ==================== MESA DE JUEGO ==================== -->
+        <main id="mesaDeJuego" class="hidden text-centrado">
+            <section class="mesa-virtual">
+                <div class="tapete-virtual" id="tapeteVistas">
+
+                    <div id="silla-bottom-left" class="silla bottom-left hidden"></div>
+                    <div id="silla-left"        class="silla left hidden"></div>
+                    <div id="silla-top-left"    class="silla top-left hidden"></div>
+                    <div id="silla-top"         class="silla top hidden"></div>
+                    <div id="silla-top-right"   class="silla top-right hidden"></div>
+                    <div id="silla-right"       class="silla right hidden"></div>
+                    <div id="silla-bottom-right"class="silla bottom-right hidden"></div>
+
+                    <div id="miPerfil" class="mi-perfil-esquina">
+                        <div class="mi-nombre-chico"><span id="miNombreMesa">Tú</span></div>
+                        <span id="misVidasMesa" class="vidas-chicas">♥️ 3</span>
+                    </div>
+
+                    <div id="bannerEspectador" class="hidden" style="position:absolute; top:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); border:2px solid #7f8c8d; border-radius:20px; padding:6px 20px; z-index:100; color:#bdc3c7; font-size:13px; font-weight:bold; letter-spacing:1px;">
+                        👁️ MODO ESPECTADOR
+                    </div>
+
+                    <div id="toastContainer"></div>
+
+                    <div class="centro-mesa-wrapper">
+                        <div class="foco-turno-medieval" id="focoTurno">
+                            <h3 id="mensajeTurno" style="color:var(--verde); margin:0; font-size:16px;">Esperando...</h3>
+                           <div id="contenedorReloj" style="display:none; margin-top:6px; width:130px;">
+    <div style="position:relative; background:rgba(255,255,255,0.1); border-radius:10px; height:8px; overflow:visible;">
+        <div id="barraReloj" style="height:100%; width:100%; background:#e67e22; border-radius:10px; transition:width 1s linear, background .3s;"></div>
+        <span id="segundosReloj" style="position:absolute; right:-18px; top:50%; transform:translateY(-50%); font-size:12px; font-weight:bold; color:#e67e22; font-family:'MedievalSharp';">10</span>
+    </div>
+</div>
+                        </div>
+
+                        <div id="mazoCentral" style="margin-top:15px; display:none;">
+                            <div class="perfil-carta-reverso" style="width:45px; height:65px; box-shadow:-1px -1px 0 #fff, -2px -2px 0 #2c3e50, -3px -3px 0 #fff, -4px -4px 0 #2c3e50, -5px -5px 0 #fff, -6px -6px 0 #2c3e50, 0 10px 20px rgba(0,0,0,0.8);"></div>
+                        </div>
+
+                        <button id="btnSiguienteRonda" class="boton-medieval btn-latido hidden" style="background-color:var(--verde); display:none;">SIGUIENTE ➡️</button>
+                    </div>
+
+                    <div id="miSilla" class="silla bottom">
+                        <div id="miCarta" class="carta-naipe" style="margin:0 auto;">
+                            <div class="flipper">
+                                <div class="face back-pattern"></div>
+                                <div id="cartaFrente" class="face front-character">
+                                    <span id="numeroCarta">?</span>
+                                    <span id="nombrePersonaje" style="font-size:16px; margin-top:10px; font-family:'MedievalSharp';">Esperando...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer acciones -->
+        <footer id="panelAccionesPartida" class="hidden panel-acciones-fijo">
+            <button id="btnMantener" class="boton-medieval full-width" disabled>MANTENER</button>
+            <button id="btnCambiar"  class="boton-medieval full-width" disabled>CAMBIAR</button>
+        </footer>
+
+        <!-- Pantalla victoria -->
+        <div id="pantallaVictoria" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+            <h1 style="color:var(--oro); font-size:60px; margin-bottom:0; text-align:center;">👑 ¡TENEMOS UN REY! 👑</h1>
+            <h2 id="nombreGanador" style="color:white; font-size:40px; margin-top:10px;">Nombre</h2>
+            <button id="btnVolverLobby" class="boton-medieval-rojo" style="margin-top:30px; font-size:20px; padding:15px 40px;">Volver a la Corte</button>
+        </div>
+
+    </div>
+
+    <!-- Modal Reglas -->
+    <div id="modalReglas" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:9999;overflow-y:auto;padding:20px;">
+        <div style="max-width:600px;margin:0 auto;background:var(--pergamino);color:#2c3e50;border-radius:15px;border:4px solid var(--oro-oscuro);padding:30px;">
+            <h2 class="medieval-font" style="color:var(--rojo-rey);text-align:center;font-size:28px;margin-top:0;">👑 REY CONTENTO</h2>
+
+            <h3 class="medieval-font" style="color:var(--oro-oscuro);">🎯 Objetivo</h3>
+            <p>Ser el último jugador con vida. Al final de cada ronda, quien tenga la carta más baja pierde una ♥️. Sin vidas, quedas eliminado.</p>
+
+            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;">🃏 Las Cartas</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:13px;margin-bottom:10px;">
+                <span>0 🧦 El Mendigo</span><span>5 🪓 El Verdugo</span>
+                <span>1 🐀 La Rata</span><span>6 💃 La Duquesa</span>
+                <span>2 🧑‍🌾 El Campesino</span><span>7 🧙‍♂️ El Mago</span>
+                <span>3 🪕 El Trovador</span><span>8 ⚔️ El General</span>
+                <span>4 🛡️ El Guardia</span><span>9 👑 El Rey Contento</span>
+            </div>
+
+            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;">⚔️ Tu Turno</h3>
+            <p>Tienes <strong>10 segundos</strong> para elegir:</p>
+            <ul style="margin:8px 0 0 20px;line-height:1.8;">
+                <li><strong>✋ MANTENER</strong> — Te quedas con tu carta.</li>
+                <li><strong>🔄 CAMBIAR</strong> — Fuerzas al jugador de tu derecha a intercambiar.</li>
+            </ul>
+
+            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;">🛡️ Reglas Especiales</h3>
+            <ul style="margin:8px 0 0 20px;line-height:1.8;">
+                <li><strong>Bloqueo del Rey:</strong> Si el jugador de tu derecha tiene el 9, tu intercambio falla.</li>
+                <li><strong>El Dealer:</strong> El último en jugar. Si cambia, toma del mazo central.</li>
+                <li><strong>Empate:</strong> Si dos jugadores tienen la carta más baja, ambos pierden vida.</li>
+            </ul>
+
+            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;">⚙️ Modos de Juego</h3>
+            <ul style="margin:8px 0 0 20px;line-height:1.8;">
+                <li><strong>Sorpresa:</strong> El Rey está oculto.</li>
+                <li><strong>Declarado:</strong> Si alguien recibe el Rey, ¡toda la corte lo sabe!</li>
+            </ul>
+
+            <button id="btnCerrarReglas" class="boton-medieval-rojo full-width" style="margin-top:25px;font-size:16px;">✅ ¡ENTENDIDO! VOLVER AL JUEGO</button>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching del lobby
+        function switchTab(tab) {
+            const tabCrear   = document.getElementById('tabCrear');
+            const tabUnirse  = document.getElementById('tabUnirse');
+            const panelCrear = document.getElementById('panelConfiguracion');
+            const panelUnir  = document.getElementById('panelUnirse');
+
+            if (tab === 'crear') {
+                tabCrear.classList.add('active');
+                tabUnirse.classList.remove('active');
+                panelCrear.classList.remove('hidden');
+                panelUnir.classList.add('hidden');
+            } else {
+                tabUnirse.classList.add('active');
+                tabCrear.classList.remove('active');
+                panelUnir.classList.remove('hidden');
+                panelCrear.classList.add('hidden');
+            }
+        }
+
+        // Actualiza el resumen de config
+        function actualizarResumenConfig() {
+            const modo    = document.getElementById('selectModo')?.value === 'DECLARADO' ? 'Declarado' : 'Sorpresa';
+            const vidas   = document.getElementById('selectVidas')?.value;
+            const bots    = document.getElementById('selectBots')?.value;
+            const resumen = document.getElementById('resumenConfig');
+            if (resumen) {
+                const jugadores = document.getElementById('selectJugadores')?.value;
+                let txt = `⚙️ ${modo} · ${vidas} ♥️ · ${jugadores} jugadores`;
+                // if (bots > 0) txt += ` · ${bots} 🤖`;
+                resumen.innerText = txt;
+            }
+        }
+
+        // Escuchar cambios en selects para actualizar resumen
+        document.addEventListener('DOMContentLoaded', () => {
+            ['selectModo','selectReyes','selectVidas','selectJugadores','selectBots'].forEach(id => {
+                document.getElementById(id)?.addEventListener('change', actualizarResumenConfig);
+            });
+        });
+    </script>
+    <script src="main.js"></script>
+</body>
+</html>
