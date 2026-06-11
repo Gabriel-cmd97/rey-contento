@@ -11,11 +11,11 @@
 <body>
 
     <!-- ==================== LOGIN ==================== -->
-    <div id="seccion-inicio" style="display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:100vh; padding:20px;">
-        <h1 class="medieval-font" style="font-size:50px; color:var(--oro); text-shadow:0 0 15px var(--oro-oscuro); margin-bottom:30px; text-align:center;">👑 REY CONTENTO</h1>
+    <div id="seccion-inicio" class="seccion-inicio-layout">
+        <h1 class="medieval-font titulo-inicio">👑 REY CONTENTO</h1>
 
         <div id="pantallaAuth" class="contenedor-login text-centrado">
-            <h2 class="medieval-font titulo-medieval" style="color:var(--pergamino);">Ingresa a la Corte</h2>
+            <h2 class="medieval-font titulo-auth">Ingresa a la Corte</h2>
             <input type="text" id="authUsername" class="medieval-input" placeholder="Nombre de usuario">
             <input type="password" id="authPassword" class="medieval-input" placeholder="Contraseña">
             <div style="margin-top:20px;">
@@ -27,7 +27,16 @@
         <div id="contenedorLeaderboard" class="panel-salon-fama">
             <h3 class="medieval-font text-centrado" style="color:var(--oro); margin-top:0;">🏆 Salón de la Fama</h3>
             <table class="tabla-medieval">
-                <thead><tr><th class="text-izq" style="color:var(--oro);">Jugador</th><th style="text-align:right; color:var(--oro);">Victorias</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th class="th-pos">#</th>
+                        <th class="text-izq">Jugador</th>
+                        <th class="th-stat" title="Victorias">👑</th>
+                        <th class="th-stat" title="Partidas jugadas">🎮</th>
+                        <th class="th-stat" title="Winrate">%</th>
+                        <th class="th-stat" title="Racha máxima">⚡</th>
+                    </tr>
+                </thead>
                 <tbody id="cuerpoLeaderboard"></tbody>
             </table>
         </div>
@@ -40,7 +49,11 @@
         <header id="barraSuperior" class="barra-top-juego">
             <div class="barra-top-item hidden" id="infoRonda">⚔️ RND:<span id="numRonda">1</span></div>
             <div class="barra-top-item hidden" id="infoDealer">👑 DEALER:<span id="nombreDealer">...</span></div>
-            <div class="barra-top-item"><span id="iconoUsuario">👤</span><span id="displayUsername">...</span> <span style="color:var(--verde)">🟢</span></div>
+            <div class="barra-top-item hidden" id="infoModo"></div>
+            <div class="barra-top-item" style="gap:8px;">
+                <button id="btnMiPerfil" class="btn-perfil-top" title="Mi perfil">👤 <span id="displayUsername">...</span></button>
+                <span style="color:var(--verde)">🟢</span>
+            </div>
         </header>
 
         <!-- ==================== LOBBY ==================== -->
@@ -104,6 +117,17 @@
                             <option value="7">7 Bots</option>
                         </select>
                     </div>
+                    <div class="config-item-nuevo config-full">
+                        <span class="config-label-nuevo">🔔 Modo de juego</span>
+                        <select id="selectModoJuego" class="selector-medieval selector-compacto">
+                            <option value="CLASICO">Clásico</option>
+                            <option value="CAMPANA">Campana 🔔</option>
+                        </select>
+                    </div>
+                    <div class="config-item-nuevo config-full">
+                        <span class="config-label-nuevo">🔐 Contraseña de sala (opcional)</span>
+                        <input type="text" id="inputPasswordSala" class="selector-compacto" placeholder="Sin contraseña = sala abierta" maxlength="20" autocomplete="off">
+                    </div>
                 </div>
                 <div class="lobby-sticky-bottom">
                     <button id="btnCrearSala" class="boton-medieval-rojo boton-lobby full-width" disabled>CREAR PARTIDA</button>
@@ -115,6 +139,10 @@
             <section class="lobby-panel hidden" id="panelUnirse">
                 <p class="lobby-section-label">Ingresa el código de sala</p>
                 <input type="text" id="inputCodigo" class="codigo-input-nuevo" placeholder="XXXXX" maxlength="5">
+                <div id="bloquePasswordUnirse" class="hidden" style="margin-top:10px;">
+                    <p class="lobby-section-label" style="margin-top:8px;">🔐 Esta sala requiere contraseña</p>
+                    <input type="password" id="inputPasswordUnirse" class="codigo-input-nuevo" placeholder="Contraseña" maxlength="20" autocomplete="off" style="font-size:18px;letter-spacing:3px;">
+                </div>
                 <div class="lobby-sticky-bottom" style="margin-top: 20px;">
                     <button id="btnUnirseSala" class="boton-medieval boton-lobby full-width">UNIRSE A LA PARTIDA</button>
                     <p style="font-size:11px; color:rgba(255,255,255,0.3); text-align:center; margin:12px 0 0;">¿Tienes link de invitación? Ábrelo directamente y entrarás automático.</p>
@@ -157,6 +185,15 @@
             <section class="mesa-virtual">
                 <div class="tapete-virtual" id="tapeteVistas">
 
+                    <!-- Overlay resumen de ronda -->
+                    <div id="panelResumenRonda" class="panel-resumen-overlay hidden">
+                        <div class="resumen-box">
+                            <div class="resumen-header">⚔️ FIN DE RONDA — Carta mortal: <span id="resumenCartaMortal" class="resumen-mortal-num">—</span></div>
+                            <div id="resumenCartas" class="resumen-cartas-grid"></div>
+                            <button id="btnSiguienteRondaResumen" class="boton-medieval btn-latido hidden">SIGUIENTE RONDA ➡️</button>
+                        </div>
+                    </div>
+
                     <div id="silla-bottom-left" class="silla bottom-left hidden"></div>
                     <div id="silla-left"        class="silla left hidden"></div>
                     <div id="silla-top-left"    class="silla top-left hidden"></div>
@@ -165,10 +202,18 @@
                     <div id="silla-right"       class="silla right hidden"></div>
                     <div id="silla-bottom-right"class="silla bottom-right hidden"></div>
 
+                    <div id="mazoFlotante" class="hidden">
+                        <div class="perfil-carta-reverso" style="width:30px;height:44px;box-shadow:-1px -1px 0 #fff,-2px -2px 0 #2c3e50,-3px -3px 0 #fff,-4px -4px 0 #2c3e50,0 6px 14px rgba(0,0,0,0.8);border-color:var(--oro);"></div>
+                        <span style="font-size:7px;color:var(--oro);margin-top:2px;font-family:'MedievalSharp';letter-spacing:1px;">MAZO</span>
+                        <span id="mazoConteo" class="mazo-conteo">–</span>
+                    </div>
+
                     <div id="miPerfil" class="mi-perfil-esquina">
                         <div class="mi-nombre-chico"><span id="miNombreMesa">Tú</span></div>
                         <span id="misVidasMesa" class="vidas-chicas">♥️ 3</span>
                     </div>
+
+                    <div id="bannerUltimaVuelta" class="hidden banner-ultima-vuelta">🔔 ¡ÚLTIMA VUELTA!</div>
 
                     <div id="bannerEspectador" class="hidden" style="position:absolute; top:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); border:2px solid #7f8c8d; border-radius:20px; padding:6px 20px; z-index:100; color:#bdc3c7; font-size:13px; font-weight:bold; letter-spacing:1px;">
                         👁️ MODO ESPECTADOR
@@ -187,11 +232,12 @@
 </div>
                         </div>
 
-                        <div id="mazoCentral" style="margin-top:15px; display:none;">
-                            <div class="perfil-carta-reverso" style="width:45px; height:65px; box-shadow:-1px -1px 0 #fff, -2px -2px 0 #2c3e50, -3px -3px 0 #fff, -4px -4px 0 #2c3e50, -5px -5px 0 #fff, -6px -6px 0 #2c3e50, 0 10px 20px rgba(0,0,0,0.8);"></div>
-                        </div>
+                        <button id="btnSiguienteRonda" class="boton-medieval btn-latido hidden" style="display:none;">SIGUIENTE ➡️</button>
 
-                        <button id="btnSiguienteRonda" class="boton-medieval btn-latido hidden" style="background-color:var(--verde); display:none;">SIGUIENTE ➡️</button>
+                        <div id="pilaCentro" class="hidden">
+                            <div id="cartasPila" class="pila-cartas-stack"></div>
+                            <span id="contadorPila" class="pila-contador"></span>
+                        </div>
                     </div>
 
                     <div id="miSilla" class="silla bottom">
@@ -212,17 +258,62 @@
 
         <!-- Footer acciones -->
         <footer id="panelAccionesPartida" class="hidden panel-acciones-fijo">
-            <button id="btnMantener" class="boton-medieval full-width" disabled>MANTENER</button>
-            <button id="btnCambiar"  class="boton-medieval full-width" disabled>CAMBIAR</button>
+            <div id="barraReacciones" class="barra-reacciones hidden">
+                <button class="btn-reaccion" data-emoji="😱">😱</button>
+                <button class="btn-reaccion" data-emoji="🤡">🤡</button>
+                <button class="btn-reaccion" data-emoji="👑">👑</button>
+                <button class="btn-reaccion" data-emoji="💀">💀</button>
+                <button class="btn-reaccion" data-emoji="🎭">🎭</button>
+                <button class="btn-reaccion" data-emoji="🍀">🍀</button>
+            </div>
+            <div class="acciones-row">
+                <button id="btnMantener" class="boton-medieval full-width" disabled>MANTENER</button>
+                <button id="btnCampana" class="boton-campana hidden" disabled>🔔</button>
+                <button id="btnCambiar"  class="boton-medieval full-width" disabled>CAMBIAR</button>
+            </div>
         </footer>
 
         <!-- Pantalla victoria -->
-        <div id="pantallaVictoria" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-            <h1 style="color:var(--oro); font-size:60px; margin-bottom:0; text-align:center;">👑 ¡TENEMOS UN REY! 👑</h1>
-            <h2 id="nombreGanador" style="color:white; font-size:40px; margin-top:10px;">Nombre</h2>
-            <button id="btnVolverLobby" class="boton-medieval-rojo" style="margin-top:30px; font-size:20px; padding:15px 40px;">Volver a la Corte</button>
+        <div id="pantallaVictoria" class="hidden pantalla-victoria">
+            <div class="victoria-contenido">
+                <h1 class="medieval-font victoria-titulo">👑 ¡TENEMOS UN REY! 👑</h1>
+                <h2 id="nombreGanador" class="medieval-font victoria-ganador">Nombre</h2>
+                <div class="victoria-acciones">
+                    <button id="btnRevancha" class="boton-medieval-verde btn-revancha">⚔️ ¡Revancha!</button>
+                    <div id="contadorRevancha" class="victoria-contador">Esperando jugadores...</div>
+                    <button id="btnVolverLobby" class="boton-medieval-rojo btn-volver-corte">Volver a la Corte</button>
+                </div>
+            </div>
         </div>
 
+    </div>
+
+    <!-- Modal Perfil Personal -->
+    <div id="modalPerfil" class="hidden modal-overlay">
+        <div class="modal-caja">
+            <h3 class="medieval-font" style="color:var(--oro);margin:0 0 16px;text-align:center;font-size:20px;">⚔️ Mi Perfil</h3>
+            <div id="contenidoPerfil" class="perfil-stats-grid">
+                <div class="perfil-stat-item"><span class="perfil-stat-val" id="pVictorias">—</span><span class="perfil-stat-label">Victorias</span></div>
+                <div class="perfil-stat-item"><span class="perfil-stat-val" id="pPartidas">—</span><span class="perfil-stat-label">Partidas</span></div>
+                <div class="perfil-stat-item"><span class="perfil-stat-val" id="pWinrate">—</span><span class="perfil-stat-label">Winrate</span></div>
+                <div class="perfil-stat-item"><span class="perfil-stat-val" id="pRachaActual">—</span><span class="perfil-stat-label">Racha actual</span></div>
+                <div class="perfil-stat-item perfil-stat-full"><span class="perfil-stat-val" id="pRachaMax">—</span><span class="perfil-stat-label">⚡ Racha máxima</span></div>
+            </div>
+            <button id="btnCerrarPerfil" class="boton-medieval-rojo full-width" style="margin-top:16px;font-size:14px;padding:10px;">Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Modal Contraseña (unirse vía link a sala protegida) -->
+    <div id="modalPasswordSala" class="hidden modal-overlay">
+        <div class="modal-caja">
+            <h3 class="medieval-font" style="color:var(--oro);margin:0 0 12px;text-align:center;">🔐 Sala protegida</h3>
+            <p style="text-align:center;font-size:13px;color:rgba(255,255,255,0.6);margin:0 0 14px;">Esta sala requiere contraseña para entrar.</p>
+            <input type="password" id="inputPasswordModal" class="medieval-input" placeholder="Contraseña" maxlength="20" autocomplete="off">
+            <div style="display:flex;gap:10px;margin-top:14px;">
+                <button id="btnConfirmarPasswordModal" class="boton-medieval full-width" style="font-size:14px;padding:12px;">Entrar</button>
+                <button id="btnCancelarPasswordModal" class="boton-medieval-rojo" style="font-size:14px;padding:12px 16px;">✕</button>
+            </div>
+        </div>
     </div>
 
     <!-- Modal Reglas -->
@@ -251,16 +342,30 @@
 
             <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;">🛡️ Reglas Especiales</h3>
             <ul style="margin:8px 0 0 20px;line-height:1.8;">
-                <li><strong>Bloqueo del Rey:</strong> Si el jugador de tu derecha tiene el 9, tu intercambio falla.</li>
-                <li><strong>El Dealer:</strong> El último en jugar. Si cambia, toma del mazo central.</li>
-                <li><strong>Empate:</strong> Si dos jugadores tienen la carta más baja, ambos pierden vida.</li>
+                <li><strong>Bloqueo del Rey:</strong> Si el jugador de tu derecha tiene el 9, tu intercambio falla y mantienes tu carta.</li>
+                <li><strong>El Dealer:</strong> El último en jugar. Si elige CAMBIAR, roba del mazo central en lugar de intercambiar.</li>
+                <li><strong>Empate:</strong> Si varios jugadores comparten la carta perdedora, todos pierden vida.</li>
+                <li><strong>Empate total:</strong> Si <em>todos</em> tienen la misma carta, nadie pierde vida esa ronda.</li>
             </ul>
 
-            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;">⚙️ Modos de Juego</h3>
+            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;">⚙️ Modos del Rey</h3>
             <ul style="margin:8px 0 0 20px;line-height:1.8;">
-                <li><strong>Sorpresa:</strong> El Rey está oculto.</li>
-                <li><strong>Declarado:</strong> Si alguien recibe el Rey, ¡toda la corte lo sabe!</li>
+                <li><strong>Sorpresa:</strong> El Rey (9) está oculto. Solo lo sabe quien lo tiene.</li>
+                <li><strong>Declarado:</strong> Cuando alguien recibe el Rey, ¡toda la corte lo sabe! Su carta queda visible.</li>
             </ul>
+
+            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;">🔔 Modo Campana</h3>
+            <p style="margin-bottom:4px;"><strong>Regla invertida:</strong> aquí pierde quien tiene la carta <strong>más alta</strong>. ¡Quieres cartas pequeñas!</p>
+            <ul style="margin:4px 0 0 20px;line-height:1.8;font-size:14px;">
+                <li>En tu turno aparece el botón <strong>🔔</strong> — úsalo cuando creas que tienes la carta más baja y quieras cerrar la ronda.</li>
+                <li>Al tocarlo, aparece el banner <em>"¡ÚLTIMA VUELTA!"</em> y cada jugador recibe <strong>1 turno más</strong>, luego se revelan las cartas.</li>
+                <li>Si acertaste (no tenías la más alta) → sin penalización extra.</li>
+                <li>Si te equivocaste (tenías la más alta) → pierdes <strong>1 vida extra</strong> de castigo.</li>
+                <li><strong>El jugador a la derecha de quien tocó la campana</strong> no puede intercambiar con él — si elige CAMBIAR, roba del mazo central.</li>
+                <li>Si tras <strong>2 vueltas completas</strong> nadie toca la campana, el de la carta más alta pierde <strong>2 vidas</strong> (penalización por inacción).</li>
+                <li>Si todos empatan con la carta más alta, nadie pierde vida.</li>
+            </ul>
+            <p style="font-size:12px;color:#7f8c8d;margin-top:6px;">Solo una campana por ronda. El botón 🔔 desaparece en cuanto alguien la toca.</p>
 
             <button id="btnCerrarReglas" class="boton-medieval-rojo full-width" style="margin-top:25px;font-size:16px;">✅ ¡ENTENDIDO! VOLVER AL JUEGO</button>
         </div>
@@ -289,21 +394,19 @@
 
         // Actualiza el resumen de config
         function actualizarResumenConfig() {
-            const modo    = document.getElementById('selectModo')?.value === 'DECLARADO' ? 'Declarado' : 'Sorpresa';
-            const vidas   = document.getElementById('selectVidas')?.value;
-            const bots    = document.getElementById('selectBots')?.value;
-            const resumen = document.getElementById('resumenConfig');
+            const modo      = document.getElementById('selectModo')?.value === 'DECLARADO' ? 'Declarado' : 'Sorpresa';
+            const modoJuego = document.getElementById('selectModoJuego')?.value === 'CAMPANA' ? '🔔 Campana' : '⚔️ Clásico';
+            const vidas     = document.getElementById('selectVidas')?.value;
+            const jugadores = document.getElementById('selectJugadores')?.value;
+            const resumen   = document.getElementById('resumenConfig');
             if (resumen) {
-                const jugadores = document.getElementById('selectJugadores')?.value;
-                let txt = `⚙️ ${modo} · ${vidas} ♥️ · ${jugadores} jugadores`;
-                // if (bots > 0) txt += ` · ${bots} 🤖`;
-                resumen.innerText = txt;
+                resumen.innerText = `⚙️ ${modoJuego} · ${modo} · ${vidas} ♥️ · ${jugadores} jug`;
             }
         }
 
         // Escuchar cambios en selects para actualizar resumen
         document.addEventListener('DOMContentLoaded', () => {
-            ['selectModo','selectReyes','selectVidas','selectJugadores','selectBots'].forEach(id => {
+            ['selectModo','selectReyes','selectVidas','selectJugadores','selectBots','selectModoJuego'].forEach(id => {
                 document.getElementById(id)?.addEventListener('change', actualizarResumenConfig);
             });
         });
