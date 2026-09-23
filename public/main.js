@@ -873,6 +873,35 @@ function animarPerdidaVida(jugador) {
 }
 
 // ==========================================
+// PARTIDA RÁPIDA
+// ==========================================
+// El servidor te sienta en una mesa pública de 4 y la arranca sola: al llenarse
+// o a los 20 s, completando con bots. Aquí solo se muestra la espera.
+let _rapida = null; // { fin: ms epoch, intervalo } mientras esperas
+
+function empezarRapida() {
+    socket.emit('partidaRapida');
+}
+
+function pintarEsperaRapida() {
+    const el = document.getElementById('rapidaEspera');
+    if (!el || !_rapida) return;
+    const seg = Math.max(0, Math.ceil((_rapida.fin - Date.now()) / 1000));
+    const humanos = listaJugadoresGlobal.filter(j => !j.esBot).length;
+    const otros = humanos > 1 ? `${humanos - 1} ${humanos - 1 === 1 ? 'jugador más' : 'jugadores más'} en la mesa` : 'Esperando a otros jugadores';
+    el.innerHTML = seg > 0
+        ? `${icono('reloj')} La partida empieza en <strong>${seg} s</strong><br><span>${otros} · los lugares vacíos se llenan con bots</span>`
+        : `${icono('espadas')} ¡Empieza la partida!`;
+}
+
+function terminarEsperaRapida() {
+    if (_rapida?.intervalo) clearInterval(_rapida.intervalo);
+    _rapida = null;
+    document.getElementById('rapidaEspera')?.classList.add('hidden');
+    document.getElementById('resumenConfig')?.classList.remove('hidden');
+}
+
+// ==========================================
 // PRÁCTICA GUIADA
 // ==========================================
 // Partida de 3 rondas contra 2 bots con cartas preparadas (practica.js en el
@@ -909,8 +938,10 @@ function terminarPractica() {
 function pintarBotonPractica() {
     const b = document.getElementById('btnPractica');
     if (!b) return;
-    // Para quien nunca la ha hecho, la práctica es la acción principal.
-    b.className = (leerLS('reyPracticaHecha') ? 'boton-madera' : 'boton-oro') + ' boton-lobby full-width';
+    // La acción principal del lobby es la partida rápida (oro); la práctica va
+    // en madera y avisa si todavía no la haces.
+    b.className = 'boton-madera boton-lobby full-width';
+    b.classList.toggle('practica-nueva', !leerLS('reyPracticaHecha'));
 }
 
 // Un paso del guion solo se dice una vez.
@@ -1164,6 +1195,7 @@ function mostrarLobbyLimpio() {
     ocultarVistaQR();
     ocultarGuiaTurno();
     document.getElementById('coachPractica')?.classList.add('hidden');
+    terminarEsperaRapida();
 }
 
 function resetEstadoSala() {
@@ -1325,6 +1357,9 @@ if (btnSonido) {
         if (activo) Sonidos.pop();
     };
 }
+
+const btnRapida = document.getElementById('btnRapida');
+if (btnRapida) btnRapida.onclick = () => { if (socket?.connected) empezarRapida(); };
 
 const btnPractica = document.getElementById('btnPractica');
 if (btnPractica) {
@@ -2081,6 +2116,24 @@ function conectarSocket() {
         });
     };
 
+    socket.on('rapidaUnido', ({ idSala, faltanMs }) => {
+        miSalaActual = idSala; soyElHost = false;
+        terminarEsperaRapida();
+        _rapida = { fin: Date.now() + faltanMs };
+        document.getElementById('btnEmpezar').classList.add('hidden');
+        document.getElementById('lobbyTabs')?.classList.add('hidden');
+        document.getElementById('panelConfiguracion').classList.add('hidden');
+        document.getElementById('panelUnirse').classList.add('hidden');
+        document.getElementById('panelJugadores').classList.remove('hidden');
+        document.getElementById('rapidaEspera').classList.remove('hidden');
+        // El resumen refleja los selectores del lobby, no la mesa rápida (4 jugadores).
+        document.getElementById('resumenConfig')?.classList.add('hidden');
+        document.getElementById('mostrarCodigo').classList.remove('hidden'); // para invitar a alguien a tu mesa
+        document.getElementById('codigoDisplay').innerText = idSala;
+        pintarEsperaRapida();
+        _rapida.intervalo = setInterval(pintarEsperaRapida, 1000);
+    });
+
     socket.on('salaCreada', (id) => {
         miSalaActual = id; soyElHost = true;
         if (_practica) { socket.emit('iniciarPartida', id); }
@@ -2168,6 +2221,7 @@ function conectarSocket() {
         window._reingresando = false; window._servidorReinicio = false;
         const jugadores = Array.isArray(datos) ? datos : datos.jugadores;
         const maxJug = (datos && datos.maxJugadores) ? datos.maxJugadores : parseInt(document.getElementById('selectJugadores')?.value || 8);
+        setTimeout(pintarEsperaRapida, 0);
 
         listaJugadoresGlobal = jugadores.map(j =>
             j.nombre === miNombreUsuario ? { ...j, id: socket.id } : j
@@ -2177,7 +2231,7 @@ function conectarSocket() {
         // que abandona). Si yo soy ahora jugadores[0] aunque no haya creado la
         // sala, me toca empezar la partida. Sin esto, si el host abandona, la
         // sala queda sin nadie que pueda apretar "Empezar".
-        const esHostAhora = jugadores.length > 0 && jugadores[0].nombre === miNombreUsuario;
+        const esHostAhora = !_rapida && jugadores.length > 0 && jugadores[0].nombre === miNombreUsuario;
         if (esHostAhora && !soyElHost) {
             mostrarToast('👑 Ahora eres el host de la sala.', 'rey', 3000);
         }
@@ -2190,7 +2244,7 @@ function conectarSocket() {
         const colores = ['#c0392b','#2980b9','#27ae60','#8e44ad','#e67e22','#16a085','#d35400','#2c3e50'];
         document.getElementById('listaJugadores').innerHTML = jugadores.map((j, i) => {
             const inicial = j.nombre.charAt(0).toUpperCase();
-            const esHost = i === 0;
+            const esHost = i === 0 && !_rapida;
             const esBot = j.esBot;
             const color = colores[i % colores.length];
             const badge = esHost ? 'Host' : (esBot ? 'Bot' : 'Listo');
@@ -2230,6 +2284,7 @@ function conectarSocket() {
     });
 
     socket.on('datosMesa', (datos) => {
+        terminarEsperaRapida();
         setTimeout(() => practicaEvento('ronda', datos), 0);
         // Revelar la mesa ANTES de dibujar/repartir. En la ronda 1, datosMesa
         // llega antes que tuCarta (que es quien normalmente saca el lobby), así

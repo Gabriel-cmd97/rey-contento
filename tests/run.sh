@@ -4,5 +4,6 @@
 cd "$(dirname "$0")/.."
 NODE_PATH=/tmp/rey-tests/node_modules node tests/e2e.js
 codigo=$?
+NODE_PATH=/tmp/rey-tests/node_modules node tests/rapida.js || codigo=1
 yarn node tests/limpiar-usuarios-prueba.js 2>&1 | grep -v -e dotenv -e INFO
 exit $codigo

@@ -818,6 +818,60 @@ function iniciarRonda(sala, io) {
     setTimeout(() => { gestionarTurnos(sala, io, true); }, 500);
 }
 
+// Arranca la partida de una sala en LOBBY (la llaman "Empezar juego" y el
+// arranque automático de la partida rápida).
+function empezarPartida(sala) {
+    if (!estadoSalas[sala.idSala] || sala.estadoActual !== "LOBBY") return;
+    sala.rondaActual = 0;
+    sala.dealerIndex = sala.config.practica ? practica.DEALER_INICIAL : 0;
+    sala.mazo = crearMazo(sala.config);
+    sala.descarte = [];
+    iniciarRonda(sala, io);
+    log.info('Partida iniciada', { idSala: sala.idSala, jugadores: sala.jugadores.length, rapida: !!sala.config.rapida });
+}
+
+// ==========================================
+// PARTIDA RÁPIDA
+// ==========================================
+// Mesa pública de 4: el jugador entra a la primera sala rápida con lugar o se
+// crea una. Empieza sola a los RAPIDA_ESPERA_MS o en cuanto se llena, y los
+// lugares vacíos se completan con bots.
+const RAPIDA_ESPERA_MS = 20000;
+const temporizadoresRapida = {}; // idSala → timeout de arranque
+
+function configRapida() {
+    return { vidas: 3, maxJugadores: 4, numBots: 0, modoJuego: 'CLASICO', modoRey: 'SORPRESA',
+             frecuenciaReyes: 'NORMAL', dificultadBots: 'NORMAL', tiempoTurno: 10, rapida: true };
+}
+
+function nuevoIdSala() {
+    const caracteres = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let id;
+    do {
+        id = '';
+        for (let i = 0; i < 5; i++) id += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+    } while (estadoSalas[id]);
+    return id;
+}
+
+function arrancarRapida(idSala) {
+    clearTimeout(temporizadoresRapida[idSala]);
+    delete temporizadoresRapida[idSala];
+    const sala = estadoSalas[idSala];
+    if (!sala || sala.estadoActual !== "LOBBY") return;
+    // Solo juegan los humanos conectados; si no queda ninguno, la sala sobra.
+    sala.jugadores = sala.jugadores.filter(j => j.esBot || j.online);
+    if (!sala.jugadores.some(j => !j.esBot)) return limpiarSala(idSala);
+    const usados = sala.jugadores.map(j => j.nombre);
+    for (let i = 1; sala.jugadores.length < sala.config.maxJugadores; i++) {
+        const nombre = nombreBotAleatorio(usados);
+        usados.push(nombre);
+        sala.jugadores.push({ id: 'bot_' + i, nombre, vidas: sala.config.vidas, yaJugo: false, online: true, esBot: true });
+    }
+    emitirLobby(idSala);
+    empezarPartida(sala);
+}
+
 function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
     let sala = estadoSalas[idSala];
     if (!sala) return;
@@ -1201,6 +1255,34 @@ io.on('connection', (socket) => {
         log.info('Sala creada', { idSala, host: nombreUsuarioLogueado, bots: cfg.numBots });
     });
 
+    socket.on('partidaRapida', () => {
+        if (!permitir(socket.id, 'partidaRapida', 2000)) return;
+        const username = socket.usuario ? socket.usuario.username : null;
+        if (!username) return socket.emit('errorSala', 'Error de sesión. Vuelve a iniciar.');
+
+        let sala = Object.values(estadoSalas).find(s =>
+            s.config.rapida && s.estadoActual === "LOBBY" &&
+            s.jugadores.length < s.config.maxJugadores &&
+            !s.jugadores.some(j => j.nombre === username));
+        if (!sala) {
+            const idSala = nuevoIdSala();
+            sala = estadoSalas[idSala] = {
+                idSala, estadoActual: "LOBBY", config: configRapida(), password: null, hostId: null,
+                jugadores: [], dealerIndex: 0, turnoActualIndex: 1, mazo: [], descarte: [], rondaActual: 1,
+                campanaTocada: false, campanaTocadorId: null, campanaTocadorIndex: -1,
+                ultimaActividad: Date.now(), arrancaEn: Date.now() + RAPIDA_ESPERA_MS,
+            };
+            temporizadoresRapida[idSala] = setTimeout(() => arrancarRapida(idSala), RAPIDA_ESPERA_MS);
+            log.info('Sala rápida creada', { idSala, por: username });
+        }
+        tocarSala(sala);
+        sala.jugadores.push({ id: socket.id, nombre: username, vidas: sala.config.vidas, yaJugo: false, online: true });
+        socket.join(sala.idSala);
+        socket.emit('rapidaUnido', { idSala: sala.idSala, faltanMs: Math.max(0, sala.arrancaEn - Date.now()) });
+        emitirLobby(sala.idSala);
+        if (sala.jugadores.length >= sala.config.maxJugadores) arrancarRapida(sala.idSala);
+    });
+
     socket.on('unirseSala', (payload) => {
         // Límite generoso: el cliente puede reconectar legítimamente por
         // visibilitychange, lock de teléfono, etc. 500ms basta para bloquear
@@ -1280,13 +1362,8 @@ io.on('connection', (socket) => {
         if (!permitir(socket.id, 'iniciarPartida', 1000)) return;
         if (!esIdSalaValido(idSala)) return;
         let sala = estadoSalas[idSala];
-        if (sala && sala.jugadores[0].nombre === nombreUsuarioLogueado) {
-            sala.rondaActual = 0;
-            sala.dealerIndex = sala.config.practica ? practica.DEALER_INICIAL : 0;
-            sala.mazo = crearMazo(sala.config);
-            sala.descarte = [];
-            iniciarRonda(sala, io);
-            log.info('Partida iniciada', { idSala, jugadores: sala.jugadores.length });
+        if (sala && !sala.config.rapida && sala.jugadores[0].nombre === nombreUsuarioLogueado) {
+            empezarPartida(sala);
         }
     });
 
@@ -1547,6 +1624,7 @@ async function shutdownGracefully(signal) {
     // estado que estamos por destruir.
     clearInterval(sweeperInterval);
     for (const id of Object.keys(temporizadores)) clearTimeout(temporizadores[id]);
+    for (const id of Object.keys(temporizadoresRapida)) clearTimeout(temporizadoresRapida[id]);
     for (const username of Object.keys(temporizadoresDesconexion)) clearTimeout(temporizadoresDesconexion[username]);
 
     // Cerrar Socket.io (rechaza conexiones nuevas y cierra las existentes).

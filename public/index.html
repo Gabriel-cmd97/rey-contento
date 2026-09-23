@@ -127,7 +127,9 @@
 
             <!-- PANEL CREAR -->
             <section class="lobby-panel" id="panelConfiguracion">
-                <button id="btnPractica" class="boton-oro boton-lobby full-width"><svg class="icono" aria-hidden="true"><use href="#i-diana"/></svg> Aprender a jugar</button>
+                <button id="btnRapida" class="boton-oro boton-lobby full-width"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Partida rápida</button>
+                <p class="practica-lema">Te sentamos en una mesa de 4 · si faltan jugadores, completamos con bots</p>
+                <button id="btnPractica" class="boton-madera boton-lobby full-width"><svg class="icono" aria-hidden="true"><use href="#i-diana"/></svg> Aprender a jugar</button>
                 <p class="practica-lema">Partida de práctica guiada contra 2 bots · 3 rondas · no cuenta en tus estadísticas</p>
                 <p class="lobby-section-label">Reglas de la casa</p>
                 <div class="config-grid-nuevo">
@@ -255,6 +257,7 @@
 
                 <!-- Slots vacíos decorativos -->
                 <div id="slotsVacios" class="slots-vacios"></div>
+                <p id="rapidaEspera" class="rapida-espera hidden" role="status" aria-live="polite"></p>
 
                 <!-- Botones siempre visibles -->
                 <div class="lobby-sticky-bottom" style="margin-top:12px;">
