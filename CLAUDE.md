@@ -21,9 +21,15 @@ Sin linter. Hay un script de tests E2E en `tests/e2e.js` que cubre auth, validac
 mkdir -p /tmp/rey-tests && cd /tmp/rey-tests
 npm init -y && npm install socket.io-client@4 node-fetch@2
 
-# Con el server corriendo en :4000
-NODE_PATH=/tmp/rey-tests/node_modules node tests/e2e.js
+# Con el server corriendo en :4000 — usa SIEMPRE el envoltorio
+tests/run.sh
 ```
+
+**Ojo: las pruebas pegan a la base de producción (RDS).** Cada corrida registra
+dos usuarios `t_<sufijo>_a`/`_b`. `tests/run.sh` corre `e2e.js` y después
+`tests/limpiar-usuarios-prueba.js`, que los borra (solo nombres con ese patrón
+exacto y 0 victorias). Para ver cuántos quedan sin borrar:
+`yarn node tests/limpiar-usuarios-prueba.js --ver`.
 
 Lo que NO cubre: animaciones, DOM, reconexión real, comportamiento puro del cliente.
 
