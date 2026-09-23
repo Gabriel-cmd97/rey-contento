@@ -589,6 +589,39 @@ function desactivarModoEspectador() {
 // una sala, ser expulsado, ganar/perder y volver al lobby, o ser reemplazado
 // por otra sesión. Sin este helper, cada call site reseteaba un subconjunto
 // distinto de variables → bugs por estado stale al reentrar a otra sala.
+// Deja la pantalla en el lobby sin rastro de la partida anterior (mesa,
+// footer, victoria, resumen, QR). La usan "Volver al lobby" y el regreso
+// forzado cuando la sala ya no existe (p. ej. tras reiniciar el servidor).
+function mostrarLobbyLimpio() {
+    desactivarModoEspectador();
+    document.getElementById('pantallaVictoria').classList.add('hidden');
+    // Volver al lobby oculta explícitamente mesa y footer: así nunca quedan
+    // visibles junto al lobby (ambos son hermanos dentro de pantallaJuego).
+    document.getElementById('mesaDeJuego').classList.add('hidden');
+    document.getElementById('panelAccionesPartida').classList.add('hidden');
+    document.getElementById('seccion-lobby').classList.remove('hidden');
+    document.getElementById('lobbyTabs')?.classList.remove('hidden');
+    document.getElementById('panelConfiguracion').classList.remove('hidden');
+    document.getElementById('panelUnirse').classList.add('hidden');
+    document.getElementById('panelJugadores').classList.add('hidden');
+    if (typeof switchTab === 'function') switchTab('crear');
+    document.getElementById('mostrarCodigo').classList.add('hidden');
+    document.getElementById('mostrarCodigo').style.display = "";
+    document.getElementById('codigoDisplay').innerText = "...";
+    document.getElementById('btnEmpezar').classList.add('hidden');
+    document.getElementById('infoRonda').classList.add('hidden');
+    document.getElementById('infoDealer').classList.add('hidden');
+    document.getElementById('infoModo').classList.add('hidden');
+    document.getElementById('btnEmpezar').style.display = "";
+
+    resetEstadoSala();
+
+    document.getElementById('listaJugadores').innerHTML = "";
+    dibujarMesaCircular();
+    ocultarResumenRonda();
+    ocultarVistaQR();
+}
+
 function resetEstadoSala() {
     miSalaActual = "";
     soyElHost = false;
@@ -1382,7 +1415,8 @@ function conectarSocket() {
     // El servidor está bajando para shutdown/restart. Avisamos al usuario con
     // un toast no bloqueante; Socket.io reconecta solo cuando vuelva el server.
     socket.on('servidorReiniciando', (mensaje) => {
-        mostrarToast(mensaje || '⏳ Servidor reiniciando... esperando reconexión.', 'rey', 5000);
+        window._servidorReinicio = true;
+        mostrarToast('⏳ El servidor se está reiniciando. Espera unos segundos…', 'rey', 5000);
     });
 
     // El servidor cerró esta sesión porque la cuenta inició desde otra pestaña
@@ -1408,15 +1442,15 @@ function conectarSocket() {
         alert(mensaje || 'Tu sesión fue reemplazada por otra conexión.');
     });
 
-    // Al reconectar (ej. después de desbloquear el teléfono), volver a la sala si aplica
-    socket.on('reconnect', () => {
-        if (miSalaActual) {
-            socket.emit('unirseSala', { idSala: miSalaActual });
-        }
-    });
-
     socket.on('connect', () => {
         document.getElementById('btnCrearSala').disabled = false;
+        // Al reconectar (celular desbloqueado, red caída, reinicio del servidor)
+        // volver a la sala si había una. Va en 'connect' porque en Socket.io v4
+        // el evento 'reconnect' ya no se emite en el socket, solo en socket.io.
+        if (miSalaActual) {
+            window._reingresando = true;
+            socket.emit('unirseSala', { idSala: miSalaActual });
+        }
         const salaPorUrl = sessionStorage.getItem('salaPendienteUrl');
         if (salaPorUrl) {
             sessionStorage.removeItem('salaPendienteUrl');
@@ -1429,6 +1463,7 @@ function conectarSocket() {
     });
 
     socket.on('partidaPendiente', (idSala) => {
+        if (idSala === miSalaActual) return; // ya se está reingresando sola
         const modal = document.createElement('div');
         modal.id = "modalReconexion";
         modal.innerHTML = `
@@ -1552,6 +1587,7 @@ function conectarSocket() {
     };
 
     socket.on('actualizarLobby', (datos) => {
+        window._reingresando = false; window._servidorReinicio = false;
         const jugadores = Array.isArray(datos) ? datos : datos.jugadores;
         const maxJug = (datos && datos.maxJugadores) ? datos.maxJugadores : parseInt(document.getElementById('selectJugadores')?.value || 8);
 
@@ -1689,6 +1725,7 @@ function conectarSocket() {
 
     // --- RECONEXIÓN ---
     socket.on('reconexionExitosa', (datos) => {
+        window._reingresando = false; window._servidorReinicio = false;
         ++_renderGen;
         miSalaActual = datos.idSala;
         listaJugadoresGlobal = datos.jugadores.map(j =>
@@ -2142,32 +2179,7 @@ function conectarSocket() {
 
     // --- VOLVER AL LOBBY ---
     document.getElementById('btnVolverLobby').onclick = () => {
-        desactivarModoEspectador();
-        document.getElementById('pantallaVictoria').classList.add('hidden');
-        // Volver al lobby oculta explícitamente mesa y footer: así nunca quedan
-        // visibles junto al lobby (ambos son hermanos dentro de pantallaJuego).
-        document.getElementById('mesaDeJuego').classList.add('hidden');
-        document.getElementById('panelAccionesPartida').classList.add('hidden');
-        document.getElementById('seccion-lobby').classList.remove('hidden');
-        document.getElementById('lobbyTabs')?.classList.remove('hidden');
-        document.getElementById('panelConfiguracion').classList.remove('hidden');
-        document.getElementById('panelUnirse').classList.add('hidden');
-        document.getElementById('panelJugadores').classList.add('hidden');
-        if (typeof switchTab === 'function') switchTab('crear');
-        document.getElementById('mostrarCodigo').classList.add('hidden');
-        document.getElementById('mostrarCodigo').style.display = "";
-        document.getElementById('codigoDisplay').innerText = "...";
-        document.getElementById('btnEmpezar').classList.add('hidden');
-        document.getElementById('infoRonda').classList.add('hidden');
-        document.getElementById('infoDealer').classList.add('hidden');
-        document.getElementById('infoModo').classList.add('hidden');
-        document.getElementById('btnEmpezar').style.display = "";
-
-        resetEstadoSala();
-
-        document.getElementById('listaJugadores').innerHTML = "";
-        dibujarMesaCircular();
-
+        mostrarLobbyLimpio();
         socket.disconnect();
         setTimeout(() => { socket.connect(); }, 500);
     };
@@ -2201,6 +2213,18 @@ function conectarSocket() {
             }
             return;
         }
+
+        if (m === 'La sala no existe.' && window._reingresando) {
+            window._reingresando = false;
+            const porReinicio = window._servidorReinicio;
+            window._servidorReinicio = false;
+            mostrarLobbyLimpio();
+            mostrarToast(porReinicio
+                ? '⚠️ El servidor se reinició y la partida se perdió. Crea una sala nueva.'
+                : '⚠️ La partida ya terminó o la sala se cerró.', 'danio', 6000);
+            return;
+        }
+        window._reingresando = false;
 
         resetEstadoSala();
         document.getElementById('panelJugadores').classList.add('hidden');
