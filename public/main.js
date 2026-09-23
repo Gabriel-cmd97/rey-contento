@@ -675,8 +675,12 @@ function pintarFinalPartida(ganador) {
         const vidas = ganador.vidas > 0 ? `${ganador.vidas} ${ganador.vidas === 1 ? 'vida' : 'vidas'} en pie` : '';
         filas.push({ lugar: 1, nombre: ganador.nombre, detalle: vidas, esYo: gane });
     }
-    [..._caidasPartida].reverse().forEach((c, i) => {
-        filas.push({ lugar: filas.length + 1, nombre: c.nombre, detalle: `cayó en la ronda ${c.ronda}`, esYo: c.id === socket.id || c.nombre === miNombreUsuario });
+    // Quienes cayeron en la misma ronda comparten lugar.
+    [..._caidasPartida].reverse().forEach((c, i, caidas) => {
+        const anterior = filas[filas.length - 1];
+        const mismaRonda = i > 0 && caidas[i - 1].ronda === c.ronda;
+        const lugar = mismaRonda ? anterior.lugar : filas.length + 1;
+        filas.push({ lugar, nombre: c.nombre, detalle: `cayó en la ronda ${c.ronda}`, esYo: c.id === socket.id || c.nombre === miNombreUsuario });
     });
 
     const tabla = document.getElementById('tablaFinal');
@@ -1699,7 +1703,7 @@ function conectarSocket() {
         modal.id = "modalReconexion";
         modal.innerHTML = `
             <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;justify-content:center;align-items:center;">
-                <div style="background:var(--pergamino);color:#2c3e50;padding:30px;border-radius:15px;border:6px solid var(--oro-oscuro);text-align:center;max-width:90%;width:350px;box-shadow:0 0 40px #000;">
+                <div style="background:var(--pergamino);color:var(--texto);padding:30px;border-radius:15px;border:6px solid var(--oro-oscuro);text-align:center;max-width:90%;width:350px;box-shadow:0 0 40px #000;">
                     <h2 class="medieval-font" style="color:var(--rojo-rey);font-size:28px;margin-top:0;">Batalla Inconclusa!</h2>
                     <p style="font-size:18px;font-weight:bold;">Tus tropas te esperan en sala <span style="color:#e67e22;font-size:22px;">${idSala}</span>.</p>
                     <div style="margin-top:25px;display:flex;flex-direction:column;gap:10px;">

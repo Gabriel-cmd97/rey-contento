@@ -7,8 +7,8 @@
     --rojo-rey: #c0392b;
     --madera: #3e2723;
     --madera-clara: #6d4c41;
-    --pergamino: #ecf0f1;
-    --texto: #2c3e50;
+    --pergamino: #f3e6c8;   /* pergamino cálido: texto claro y fondos de modales */
+    --texto: #3a2a1d;       /* tinta café para texto sobre pergamino */
     --verde: #2ecc71;
     --verde-tapete: #145a32;
     --verde-brillante: #34e7e4;
@@ -204,7 +204,7 @@ select,
 .header-juego { display: none; }
 
 .contenedor-pergamino {
-    background: linear-gradient(145deg, #f5f0e8 0%, #ecf0f1 50%, #e8e0d0 100%);
+    background: linear-gradient(145deg, #f8efd9 0%, #f1e3c3 50%, #e8d6ae 100%);
     border: 3px solid var(--madera-clara);
     border-radius: 12px;
     padding: 20px;
@@ -1370,7 +1370,7 @@ select,
    MODAL REGLAS
    ========================================= */
 #modalReglas > div {
-    background: linear-gradient(145deg, #f5f0e8 0%, #ecf0f1 100%);
+    background: linear-gradient(145deg, #f8efd9 0%, #efdfba 100%);
     box-shadow: 0 0 0 1px rgba(193,150,58,0.3), 0 30px 80px rgba(0,0,0,0.8);
 }
 
@@ -1990,7 +1990,7 @@ select,
 }
 #modalReglas p {
     line-height: 1.7;
-    color: #34495e;
+    color: var(--texto);
 }
 
 /* ── LEADERBOARD: filas con mejor separación ── */
