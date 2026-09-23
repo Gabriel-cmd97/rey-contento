@@ -489,7 +489,12 @@ function resolverRonda(sala, io) {
         texto: `Fin de ronda — Carta mortal: ${valorCritico}`
     });
 
-    // Avance automático: con dealer bot a los 2.5s; con dealer humano a los 15s
+    // Pausas tras revelar: el cliente voltea las cartas una por una (~180 ms
+    // por jugador) y después muestra el resumen, así que hay que dejarle ver.
+    const MS_PAUSA_BOT = 5000;       // dealer bot: pasa a la siguiente ronda
+    const MS_PAUSA_VICTORIA = 4500;  // fin de partida: muestra la victoria
+
+    // Avance automático: con dealer bot a los MS_PAUSA_BOT; con dealer humano a los 15s
     // por si no presiona "siguiente ronda" (antes la sala quedaba atorada en
     // REVELACION hasta que el sweeper la borraba). Si el dealer avanza antes,
     // el estado ya no es REVELACION y este timer no hace nada.
@@ -507,7 +512,7 @@ function resolverRonda(sala, io) {
             if (!dealerEsBot) io.to(sala.idSala).emit('mensajeGlobal', '⏩ La siguiente ronda empezó automáticamente.');
             io.to(sala.idSala).emit('nuevaRondaIniciada', { jugadoresActualizados: jugadoresPublicos(sala) });
             iniciarRonda(sala, io);
-        }, dealerEsBot ? 2500 : SEG_AUTO_SIGUIENTE_RONDA * 1000);
+        }, dealerEsBot ? MS_PAUSA_BOT : SEG_AUTO_SIGUIENTE_RONDA * 1000);
     }
 
     if (juegoTerminado) {
@@ -527,7 +532,7 @@ function resolverRonda(sala, io) {
                     iniciarRevancha(sala, io);
                 }
             }, 60000);
-        }, 2500);
+        }, MS_PAUSA_VICTORIA);
     }
 }
 

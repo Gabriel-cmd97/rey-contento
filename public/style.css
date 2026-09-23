@@ -2424,6 +2424,7 @@ input:focus-visible,
     *, *::before, *::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
+        animation-delay: 0ms !important;
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
     }
@@ -2638,3 +2639,71 @@ input:focus-visible,
 .tabla-final-nombre em { opacity: 0.85; }
 /* Texto de ayuda dentro de los campos: legible, pero más tenue que lo escrito. */
 input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
+
+/* =========================================
+   ANIMACIONES DE LA MESA
+   ========================================= */
+/* Revelación con suspenso: cada carta espera su turno (--retraso-revelar lo
+   pone main.js) y las perdedoras tiemblan cuando ya se vio la última. */
+.mini-carta-frente.efecto-revelar {
+    animation: flipReveal 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) var(--retraso-revelar, 0ms) both;
+}
+.mini-carta-frente.efecto-revelar.danio-recibido {
+    animation:
+        flipReveal 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) var(--retraso-revelar, 0ms) both,
+        sacudir 0.4s ease-in-out var(--retraso-danio, 0ms) 3;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    transition: none;
+}
+/* El rojo de la carta perdedora también espera al final de la revelación. */
+.mini-carta-frente.efecto-revelar.danio-recibido::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border: 2px solid var(--rojo-rey);
+    border-radius: inherit;
+    box-shadow: 0 0 20px var(--rojo-rey);
+    opacity: 0;
+    animation: brillo-perdedora 0.3s ease-out var(--retraso-danio, 0ms) forwards;
+    pointer-events: none;
+}
+.mini-carta-frente { position: relative; }
+@keyframes brillo-perdedora { to { opacity: 1; } }
+
+/* Cartas que cruzan la mesa en un cambio. */
+.carta-fantasma-cambio {
+    position: fixed !important;
+    z-index: 45;
+    margin: 0 !important;
+    pointer-events: none;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.6);
+}
+
+/* Corazón que se rompe. */
+.corazon-roto-capa {
+    position: fixed;
+    z-index: 300;
+    display: flex;
+    pointer-events: none;
+    color: #ff5a67;
+    filter: drop-shadow(0 0 6px rgba(255,71,87,0.7));
+}
+.corazon-roto-capa .icono { width: 30px; height: 30px; fill: #c0392b; stroke: #ffd0d0; stroke-width: 1.4; }
+.corazon-roto-capa .mitad { display: block; width: 15px; overflow: hidden; }
+.corazon-roto-capa .mitad.der { direction: rtl; }
+
+/* Sello de eliminado. */
+.sello-eliminado {
+    position: fixed;
+    z-index: 300;
+    pointer-events: none;
+    color: #e8e0cc;
+    background: rgba(120,20,20,0.85);
+    border: 3px double #e8e0cc;
+    border-radius: 50%;
+    padding: 10px;
+    line-height: 0;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+}
+.sello-eliminado .icono { width: 34px; height: 34px; stroke-width: 1.7; }

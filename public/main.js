@@ -642,6 +642,128 @@ function explicacionRonda(datos) {
 }
 
 // ==========================================
+// ANIMACIONES DE LA MESA
+// ==========================================
+// Revelación con suspenso, cambios visibles entre asientos y corazón que se
+// rompe. Son adorno: no cambian reglas ni tiempos del servidor, y con
+// "reducir movimiento" se saltan.
+const PASO_REVELAR_MS = 180;   // entre carta y carta al revelar
+let _inicioRevelacion = 0;     // performance.now() del fin de ronda
+
+function menosMovimiento() {
+    return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+}
+
+// Retrasos de la revelación, calculados contra el reloj: si la mesa se
+// vuelve a dibujar a media revelación, cada carta sigue donde iba.
+function estiloRevelar(jugadorId) {
+    const pasado = performance.now() - _inicioRevelacion;
+    const retraso = ordenRevelacion(jugadorId) * PASO_REVELAR_MS - pasado;
+    return `--retraso-revelar:${Math.round(retraso)}ms;--retraso-danio:${Math.round(duracionRevelacion() - pasado)}ms`;
+}
+
+// Orden en que se voltea la carta de un jugador: el mismo en que jugó
+// (empieza a la derecha del dealer y el dealer va al final).
+function ordenRevelacion(jugadorId) {
+    const n = listaJugadoresGlobal.length;
+    const dealer = listaJugadoresGlobal.findIndex(j => j.dealer);
+    const idx = listaJugadoresGlobal.findIndex(j => j.id === jugadorId);
+    if (dealer < 0 || idx < 0) return 0;
+    return (idx - dealer - 1 + n) % n;
+}
+
+// Milisegundos desde el fin de ronda hasta que termina la última carta.
+function duracionRevelacion() {
+    return listaJugadoresGlobal.length * PASO_REVELAR_MS + 350;
+}
+
+// Elemento de la carta de un jugador en la mesa (tu carta o el reverso del asiento).
+function cartaEnMesa(nombre) {
+    if (nombre === miNombreUsuario) return document.getElementById('miCarta');
+    const j = listaJugadoresGlobal.find(x => x.nombre === nombre);
+    if (!j) return null;
+    const silla = document.querySelector(`.silla:not(.hidden)[data-jugador-id="${CSS.escape(j.id)}"]`);
+    return silla?.querySelector('.perfil-carta-reverso, .mini-carta-frente') || silla;
+}
+
+// Dos cartas boca abajo que cruzan la mesa entre quienes cambiaron.
+function animarCambioEntre(nombreA, nombreB) {
+    if (menosMovimiento()) return;
+    const a = cartaEnMesa(nombreA), b = cartaEnMesa(nombreB);
+    if (!a || !b) return;
+    const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+    if (!ra.width || !rb.width) return;
+    const volar = (desde, hacia, arco) => {
+        const g = document.createElement('div');
+        g.className = 'perfil-carta-reverso carta-fantasma-cambio';
+        const w = Math.min(desde.width, 46), h = w * 1.5;
+        g.style.width = w + 'px'; g.style.height = h + 'px';
+        g.style.left = (desde.left + desde.width / 2 - w / 2) + 'px';
+        g.style.top = (desde.top + desde.height / 2 - h / 2) + 'px';
+        document.body.appendChild(g);
+        const dx = (hacia.left + hacia.width / 2) - (desde.left + desde.width / 2);
+        const dy = (hacia.top + hacia.height / 2) - (desde.top + desde.height / 2);
+        // El arco sale perpendicular a la línea entre asientos: las dos cartas se cruzan sin encimarse.
+        const largo = Math.hypot(dx, dy) || 1;
+        const px = -dy / largo * arco, py = dx / largo * arco;
+        g.animate([
+            { transform: 'translate(0,0) rotate(0deg) scale(1)' },
+            { transform: `translate(${dx / 2 + px}px, ${dy / 2 + py}px) rotate(${arco > 0 ? 12 : -12}deg) scale(1.15)`, offset: 0.5 },
+            { transform: `translate(${dx}px, ${dy}px) rotate(0deg) scale(1)` },
+        ], { duration: 620, easing: 'cubic-bezier(.45,.05,.35,1)' }).onfinish = () => g.remove();
+    };
+    volar(ra, rb, 28);
+    volar(rb, ra, -28);
+    Sonidos.carta();
+}
+
+// Corazón que se parte en dos sobre las vidas de quien perdió; si quedó
+// eliminado, sello de calavera sobre su asiento.
+function animarPerdidaVida(jugador) {
+    if (menosMovimiento()) return;
+    const esYo = jugador.id === socket.id;
+    const silla = esYo ? document.getElementById('miPerfil')
+        : document.querySelector(`.silla:not(.hidden)[data-jugador-id="${CSS.escape(jugador.id)}"]`);
+    if (!silla) return;
+    const ancla = (esYo ? document.getElementById('misVidasMesa') : silla.querySelector('.vidas-destacadas')) || silla;
+    const r = ancla.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+
+    const capa = document.createElement('div');
+    capa.className = 'corazon-roto-capa';
+    capa.style.left = cx + 'px'; capa.style.top = cy + 'px';
+    capa.innerHTML = `<span class="mitad izq">${icono('corazon')}</span><span class="mitad der">${icono('corazon')}</span>`;
+    document.body.appendChild(capa);
+    capa.animate([{ transform: 'translate(-50%,-50%) scale(0.4)', opacity: 0 },
+                  { transform: 'translate(-50%,-90%) scale(1.25)', opacity: 1, offset: 0.35 },
+                  { transform: 'translate(-50%,-90%) scale(1.2)', opacity: 1 }],
+                 { duration: 380, easing: 'ease-out', fill: 'forwards' });
+    const [izq, der] = capa.querySelectorAll('.mitad');
+    const caer = (el, lado) => el.animate([
+        { transform: 'translate(0,0) rotate(0)', opacity: 1 },
+        { transform: `translate(${lado * 16}px, 38px) rotate(${lado * 35}deg)`, opacity: 0 },
+    ], { duration: 650, delay: 420, easing: 'cubic-bezier(.5,0,.9,.6)', fill: 'forwards' });
+    caer(izq, -1);
+    caer(der, 1).onfinish = () => capa.remove();
+
+    if (jugador.vidas <= 0) {
+        const rs = silla.getBoundingClientRect();
+        const sello = document.createElement('div');
+        sello.className = 'sello-eliminado';
+        sello.innerHTML = icono('calavera');
+        sello.style.left = (rs.left + rs.width / 2) + 'px';
+        sello.style.top = (rs.top + rs.height / 2) + 'px';
+        document.body.appendChild(sello);
+        sello.animate([
+            { transform: 'translate(-50%,-50%) scale(2.4) rotate(-18deg)', opacity: 0 },
+            { transform: 'translate(-50%,-50%) scale(0.95) rotate(-12deg)', opacity: 1, offset: 0.45 },
+            { transform: 'translate(-50%,-50%) scale(1) rotate(-12deg)', opacity: 1, offset: 0.8 },
+            { transform: 'translate(-50%,-50%) scale(1) rotate(-12deg)', opacity: 0 },
+        ], { duration: 1800, delay: 500, easing: 'ease-out', fill: 'both' }).onfinish = () => sello.remove();
+    }
+}
+
+// ==========================================
 // PANTALLA DE VICTORIA — tabla final
 // ==========================================
 // El servidor solo manda al ganador, así que el orden de caída se anota aquí
@@ -1518,7 +1640,7 @@ function dibujarMesaCircular() {
             if (mostrandoRevelacion && op.cartaActual !== undefined) {
                 let extra = (op.cartaActual === 0) ? 'mini-carta-0' : (op.cartaActual === 9) ? 'mini-carta-9' : '';
                 cartaHTML = `
-                    <div class="mini-carta-frente ${extra} ${claseDanio} efecto-revelar">
+                    <div class="mini-carta-frente ${extra} ${claseDanio} efecto-revelar" style="${estiloRevelar(op.id)}">
                         <div style="font-size:34px;font-weight:bold;line-height:1;">${op.cartaActual}</div>
                         <div style="line-height:1;margin-top:2px;">${figuraIMG(op.cartaActual, 22)}</div>
                         <div style="font-size:11px;text-align:center;line-height:1.1;margin-top:4px;">${nombresCartas[op.cartaActual]}</div>
@@ -2204,6 +2326,9 @@ function conectarSocket() {
     // --- ACCIONES EN MESA (MINI-FEED) ---
     socket.on('accionMesa', (datos) => {
         registrarJugadaFeed(datos);
+        if (datos.tipo === 'CAMBIO' && datos.jugador && datos.objetivo) {
+            animarCambioEntre(datos.jugador, datos.objetivo);
+        }
     });
 
     // --- MENSAJES GLOBALES ---
@@ -2257,6 +2382,12 @@ function conectarSocket() {
         perdedoresActuales = datos.perdedores;
         turnoActualId = "";
         listaJugadoresGlobal = datos.jugadores;
+        _inicioRevelacion = performance.now();
+        const fin = menosMovimiento() ? 0 : duracionRevelacion();
+        // La ronda ya terminó: el reloj de turno no debe seguir corriendo.
+        if (intervaloVisual) clearInterval(intervaloVisual);
+        document.getElementById('contenedorReloj').style.display = 'none';
+        document.getElementById('focoTurno')?.classList.remove('reloj-urgente');
 
         registrarJugadaFeed({
             tipo: 'FIN_RONDA',
@@ -2264,11 +2395,24 @@ function conectarSocket() {
             texto: `Fin de ronda · Carta mortal: ${datos.cartaMortal}`
         });
 
-        if (datos.perdedores.includes(socket.id)) {
-            document.getElementById('miCarta').classList.add('danio-recibido');
-            Sonidos.danio();
-            vibrar([120, 60, 200]);
+        // Un roce por cada carta que se voltea, en el orden de la mesa.
+        if (fin) {
+            datos.jugadores.forEach(j => {
+                if (j.id === socket.id || j.cartaActual === undefined) return;
+                if (j.vidas <= 0 && !datos.perdedores.includes(j.id)) return;
+                setTimeout(() => { if (gen === _renderGen) Sonidos.carta(); }, ordenRevelacion(j.id) * PASO_REVELAR_MS);
+            });
         }
+        // El daño llega cuando ya se vio la última carta.
+        setTimeout(() => {
+            if (gen !== _renderGen) return;
+            if (datos.perdedores.includes(socket.id)) {
+                document.getElementById('miCarta').classList.add('danio-recibido');
+                Sonidos.danio();
+                vibrar([120, 60, 200]);
+            }
+            datos.jugadores.filter(j => datos.perdedores.includes(j.id)).forEach(animarPerdidaVida);
+        }, fin);
 
         const yoMori = datos.jugadores.find(j => j.id === socket.id && j.vidas <= 0);
         if (yoMori) {
@@ -2299,7 +2443,7 @@ function conectarSocket() {
             if (datos.juegoTerminado) {
                 mostrarToast('EL JUEGO HA TERMINADO!', 'rey', 5000);
             }
-        }, 1400);
+        }, Math.max(1400, fin + 1100));
     });
 
     document.getElementById('btnSiguienteRonda').onclick = () => {

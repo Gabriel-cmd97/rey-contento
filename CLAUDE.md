@@ -243,6 +243,12 @@ Estas convenciones se aplicaron al pulir el aspecto y la confiabilidad de carga 
 
 **Contraste (revisado el 23/09/2026 con medición WCAG en todas las pantallas)**: texto normal ≥ 4.5:1, grande ≥ 3:1. Para texto secundario sobre madera oscura usar `var(--texto-suave)` (nunca blanco al 25–45 %); para texto dorado sobre pergamino, `var(--oro-tinta)`; para texto sobre el tapete verde, darle fondo propio (como `.mazo-conteo`). Los avisos (`.toast-*`) llevan fondo oscuro con letra clara, nunca letra del mismo tono que el fondo. Las correcciones están en el bloque "CONTRASTE" al final de `style.css`.
 
+**Animaciones de la mesa** (sección "ANIMACIONES DE LA MESA" en `main.js` y bloque homónimo en `style.css`):
+- *Revelación con suspenso*: en `rondaTerminada` se guarda `_inicioRevelacion`; `estiloRevelar(id)` da a cada `.mini-carta-frente` un `--retraso-revelar` según `ordenRevelacion()` (el orden en que jugó, dealer al final, `PASO_REVELAR_MS` = 180) calculado contra el reloj, así un re-render no la reinicia. El daño (tu carta, sonido, `animarPerdidaVida`) y el borde rojo de las perdedoras esperan `duracionRevelacion()`. El resumen sale a `max(1400, fin + 1100)`.
+- *Cambios visibles*: `accionMesa` tipo `CAMBIO` → `animarCambioEntre(jugador, objetivo)` cruza dos reversos fantasma en arco (Web Animations API).
+- *Pérdida de vida*: `animarPerdidaVida()` parte un corazón sobre las vidas y, si quedó eliminado, pone el sello de calavera.
+- Todo se salta con `menosMovimiento()` (prefers-reduced-motion). El servidor da tiempo a verlo: `MS_PAUSA_BOT` (5 s) antes de que un dealer bot avance y `MS_PAUSA_VICTORIA` (4.5 s) antes de `finDelJuego`; si se alarga la revelación, ajustar esas pausas.
+
 **Idioma**: todo el texto visible en **español de México (tuteo)** — "tú"/"tienes"/"escanea", nunca voseo ("vos"/"tenés"/"escaneá"). Vocabulario: **"celular"** (no "móvil"), **"enlace"** (no "link"). Los identificadores de código preexistentes (`btnCopiarLink`, `linkDeSala`, clase `btn-copiar-link`) se mantienen.
 
 ### Convenciones de seguridad y robustez
