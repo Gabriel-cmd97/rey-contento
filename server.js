@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('./db');
 const bots = require('./bots');
+const practica = require('./practica');
 const { barajar, crearMazo, siguienteVivo, resolverCartas } = require('./reglas');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
@@ -193,6 +194,14 @@ function sanitizarConfig(raw) {
     const frecuenciaReyes = enLista(raw.frecuenciaReyes, ['NORMAL', 'ALTA', 'LOCURA'], 'NORMAL');
     const dificultadBots = enLista(raw.dificultadBots, bots.DIFICULTADES, 'NORMAL');
     const tiempoTurno   = enLista(Number.parseInt(raw.tiempoTurno, 10), TIEMPOS_TURNO, 10);
+
+    // Partida de práctica guiada: mesa fija contra 2 bots con guion
+    // (practica.js). Todo lo demás de la config se ignora.
+    if (raw.practica === true) {
+        return { vidas: 3, maxJugadores: 3, numBots: 2, modoJuego: 'CLASICO', modoRey: 'DECLARADO',
+                 frecuenciaReyes: 'NORMAL', dificultadBots: 'NORMAL', tiempoTurno: 60,
+                 practica: true, password: null };
+    }
 
     let password = null;
     if (typeof raw.password === 'string') {
@@ -405,6 +414,7 @@ app.get('/sala/:id', (req, res) => {
 // HELPERS DE STATS
 // ==========================================
 async function registrarFinPartida(sala, ganador) {
+    if (sala.config.practica) return; // la práctica no cuenta en las estadísticas
     const humanos = sala.jugadores.filter(j => !j.esBot);
     if (humanos.length === 0) return;
 
@@ -499,8 +509,14 @@ function resolverRonda(sala, io) {
     // REVELACION hasta que el sweeper la borraba). Si el dealer avanza antes,
     // el estado ya no es REVELACION y este timer no hace nada.
     const SEG_AUTO_SIGUIENTE_RONDA = 15;
-    if (!juegoTerminado) {
+    // La práctica termina al revelar la última ronda del guion: el cliente
+    // muestra el cierre y el jugador sale de la sala.
+    const finDePractica = sala.config.practica && sala.rondaActual >= practica.ULTIMA_RONDA;
+    if (!juegoTerminado && !finDePractica) {
         const dealerEsBot = sala.jugadores[sala.dealerIndex].esBot;
+        // En la práctica hay que dar tiempo a leer las explicaciones.
+        const pausaBot = sala.config.practica ? 9000 : MS_PAUSA_BOT;
+        const pausaHumano = sala.config.practica ? 60 : SEG_AUTO_SIGUIENTE_RONDA;
         const rondaResuelta = sala.rondaActual;
         setTimeout(() => {
             // rondaResuelta: si el dealer ya avanzó y otra ronda llegó a
@@ -512,7 +528,7 @@ function resolverRonda(sala, io) {
             if (!dealerEsBot) io.to(sala.idSala).emit('mensajeGlobal', '⏩ La siguiente ronda empezó automáticamente.');
             io.to(sala.idSala).emit('nuevaRondaIniciada', { jugadoresActualizados: jugadoresPublicos(sala) });
             iniciarRonda(sala, io);
-        }, dealerEsBot ? MS_PAUSA_BOT : SEG_AUTO_SIGUIENTE_RONDA * 1000);
+        }, dealerEsBot ? pausaBot : pausaHumano * 1000);
     }
 
     if (juegoTerminado) {
@@ -639,7 +655,9 @@ function gestionarTurnos(sala, io, esInicio = false) {
         }
 
         if (jugadorActual.esBot) {
-            const decision = bots.decidirBot(sala, jugadorActual, {
+            const decision = sala.config.practica
+                ? practica.decisionBot(sala, indiceActual)
+                : bots.decidirBot(sala, jugadorActual, {
                 esDealer: indiceActual === sala.dealerIndex,
                 derecha: jugadorDerecha,
                 derechaEsRinger: esCampana && sala.campanaTocada && jugadorDerecha.id === sala.campanaTocadorId,
@@ -723,8 +741,10 @@ function iniciarRonda(sala, io) {
 
     vivos.forEach(j => { j.cartaActual = sala.mazo.pop(); });
     bots.olvidarRonda(sala.jugadores);
+    // En la práctica las cartas vienen del guion (y no se reparte el Rey al azar).
+    const conGuion = sala.config.practica && practica.repartirGuion(sala);
 
-    let jugadoresConNueve = vivos.filter(j => j.cartaActual === 9);
+    let jugadoresConNueve = conGuion ? [] : vivos.filter(j => j.cartaActual === 9);
     jugadoresConNueve.forEach(suertudo => {
         let debeCambiar = suertudo.reyAnterior === true || suertudo.vecesRey > 0;
         if (debeCambiar) {
@@ -1093,6 +1113,12 @@ io.on('connection', (socket) => {
         let sala = estadoSalas[idSala];
         if (!sala) return;
         let idx = sala.jugadores.findIndex(j => j.nombre === nombreUsuarioLogueado);
+        if (idx !== -1 && sala.config.practica) {
+            // La práctica es solo tuya: al salir se borra la sala con sus timers.
+            socket.leave(idSala);
+            limpiarSala(idSala);
+            return;
+        }
         if (idx !== -1) {
             if (sala.estadoActual === "LOBBY") {
                 sala.jugadores.splice(idx, 1);
@@ -1256,7 +1282,7 @@ io.on('connection', (socket) => {
         let sala = estadoSalas[idSala];
         if (sala && sala.jugadores[0].nombre === nombreUsuarioLogueado) {
             sala.rondaActual = 0;
-            sala.dealerIndex = 0;
+            sala.dealerIndex = sala.config.practica ? practica.DEALER_INICIAL : 0;
             sala.mazo = crearMazo(sala.config);
             sala.descarte = [];
             iniciarRonda(sala, io);

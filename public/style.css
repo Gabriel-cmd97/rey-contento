@@ -2742,3 +2742,50 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
     box-shadow: 0 0 18px rgba(241,196,15,0.5), inset 0 0 18px rgba(241,196,15,0.35);
     transform: translate(-50%, -50%);
 }
+
+/* =========================================
+   PRÁCTICA GUIADA
+   ========================================= */
+.practica-lema {
+    margin: 6px 0 14px;
+    text-align: center;
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--texto-suave);
+}
+/* Globo sobre la mesa: pergamino con tinta café, por encima del resumen (250). */
+.coach-practica {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(92%, 420px);
+    z-index: 400;
+    background: linear-gradient(180deg, #f8efd9 0%, #efdfba 100%);
+    color: var(--texto);
+    border: 2px solid var(--oro-oscuro);
+    border-radius: 12px;
+    padding: 12px 14px 10px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.6);
+    font-family: Georgia, serif;
+    font-size: 13.5px;
+    line-height: 1.42;
+    text-align: left;
+}
+.coach-practica p { margin: 0 0 8px; }
+.coach-practica b, .coach-practica strong { color: #5a3e05; }
+.coach-acciones { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.coach-acciones .boton-oro { padding: 8px 16px; font-size: 13px; }
+.coach-salir {
+    margin-left: auto;
+    background: none;
+    border: none;
+    padding: 4px 0;
+    color: var(--texto);
+    opacity: 0.75;
+    font-family: Georgia, serif;
+    font-size: 12px;
+    text-decoration: underline;
+    cursor: pointer;
+}

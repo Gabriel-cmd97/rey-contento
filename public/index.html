@@ -127,6 +127,8 @@
 
             <!-- PANEL CREAR -->
             <section class="lobby-panel" id="panelConfiguracion">
+                <button id="btnPractica" class="boton-oro boton-lobby full-width"><svg class="icono" aria-hidden="true"><use href="#i-diana"/></svg> Aprender a jugar</button>
+                <p class="practica-lema">Partida de práctica guiada contra 2 bots · 3 rondas · no cuenta en tus estadísticas</p>
                 <p class="lobby-section-label">Reglas de la casa</p>
                 <div class="config-grid-nuevo">
                     <div class="config-item-nuevo">
@@ -307,6 +309,15 @@
 
                     <div id="bannerUltimaVuelta" class="hidden banner-ultima-vuelta"><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> ¡ÚLTIMA VUELTA!</div>
                     <div id="bannerObjetivo" class="hidden banner-objetivo"></div>
+
+                    <!-- Globo de la práctica guiada -->
+                    <div id="coachPractica" class="coach-practica hidden" role="status" aria-live="polite">
+                        <p id="coachTexto"></p>
+                        <div class="coach-acciones">
+                            <button id="coachBoton" class="boton-oro hidden"></button>
+                            <button id="coachSalir" class="coach-salir">Salir de la práctica</button>
+                        </div>
+                    </div>
 
                     <!-- Guía: flecha de tu carta hacia con quién cambiarías (o el mazo) -->
                     <svg id="flechaGuia" class="flecha-guia hidden" aria-hidden="true">

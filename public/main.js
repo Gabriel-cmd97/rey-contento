@@ -498,6 +498,7 @@ function escribirLS(clave, valor) { try { localStorage.setItem(clave, valor); } 
 function partidasConGuia() { return parseInt(leerLS('reyPartidasGuia') || '0', 10) || 0; }
 
 function guiasActivas() {
+    if (_practica) return true;
     const pref = leerLS('reyGuias');
     if (pref === 'on') return true;
     if (pref === 'off') return false;
@@ -625,7 +626,7 @@ function amagarCarta() {
 // Recordatorio del objetivo al empezar cada ronda.
 function mostrarObjetivoRonda() {
     const banner = document.getElementById('bannerObjetivo');
-    if (!banner || !guiasActivas()) return;
+    if (!banner || !guiasActivas() || _practica) return;
     banner.textContent = modoJuegoActual === 'CAMPANA'
         ? '🔔 Pierde la carta MÁS ALTA — quieres cartas bajas'
         : '⚔️ Pierde la carta MÁS BAJA — quieres cartas altas';
@@ -872,6 +873,94 @@ function animarPerdidaVida(jugador) {
 }
 
 // ==========================================
+// PRÁCTICA GUIADA
+// ==========================================
+// Partida de 3 rondas contra 2 bots con cartas preparadas (practica.js en el
+// servidor). Un globo sobre la mesa explica cada momento. Los textos suponen
+// ese guion: si cambias las cartas allá, revisa los textos aquí.
+let _practica = null; // { nombreA, nombreB, dichos: Set } mientras dura
+
+function empezarPractica() {
+    _practica = { nombreA: 'A', nombreB: 'B', dichos: new Set() };
+    socket.emit('crearSala', { configuracion: { practica: true } });
+}
+
+function mostrarCoach(html, { boton = null, alPulsar = null } = {}) {
+    const coach = document.getElementById('coachPractica');
+    if (!coach) return;
+    document.getElementById('coachTexto').innerHTML = html;
+    const b = document.getElementById('coachBoton');
+    b.classList.toggle('hidden', !boton);
+    if (boton) { b.textContent = boton; b.onclick = alPulsar; }
+    coach.classList.remove('hidden');
+    coach.animate?.([{ opacity: 0, transform: 'translate(-50%, -6px)' }, { opacity: 1, transform: 'translate(-50%, 0)' }],
+        { duration: menosMovimiento() ? 0 : 280, easing: 'ease-out' });
+}
+
+function terminarPractica() {
+    if (miSalaActual) socket.emit('abandonarSala', miSalaActual);
+    _practica = null;
+    escribirLS('reyPracticaHecha', '1');
+    document.getElementById('coachPractica')?.classList.add('hidden');
+    mostrarLobbyLimpio();
+    pintarBotonPractica();
+}
+
+function pintarBotonPractica() {
+    const b = document.getElementById('btnPractica');
+    if (!b) return;
+    // Para quien nunca la ha hecho, la práctica es la acción principal.
+    b.className = (leerLS('reyPracticaHecha') ? 'boton-madera' : 'boton-oro') + ' boton-lobby full-width';
+}
+
+// Un paso del guion solo se dice una vez.
+function decirUnaVez(clave, html, opciones) {
+    if (!_practica || _practica.dichos.has(clave)) return;
+    _practica.dichos.add(clave);
+    mostrarCoach(html, opciones);
+}
+
+function practicaEvento(tipo, datos) {
+    if (!_practica) return;
+    const A = `<strong>${escapeHTML(_practica.nombreA)}</strong>`;
+    const B = `<strong>${escapeHTML(_practica.nombreB)}</strong>`;
+    const ronda = parseInt(document.getElementById('numRonda')?.innerText || '0', 10);
+    const miCarta = document.getElementById('numeroCarta')?.innerText;
+
+    if (tipo === 'ronda') {
+        const js = datos.jugadores || [];
+        if (js[1]) _practica.nombreA = js[1].nombre;
+        if (js[2]) _practica.nombreB = js[2].nombre;
+        const A2 = `<strong>${escapeHTML(_practica.nombreA)}</strong>`;
+        if (datos.ronda === 2) decirUnaVez('r2', `Ronda 2. Ahora <b>tú eres el dealer</b> (la corona está en tu asiento): juegas al final.`);
+        if (datos.ronda === 3) decirUnaVez('r3', `Última ronda, en <b>modo declarado</b>: cuando alguien tiene al <b>Rey (el 9)</b>, todos lo ven. Esta vez lo tiene ${A2}.`);
+        return;
+    }
+    if (tipo === 'turno') {
+        const esMio = datos.id === socket.id;
+        if (ronda === 1 && esMio) decirUnaVez('r1-tu', `<b>¡Bienvenido a la práctica!</b> Cada jugador tiene una carta y al final de la ronda <b>pierde una vida quien tenga la más baja</b>.<br>Te tocó el <b>1, La Rata</b>: con ella casi seguro pierdes. Cámbiala con ${A}, tu vecino de la derecha: <b>desliza tu carta a la derecha</b> o toca <b>CAMBIAR</b>.`);
+        if (ronda === 1 && datos.nombre === _practica.nombreA) decirUnaVez('r1-a', miCarta === '7'
+            ? `¡Bien! Ahora tienes el <b>7</b> de ${A} y él se quedó con tu 1. Mira qué hace con esa carta…`
+            : `Te quedaste con el 1. Mira qué hacen los demás…`);
+        if (ronda === 1 && datos.nombre === _practica.nombreB) decirUnaVez('r1-b', `${A} le pasó el 1 a ${B}. Ahora ${B} es el <b>dealer</b> (la corona): juega al final y, si cambia, no cambia con nadie: <b>roba del mazo</b>.`);
+        if (ronda === 2 && esMio) decirUnaVez('r2-tu', `Tienes un <b>2</b>, muy baja. Como eres el dealer, si cambias <b>robas del mazo</b>: desliza tu carta a la derecha o toca <b>CAMBIAR</b>. (Para quedarte con tu carta, la tocarías dos veces.)`);
+        return;
+    }
+    if (tipo === 'saltado' && datos === socket.id && ronda === 3) {
+        decirUnaVez('r3-salto', `${A}, a tu derecha, tiene al Rey: <b>nadie puede quitárselo</b>, así que tu turno se salta solo. En modo sorpresa no lo sabrías hasta chocar con él.`);
+        return;
+    }
+    if (tipo === 'fin') {
+        const perdedores = datos.jugadores.filter(j => datos.perdedores.includes(j.id)).map(j => `<strong>${escapeHTML(j.nombre)}</strong>`).join(' y ') || 'nadie';
+        if (ronda === 1) decirUnaVez('f1', `Se voltean todas las cartas. La más baja fue el <b>${datos.cartaMortal}</b>: ${perdedores} pierde una vida. ¿Viste? Tu 1 pasó de mano en mano. La siguiente ronda empieza sola.`);
+        if (ronda === 2) decirUnaVez('f2', (miCarta === '7' ? `Robaste un <b>7</b> del mazo y te salvaste. ` : `La más baja fue el <b>${datos.cartaMortal}</b>. `)
+            + `Como eres el dealer, <b>tú decides cuándo seguir</b>: toca <b>SIGUIENTE RONDA</b>.`);
+        if (ronda >= 3) decirUnaVez('f3', `<b>¡Ya sabes jugar!</b> Pierde la carta más baja · cambias con quien está a tu derecha · el dealer roba del mazo · al Rey no se le quita la carta. Para mantener tu carta, tócala dos veces. El modo campana está explicado en <b>¿Cómo se juega?</b>`,
+            { boton: 'Terminar práctica', alPulsar: terminarPractica });
+    }
+}
+
+// ==========================================
 // PANTALLA DE VICTORIA — tabla final
 // ==========================================
 // El servidor solo manda al ganador, así que el orden de caída se anota aquí
@@ -1074,6 +1163,7 @@ function mostrarLobbyLimpio() {
     ocultarResumenRonda();
     ocultarVistaQR();
     ocultarGuiaTurno();
+    document.getElementById('coachPractica')?.classList.add('hidden');
 }
 
 function resetEstadoSala() {
@@ -1235,6 +1325,13 @@ if (btnSonido) {
         if (activo) Sonidos.pop();
     };
 }
+
+const btnPractica = document.getElementById('btnPractica');
+if (btnPractica) {
+    pintarBotonPractica();
+    btnPractica.onclick = () => { if (socket?.connected) empezarPractica(); };
+}
+document.getElementById('coachSalir')?.addEventListener('click', terminarPractica);
 
 const btnGuias = document.getElementById('btnToggleGuias');
 if (btnGuias) {
@@ -1986,6 +2083,7 @@ function conectarSocket() {
 
     socket.on('salaCreada', (id) => {
         miSalaActual = id; soyElHost = true;
+        if (_practica) { socket.emit('iniciarPartida', id); }
         document.getElementById('mostrarCodigo').classList.remove('hidden');
         document.getElementById('codigoDisplay').innerText = id;
         document.getElementById('btnEmpezar').classList.remove('hidden');
@@ -2132,6 +2230,7 @@ function conectarSocket() {
     });
 
     socket.on('datosMesa', (datos) => {
+        setTimeout(() => practicaEvento('ronda', datos), 0);
         // Revelar la mesa ANTES de dibujar/repartir. En la ronda 1, datosMesa
         // llega antes que tuCarta (que es quien normalmente saca el lobby), así
         // que sin esto la mesa sigue oculta: #mazoFlotante y los asientos tienen
@@ -2270,6 +2369,7 @@ function conectarSocket() {
 
     // --- TURNOS ---
     socket.on('juegoIniciado', (datosTurno) => {
+        setTimeout(() => practicaEvento('turno', datosTurno), 900);
         const gen = ++_renderGen;
         if (datosTurno.modoJuego) modoJuegoActual = datosTurno.modoJuego;
         mostrarObjetivoRonda();
@@ -2342,6 +2442,7 @@ function conectarSocket() {
     });
 
     socket.on('cambioDeTurno', (datosTurno) => {
+        setTimeout(() => practicaEvento('turno', datosTurno), 300);
         ++_renderGen; // invalidar cadenas de juegoIniciado/tuCarta en vuelo
         if (datosTurno.modoJuego) modoJuegoActual = datosTurno.modoJuego;
         if (datosTurno.jugadores) listaJugadoresGlobal = datosTurno.jugadores;
@@ -2484,6 +2585,7 @@ function conectarSocket() {
     });
 
     socket.on('turnoSaltadoVisual', (idJugador) => {
+        practicaEvento('saltado', idJugador);
         ++_renderGen;
         turnoActualId = idJugador;
         dibujarMesaCircular();
@@ -2493,6 +2595,7 @@ function conectarSocket() {
 
     // --- FIN DE RONDA ---
     socket.on('rondaTerminada', (datos) => {
+        setTimeout(() => practicaEvento('fin', datos), 1600);
         ocultarGuiaTurno();
         registrarCaidas(datos);
         const gen = ++_renderGen;
