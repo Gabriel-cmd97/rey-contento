@@ -23,10 +23,47 @@
     <script src="/socket.io/socket.io.min.js"></script>
 </head>
 <body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+    <symbol id="i-corona" viewBox="0 0 24 24"><path d="M3 19h18M4.5 16 3 7l5 4 4-6 4 6 5-4-1.5 9z"/></symbol>
+    <symbol id="i-espadas" viewBox="0 0 24 24"><path d="M4 4l11 11M14 18l4-4M17 17l3 3M20 4 9 15M6 14l4 4M7 17l-3 3"/></symbol>
+    <symbol id="i-foco" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3z"/></symbol>
+    <symbol id="i-altavoz" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></symbol>
+    <symbol id="i-silencio" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM17 9.5l5 5M22 9.5l-5 5"/></symbol>
+    <symbol id="i-persona" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-puerta" viewBox="0 0 24 24"><path d="M3 21h18M6 21V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17M14.5 12h.01"/></symbol>
+    <symbol id="i-naipe" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12 8l2.5 4-2.5 4-2.5-4z"/></symbol>
+    <symbol id="i-llama" viewBox="0 0 24 24"><path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-5 1-8.5z"/></symbol>
+    <symbol id="i-corazon" viewBox="0 0 24 24"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/></symbol>
+    <symbol id="i-corazon-roto" viewBox="0 0 24 24"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10zM12 7.4 10.5 11l3 2-1.5 3"/></symbol>
+    <symbol id="i-calavera" viewBox="0 0 24 24"><path d="M12 3a8 8 0 0 0-5 14.2V20h10v-2.8A8 8 0 0 0 12 3zM10 20v-2M14 20v-2"/><circle cx="9" cy="11" r="1.6"/><circle cx="15" cy="11" r="1.6"/></symbol>
+    <symbol id="i-grupo" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6"/></symbol>
+    <symbol id="i-bot" viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 5v3M9 13h.01M15 13h.01M9.5 16h5M3 12v3M21 12v3"/><circle cx="12" cy="4" r="1"/></symbol>
+    <symbol id="i-reloj" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 3h6"/></symbol>
+    <symbol id="i-nivel" viewBox="0 0 24 24"><path d="M5 20v-4M12 20v-9M19 20V5"/></symbol>
+    <symbol id="i-campana" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></symbol>
+    <symbol id="i-candado" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-libro" viewBox="0 0 24 24"><path d="M4 19V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2 2 2 0 0 0 2 2h13v-2"/></symbol>
+    <symbol id="i-sobre" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+    <symbol id="i-enlace" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+    <symbol id="i-celular" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+    <symbol id="i-ajustes" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+    <symbol id="i-cerrar" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-flecha" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-ojo" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-pergamino" viewBox="0 0 24 24"><path d="M8 3h10a2 2 0 0 1 2 2v2h-4M8 3a2 2 0 0 0-2 2v12a3 3 0 0 1-3 3h11a3 3 0 0 0 3-3V5M10 9h4M10 13h4"/></symbol>
+    <symbol id="i-trofeo" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4v4"/></symbol>
+    <symbol id="i-rayo" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+    <symbol id="i-diana" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+    <symbol id="i-mano" viewBox="0 0 24 24"><path d="M8 13V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v8a7 7 0 0 1-7 7 5 5 0 0 1-4.5-3L4 15a1.5 1.5 0 0 1 2.6-1.5L8 15.5"/></symbol>
+    <symbol id="i-cambio" viewBox="0 0 24 24"><path d="M4 9h14l-3.5-3.5M20 15H6l3.5 3.5"/></symbol>
+    <symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+    <symbol id="i-mascara" viewBox="0 0 24 24"><path d="M3 6c3 1.5 15 1.5 18 0 0 8-4 13-9 13S3 14 3 6zM7.5 10.5h2.5M14 10.5h2.5M9.5 15a3.5 3.5 0 0 0 5 0"/></symbol>
+</svg>
 
     <!-- ==================== LOGIN ==================== -->
     <div id="seccion-inicio" class="seccion-inicio-layout">
-        <h1 class="medieval-font titulo-inicio">👑 REY CONTENTO</h1>
+        <h1 class="medieval-font titulo-inicio"><svg class="icono" aria-hidden="true"><use href="#i-corona"/></svg> REY CONTENTO</h1>
 
         <div id="pantallaAuth" class="contenedor-login text-centrado">
             <h2 class="medieval-font titulo-auth">Ingresa a la Corte</h2>
@@ -39,16 +76,16 @@
         </div>
 
         <div id="contenedorLeaderboard" class="panel-salon-fama">
-            <h3 class="medieval-font text-centrado" style="color:var(--oro); margin-top:0;">🏆 Salón de la Fama</h3>
+            <h3 class="medieval-font text-centrado" style="color:var(--oro); margin-top:0;"><svg class="icono" aria-hidden="true"><use href="#i-trofeo"/></svg> Salón de la Fama</h3>
             <table class="tabla-medieval">
                 <thead>
                     <tr>
                         <th class="th-pos">#</th>
                         <th class="text-izq">Jugador</th>
-                        <th class="th-stat" title="Victorias">👑</th>
-                        <th class="th-stat" title="Partidas jugadas">🎮</th>
+                        <th class="th-stat" title="Victorias"><svg class="icono" aria-hidden="true"><use href="#i-corona"/></svg> </th>
+                        <th class="th-stat" title="Partidas jugadas"><svg class="icono" aria-hidden="true"><use href="#i-naipe"/></svg> </th>
                         <th class="th-stat" title="Winrate">%</th>
-                        <th class="th-stat" title="Racha máxima">⚡</th>
+                        <th class="th-stat" title="Racha máxima"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> </th>
                     </tr>
                 </thead>
                 <tbody id="cuerpoLeaderboard"></tbody>
@@ -61,14 +98,14 @@
 
         <!-- Barra superior -->
         <header id="barraSuperior" class="barra-top-juego">
-            <div class="barra-top-item hidden" id="infoRonda">⚔️ RND:<span id="numRonda">1</span></div>
-            <div class="barra-top-item hidden" id="infoDealer">👑 DEALER:<span id="nombreDealer">...</span></div>
+            <div class="barra-top-item hidden" id="infoRonda"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> RND:<span id="numRonda">1</span></div>
+            <div class="barra-top-item hidden" id="infoDealer"><svg class="icono" aria-hidden="true"><use href="#i-corona"/></svg> DEALER:<span id="nombreDealer">...</span></div>
             <div class="barra-top-item hidden" id="infoModo"></div>
             <div class="barra-top-item" style="gap:8px;">
-                <button id="btnToggleGuias" class="btn-sonido-top" title="Guías">💡</button>
-                <button id="btnToggleSonido" class="btn-sonido-top" title="Silenciar / Activar sonido">🔊</button>
-                <button id="btnMiPerfil" class="btn-perfil-top" title="Mi perfil">👤 <span id="displayUsername">...</span></button>
-                <span style="color:var(--verde)">🟢</span>
+                <button id="btnToggleGuias" class="btn-sonido-top" title="Guías"><svg class="icono" aria-hidden="true"><use href="#i-foco"/></svg> </button>
+                <button id="btnToggleSonido" class="btn-sonido-top" title="Silenciar / Activar sonido"><svg class="icono" aria-hidden="true"><use href="#i-altavoz"/></svg> </button>
+                <button id="btnMiPerfil" class="btn-perfil-top" title="Mi perfil"><svg class="icono" aria-hidden="true"><use href="#i-persona"/></svg> <span id="displayUsername">...</span></button>
+                <span class="punto-en-linea" title="En línea"></span>
             </div>
         </header>
 
@@ -84,8 +121,8 @@
 
             <!-- TABS -->
             <div class="lobby-tabs" id="lobbyTabs">
-                <button class="lobby-tab active" id="tabCrear" onclick="switchTab('crear')">⚔️ CREAR</button>
-                <button class="lobby-tab" id="tabUnirse" onclick="switchTab('unirse')">🚪 UNIRSE</button>
+                <button class="lobby-tab active" id="tabCrear" onclick="switchTab('crear')"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> CREAR</button>
+                <button class="lobby-tab" id="tabUnirse" onclick="switchTab('unirse')"><svg class="icono" aria-hidden="true"><use href="#i-puerta"/></svg> UNIRSE</button>
             </div>
 
             <!-- PANEL CREAR -->
@@ -93,14 +130,14 @@
                 <p class="lobby-section-label">Reglas de la casa</p>
                 <div class="config-grid-nuevo">
                     <div class="config-item-nuevo">
-                        <span class="config-label-nuevo">🃏 Modo Rey</span>
+                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-naipe"/></svg> Modo Rey</span>
                         <select id="selectModo" class="selector-medieval selector-compacto">
                             <option value="SORPRESA">Sorpresa</option>
                             <option value="DECLARADO">Declarado</option>
                         </select>
                     </div>
                     <div class="config-item-nuevo">
-                        <span class="config-label-nuevo">🔥 Reyes</span>
+                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-llama"/></svg> Reyes</span>
                         <select id="selectReyes" class="selector-medieval selector-compacto">
                             <option value="NORMAL">Normal</option>
                             <option value="ALTA">Alta</option>
@@ -108,7 +145,7 @@
                         </select>
                     </div>
                     <div class="config-item-nuevo">
-                        <span class="config-label-nuevo">♥️ Vidas</span>
+                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-corazon"/></svg> Vidas</span>
                         <select id="selectVidas" class="selector-medieval selector-compacto">
                             <option value="1">1 vida</option>
                             <option value="3" selected>3 vidas</option>
@@ -116,7 +153,7 @@
                         </select>
                     </div>
                     <div class="config-item-nuevo">
-                        <span class="config-label-nuevo">👥 Jugadores</span>
+                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-grupo"/></svg> Jugadores</span>
                         <select id="selectJugadores" class="selector-medieval selector-compacto">
                             <option value="2">2 máx</option>
                             <option value="3">3 máx</option>
@@ -128,7 +165,7 @@
                         </select>
                     </div>
                     <div class="config-item-nuevo config-full">
-                        <span class="config-label-nuevo">🤖 Bots de relleno</span>
+                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-bot"/></svg> Bots de relleno</span>
                         <select id="selectBots" class="selector-medieval selector-compacto">
                             <option value="0" selected>Sin bots</option>
                             <option value="1">1 Bot</option>
@@ -141,7 +178,7 @@
                         </select>
                     </div>
                     <div class="config-item-nuevo config-full">
-                        <span class="config-label-nuevo">⏱️ Tiempo por turno</span>
+                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-reloj"/></svg> Tiempo por turno</span>
                         <select id="selectTiempoTurno" class="selector-medieval selector-compacto">
                             <option value="7">7 s · Rápido</option>
                             <option value="10" selected>10 s · Normal</option>
@@ -150,7 +187,7 @@
                         </select>
                     </div>
                     <div class="config-item-nuevo config-full hidden" id="bloqueDificultadBots">
-                        <span class="config-label-nuevo">🧠 Dificultad de los bots</span>
+                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-nivel"/></svg> Dificultad de los bots</span>
                         <select id="selectDificultadBots" class="selector-medieval selector-compacto">
                             <option value="FACIL">Fácil</option>
                             <option value="NORMAL" selected>Normal</option>
@@ -158,20 +195,20 @@
                         </select>
                     </div>
                     <div class="config-item-nuevo config-full">
-                        <span class="config-label-nuevo">🔔 Modo de juego</span>
+                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> Modo de juego</span>
                         <select id="selectModoJuego" class="selector-medieval selector-compacto">
                             <option value="CLASICO">Clásico</option>
-                            <option value="CAMPANA">Campana 🔔</option>
+                            <option value="CAMPANA">Campana</option>
                         </select>
                     </div>
                     <div class="config-item-nuevo config-full">
-                        <span class="config-label-nuevo">🔐 Contraseña de sala (opcional)</span>
+                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-candado"/></svg> Contraseña de sala (opcional)</span>
                         <input type="text" id="inputPasswordSala" class="selector-compacto" placeholder="Sin contraseña = sala abierta" maxlength="20" autocomplete="off">
                     </div>
                 </div>
                 <div class="lobby-sticky-bottom">
                     <button id="btnCrearSala" class="boton-oro boton-lobby full-width" disabled>CREAR PARTIDA</button>
-                    <button id="btnVerReglas" class="boton-lobby-ghost full-width margin-top-10">📖 ¿Cómo se juega?</button>
+                    <button id="btnVerReglas" class="boton-lobby-ghost full-width margin-top-10"><svg class="icono" aria-hidden="true"><use href="#i-libro"/></svg> ¿Cómo se juega?</button>
                 </div>
             </section>
 
@@ -180,7 +217,7 @@
                 <p class="lobby-section-label">Ingresa el código de sala</p>
                 <input type="text" id="inputCodigo" class="codigo-input-nuevo" placeholder="XXXXX" maxlength="5">
                 <div id="bloquePasswordUnirse" class="hidden" style="margin-top:10px;">
-                    <p class="lobby-section-label" style="margin-top:8px;">🔐 Esta sala requiere contraseña</p>
+                    <p class="lobby-section-label" style="margin-top:8px;"><svg class="icono" aria-hidden="true"><use href="#i-candado"/></svg> Esta sala requiere contraseña</p>
                     <input type="password" id="inputPasswordUnirse" class="codigo-input-nuevo" placeholder="Contraseña" maxlength="20" autocomplete="off" style="font-size:18px;letter-spacing:3px;">
                 </div>
                 <div class="lobby-sticky-bottom" style="margin-top: 20px;">
@@ -194,21 +231,21 @@
 
                 <!-- Código de sala arriba siempre visible -->
                 <div id="mostrarCodigo" class="sala-code-bar hidden" style="flex-direction:column; align-items:stretch; gap:8px;">
-                    <p class="lobby-section-label" style="margin:0;">📨 Compartir sala — invita con el enlace o el QR</p>
+                    <p class="lobby-section-label" style="margin:0;"><svg class="icono" aria-hidden="true"><use href="#i-sobre"/></svg> Compartir sala — invita con el enlace o el QR</p>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div>
                             <div class="sala-code-sublabel">Código de sala</div>
                             <div id="codigoDisplay" class="sala-code-display">...</div>
                         </div>
                         <div style="display:flex; gap:6px;">
-                            <button id="btnCopiarLink" class="btn-copiar-link">🔗 ENLACE</button>
-                            <button id="btnMostrarQR" class="btn-copiar-link">📱 QR</button>
+                            <button id="btnCopiarLink" class="btn-copiar-link"><svg class="icono" aria-hidden="true"><use href="#i-enlace"/></svg> ENLACE</button>
+                            <button id="btnMostrarQR" class="btn-copiar-link"><svg class="icono" aria-hidden="true"><use href="#i-celular"/></svg> QR</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Resumen config -->
-                <div id="resumenConfig" class="config-resumen-pill">⚙️ Cargando...</div>
+                <div id="resumenConfig" class="config-resumen-pill"><svg class="icono" aria-hidden="true"><use href="#i-ajustes"/></svg> Cargando...</div>
 
                 <!-- Lista de jugadores -->
                 <p class="lobby-section-label" style="margin-top:12px;">Jugadores en sala</p>
@@ -220,7 +257,7 @@
                 <!-- Botones siempre visibles -->
                 <div class="lobby-sticky-bottom" style="margin-top:12px;">
                     <button id="btnEmpezar" class="boton-oro boton-lobby full-width hidden">¡EMPEZAR JUEGO!</button>
-                    <button id="btnSalirLobby" class="boton-lobby-ghost full-width margin-top-10">❌ Cancelar / Salir</button>
+                    <button id="btnSalirLobby" class="boton-lobby-ghost full-width margin-top-10"><svg class="icono" aria-hidden="true"><use href="#i-cerrar"/></svg> Cancelar / Salir</button>
                 </div>
             </section>
 
@@ -234,10 +271,10 @@
                     <!-- Overlay resumen de ronda -->
                     <div id="panelResumenRonda" class="panel-resumen-overlay hidden">
                         <div class="resumen-box">
-                            <div class="resumen-header">⚔️ FIN DE RONDA — Carta mortal: <span id="resumenCartaMortal" class="resumen-mortal-num">—</span></div>
+                            <div class="resumen-header"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> FIN DE RONDA — Carta mortal: <span id="resumenCartaMortal" class="resumen-mortal-num">—</span></div>
                             <div id="resumenExplicacion" class="resumen-explicacion hidden"></div>
                             <div id="resumenCartas" class="resumen-cartas-grid"></div>
-                            <button id="btnSiguienteRondaResumen" class="boton-medieval btn-latido hidden">SIGUIENTE RONDA ➡️</button>
+                            <button id="btnSiguienteRondaResumen" class="boton-medieval btn-latido hidden">SIGUIENTE RONDA <svg class="icono" aria-hidden="true"><use href="#i-flecha"/></svg> </button>
                         </div>
                     </div>
 
@@ -265,10 +302,10 @@
 
                     <div id="miPerfil" class="mi-perfil-esquina">
                         <div class="mi-nombre-chico"><span id="miNombreMesa">Tú</span></div>
-                        <span id="misVidasMesa" class="vidas-chicas">♥️ 3</span>
+                        <span id="misVidasMesa" class="vidas-chicas"><svg class="icono" aria-hidden="true"><use href="#i-corazon"/></svg> 3</span>
                     </div>
 
-                    <div id="bannerUltimaVuelta" class="hidden banner-ultima-vuelta">🔔 ¡ÚLTIMA VUELTA!</div>
+                    <div id="bannerUltimaVuelta" class="hidden banner-ultima-vuelta"><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> ¡ÚLTIMA VUELTA!</div>
                     <div id="bannerObjetivo" class="hidden banner-objetivo"></div>
 
                     <!-- Guía: flecha de tu carta hacia con quién cambiarías (o el mazo) -->
@@ -282,7 +319,7 @@
                     </svg>
 
                     <div id="bannerEspectador" class="hidden" style="position:absolute; top:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); border:2px solid #7f8c8d; border-radius:20px; padding:6px 20px; z-index:100; color:#bdc3c7; font-size:13px; font-weight:bold; letter-spacing:1px;">
-                        👁️ MODO ESPECTADOR
+                        <svg class="icono" aria-hidden="true"><use href="#i-ojo"/></svg> MODO ESPECTADOR
                     </div>
 
                     <div id="toastContainer"></div>
@@ -301,10 +338,10 @@
                         <!-- Mini-feed / Bitácora rápida de jugadas -->
                         <div id="miniFeedJugadas" class="mini-feed-hud hidden" title="Toca para ver la crónica completa">
                             <div id="miniFeedItems" class="mini-feed-items"></div>
-                            <div class="mini-feed-hint"><span>📜 BITÁCORA</span> <span id="miniFeedContador"></span></div>
+                            <div class="mini-feed-hint"><span><svg class="icono" aria-hidden="true"><use href="#i-pergamino"/></svg> BITÁCORA</span> <span id="miniFeedContador"></span></div>
                         </div>
 
-                        <button id="btnSiguienteRonda" class="boton-medieval btn-latido hidden" style="display:none;">SIGUIENTE ➡️</button>
+                        <button id="btnSiguienteRonda" class="boton-medieval btn-latido hidden" style="display:none;">SIGUIENTE <svg class="icono" aria-hidden="true"><use href="#i-flecha"/></svg> </button>
 
                         <div id="pilaCentro" class="hidden">
                             <div id="cartasPila" class="pila-cartas-stack"></div>
@@ -342,7 +379,7 @@
             <div id="guiaAcciones" class="guia-acciones hidden"></div>
             <div class="acciones-row">
                 <button id="btnMantener" class="boton-medieval full-width" data-tecla="M" disabled>MANTENER</button>
-                <button id="btnCampana" class="boton-campana hidden" data-tecla="B" disabled>🔔</button>
+                <button id="btnCampana" class="boton-campana hidden" data-tecla="B" disabled><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> </button>
                 <button id="btnCambiar"  class="boton-medieval full-width" data-tecla="C" disabled>CAMBIAR</button>
             </div>
         </footer>
@@ -357,7 +394,7 @@
                 <p id="victoriaMiLugar" class="victoria-mi-lugar hidden"></p>
                 <ol id="tablaFinal" class="tabla-final"></ol>
                 <div class="victoria-acciones">
-                    <button id="btnRevancha" class="boton-oro btn-revancha">⚔️ ¡Revancha!</button>
+                    <button id="btnRevancha" class="boton-oro btn-revancha"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> ¡Revancha!</button>
                     <div id="contadorRevancha" class="victoria-contador">Esperando jugadores...</div>
                     <button id="btnVolverLobby" class="boton-madera btn-volver-corte">Volver a la Corte</button>
                 </div>
@@ -369,13 +406,13 @@
     <!-- Modal Perfil Personal -->
     <div id="modalPerfil" class="hidden modal-overlay">
         <div class="modal-caja">
-            <h3 class="medieval-font" style="color:var(--oro);margin:0 0 16px;text-align:center;font-size:20px;">⚔️ Mi Perfil</h3>
+            <h3 class="medieval-font" style="color:var(--oro);margin:0 0 16px;text-align:center;font-size:20px;"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> Mi Perfil</h3>
             <div id="contenidoPerfil" class="perfil-stats-grid">
                 <div class="perfil-stat-item"><span class="perfil-stat-val" id="pVictorias">—</span><span class="perfil-stat-label">Victorias</span></div>
                 <div class="perfil-stat-item"><span class="perfil-stat-val" id="pPartidas">—</span><span class="perfil-stat-label">Partidas</span></div>
                 <div class="perfil-stat-item"><span class="perfil-stat-val" id="pWinrate">—</span><span class="perfil-stat-label">Winrate</span></div>
                 <div class="perfil-stat-item"><span class="perfil-stat-val" id="pRachaActual">—</span><span class="perfil-stat-label">Racha actual</span></div>
-                <div class="perfil-stat-item perfil-stat-full"><span class="perfil-stat-val" id="pRachaMax">—</span><span class="perfil-stat-label">⚡ Racha máxima</span></div>
+                <div class="perfil-stat-item perfil-stat-full"><span class="perfil-stat-val" id="pRachaMax">—</span><span class="perfil-stat-label"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Racha máxima</span></div>
             </div>
             <button id="btnCerrarPerfil" class="boton-medieval-rojo full-width" style="margin-top:16px;font-size:14px;padding:10px;">Cerrar</button>
         </div>
@@ -384,7 +421,7 @@
     <!-- Modal Contraseña (unirse vía link a sala protegida) -->
     <div id="modalPasswordSala" class="hidden modal-overlay">
         <div class="modal-caja">
-            <h3 class="medieval-font" style="color:var(--oro);margin:0 0 12px;text-align:center;">🔐 Sala protegida</h3>
+            <h3 class="medieval-font" style="color:var(--oro);margin:0 0 12px;text-align:center;"><svg class="icono" aria-hidden="true"><use href="#i-candado"/></svg> Sala protegida</h3>
             <p style="text-align:center;font-size:13px;color:rgba(255,255,255,0.6);margin:0 0 14px;">Esta sala requiere contraseña para entrar.</p>
             <input type="password" id="inputPasswordModal" class="medieval-input" placeholder="Contraseña" maxlength="20" autocomplete="off">
             <div style="display:flex;gap:10px;margin-top:14px;">
@@ -398,7 +435,7 @@
     <div id="modalBitacora" class="hidden modal-overlay">
         <div class="modal-caja" style="max-width:390px; max-height:85vh; display:flex; flex-direction:column;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h3 class="medieval-font" style="color:var(--oro); margin:0; font-size:18px;">📜 Bitácora de la Mesa</h3>
+                <h3 class="medieval-font" style="color:var(--oro); margin:0; font-size:18px;"><svg class="icono" aria-hidden="true"><use href="#i-pergamino"/></svg> Bitácora de la Mesa</h3>
                 <span id="bitacoraRondaBadge" style="font-size:11px; background:rgba(241,196,15,0.15); color:var(--oro); padding:2px 8px; border-radius:10px; border:1px solid rgba(241,196,15,0.3);">Ronda 1</span>
             </div>
             <p style="text-align:center;font-size:11px;color:rgba(255,255,255,0.6);margin:0 0 10px;">Registro en vivo de los movimientos de la ronda</p>
@@ -412,29 +449,29 @@
     <!-- Modal Reglas -->
     <div id="modalReglas" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;overflow-y:auto;-webkit-overflow-scrolling:touch;transform:translateZ(0);padding:20px;">
         <div style="max-width:600px;margin:0 auto;background:var(--pergamino);color:#2c3e50;border-radius:15px;border:4px solid var(--oro-oscuro);padding:30px;">
-            <h2 class="medieval-font" style="color:var(--rojo-rey);text-align:center;font-size:28px;margin-top:0;">👑 REY CONTENTO</h2>
+            <h2 class="medieval-font" style="color:var(--rojo-rey);text-align:center;font-size:28px;margin-top:0;"><svg class="icono" aria-hidden="true"><use href="#i-corona"/></svg> REY CONTENTO</h2>
 
-            <h3 class="medieval-font" style="color:var(--oro-oscuro);">🎯 Objetivo</h3>
-            <p>Ser el último jugador con vida. Al final de cada ronda, quien tenga la carta más baja pierde una ♥️. Sin vidas, quedas eliminado.</p>
+            <h3 class="medieval-font" style="color:var(--oro-oscuro);"><svg class="icono" aria-hidden="true"><use href="#i-diana"/></svg> Objetivo</h3>
+            <p>Ser el último jugador con vida. Al final de cada ronda, quien tenga la carta más baja pierde una <svg class="icono" aria-hidden="true"><use href="#i-corazon"/></svg> . Sin vidas, quedas eliminado.</p>
 
-            <p>💡 <strong>Guías:</strong> en tus primeras partidas una flecha te señala con quién cambiarías, abajo de los botones ves qué hace cada uno y al final de la ronda te explicamos por qué perdiste o te salvaste. Préndelas o apágalas con el botón 💡 de arriba.</p>
-            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;">🃏 Las Cartas</h3>
+            <p><svg class="icono" aria-hidden="true"><use href="#i-foco"/></svg> <strong>Guías:</strong> en tus primeras partidas una flecha te señala con quién cambiarías, abajo de los botones ves qué hace cada uno y al final de la ronda te explicamos por qué perdiste o te salvaste. Préndelas o apágalas con el botón <svg class="icono" aria-hidden="true"><use href="#i-foco"/></svg> de arriba.</p>
+            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-naipe"/></svg> Las Cartas</h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:13px;margin-bottom:10px;">
-                <span>0 🧦 El Mendigo</span><span>5 🪓 El Verdugo</span>
-                <span>1 🐀 La Rata</span><span>6 💃 La Duquesa</span>
-                <span>2 🧑‍🌾 El Campesino</span><span>7 🧙‍♂️ El Mago</span>
-                <span>3 🪕 El Trovador</span><span>8 ⚔️ El General</span>
-                <span>4 🛡️ El Guardia</span><span>9 👑 El Rey Contento</span>
+                <span>0 <img src="/iconos/0.svg" alt="" class="icono-carta-regla"> El Mendigo</span><span>5 <img src="/iconos/5.svg" alt="" class="icono-carta-regla"> El Verdugo</span>
+                <span>1 <img src="/iconos/1.svg" alt="" class="icono-carta-regla"> La Rata</span><span>6 <img src="/iconos/6.svg" alt="" class="icono-carta-regla"> La Duquesa</span>
+                <span>2 <img src="/iconos/2.svg" alt="" class="icono-carta-regla"> El Campesino</span><span>7 <img src="/iconos/7.svg" alt="" class="icono-carta-regla"> El Mago</span>
+                <span>3 <img src="/iconos/3.svg" alt="" class="icono-carta-regla"> El Trovador</span><span>8 <img src="/iconos/8.svg" alt="" class="icono-carta-regla"> El General</span>
+                <span>4 <img src="/iconos/4.svg" alt="" class="icono-carta-regla"> El Guardia</span><span>9 <img src="/iconos/9.svg" alt="" class="icono-carta-regla"> El Rey Contento</span>
             </div>
 
-            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;">⚔️ Tu Turno</h3>
+            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> Tu Turno</h3>
             <p>Tienes un tiempo límite por turno (10 segundos por defecto; quien crea la sala puede elegir entre 7 y 20) para elegir:</p>
             <ul style="margin:8px 0 0 20px;line-height:1.8;">
-                <li><strong>✋ MANTENER</strong> — Te quedas con tu carta.</li>
-                <li><strong>🔄 CAMBIAR</strong> — Fuerzas al jugador de tu derecha a intercambiar.</li>
+                <li><strong><svg class="icono" aria-hidden="true"><use href="#i-mano"/></svg> MANTENER</strong> — Te quedas con tu carta.</li>
+                <li><strong><svg class="icono" aria-hidden="true"><use href="#i-cambio"/></svg> CAMBIAR</strong> — Fuerzas al jugador de tu derecha a intercambiar.</li>
             </ul>
 
-            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;">🛡️ Reglas Especiales</h3>
+            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-escudo"/></svg> Reglas Especiales</h3>
             <ul style="margin:8px 0 0 20px;line-height:1.8;">
                 <li><strong>Bloqueo del Rey:</strong> Si el jugador de tu derecha tiene el 9, tu intercambio falla y mantienes tu carta.</li>
                 <li><strong>El Dealer:</strong> El último en jugar. Si elige CAMBIAR, roba del mazo central en lugar de intercambiar.</li>
@@ -442,16 +479,16 @@
                 <li><strong>Empate total:</strong> Si <em>todos</em> tienen la misma carta, nadie pierde vida esa ronda.</li>
             </ul>
 
-            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;">⚙️ Modos del Rey</h3>
+            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-ajustes"/></svg> Modos del Rey</h3>
             <ul style="margin:8px 0 0 20px;line-height:1.8;">
                 <li><strong>Sorpresa:</strong> El Rey (9) está oculto. Solo lo sabe quien lo tiene.</li>
                 <li><strong>Declarado:</strong> Cuando alguien recibe el Rey, ¡toda la corte lo sabe! Su carta queda visible.</li>
             </ul>
 
-            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;">🔔 Modo Campana</h3>
+            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> Modo Campana</h3>
             <p style="margin-bottom:4px;"><strong>Regla invertida:</strong> aquí pierde quien tiene la carta <strong>más alta</strong>. ¡Quieres cartas pequeñas!</p>
             <ul style="margin:4px 0 0 20px;line-height:1.8;font-size:14px;">
-                <li>En tu turno aparece el botón <strong>🔔</strong> — úsalo cuando creas que tienes la carta más baja y quieras cerrar la ronda.</li>
+                <li>En tu turno aparece el botón <strong><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> </strong> — úsalo cuando creas que tienes la carta más baja y quieras cerrar la ronda.</li>
                 <li>Al tocarlo, aparece el banner <em>"¡ÚLTIMA VUELTA!"</em> y cada jugador recibe <strong>1 turno más</strong>, luego se revelan las cartas.</li>
                 <li>Si acertaste (no tenías la más alta) → sin penalización extra.</li>
                 <li>Si te equivocaste (tenías la más alta) → pierdes <strong>1 vida extra</strong> de castigo.</li>
@@ -459,17 +496,17 @@
                 <li>Si tras <strong>2 vueltas completas</strong> nadie toca la campana, el de la carta más alta pierde <strong>2 vidas</strong> (penalización por inacción). Si todos tienen la misma carta, nadie pierde.</li>
                 <li>Si todos empatan con la carta más alta, nadie pierde vida.</li>
             </ul>
-            <p style="font-size:12px;color:#7f8c8d;margin-top:6px;">Solo una campana por ronda. El botón 🔔 desaparece en cuanto alguien la toca.</p>
+            <p style="font-size:12px;color:#7f8c8d;margin-top:6px;">Solo una campana por ronda. El botón <svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> desaparece en cuanto alguien la toca.</p>
 
             <p style="font-size:10px;color:#7f8c8d;text-align:center;margin-top:18px;margin-bottom:0;">Íconos de las cartas: <a href="https://game-icons.net" target="_blank" rel="noopener" style="color:#7f8c8d;">game-icons.net</a> · CC BY 3.0</p>
-            <button id="btnCerrarReglas" class="boton-medieval-rojo full-width" style="margin-top:14px;font-size:16px;">✅ ¡ENTENDIDO! VOLVER AL JUEGO</button>
+            <button id="btnCerrarReglas" class="boton-medieval-rojo full-width" style="margin-top:14px;font-size:16px;"><svg class="icono" aria-hidden="true"><use href="#i-check"/></svg> ¡ENTENDIDO! VOLVER AL JUEGO</button>
         </div>
     </div>
 
     <!-- Overlay Compartir QR (mismo patrón robusto que modalReglas: inset:0 + translateZ(0)) -->
     <div id="vistaQR" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;overflow-y:auto;-webkit-overflow-scrolling:touch;transform:translateZ(0);padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
         <div style="max-width:340px;width:100%;background:var(--pergamino);color:#2c3e50;border-radius:15px;border:4px solid var(--oro-oscuro);padding:24px;text-align:center;">
-            <h3 class="medieval-font" style="color:var(--rojo-rey);margin:0 0 4px;">📱 Escanea para unirte</h3>
+            <h3 class="medieval-font" style="color:var(--rojo-rey);margin:0 0 4px;"><svg class="icono" aria-hidden="true"><use href="#i-celular"/></svg> Escanea para unirte</h3>
             <p style="font-size:12px;color:#7f8c8d;margin:0 0 14px;">Apunta la cámara del otro teléfono al código.</p>
             <div id="qrContenedor" style="display:inline-flex;justify-content:center;align-items:center;background:#fff;padding:12px;border-radius:10px;min-width:232px;min-height:232px;"></div>
             <div style="margin-top:12px;font-size:13px;">Código de sala: <strong id="qrCodigo" style="letter-spacing:2px;">-----</strong></div>
@@ -501,18 +538,19 @@
 
         // Actualiza el resumen de config
         function actualizarResumenConfig() {
+            const ic = (n) => `<svg class="icono" aria-hidden="true"><use href="#i-${n}"/></svg>`;
             const modo      = document.getElementById('selectModo')?.value === 'DECLARADO' ? 'Declarado' : 'Sorpresa';
-            const modoJuego = document.getElementById('selectModoJuego')?.value === 'CAMPANA' ? '🔔 Campana' : '⚔️ Clásico';
+            const modoJuego = document.getElementById('selectModoJuego')?.value === 'CAMPANA' ? `${ic('campana')} Campana` : `${ic('espadas')} Clásico`;
             const vidas     = document.getElementById('selectVidas')?.value;
             const jugadores = document.getElementById('selectJugadores')?.value;
             const numBots   = parseInt(document.getElementById('selectBots')?.value || '0');
             const selDif    = document.getElementById('selectDificultadBots');
             document.getElementById('bloqueDificultadBots')?.classList.toggle('hidden', numBots === 0);
-            const bots      = numBots > 0 ? ` · 🤖 ${selDif.options[selDif.selectedIndex].text}` : '';
+            const bots      = numBots > 0 ? ` · ${ic('bot')} ${selDif.options[selDif.selectedIndex].text}` : '';
             const tiempo    = document.getElementById('selectTiempoTurno')?.value || '10';
             const resumen   = document.getElementById('resumenConfig');
             if (resumen) {
-                resumen.innerText = `⚙️ ${modoJuego} · ${modo} · ${vidas} ♥️ · ${jugadores} jug · ⏱️ ${tiempo}s${bots}`;
+                resumen.innerHTML = `${ic('ajustes')} ${modoJuego} · ${modo} · ${vidas} ${ic('corazon')} · ${jugadores} jug · ${ic('reloj')} ${tiempo}s${bots}`;
             }
         }
 

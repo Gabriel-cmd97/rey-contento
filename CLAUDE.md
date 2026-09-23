@@ -205,6 +205,12 @@ Estas convenciones se aplicaron al pulir el aspecto y la confiabilidad de carga 
 - Tamaño de la figura en la carta principal por CSS (`#figuraCarta img`, vía var); el `px` de `figuraIMG` es solo fallback.
 - La pila central de descarte (`renderizarPila`) usa las figuras OSCURAS (`/iconos/N.svg`) sobre fondo pergamino. El mazo (`#mazoFlotante`) lleva un emblema heráldico dorado (`/iconos/mazo.svg`, fleur-de-lys) centrado en el dorso.
 
+**Íconos de la interfaz (sprite SVG propio)**
+- La interfaz fija (barra superior, pestañas, etiquetas de configuración, botones, asientos, vidas, avatares, resumen) usa íconos de trazo del sprite al inicio de `<body>` en `index.html` (`<symbol id="i-<nombre>">`, viewBox 24, sin relleno). En HTML: `<svg class="icono"><use href="#i-corona"/></svg>`; en JS: `icono('corona')`, que devuelve ese mismo markup. Toman el color del texto (`currentColor`).
+- **No** volver a poner emojis en la interfaz fija (cada celular los dibuja distinto). Quedan como emoji a propósito: las reacciones (son del jugador y el servidor las valida por emoji), y el texto corrido de mensajes, avisos y bitácora.
+- Un elemento con ícono se actualiza con `innerHTML`, no `innerText` (borraría el SVG).
+- La leyenda de cartas del modal de reglas usa las mismas figuras `/iconos/N.svg` de las cartas.
+
 **Tamaños de carta adaptables (vars en `:root`)**
 - `dibujarMesaCircular()` calcula y setea en `:root`, según la cantidad de oponentes (`numOp`) y si es celular (`window.innerWidth <= 768`), TODAS las dimensiones de carta: `--reverso-w/h` (boca-abajo), `--carta-w/h` + `--carta-num` + `--carta-fig` (tu carta: número y figura escalan con ella), `--mini-w/h` (oponentes revelados) y `--pila-w/h` (pila central). Regla general: **menos jugadores → cartas más grandes** (aprovechan el espacio); **mesa llena → más chicas**.
 - El CSS base usa esas vars (con fallback); **no** poner tamaños fijos de carta en las media queries (pisarían las vars). Patrón heredado del de `--reverso-*`.

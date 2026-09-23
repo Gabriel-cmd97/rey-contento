@@ -2563,3 +2563,27 @@ input:focus-visible,
 .victoria-acciones { width: 100%; }
 .victoria-acciones .boton-oro { width: 100%; }
 .victoria-acciones .boton-madera { width: 100%; }
+
+/* =========================================
+   ÍCONOS PROPIOS (sprite SVG en index.html)
+   Trazo de 1.9 con puntas redondas; toman el color del texto (currentColor).
+   ========================================= */
+.icono {
+    width: 1.15em;
+    height: 1.15em;
+    vertical-align: -0.2em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+}
+.icono-carta-regla { width: 1.3em; height: auto; vertical-align: -0.3em; }
+.punto-en-linea {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--verde);
+    box-shadow: 0 0 6px var(--verde);
+}

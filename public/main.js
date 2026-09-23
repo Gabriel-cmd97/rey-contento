@@ -475,6 +475,12 @@ function actualizarBotonesTurno(esMio, esCampana, campanaTocada) {
     }
 }
 
+// Ícono del set propio (sprite SVG en index.html, símbolos "i-<nombre>").
+// Se usan en la interfaz fija en lugar de emojis, que cada celular dibuja distinto.
+function icono(nombre) {
+    return `<svg class="icono" aria-hidden="true"><use href="#i-${nombre}"/></svg>`;
+}
+
 // ==========================================
 // GUÍAS PARA QUIEN EMPIEZA
 // ==========================================
@@ -754,7 +760,7 @@ function mostrarResumenRonda(datos) {
                 <div style="font-size:7px;color:rgba(255,255,255,0.45);margin-top:2px;padding:0 2px;line-height:1.1;">${nombresCartas[num]}</div>
             </div>
             <div class="resumen-carta-nombre">${escapeHTML(j.nombre)}</div>
-            <div style="font-size:11px;">${pierde ? '💔' : '✅'} ${j.vidas > 0 ? '♥️'.repeat(j.vidas) : '☠️'}</div>
+            <div style="font-size:11px;">${pierde ? icono('corazon-roto') : icono('check')} ${j.vidas > 0 ? icono('corazon').repeat(j.vidas) : icono('calavera')}</div>
         `;
         grid.appendChild(item);
     });
@@ -987,10 +993,10 @@ document.getElementById('btnCerrarReglas').addEventListener('click', () => docum
 
 const btnSonido = document.getElementById('btnToggleSonido');
 if (btnSonido) {
-    btnSonido.innerText = Sonidos.estaHabilitado() ? '🔊' : '🔇';
+    btnSonido.innerHTML = icono(Sonidos.estaHabilitado() ? 'altavoz' : 'silencio');
     btnSonido.onclick = () => {
         const activo = Sonidos.toggle();
-        btnSonido.innerText = activo ? '🔊' : '🔇';
+        btnSonido.innerHTML = icono(activo ? 'altavoz' : 'silencio');
         mostrarToast(activo ? '🔊 Sonido activado' : '🔇 Sonido silenciado', 'rey', 1500);
         if (activo) Sonidos.pop();
     };
@@ -1365,8 +1371,8 @@ function dibujarMesaCircular() {
 
     const nombreMesa = document.getElementById('miNombreMesa');
     const vidasMesa = document.getElementById('misVidasMesa');
-    if (nombreMesa) nombreMesa.innerText = (miJugador.dealer ? '👑 ' : '👤 ') + miJugador.nombre;
-    if (vidasMesa) vidasMesa.innerText = miJugador.vidas > 0 ? '♥️ ' + miJugador.vidas : '☠️ 0';
+    if (nombreMesa) nombreMesa.innerHTML = icono(miJugador.dealer ? 'corona' : 'persona') + ' ' + escapeHTML(miJugador.nombre);
+    if (vidasMesa) vidasMesa.innerHTML = miJugador.vidas > 0 ? icono('corazon') + ' ' + miJugador.vidas : icono('calavera') + ' 0';
 
     if (miJugador.vidas <= 0) {
         miSilla.classList.add('jugador-eliminado');
@@ -1532,13 +1538,13 @@ function dibujarMesaCircular() {
             }
         }
 
-        let icono = op.dealer ? '👑' : (esSuTurno ? '⚔️' : (op.esBot ? '' : '👤'));
+        const iconoAsiento = op.dealer ? icono('corona') : (esSuTurno ? icono('espadas') : (op.esBot ? icono('bot') : icono('persona')));
         let claseEstado = estaMuerto ? 'jugador-eliminado' : '';
 
         divSilla.innerHTML = `
             <div class="perfil-oponente ${claseEstado} ${animReparto} ${claseDanio}">
-                <div style="font-size:13px;font-weight:bold;line-height:1.2;word-wrap:break-word;">${icono} ${escapeHTML(op.nombre)}</div>
-                <span class="vidas-destacadas">${estaMuerto ? '☠️ 0' : '♥️ ' + op.vidas}</span>
+                <div style="font-size:13px;font-weight:bold;line-height:1.2;word-wrap:break-word;">${iconoAsiento} ${escapeHTML(op.nombre)}</div>
+                <span class="vidas-destacadas">${estaMuerto ? icono('calavera') + ' 0' : icono('corazon') + ' ' + op.vidas}</span>
             </div>
             ${cartaHTML}
         `;
@@ -1849,7 +1855,7 @@ function conectarSocket() {
                     ? 'background:rgba(155,89,182,0.2);color:#bb8fce'
                     : 'background:rgba(46,204,113,0.2);color:#2ecc71';
             return `<li>
-                <div class="jugador-avatar-lobby" style="background:${color};">${esBot ? '🤖' : inicial}</div>
+                <div class="jugador-avatar-lobby" style="background:${color};">${esBot ? icono('bot') : inicial}</div>
                 <span class="jugador-nombre-lobby">${escapeHTML(j.nombre)}</span>
                 <span class="jugador-badge-lobby" style="${badgeStyle}">${badge}</span>
             </li>`;
@@ -1899,7 +1905,7 @@ function conectarSocket() {
             modoReyActual = datos.modoRey;
             const infoModo = document.getElementById('infoModo');
             if (infoModo) {
-                infoModo.innerHTML = datos.modoRey === 'SORPRESA' ? '🎭 SORPRESA' : '👁️ DECLARADO';
+                infoModo.innerHTML = datos.modoRey === 'SORPRESA' ? icono('mascara') + ' SORPRESA' : icono('ojo') + ' DECLARADO';
                 infoModo.style.color = datos.modoRey === 'SORPRESA' ? 'var(--oro)' : '#e74c3c';
                 infoModo.classList.remove('hidden');
             }
@@ -1977,7 +1983,7 @@ function conectarSocket() {
             modoReyActual = datos.modoRey;
             const infoModo = document.getElementById('infoModo');
             const esSorpresa = datos.modoRey === 'SORPRESA';
-            infoModo.innerHTML = esSorpresa ? '🎭 SORPRESA' : '👁️ DECLARADO';
+            infoModo.innerHTML = esSorpresa ? icono('mascara') + ' SORPRESA' : icono('ojo') + ' DECLARADO';
             infoModo.style.color = esSorpresa ? 'var(--oro)' : '#e74c3c';
             infoModo.classList.remove('hidden');
         }
@@ -2028,7 +2034,7 @@ function conectarSocket() {
         const infoModo = document.getElementById('infoModo');
         if (infoModo && datosTurno.modoRey) {
             const esSorpresa = datosTurno.modoRey === 'SORPRESA';
-            infoModo.innerHTML = esSorpresa ? '🎭 SORPRESA' : '👁️ DECLARADO';
+            infoModo.innerHTML = esSorpresa ? icono('mascara') + ' SORPRESA' : icono('ojo') + ' DECLARADO';
             infoModo.style.color = esSorpresa ? 'var(--oro)' : '#e74c3c';
             infoModo.classList.remove('hidden');
         }
@@ -2328,7 +2334,7 @@ function conectarSocket() {
     document.getElementById('btnRevancha').onclick = () => {
         socket.emit('quieroJugarOtraVez', miSalaActual);
         document.getElementById('btnRevancha').disabled = true;
-        document.getElementById('btnRevancha').innerText = '✅ ¡Listo!';
+        document.getElementById('btnRevancha').innerHTML = icono('check') + ' ¡Listo!';
     };
 
     socket.on('contadorRevancha', (datos) => {
@@ -2344,7 +2350,7 @@ function conectarSocket() {
         document.getElementById('panelAccionesPartida').classList.remove('hidden');
         document.getElementById('panelJugadores').classList.remove('hidden');
         document.getElementById('btnRevancha').disabled = false;
-        document.getElementById('btnRevancha').innerText = '⚔️ ¡Revancha!';
+        document.getElementById('btnRevancha').innerHTML = icono('espadas') + ' ¡Revancha!';
         cartasRepartidas = false;
         _cartaPendiente = null;
         mostrandoRevelacion = false;
@@ -2411,7 +2417,7 @@ function conectarSocket() {
         pintarFinalPartida(ganador);
         document.getElementById('contadorRevancha').innerText = '';
         document.getElementById('btnRevancha').disabled = false;
-        document.getElementById('btnRevancha').innerText = '⚔️ ¡Revancha!';
+        document.getElementById('btnRevancha').innerHTML = icono('espadas') + ' ¡Revancha!';
         document.getElementById('barraReacciones')?.classList.add('hidden');
     });
 
