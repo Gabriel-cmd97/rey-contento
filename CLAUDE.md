@@ -241,6 +241,8 @@ Estas convenciones se aplicaron al pulir el aspecto y la confiabilidad de carga 
 
 **Victoria**: `pintarFinalPartida(ganador)` pone título distinto si ganaste, tu lugar y la tabla final (`#tablaFinal`). El servidor solo manda al ganador, así que el orden de caída lo anota `registrarCaidas()` en cada `rondaTerminada` (`_caidasPartida`, se vacía al pintar el final).
 
+**Contraste (revisado el 23/09/2026 con medición WCAG en todas las pantallas)**: texto normal ≥ 4.5:1, grande ≥ 3:1. Para texto secundario sobre madera oscura usar `var(--texto-suave)` (nunca blanco al 25–45 %); para texto dorado sobre pergamino, `var(--oro-tinta)`; para texto sobre el tapete verde, darle fondo propio (como `.mazo-conteo`). Los avisos (`.toast-*`) llevan fondo oscuro con letra clara, nunca letra del mismo tono que el fondo. Las correcciones están en el bloque "CONTRASTE" al final de `style.css`.
+
 **Idioma**: todo el texto visible en **español de México (tuteo)** — "tú"/"tienes"/"escanea", nunca voseo ("vos"/"tenés"/"escaneá"). Vocabulario: **"celular"** (no "móvil"), **"enlace"** (no "link"). Los identificadores de código preexistentes (`btnCopiarLink`, `linkDeSala`, clase `btn-copiar-link`) se mantienen.
 
 ### Convenciones de seguridad y robustez

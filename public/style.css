@@ -9,6 +9,8 @@
     --madera-clara: #6d4c41;
     --pergamino: #f3e6c8;   /* pergamino cálido: texto claro y fondos de modales */
     --texto: #3a2a1d;       /* tinta café para texto sobre pergamino */
+    --texto-suave: rgba(243,230,200,0.75); /* etiquetas secundarias sobre fondo oscuro (≥4.5:1) */
+    --oro-tinta: #6b4f08;   /* dorado para texto sobre pergamino (≥4.5:1) */
     --verde: #2ecc71;
     --verde-tapete: #145a32;
     --verde-brillante: #34e7e4;
@@ -2111,7 +2113,7 @@ select,
     padding: 0;
     cursor: text;
 }
-#inputPasswordSala::placeholder { color: rgba(241,196,15,0.3); font-size: 10px; }
+#inputPasswordSala::placeholder { color: var(--texto-suave); font-size: 11px; }
 #inputPasswordSala:focus { outline: none; }
 
 /* ── BOTÓN LOBBY CREAR PARTIDA: pulso cuando está activo ── */
@@ -2587,3 +2589,52 @@ input:focus-visible,
     background: var(--verde);
     box-shadow: 0 0 6px var(--verde);
 }
+
+/* =========================================
+   CONTRASTE (WCAG AA: 4.5:1 texto normal, 3:1 texto grande)
+   Revisado el 23/09/2026 midiendo cada texto contra su fondo real.
+   ========================================= */
+/* Etiquetas secundarias sobre madera oscura: antes blanco al 25–45 %. */
+.lobby-section-label,
+.config-label-nuevo,
+.sala-code-sublabel { color: var(--texto-suave); }
+.config-label-nuevo { font-size: 10px; }
+.lobby-tab:not(.active) { color: var(--texto-suave); }
+.boton-lobby-ghost { color: var(--texto-suave); border-color: rgba(243,230,200,0.22); }
+.slots-vacios .slot-vacio { opacity: 1; }
+.slot-texto { color: var(--texto-suave) !important; }
+#mensajeTurno { text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+
+/* Resumen de la sala y etiquetas de jugadores. */
+.config-resumen-pill { color: #e2cdf0; background: rgba(155,89,182,0.25); }
+.lista-jugadores-nuevo li .jugador-badge-lobby { font-size: 10px; }
+
+/* Rótulos sobre el tapete verde: sin fondo propio no se leían. */
+#mazoFlotante > span,
+.mazo-conteo,
+.pila-contador {
+    background: rgba(20,12,8,0.78);
+    color: #ffe27a;
+    padding: 1px 6px;
+    border-radius: 8px;
+}
+#segundosReloj { color: #ffb36b; }
+
+/* Avisos: el dorado y el de daño ponían la letra del mismo tono que el fondo. */
+.toast-rey { background: rgba(40,26,14,0.94); color: #ffe27a; }
+.toast-danio { background: rgba(70,14,14,0.94); color: #ffd0d0; }
+
+/* Nombre de tu carta cuando pierdes: rojo oscuro sobre pergamino. */
+#miCarta.danio-recibido #numeroCarta,
+#miCarta.danio-recibido #nombrePersonaje { color: #a3141f !important; }
+
+/* Resumen de ronda: nombres de las figuras. */
+.resumen-carta-cara div:last-child { color: rgba(246,231,193,0.78) !important; font-size: 8px !important; }
+
+/* Sobre pergamino: títulos, notas y la tabla final. */
+.nota-pergamino { color: var(--texto); opacity: 0.8; }
+.tabla-final-lugar,
+.tabla-final-fila.es-rey .tabla-final-lugar { color: var(--oro-tinta); }
+.tabla-final-nombre em { opacity: 0.85; }
+/* Texto de ayuda dentro de los campos: legible, pero más tenue que lo escrito. */
+input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }

@@ -70,8 +70,8 @@
             <input type="text" id="authUsername" class="medieval-input" placeholder="Nombre de usuario" autocapitalize="none" autocorrect="off" autocomplete="username" spellcheck="false">
             <input type="password" id="authPassword" class="medieval-input" placeholder="Contraseña" autocapitalize="none" autocorrect="off" autocomplete="current-password" spellcheck="false">
             <div style="margin-top:20px;">
-                <button id="btnLogin" class="boton-medieval full-width margin-top-10">INICIAR SESIÓN</button>
-                <button id="btnRegistro" class="boton-medieval-verde full-width margin-top-10">CREAR CUENTA NUEVA</button>
+                <button id="btnLogin" class="boton-oro boton-lobby full-width margin-top-10">INICIAR SESIÓN</button>
+                <button id="btnRegistro" class="boton-madera boton-lobby full-width margin-top-10">CREAR CUENTA NUEVA</button>
             </div>
         </div>
 
@@ -221,8 +221,8 @@
                     <input type="password" id="inputPasswordUnirse" class="codigo-input-nuevo" placeholder="Contraseña" maxlength="20" autocomplete="off" style="font-size:18px;letter-spacing:3px;">
                 </div>
                 <div class="lobby-sticky-bottom" style="margin-top: 20px;">
-                    <button id="btnUnirseSala" class="boton-medieval boton-lobby full-width">UNIRSE A LA PARTIDA</button>
-                    <p style="font-size:11px; color:rgba(255,255,255,0.3); text-align:center; margin:12px 0 0;">¿Tienes enlace de invitación? Ábrelo directamente y entrarás automático.</p>
+                    <button id="btnUnirseSala" class="boton-oro boton-lobby full-width">UNIRSE A LA PARTIDA</button>
+                    <p style="font-size:11px; color:var(--texto-suave); text-align:center; margin:12px 0 0;">¿Tienes enlace de invitación? Ábrelo directamente y entrarás automático.</p>
                 </div>
             </section>
 
@@ -318,7 +318,7 @@
                         <path class="trazo-flecha" d="" marker-end="url(#puntaFlechaGuia)"/>
                     </svg>
 
-                    <div id="bannerEspectador" class="hidden" style="position:absolute; top:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); border:2px solid #7f8c8d; border-radius:20px; padding:6px 20px; z-index:100; color:#bdc3c7; font-size:13px; font-weight:bold; letter-spacing:1px;">
+                    <div id="bannerEspectador" class="hidden" style="position:absolute; top:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); border:2px solid #7f8c8d; border-radius:20px; padding:6px 20px; z-index:100; color:var(--pergamino); font-size:13px; font-weight:bold; letter-spacing:1px;">
                         <svg class="icono" aria-hidden="true"><use href="#i-ojo"/></svg> MODO ESPECTADOR
                     </div>
 
@@ -330,7 +330,7 @@
                            <div id="contenedorReloj" style="display:none; margin-top:6px; width:130px;">
     <div style="position:relative; background:rgba(255,255,255,0.1); border-radius:10px; height:8px; overflow:visible;">
         <div id="barraReloj" style="height:100%; width:100%; background:#e67e22; border-radius:10px; transition:width 1s linear, background .3s;"></div>
-        <span id="segundosReloj" style="position:absolute; right:-18px; top:50%; transform:translateY(-50%); font-size:12px; font-weight:bold; color:#e67e22; font-family:'MedievalSharp';">10</span>
+        <span id="segundosReloj" style="position:absolute; right:-18px; top:50%; transform:translateY(-50%); font-size:12px; font-weight:bold; color:#ffb36b; font-family:'MedievalSharp';">10</span>
     </div>
 </div>
                         </div>
@@ -451,11 +451,11 @@
         <div style="max-width:600px;margin:0 auto;background:var(--pergamino);color:var(--texto);border-radius:15px;border:4px solid var(--oro-oscuro);padding:30px;">
             <h2 class="medieval-font" style="color:var(--rojo-rey);text-align:center;font-size:28px;margin-top:0;"><svg class="icono" aria-hidden="true"><use href="#i-corona"/></svg> REY CONTENTO</h2>
 
-            <h3 class="medieval-font" style="color:var(--oro-oscuro);"><svg class="icono" aria-hidden="true"><use href="#i-diana"/></svg> Objetivo</h3>
+            <h3 class="medieval-font" style="color:var(--oro-tinta);"><svg class="icono" aria-hidden="true"><use href="#i-diana"/></svg> Objetivo</h3>
             <p>Ser el último jugador con vida. Al final de cada ronda, quien tenga la carta más baja pierde una <svg class="icono" aria-hidden="true"><use href="#i-corazon"/></svg> . Sin vidas, quedas eliminado.</p>
 
             <p><svg class="icono" aria-hidden="true"><use href="#i-foco"/></svg> <strong>Guías:</strong> en tus primeras partidas una flecha te señala con quién cambiarías, abajo de los botones ves qué hace cada uno y al final de la ronda te explicamos por qué perdiste o te salvaste. Préndelas o apágalas con el botón <svg class="icono" aria-hidden="true"><use href="#i-foco"/></svg> de arriba.</p>
-            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-naipe"/></svg> Las Cartas</h3>
+            <h3 class="medieval-font" style="color:var(--oro-tinta);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-naipe"/></svg> Las Cartas</h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:13px;margin-bottom:10px;">
                 <span>0 <img src="/iconos/0.svg" alt="" class="icono-carta-regla"> El Mendigo</span><span>5 <img src="/iconos/5.svg" alt="" class="icono-carta-regla"> El Verdugo</span>
                 <span>1 <img src="/iconos/1.svg" alt="" class="icono-carta-regla"> La Rata</span><span>6 <img src="/iconos/6.svg" alt="" class="icono-carta-regla"> La Duquesa</span>
@@ -464,14 +464,14 @@
                 <span>4 <img src="/iconos/4.svg" alt="" class="icono-carta-regla"> El Guardia</span><span>9 <img src="/iconos/9.svg" alt="" class="icono-carta-regla"> El Rey Contento</span>
             </div>
 
-            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> Tu Turno</h3>
+            <h3 class="medieval-font" style="color:var(--oro-tinta);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> Tu Turno</h3>
             <p>Tienes un tiempo límite por turno (10 segundos por defecto; quien crea la sala puede elegir entre 7 y 20) para elegir:</p>
             <ul style="margin:8px 0 0 20px;line-height:1.8;">
                 <li><strong><svg class="icono" aria-hidden="true"><use href="#i-mano"/></svg> MANTENER</strong> — Te quedas con tu carta.</li>
                 <li><strong><svg class="icono" aria-hidden="true"><use href="#i-cambio"/></svg> CAMBIAR</strong> — Fuerzas al jugador de tu derecha a intercambiar.</li>
             </ul>
 
-            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-escudo"/></svg> Reglas Especiales</h3>
+            <h3 class="medieval-font" style="color:var(--oro-tinta);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-escudo"/></svg> Reglas Especiales</h3>
             <ul style="margin:8px 0 0 20px;line-height:1.8;">
                 <li><strong>Bloqueo del Rey:</strong> Si el jugador de tu derecha tiene el 9, tu intercambio falla y mantienes tu carta.</li>
                 <li><strong>El Dealer:</strong> El último en jugar. Si elige CAMBIAR, roba del mazo central en lugar de intercambiar.</li>
@@ -479,13 +479,13 @@
                 <li><strong>Empate total:</strong> Si <em>todos</em> tienen la misma carta, nadie pierde vida esa ronda.</li>
             </ul>
 
-            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-ajustes"/></svg> Modos del Rey</h3>
+            <h3 class="medieval-font" style="color:var(--oro-tinta);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-ajustes"/></svg> Modos del Rey</h3>
             <ul style="margin:8px 0 0 20px;line-height:1.8;">
                 <li><strong>Sorpresa:</strong> El Rey (9) está oculto. Solo lo sabe quien lo tiene.</li>
                 <li><strong>Declarado:</strong> Cuando alguien recibe el Rey, ¡toda la corte lo sabe! Su carta queda visible.</li>
             </ul>
 
-            <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> Modo Campana</h3>
+            <h3 class="medieval-font" style="color:var(--oro-tinta);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> Modo Campana</h3>
             <p style="margin-bottom:4px;"><strong>Regla invertida:</strong> aquí pierde quien tiene la carta <strong>más alta</strong>. ¡Quieres cartas pequeñas!</p>
             <ul style="margin:4px 0 0 20px;line-height:1.8;font-size:14px;">
                 <li>En tu turno aparece el botón <strong><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> </strong> — úsalo cuando creas que tienes la carta más baja y quieras cerrar la ronda.</li>
@@ -496,10 +496,10 @@
                 <li>Si tras <strong>2 vueltas completas</strong> nadie toca la campana, el de la carta más alta pierde <strong>2 vidas</strong> (penalización por inacción). Si todos tienen la misma carta, nadie pierde.</li>
                 <li>Si todos empatan con la carta más alta, nadie pierde vida.</li>
             </ul>
-            <p style="font-size:12px;color:#7f8c8d;margin-top:6px;">Solo una campana por ronda. El botón <svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> desaparece en cuanto alguien la toca.</p>
+            <p class="nota-pergamino" style="font-size:12px;margin-top:6px;">Solo una campana por ronda. El botón <svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> desaparece en cuanto alguien la toca.</p>
 
-            <p style="font-size:10px;color:#7f8c8d;text-align:center;margin-top:18px;margin-bottom:0;">Íconos de las cartas: <a href="https://game-icons.net" target="_blank" rel="noopener" style="color:#7f8c8d;">game-icons.net</a> · CC BY 3.0</p>
-            <button id="btnCerrarReglas" class="boton-medieval-rojo full-width" style="margin-top:14px;font-size:16px;"><svg class="icono" aria-hidden="true"><use href="#i-check"/></svg> ¡ENTENDIDO! VOLVER AL JUEGO</button>
+            <p class="nota-pergamino" style="font-size:11px;text-align:center;margin-top:18px;margin-bottom:0;">Íconos de las cartas: <a href="https://game-icons.net" target="_blank" rel="noopener" style="color:inherit;">game-icons.net</a> · CC BY 3.0</p>
+            <button id="btnCerrarReglas" class="boton-oro boton-lobby full-width" style="margin-top:14px;font-size:15px;"><svg class="icono" aria-hidden="true"><use href="#i-check"/></svg> ¡ENTENDIDO! VOLVER AL JUEGO</button>
         </div>
     </div>
 
@@ -507,7 +507,7 @@
     <div id="vistaQR" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;overflow-y:auto;-webkit-overflow-scrolling:touch;transform:translateZ(0);padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
         <div style="max-width:340px;width:100%;background:var(--pergamino);color:var(--texto);border-radius:15px;border:4px solid var(--oro-oscuro);padding:24px;text-align:center;">
             <h3 class="medieval-font" style="color:var(--rojo-rey);margin:0 0 4px;"><svg class="icono" aria-hidden="true"><use href="#i-celular"/></svg> Escanea para unirte</h3>
-            <p style="font-size:12px;color:#7f8c8d;margin:0 0 14px;">Apunta la cámara del otro teléfono al código.</p>
+            <p class="nota-pergamino" style="font-size:12px;margin:0 0 14px;">Apunta la cámara del otro teléfono al código.</p>
             <div id="qrContenedor" style="display:inline-flex;justify-content:center;align-items:center;background:#fff;padding:12px;border-radius:10px;min-width:232px;min-height:232px;"></div>
             <div style="margin-top:12px;font-size:13px;">Código de sala: <strong id="qrCodigo" style="letter-spacing:2px;">-----</strong></div>
             <button id="btnEmpezarQR" class="boton-oro boton-lobby full-width hidden" style="margin-top:18px;">¡EMPEZAR JUEGO!</button>

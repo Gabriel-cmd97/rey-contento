@@ -317,7 +317,7 @@ function renderizarModalBitacora() {
     if (!listaCompleta) return;
 
     if (historialJugadasRonda.length === 0) {
-        listaCompleta.innerHTML = '<div class="bitacora-vacia" style="text-align:center; color:rgba(255,255,255,0.4); font-size:12px; padding:15px;">Aún no hay jugadas registradas en esta ronda.</div>';
+        listaCompleta.innerHTML = '<div class="bitacora-vacia" style="text-align:center; color:var(--texto-suave); font-size:12px; padding:15px;">Aún no hay jugadas registradas en esta ronda.</div>';
         return;
     }
 
@@ -798,7 +798,7 @@ function activarModoEspectador() {
     document.getElementById('btnSiguienteRonda').classList.add('hidden');
     document.getElementById('btnSiguienteRonda').style.display = "none";
     document.getElementById('mesaDeJuego').classList.add('mesa-espectador');
-    document.getElementById('mensajeTurno').style.color = "rgba(255,255,255,0.4)";
+    document.getElementById('mensajeTurno').style.color = 'var(--texto-suave)';
 }
 
 function desactivarModoEspectador() {
@@ -1169,7 +1169,7 @@ function gestionarRelojVisual(idEnTurno, tiempoSegundos) {
         barra.style.width = pct + '%';
         if (t <= 3) {
             barra.style.background = '#e74c3c';
-            document.getElementById('segundosReloj').style.color = '#e74c3c';
+            document.getElementById('segundosReloj').style.color = '#ff8a7a';
             if (idEnTurno === socket?.id && t > 0) {
                 foco?.classList.add('reloj-urgente');
                 Sonidos.tick();
@@ -1177,7 +1177,7 @@ function gestionarRelojVisual(idEnTurno, tiempoSegundos) {
             }
         } else {
             barra.style.background = '#e67e22';
-            document.getElementById('segundosReloj').style.color = '#e67e22';
+            document.getElementById('segundosReloj').style.color = '#ffb36b';
             foco?.classList.remove('reloj-urgente');
         }
         if (t <= 0) {
@@ -1854,10 +1854,10 @@ function conectarSocket() {
             const color = colores[i % colores.length];
             const badge = esHost ? 'Host' : (esBot ? 'Bot' : 'Listo');
             const badgeStyle = esHost
-                ? 'background:rgba(241,196,15,0.2);color:var(--oro)'
+                ? 'background:rgba(241,196,15,0.2);color:#ffe27a'
                 : esBot
-                    ? 'background:rgba(155,89,182,0.2);color:#bb8fce'
-                    : 'background:rgba(46,204,113,0.2);color:#2ecc71';
+                    ? 'background:rgba(155,89,182,0.25);color:#e2cdf0'
+                    : 'background:rgba(46,204,113,0.2);color:#7ee2a8';
             return `<li>
                 <div class="jugador-avatar-lobby" style="background:${color};">${esBot ? icono('bot') : inicial}</div>
                 <span class="jugador-nombre-lobby">${escapeHTML(j.nombre)}</span>
