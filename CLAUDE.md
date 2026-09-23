@@ -81,6 +81,8 @@ quieroJugarOtraVez → iniciarRevancha()
 
 **`dificultadBots`** (`bots.js`): `FACIL` (umbral fijo, se equivoca 1 de cada 4), `NORMAL` (calcula la probabilidad de perder si mantiene vs. si cambia) y `DIFICIL` (además cuenta el descarte y recuerda los cambios de la ronda en `bot.memoria`). Los bots solo usan información que un humano atento también tiene. En una simulación de 60 000 rondas pierden ~26, ~19 y ~16 vidas cada 100 rondas.
 
+**`tiempoTurno`**: segundos por turno, uno de `TIEMPOS_TURNO` (7, 10, 15, 20; default 10). Un jugador desconectado recibe al menos 30s. El cliente toma la duración del campo `tiempo` de `juegoIniciado`/`cambioDeTurno`, nunca de un valor fijo.
+
 **`frecuenciaReyes`**: controla qué tan seguido aparecen los 9s — `NORMAL` (aleatorio), `ALTA`, `LOCURA` (sesgados hacia las primeras rondas)
 
 ### Sala con contraseña
@@ -169,7 +171,7 @@ DEBUG_LOG=1
 La cadena de un inicio de ronda es: el server emite `datosMesa` + `tuCarta` (t=0) y luego `juegoIniciado` (t=+500ms); el cliente guarda la carta en `tuCarta` y la anima al recibir el evento de turno. Estos invariantes mantienen sincronizados el cronómetro real del server y el reloj visual del cliente. Si tocás este flujo, preservalos:
 
 - **La carta SOLO se revela en el evento posterior a `tuCarta`**, nunca dentro de `tuCarta`. `tuCarta` únicamente hace `_cartaPendiente = carta`; el revelado (flip + número) lo hacen `juegoIniciado`, `cambioDeTurno` o `rondaTerminada`, que consumen `_cartaPendiente`. **Nunca** revelar/animar dentro de `tuCarta` con un `setTimeout` propio: `juegoIniciado` llega ~500ms después y hace `++_renderGen`, que invalida ese callback (race) → la carta queda mostrando el dorso. Esto pasaba con el 9 de DECLARADO. El revelado público del 9 en DECLARADO es responsabilidad del server (`mensajeGlobal`) y del render de oponentes (`cartaRevelada`), no de la carta propia.
-- **`iniciarReloj()` siempre con duración explícita**. Nunca llamarla sin el 3er argumento: el default de 10s pisaría la duración real del jugador (10s online / 30s offline / 8s al desconectar en turno). `gestionarTurnos` ya arranca el reloj con la duración correcta — no agregar una segunda llamada a `iniciarReloj` "por las dudas" después de `gestionarTurnos`.
+- **`iniciarReloj()` siempre con duración explícita**. Nunca llamarla sin el 3er argumento: el default de 10s pisaría la duración real del jugador (`config.tiempoTurno` online / ≥30s offline / 8s al desconectar en turno). `gestionarTurnos` ya arranca el reloj con la duración correcta — no agregar una segunda llamada a `iniciarReloj` "por las dudas" después de `gestionarTurnos`.
 - **Colchón del primer turno de la ronda**. En `gestionarTurnos`, cuando `esInicio === true`, el timer REAL del server usa `tiempoTurno + SEG_EXTRA_PRIMER_TURNO` (1s), pero el campo `tiempo` enviado al cliente queda en `tiempoTurno`. Esto compensa que el reloj visual del cliente arranca ~800ms tarde (espera el vuelo de carta de 600ms + 200ms de delay) — sin el colchón el server cortaría el turno con ~1s aún visible en pantalla. En `cambioDeTurno` no se aplica porque ahí el reloj visual arranca sincrónico.
 
 ### Convenciones de frontend visual (animaciones, íconos, carga)

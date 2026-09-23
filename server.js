@@ -169,6 +169,9 @@ function nombreBotAleatorio(usados = []) {
     return candidatos[Math.floor(Math.random() * candidatos.length)];
 }
 
+// Segundos por turno que se pueden elegir al crear la sala.
+const TIEMPOS_TURNO = [7, 10, 15, 20];
+
 // Valida y acota la configuración que viene del cliente.
 // Devuelve un nuevo objeto sanitizado, o null si algo es inválido.
 function sanitizarConfig(raw) {
@@ -188,6 +191,7 @@ function sanitizarConfig(raw) {
     const modoRey       = enLista(raw.modoRey, ['SORPRESA', 'DECLARADO'], 'SORPRESA');
     const frecuenciaReyes = enLista(raw.frecuenciaReyes, ['NORMAL', 'ALTA', 'LOCURA'], 'NORMAL');
     const dificultadBots = enLista(raw.dificultadBots, bots.DIFICULTADES, 'NORMAL');
+    const tiempoTurno   = enLista(Number.parseInt(raw.tiempoTurno, 10), TIEMPOS_TURNO, 10);
 
     let password = null;
     if (typeof raw.password === 'string') {
@@ -196,7 +200,7 @@ function sanitizarConfig(raw) {
         else if (trimmed.length > 50) return null; // rechazar passwords absurdamente largos
     }
 
-    return { vidas, maxJugadores, numBots, modoJuego, modoRey, frecuenciaReyes, dificultadBots, password };
+    return { vidas, maxJugadores, numBots, modoJuego, modoRey, frecuenciaReyes, dificultadBots, tiempoTurno, password };
 }
 
 // Formato del idSala: 5 caracteres alfanuméricos. El alfabeto real es
@@ -687,7 +691,10 @@ function gestionarTurnos(sala, io, esInicio = false) {
         }, 1200);
     } else {
         let idJugadorEnTurno = jugadorActual.id;
-        let tiempoTurno = jugadorActual.online ? 10 : 30;
+        // Tiempo elegido en la sala; si el jugador está desconectado se le dan
+        // al menos 30s de gracia para que alcance a volver.
+        const tiempoSala = sala.config.tiempoTurno || 10;
+        let tiempoTurno = jugadorActual.online ? tiempoSala : Math.max(30, tiempoSala);
 
         // Primer turno de la ronda: el cliente arranca el reloj visual recién tras
         // el vuelo+flip de la carta (~800ms después de juegoIniciado), mientras que

@@ -132,6 +132,15 @@
                             <option value="7">7 Bots</option>
                         </select>
                     </div>
+                    <div class="config-item-nuevo config-full">
+                        <span class="config-label-nuevo">⏱️ Tiempo por turno</span>
+                        <select id="selectTiempoTurno" class="selector-medieval selector-compacto">
+                            <option value="7">7 s · Rápido</option>
+                            <option value="10" selected>10 s · Normal</option>
+                            <option value="15">15 s · Tranquilo</option>
+                            <option value="20">20 s · Relajado</option>
+                        </select>
+                    </div>
                     <div class="config-item-nuevo config-full hidden" id="bloqueDificultadBots">
                         <span class="config-label-nuevo">🧠 Dificultad de los bots</span>
                         <select id="selectDificultadBots" class="selector-medieval selector-compacto">
@@ -393,7 +402,7 @@
             </div>
 
             <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;">⚔️ Tu Turno</h3>
-            <p>Tienes <strong>10 segundos</strong> para elegir:</p>
+            <p>Tienes un tiempo límite por turno (10 segundos por defecto; quien crea la sala puede elegir entre 7 y 20) para elegir:</p>
             <ul style="margin:8px 0 0 20px;line-height:1.8;">
                 <li><strong>✋ MANTENER</strong> — Te quedas con tu carta.</li>
                 <li><strong>🔄 CAMBIAR</strong> — Fuerzas al jugador de tu derecha a intercambiar.</li>
@@ -474,15 +483,16 @@
             const selDif    = document.getElementById('selectDificultadBots');
             document.getElementById('bloqueDificultadBots')?.classList.toggle('hidden', numBots === 0);
             const bots      = numBots > 0 ? ` · 🤖 ${selDif.options[selDif.selectedIndex].text}` : '';
+            const tiempo    = document.getElementById('selectTiempoTurno')?.value || '10';
             const resumen   = document.getElementById('resumenConfig');
             if (resumen) {
-                resumen.innerText = `⚙️ ${modoJuego} · ${modo} · ${vidas} ♥️ · ${jugadores} jug${bots}`;
+                resumen.innerText = `⚙️ ${modoJuego} · ${modo} · ${vidas} ♥️ · ${jugadores} jug · ⏱️ ${tiempo}s${bots}`;
             }
         }
 
         // Escuchar cambios en selects para actualizar resumen
         document.addEventListener('DOMContentLoaded', () => {
-            ['selectModo','selectReyes','selectVidas','selectJugadores','selectBots','selectDificultadBots','selectModoJuego'].forEach(id => {
+            ['selectModo','selectReyes','selectVidas','selectJugadores','selectBots','selectDificultadBots','selectTiempoTurno','selectModoJuego'].forEach(id => {
                 document.getElementById(id)?.addEventListener('change', actualizarResumenConfig);
             });
         });
