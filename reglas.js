@@ -56,7 +56,8 @@ function siguienteVivo(jugadores, indice) {
 // Clásico: pierde la carta más baja. Campana: pierde la más alta, y además
 //  - si nadie tocó la campana en 2 vueltas, la carta más alta paga una extra;
 //  - si alguien la tocó y tenía la carta mortal, paga una extra.
-// Empate total (todos con la misma carta): nadie pierde por la carta.
+// Empate total (todos con la misma carta): nadie pierde vida, tampoco por
+// la penalización de la campana.
 // `mensajes` va en el orden en que se deben anunciar a la mesa.
 function resolverCartas(sala) {
     const vivos = sala.jugadores.filter(j => j.vidas > 0);
@@ -75,7 +76,7 @@ function resolverCartas(sala) {
 
     // Nadie tocó la campana en 2 vueltas: el "cobarde" con la carta más alta
     // paga una vida extra (además de la normal, si le quedan vidas).
-    if (esModoCampana && !sala.campanaTocada && sala.vueltasCampana >= 2) {
+    if (esModoCampana && !sala.campanaTocada && sala.vueltasCampana >= 2 && !empateTotal) {
         const maxVal = Math.max(...vivos.map(j => j.cartaActual));
         vivos.filter(j => j.cartaActual === maxVal).forEach(pierde);
         mensajes.push(`⏰ Nadie tocó la campana — el cobarde con la carta más alta paga doble.`);

@@ -75,3 +75,11 @@ test('campana: si la penalización extra lo elimina, no pierde otra vida', () =>
     resolverCartas(s);
     assert.deepStrictEqual(vidas(s), [0, 3]);
 });
+
+test('campana: el empate total también perdona la penalización de no tocarla', () => {
+    const s = sala([j('a', 6), j('b', 6)], { modoJuego: 'CAMPANA' }, { vueltasCampana: 2 });
+    const r = resolverCartas(s);
+    assert.deepStrictEqual(vidas(s), [3, 3]);
+    assert.strictEqual(r.mensajes.length, 1);
+    assert.match(r.mensajes[0], /Empate total/);
+});
