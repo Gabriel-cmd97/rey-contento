@@ -229,6 +229,12 @@ Estas convenciones se aplicaron al pulir el aspecto y la confiabilidad de carga 
 
 **Botones de acción y accesibilidad** (bloque final de `style.css`): MANTENER en madera con filo de oro y CAMBIAR en oro acuñado, dentro de la paleta del juego (no volver a azul/rojo genéricos). Suben con `acciones-entran` cada vez que se muestran (inicio de tu turno). Atajos de teclado `ATAJOS_MESA` en `main.js` (M, C, B) que simulan el clic; la letra se ve solo con `(hover: hover) and (pointer: fine)` vía `data-tecla`. Foco `:focus-visible` dorado y `prefers-reduced-motion` que apaga las animaciones en bucle.
 
+**Jerarquía de botones fuera de la mesa**: `.boton-oro` para la acción principal de cada pantalla (Crear partida, Empezar, Revancha) y `.boton-madera` para volver/salir. No usar `boton-medieval-verde`/`-rojo` en pantallas nuevas.
+
+**Lobby**: `.lobby-blason` (emblema `mazo.svg` + nombre + lema) arriba de las pestañas; dentro de una sala se achica con `:has(#panelJugadores:not(.hidden))`.
+
+**Victoria**: `pintarFinalPartida(ganador)` pone título distinto si ganaste, tu lugar y la tabla final (`#tablaFinal`). El servidor solo manda al ganador, así que el orden de caída lo anota `registrarCaidas()` en cada `rondaTerminada` (`_caidasPartida`, se vacía al pintar el final).
+
 **Idioma**: todo el texto visible en **español de México (tuteo)** — "tú"/"tienes"/"escanea", nunca voseo ("vos"/"tenés"/"escaneá"). Vocabulario: **"celular"** (no "móvil"), **"enlace"** (no "link"). Los identificadores de código preexistentes (`btnCopiarLink`, `linkDeSala`, clase `btn-copiar-link`) se mantienen.
 
 ### Convenciones de seguridad y robustez

@@ -75,6 +75,13 @@
         <!-- ==================== LOBBY ==================== -->
         <main id="seccion-lobby" class="main-seccion-centro">
 
+            <!-- Blasón del juego: nombre y objetivo en una línea -->
+            <header class="lobby-blason">
+                <img src="/iconos/mazo.svg" alt="" class="lobby-blason-emblema" draggable="false">
+                <h1 class="lobby-blason-nombre">Rey Contento</h1>
+                <p class="lobby-blason-lema">Que no te toque la carta más baja</p>
+            </header>
+
             <!-- TABS -->
             <div class="lobby-tabs" id="lobbyTabs">
                 <button class="lobby-tab active" id="tabCrear" onclick="switchTab('crear')">⚔️ CREAR</button>
@@ -163,7 +170,7 @@
                     </div>
                 </div>
                 <div class="lobby-sticky-bottom">
-                    <button id="btnCrearSala" class="boton-medieval-rojo boton-lobby full-width" disabled>CREAR PARTIDA</button>
+                    <button id="btnCrearSala" class="boton-oro boton-lobby full-width" disabled>CREAR PARTIDA</button>
                     <button id="btnVerReglas" class="boton-lobby-ghost full-width margin-top-10">📖 ¿Cómo se juega?</button>
                 </div>
             </section>
@@ -212,7 +219,7 @@
 
                 <!-- Botones siempre visibles -->
                 <div class="lobby-sticky-bottom" style="margin-top:12px;">
-                    <button id="btnEmpezar" class="boton-medieval-verde boton-lobby full-width hidden">¡EMPEZAR JUEGO!</button>
+                    <button id="btnEmpezar" class="boton-oro boton-lobby full-width hidden">¡EMPEZAR JUEGO!</button>
                     <button id="btnSalirLobby" class="boton-lobby-ghost full-width margin-top-10">❌ Cancelar / Salir</button>
                 </div>
             </section>
@@ -343,12 +350,16 @@
         <!-- Pantalla victoria -->
         <div id="pantallaVictoria" class="hidden pantalla-victoria">
             <div class="victoria-contenido">
-                <h1 class="medieval-font victoria-titulo">👑 ¡TENEMOS UN REY! 👑</h1>
+                <img src="/iconos/mazo.svg" alt="" class="victoria-emblema" draggable="false">
+                <p id="victoriaResumen" class="victoria-resumen">Fin de la partida</p>
+                <h1 id="victoriaTitulo" class="medieval-font victoria-titulo">¡Tenemos un Rey!</h1>
                 <h2 id="nombreGanador" class="medieval-font victoria-ganador">Nombre</h2>
+                <p id="victoriaMiLugar" class="victoria-mi-lugar hidden"></p>
+                <ol id="tablaFinal" class="tabla-final"></ol>
                 <div class="victoria-acciones">
-                    <button id="btnRevancha" class="boton-medieval-verde btn-revancha">⚔️ ¡Revancha!</button>
+                    <button id="btnRevancha" class="boton-oro btn-revancha">⚔️ ¡Revancha!</button>
                     <div id="contadorRevancha" class="victoria-contador">Esperando jugadores...</div>
-                    <button id="btnVolverLobby" class="boton-medieval-rojo btn-volver-corte">Volver a la Corte</button>
+                    <button id="btnVolverLobby" class="boton-madera btn-volver-corte">Volver a la Corte</button>
                 </div>
             </div>
         </div>
@@ -462,8 +473,8 @@
             <p style="font-size:12px;color:#7f8c8d;margin:0 0 14px;">Apunta la cámara del otro teléfono al código.</p>
             <div id="qrContenedor" style="display:inline-flex;justify-content:center;align-items:center;background:#fff;padding:12px;border-radius:10px;min-width:232px;min-height:232px;"></div>
             <div style="margin-top:12px;font-size:13px;">Código de sala: <strong id="qrCodigo" style="letter-spacing:2px;">-----</strong></div>
-            <button id="btnEmpezarQR" class="boton-medieval-verde full-width hidden" style="margin-top:18px;">¡EMPEZAR JUEGO!</button>
-            <button id="btnVolverQR" class="boton-medieval-rojo full-width" style="margin-top:10px;">← Volver a jugadores</button>
+            <button id="btnEmpezarQR" class="boton-oro boton-lobby full-width hidden" style="margin-top:18px;">¡EMPEZAR JUEGO!</button>
+            <button id="btnVolverQR" class="boton-madera boton-lobby full-width" style="margin-top:10px;">← Volver a jugadores</button>
         </div>
     </div>
 

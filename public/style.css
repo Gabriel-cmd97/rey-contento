@@ -1951,15 +1951,7 @@ select,
     animation: fadeSlideUp 0.8s 0.5s ease both;
 }
 .btn-revancha  { font-size: 20px; padding: 15px 40px; }
-.btn-volver-corte {
-    font-size: 16px; padding: 10px 30px; margin-top: 5px;
-    background: linear-gradient(180deg, var(--rojo-rey) 0%, #922b21 100%) !important;
-    border-bottom: 4px solid #6e2018 !important;
-    border-top: none !important; border-left: none !important; border-right: none !important;
-    letter-spacing: 2px;
-    color: white; font-family: var(--fuente-medieval); cursor: pointer;
-    border-radius: 8px;
-}
+.btn-volver-corte { font-size: 15px; padding: 11px 30px; margin-top: 5px; letter-spacing: 2px; }
 .victoria-contador {
     font-size: 13px;
     color: rgba(255,255,255,0.5);
@@ -2434,3 +2426,140 @@ input:focus-visible,
         scroll-behavior: auto !important;
     }
 }
+
+/* =========================================
+   JERARQUÍA DE BOTONES
+   .boton-oro: la acción principal de la pantalla (crear, empezar, revancha).
+   .boton-madera: volver o salir. Mismo lenguaje que CAMBIAR / MANTENER.
+   ========================================= */
+.boton-oro,
+.boton-madera {
+    font-family: var(--fuente-medieval);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.1s ease, filter 0.15s ease, box-shadow 0.1s ease;
+}
+.boton-oro {
+    background: linear-gradient(180deg, #f9dd7a 0%, #d4a514 55%, var(--oro-oscuro) 100%);
+    border-bottom: 4px solid #6e5608;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), 0 6px 16px rgba(0,0,0,0.45);
+    color: var(--madera);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.45);
+}
+.boton-madera {
+    background: linear-gradient(180deg, #7b5a4d 0%, var(--madera) 100%);
+    border-bottom: 4px solid #22150f;
+    box-shadow: inset 0 0 0 1px rgba(241,196,15,0.45), 0 5px 12px rgba(0,0,0,0.4);
+    color: #f6e7c1;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.6);
+}
+.boton-oro:hover:not(:disabled), .boton-madera:hover:not(:disabled) { filter: brightness(1.1); }
+.boton-oro:active:not(:disabled), .boton-madera:active:not(:disabled) { transform: translateY(3px); border-bottom-width: 1px; }
+.boton-oro:disabled, .boton-madera:disabled { opacity: 0.45; cursor: default; filter: grayscale(35%); }
+
+/* =========================================
+   BLASÓN DEL LOBBY
+   ========================================= */
+.lobby-blason {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    margin-bottom: 18px;
+    text-align: center;
+}
+.lobby-blason-emblema {
+    width: 46px;
+    height: auto;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6)) drop-shadow(0 0 14px rgba(241,196,15,0.35));
+}
+.lobby-blason-nombre {
+    font-family: var(--fuente-medieval);
+    font-size: clamp(30px, 9vw, 40px);
+    line-height: 1.05;
+    margin: 4px 0 0;
+    color: var(--oro);
+    letter-spacing: 1px;
+    text-shadow: 0 2px 0 #6e5608, 0 4px 14px rgba(0,0,0,0.7);
+    text-wrap: balance;
+}
+.lobby-blason-lema {
+    margin: 2px 0 0;
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: 13px;
+    color: rgba(246,231,193,0.7);
+}
+/* Dentro de una sala el blasón se achica: lo importante ahí son los jugadores. */
+#seccion-lobby:has(#panelJugadores:not(.hidden)) .lobby-blason { margin-bottom: 10px; }
+#seccion-lobby:has(#panelJugadores:not(.hidden)) .lobby-blason-nombre { font-size: 24px; }
+#seccion-lobby:has(#panelJugadores:not(.hidden)) .lobby-blason-lema { display: none; }
+
+/* =========================================
+   PANTALLA DE VICTORIA
+   ========================================= */
+.victoria-contenido { width: min(92vw, 380px); padding-inline: 4px; }
+.victoria-emblema {
+    width: 64px;
+    height: auto;
+    margin-bottom: 6px;
+    filter: drop-shadow(0 0 18px rgba(241,196,15,0.55));
+    animation: fadeSlideUp 0.6s ease both;
+}
+.victoria-resumen {
+    margin: 0 0 6px;
+    font-family: Georgia, serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(246,231,193,0.6);
+    font-variant-numeric: tabular-nums;
+}
+.victoria-titulo { font-size: clamp(28px, 8vw, 46px); text-wrap: balance; line-height: 1.1; }
+.victoria-ganador { margin-bottom: 6px; }
+.victoria-mi-lugar {
+    margin: 0 0 14px;
+    font-family: Georgia, serif;
+    font-style: italic;
+    color: rgba(246,231,193,0.8);
+}
+.pantalla-victoria.victoria-propia .victoria-ganador { color: var(--oro); }
+
+/* Tabla final sobre pergamino: la única superficie clara de la pantalla. */
+.tabla-final {
+    list-style: none;
+    width: 100%;
+    margin: 12px 0 22px;
+    padding: 6px 0;
+    background: linear-gradient(180deg, #f6ebcf 0%, #e9d7ab 100%);
+    color: var(--madera);
+    border-radius: 6px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(110,86,8,0.35);
+    max-height: 34vh;
+    overflow-y: auto;
+    animation: fadeSlideUp 0.8s 0.4s ease both;
+}
+.tabla-final-fila {
+    display: grid;
+    grid-template-columns: 2.4em 1fr auto;
+    align-items: baseline;
+    gap: 8px;
+    padding: 7px 14px;
+    font-family: Georgia, serif;
+    font-size: 14px;
+}
+.tabla-final-fila + .tabla-final-fila { border-top: 1px dashed rgba(62,39,35,0.25); }
+.tabla-final-lugar { font-variant-numeric: tabular-nums; color: #8a6d1c; font-weight: bold; }
+.tabla-final-nombre { font-family: var(--fuente-medieval); overflow-wrap: anywhere; }
+.tabla-final-nombre em { font-style: italic; font-family: Georgia, serif; font-size: 12px; opacity: 0.7; }
+.tabla-final-detalle { font-size: 12px; font-style: italic; opacity: 0.75; text-align: right; }
+.tabla-final-fila.es-rey { font-size: 16px; }
+.tabla-final-fila.es-rey .tabla-final-lugar { color: #b8860b; }
+.tabla-final-fila.es-yo { background: rgba(212,165,20,0.22); }
+
+.victoria-acciones { width: 100%; }
+.victoria-acciones .boton-oro { width: 100%; }
+.victoria-acciones .boton-madera { width: 100%; }

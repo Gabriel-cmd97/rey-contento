@@ -636,6 +636,61 @@ function explicacionRonda(datos) {
 }
 
 // ==========================================
+// PANTALLA DE VICTORIA — tabla final
+// ==========================================
+// El servidor solo manda al ganador, así que el orden de caída se anota aquí
+// ronda por ronda: quien cae al último queda 2.º, y así hacia atrás.
+let _caidasPartida = [];
+
+function registrarCaidas(datos) {
+    const ronda = parseInt(document.getElementById('numRonda')?.innerText || '0', 10) || 0;
+    datos.jugadores.forEach(j => {
+        if (j.vidas <= 0 && datos.perdedores.includes(j.id) && !_caidasPartida.some(c => c.nombre === j.nombre)) {
+            _caidasPartida.push({ id: j.id, nombre: j.nombre, ronda, esBot: !!j.esBot });
+        }
+    });
+}
+
+function pintarFinalPartida(ganador) {
+    const rondas = parseInt(document.getElementById('numRonda')?.innerText || '0', 10) || 0;
+    const hayGanador = !!ganador.id;
+    const gane = hayGanador && ganador.id === socket.id;
+
+    document.getElementById('victoriaResumen').textContent =
+        rondas ? `Fin de la partida · ${rondas} ${rondas === 1 ? 'ronda' : 'rondas'}` : 'Fin de la partida';
+    document.getElementById('victoriaTitulo').textContent = !hayGanador
+        ? 'Nadie se queda con la corona'
+        : gane ? '¡Eres el Rey Contento!' : '¡Tenemos un Rey!';
+    document.getElementById('pantallaVictoria').classList.toggle('victoria-propia', gane);
+
+    // Tabla: ganador arriba y luego del último en caer al primero.
+    const filas = [];
+    if (hayGanador) {
+        const vidas = ganador.vidas > 0 ? `${ganador.vidas} ${ganador.vidas === 1 ? 'vida' : 'vidas'} en pie` : '';
+        filas.push({ lugar: 1, nombre: ganador.nombre, detalle: vidas, esYo: gane });
+    }
+    [..._caidasPartida].reverse().forEach((c, i) => {
+        filas.push({ lugar: filas.length + 1, nombre: c.nombre, detalle: `cayó en la ronda ${c.ronda}`, esYo: c.id === socket.id || c.nombre === miNombreUsuario });
+    });
+
+    const tabla = document.getElementById('tablaFinal');
+    tabla.innerHTML = filas.map(f => `
+        <li class="tabla-final-fila${f.lugar === 1 ? ' es-rey' : ''}${f.esYo ? ' es-yo' : ''}">
+            <span class="tabla-final-lugar">${f.lugar}.º</span>
+            <span class="tabla-final-nombre">${escapeHTML(f.nombre)}${f.esYo ? ' <em>(tú)</em>' : ''}</span>
+            <span class="tabla-final-detalle">${escapeHTML(f.detalle)}</span>
+        </li>`).join('');
+    tabla.classList.toggle('hidden', filas.length < 2);
+
+    const miLugar = document.getElementById('victoriaMiLugar');
+    const mia = filas.find(f => f.esYo);
+    miLugar.textContent = mia && !gane ? `Quedaste en ${mia.lugar}.º lugar` : '';
+    miLugar.classList.toggle('hidden', !(mia && !gane));
+
+    _caidasPartida = []; // la revancha empieza de cero
+}
+
+// ==========================================
 // REACCIÓN FLOTANTE
 // ==========================================
 function mostrarReaccion(jugadorId, emoji) {
@@ -2178,6 +2233,7 @@ function conectarSocket() {
     // --- FIN DE RONDA ---
     socket.on('rondaTerminada', (datos) => {
         ocultarGuiaTurno();
+        registrarCaidas(datos);
         const gen = ++_renderGen;
         // Si el dealer acaba de cambiar su carta, actualizar el display antes de revelar
         if (_cartaPendiente !== null) {
@@ -2352,6 +2408,7 @@ function conectarSocket() {
         document.getElementById('panelAccionesPartida').classList.add('hidden');
         document.getElementById('pantallaVictoria').classList.remove('hidden');
         document.getElementById('nombreGanador').innerText = ganador.nombre;
+        pintarFinalPartida(ganador);
         document.getElementById('contadorRevancha').innerText = '';
         document.getElementById('btnRevancha').disabled = false;
         document.getElementById('btnRevancha').innerText = '⚔️ ¡Revancha!';
