@@ -1,4 +1,4 @@
-// Pruebas de la lógica de bots (sin servidor ni base):  node --test tests/
+// Pruebas de la lógica de bots (sin servidor ni base):  node --test tests/*.test.js
 const test = require('node:test');
 const assert = require('node:assert');
 const bots = require('../bots');

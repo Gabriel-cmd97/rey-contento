@@ -34,7 +34,7 @@ exacto y 0 victorias). Para ver cuántos quedan sin borrar:
 Lo que NO cubre: animaciones, DOM, reconexión real, comportamiento puro del cliente.
 
 La lógica de los bots tiene pruebas unitarias aparte, sin servidor ni base:
-`node --test tests/` (Node 18+, `export PATH=/usr/bin:$PATH`).
+`node --test tests/*.test.js` (Node 18+, `export PATH=/usr/bin:$PATH`).
 
 ## Arquitectura
 
