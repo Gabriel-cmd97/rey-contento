@@ -224,6 +224,9 @@ function esIdSalaValido(v) {
 // Sin esto, un cliente puede broadcastear strings arbitrarios (XSS no aplica
 // porque el cliente sanitiza, pero sí puede mandar payloads gigantes).
 const EMOJIS_REACCION = new Set(['😱', '🤡', '👑', '💀', '🎭', '🍀']);
+// Frases rápidas: el cliente manda solo el número de la frase (su lista está en
+// FRASES_RAPIDAS de main.js). Nunca texto libre: nada que moderar ni payloads raros.
+const TOTAL_FRASES = 8;
 
 // Marca actividad reciente en una sala. Se usa para que el sweeper no borre
 // salas vivas. Llamar al crear, al unirse, y en cada acción de jugador.
@@ -1451,6 +1454,19 @@ io.on('connection', (socket) => {
         if (!jugador) return;
         // Broadcast to others in the room
         socket.to(idSala).emit('reaccionJugador', { jugadorId: socket.id, emoji });
+    });
+
+    socket.on('frase', (payload) => {
+        if (!permitir(socket.id, 'frase', 2000)) return;
+        if (!payload || typeof payload !== 'object') return;
+        const { idSala, frase } = payload;
+        if (!esIdSalaValido(idSala)) return;
+        if (!Number.isInteger(frase) || frase < 0 || frase >= TOTAL_FRASES) return;
+        const sala = estadoSalas[idSala];
+        if (!sala) return;
+        const jugador = sala.jugadores.find(j => j.id === socket.id);
+        if (!jugador) return;
+        socket.to(idSala).emit('fraseJugador', { jugadorId: socket.id, frase });
     });
 
     socket.on('disconnect', () => {

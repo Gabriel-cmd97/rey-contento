@@ -2819,3 +2819,78 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
     text-shadow: none;
     vertical-align: 2px;
 }
+
+/* =========================================
+   FRASES RÁPIDAS
+   ========================================= */
+.btn-frases {
+    background: rgba(241,196,15,0.14);
+    border: 1px solid rgba(241,196,15,0.45);
+    border-radius: 50%;
+    width: 34px; height: 34px;
+    padding: 0;
+    color: #ffe27a;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.12s, background 0.12s;
+}
+.btn-frases[aria-expanded="true"] { background: rgba(241,196,15,0.32); }
+.btn-frases:active { transform: scale(0.9); }
+.btn-frases .icono { width: 18px; height: 18px; }
+
+.panel-frases {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+    padding: 6px 0;
+}
+.chip-frase {
+    background: rgba(20,12,8,0.7);
+    border: 1px solid rgba(241,196,15,0.35);
+    border-radius: 14px;
+    padding: 5px 8px;
+    color: var(--pergamino);
+    font-family: Georgia, serif;
+    font-size: 12.5px;
+    line-height: 1.25;
+    text-align: center;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+.chip-frase:active { background: rgba(241,196,15,0.25); }
+
+/* Globo de diálogo en pergamino sobre el asiento de quien habla. */
+.globo-frase {
+    position: fixed;
+    z-index: 320;
+    transform: translate(-50%, -100%);
+    max-width: 200px;
+    padding: 7px 12px;
+    background: linear-gradient(180deg, #f8efd9 0%, #efdfba 100%);
+    color: var(--texto);
+    border: 1px solid var(--oro-oscuro);
+    border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.55);
+    font-family: Georgia, serif;
+    font-size: 13px;
+    line-height: 1.3;
+    text-align: center;
+    pointer-events: none;
+    animation: globo-entra 0.25s cubic-bezier(.2,.9,.3,1.3);
+}
+.globo-frase::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: var(--cola-x, 50%);
+    transform: translateX(-50%);
+    border: 7px solid transparent;
+    border-top-color: #efdfba;
+}
+.globo-frase.saliendo { opacity: 0; transition: opacity 0.3s; }
+@keyframes globo-entra {
+    from { opacity: 0; transform: translate(-50%, -80%) scale(0.85); }
+    to   { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+}

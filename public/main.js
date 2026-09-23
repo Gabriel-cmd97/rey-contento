@@ -873,6 +873,56 @@ function animarPerdidaVida(jugador) {
 }
 
 // ==========================================
+// FRASES RÁPIDAS
+// ==========================================
+// Por la red viaja solo el número (el servidor valida el rango con
+// TOTAL_FRASES); si agregas o quitas frases, actualiza también el servidor.
+const FRASES_RAPIDAS = [
+    '¡Buena jugada!',
+    '¡Cámbiame esa carta!',
+    'Ni lo pienses',
+    'Suerte, la vas a necesitar',
+    '¡Uy! Casi',
+    'El Rey es mío',
+    '¿Seguro que mantienes?',
+    'Buena partida',
+];
+const _globosFrase = {}; // jugadorId → globo visible (uno por jugador)
+
+// Globo de diálogo sobre el asiento de quien habló.
+function mostrarFrase(jugadorId, indice) {
+    const texto = FRASES_RAPIDAS[indice];
+    if (!texto) return;
+    const asiento = jugadorId === socket.id
+        ? document.getElementById('miPerfil')
+        : document.querySelector(`.silla:not(.hidden)[data-jugador-id="${CSS.escape(jugadorId)}"] .perfil-oponente`);
+    if (!asiento) return;
+    _globosFrase[jugadorId]?.remove();
+    const r = asiento.getBoundingClientRect();
+    const globo = document.createElement('div');
+    globo.className = 'globo-frase';
+    globo.textContent = texto;
+    document.body.appendChild(globo);
+    // Arriba del asiento, sin salirse de la pantalla por los lados.
+    const ancho = globo.offsetWidth;
+    const x = Math.min(Math.max(r.left + r.width / 2, ancho / 2 + 8), window.innerWidth - ancho / 2 - 8);
+    globo.style.left = x + 'px';
+    globo.style.top = (r.top - 8) + 'px';
+    globo.style.setProperty('--cola-x', `${Math.round(r.left + r.width / 2 - (x - ancho / 2))}px`);
+    _globosFrase[jugadorId] = globo;
+    Sonidos.pop();
+    setTimeout(() => {
+        globo.classList.add('saliendo');
+        setTimeout(() => { globo.remove(); if (_globosFrase[jugadorId] === globo) delete _globosFrase[jugadorId]; }, 300);
+    }, 3000);
+}
+
+function cerrarPanelFrases() {
+    document.getElementById('panelFrases')?.classList.add('hidden');
+    document.getElementById('btnFrases')?.setAttribute('aria-expanded', 'false');
+}
+
+// ==========================================
 // PARTIDA RÁPIDA
 // ==========================================
 // El servidor te sienta en una mesa pública de 4 y la arranca sola: al llenarse
@@ -1196,6 +1246,7 @@ function mostrarLobbyLimpio() {
     ocultarGuiaTurno();
     document.getElementById('coachPractica')?.classList.add('hidden');
     terminarEsperaRapida();
+    cerrarPanelFrases();
 }
 
 function resetEstadoSala() {
@@ -2755,6 +2806,32 @@ function conectarSocket() {
                 btn.style.opacity = '';
             }, 2500);
         };
+    });
+
+    // --- FRASES RÁPIDAS ---
+    const panelFrases = document.getElementById('panelFrases');
+    panelFrases.innerHTML = FRASES_RAPIDAS
+        .map((f, i) => `<button class="chip-frase" role="menuitem" data-frase="${i}">${escapeHTML(f)}</button>`).join('');
+    let _cooldownFrase = false;
+    document.getElementById('btnFrases').onclick = () => {
+        const abrir = panelFrases.classList.contains('hidden');
+        panelFrases.classList.toggle('hidden', !abrir);
+        document.getElementById('btnFrases').setAttribute('aria-expanded', String(abrir));
+    };
+    panelFrases.querySelectorAll('.chip-frase').forEach(chip => {
+        chip.onclick = () => {
+            cerrarPanelFrases();
+            if (_cooldownFrase) return;
+            const frase = Number(chip.dataset.frase);
+            socket.emit('frase', { idSala: miSalaActual, frase });
+            mostrarFrase(socket.id, frase);
+            _cooldownFrase = true;
+            document.getElementById('btnFrases').style.opacity = '0.35';
+            setTimeout(() => { _cooldownFrase = false; document.getElementById('btnFrases').style.opacity = ''; }, 3000);
+        };
+    });
+    socket.on('fraseJugador', (datos) => {
+        if (datos.jugadorId !== socket.id) mostrarFrase(datos.jugadorId, datos.frase);
     });
 
     socket.on('reaccionJugador', (datos) => {
