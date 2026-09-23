@@ -246,6 +246,10 @@ Estas convenciones se aplicaron al pulir el aspecto y la confiabilidad de carga 
 **Animaciones de la mesa** (sección "ANIMACIONES DE LA MESA" en `main.js` y bloque homónimo en `style.css`):
 - *Revelación con suspenso*: en `rondaTerminada` se guarda `_inicioRevelacion`; `estiloRevelar(id)` da a cada `.mini-carta-frente` un `--retraso-revelar` según `ordenRevelacion()` (el orden en que jugó, dealer al final, `PASO_REVELAR_MS` = 180) calculado contra el reloj, así un re-render no la reinicia. El daño (tu carta, sonido, `animarPerdidaVida`) y el borde rojo de las perdedoras esperan `duracionRevelacion()`. El resumen sale a `max(1400, fin + 1100)`.
 - *Cambios visibles*: `accionMesa` tipo `CAMBIO` → `animarCambioEntre(jugador, objetivo)` cruza dos reversos fantasma en arco (Web Animations API).
+- *Bloqueo del Rey* (`accionMesa` `BLOQUEO`): `animarBloqueoRey()` — la carta rebota con `volarFantasma(..., { rebote })` y una corona destella sobre el Rey.
+- *Campana* (`campanaTocada`): `animarCampana()` — campana que se balancea sobre quien la tocó y dos ondas doradas por el tapete.
+- *Robo del mazo* (`accionMesa` `MAZO`, dealer o vecino del que tocó la campana): `animarRoboMazo()` — carta del mazo al jugador y la vieja a la pila.
+- `volarFantasma(desde, hacia, { arco, duracion, rebote })` es el vuelo común de carta boca abajo; úsalo para cualquier animación nueva de cartas.
 - *Pérdida de vida*: `animarPerdidaVida()` parte un corazón sobre las vidas y, si quedó eliminado, pone el sello de calavera.
 - Todo se salta con `menosMovimiento()` (prefers-reduced-motion). El servidor da tiempo a verlo: `MS_PAUSA_BOT` (5 s) antes de que un dealer bot avance y `MS_PAUSA_VICTORIA` (4.5 s) antes de `finDelJuego`; si se alarga la revelación, ajustar esas pausas.
 

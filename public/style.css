@@ -2707,3 +2707,38 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
     box-shadow: 0 6px 20px rgba(0,0,0,0.6);
 }
 .sello-eliminado .icono { width: 34px; height: 34px; stroke-width: 1.7; }
+
+/* Bloqueo del Rey: corona que destella sobre la carta del Rey. */
+.destello-rey {
+    position: fixed;
+    z-index: 300;
+    pointer-events: none;
+    color: #ffe27a;
+    background: radial-gradient(circle, rgba(241,196,15,0.55) 0%, rgba(241,196,15,0) 70%);
+    border-radius: 50%;
+    padding: 18px;
+    line-height: 0;
+    filter: drop-shadow(0 0 10px rgba(241,196,15,0.9));
+}
+.destello-rey .icono { width: 34px; height: 34px; stroke-width: 2.2; }
+
+/* Campana: la campana se balancea y una onda dorada cruza el tapete. */
+.campana-balanceo {
+    position: fixed;
+    z-index: 300;
+    pointer-events: none;
+    color: #ffe27a;
+    line-height: 0;
+    transform-origin: 50% 0%;
+    filter: drop-shadow(0 0 8px rgba(241,196,15,0.8));
+}
+.campana-balanceo .icono { width: 40px; height: 40px; stroke-width: 2.2; }
+.onda-campana {
+    position: fixed;
+    z-index: 30;
+    pointer-events: none;
+    border-radius: 50%;
+    border: 3px solid rgba(241,196,15,0.8);
+    box-shadow: 0 0 18px rgba(241,196,15,0.5), inset 0 0 18px rgba(241,196,15,0.35);
+    transform: translate(-50%, -50%);
+}

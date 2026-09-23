@@ -686,6 +686,38 @@ function cartaEnMesa(nombre) {
     return silla?.querySelector('.perfil-carta-reverso, .mini-carta-frente') || silla;
 }
 
+// Carta boca abajo que vuela entre dos rectángulos de pantalla. `arco` curva
+// la trayectoria (px, perpendicular a la línea); `rebote` la regresa desde el
+// punto `rebote` (0–1) del camino, como si chocara.
+function volarFantasma(desde, hacia, { arco = 0, duracion = 620, rebote = 0 } = {}) {
+    const g = document.createElement('div');
+    g.className = 'perfil-carta-reverso carta-fantasma-cambio';
+    const w = Math.min(desde.width || 40, 46), h = w * 1.5;
+    g.style.width = w + 'px'; g.style.height = h + 'px';
+    g.style.left = (desde.left + desde.width / 2 - w / 2) + 'px';
+    g.style.top = (desde.top + desde.height / 2 - h / 2) + 'px';
+    document.body.appendChild(g);
+    const dx = (hacia.left + hacia.width / 2) - (desde.left + desde.width / 2);
+    const dy = (hacia.top + hacia.height / 2) - (desde.top + desde.height / 2);
+    const largo = Math.hypot(dx, dy) || 1;
+    const px = -dy / largo * arco, py = dx / largo * arco;
+    const cuadros = rebote
+        ? [
+            { transform: 'translate(0,0) rotate(0deg)' },
+            { transform: `translate(${dx * rebote}px, ${dy * rebote}px) rotate(8deg) scale(1.1)`, offset: 0.45 },
+            { transform: `translate(${dx * rebote * 0.8}px, ${dy * rebote * 0.8}px) rotate(-10deg) scale(0.95)`, offset: 0.55 },
+            { transform: 'translate(0,0) rotate(0deg)' },
+          ]
+        : [
+            { transform: 'translate(0,0) rotate(0deg) scale(1)' },
+            { transform: `translate(${dx / 2 + px}px, ${dy / 2 + py}px) rotate(${arco >= 0 ? 12 : -12}deg) scale(1.15)`, offset: 0.5 },
+            { transform: `translate(${dx}px, ${dy}px) rotate(0deg) scale(1)` },
+          ];
+    const anim = g.animate(cuadros, { duration: duracion, easing: 'cubic-bezier(.45,.05,.35,1)' });
+    anim.onfinish = () => g.remove();
+    return anim;
+}
+
 // Dos cartas boca abajo que cruzan la mesa entre quienes cambiaron.
 function animarCambioEntre(nombreA, nombreB) {
     if (menosMovimiento()) return;
@@ -693,27 +725,87 @@ function animarCambioEntre(nombreA, nombreB) {
     if (!a || !b) return;
     const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
     if (!ra.width || !rb.width) return;
-    const volar = (desde, hacia, arco) => {
-        const g = document.createElement('div');
-        g.className = 'perfil-carta-reverso carta-fantasma-cambio';
-        const w = Math.min(desde.width, 46), h = w * 1.5;
-        g.style.width = w + 'px'; g.style.height = h + 'px';
-        g.style.left = (desde.left + desde.width / 2 - w / 2) + 'px';
-        g.style.top = (desde.top + desde.height / 2 - h / 2) + 'px';
-        document.body.appendChild(g);
-        const dx = (hacia.left + hacia.width / 2) - (desde.left + desde.width / 2);
-        const dy = (hacia.top + hacia.height / 2) - (desde.top + desde.height / 2);
-        // El arco sale perpendicular a la línea entre asientos: las dos cartas se cruzan sin encimarse.
-        const largo = Math.hypot(dx, dy) || 1;
-        const px = -dy / largo * arco, py = dx / largo * arco;
-        g.animate([
-            { transform: 'translate(0,0) rotate(0deg) scale(1)' },
-            { transform: `translate(${dx / 2 + px}px, ${dy / 2 + py}px) rotate(${arco > 0 ? 12 : -12}deg) scale(1.15)`, offset: 0.5 },
-            { transform: `translate(${dx}px, ${dy}px) rotate(0deg) scale(1)` },
-        ], { duration: 620, easing: 'cubic-bezier(.45,.05,.35,1)' }).onfinish = () => g.remove();
-    };
-    volar(ra, rb, 28);
-    volar(rb, ra, -28);
+    volarFantasma(ra, rb, { arco: 28 });
+    volarFantasma(rb, ra, { arco: -28 });
+    Sonidos.carta();
+}
+
+// Bloqueo del Rey: la carta sale hacia el Rey, choca a medio camino y rebota;
+// la carta del Rey destella en dorado.
+function animarBloqueoRey(nombreActor, nombreRey) {
+    if (menosMovimiento()) return;
+    const a = cartaEnMesa(nombreActor), r = cartaEnMesa(nombreRey);
+    if (!a || !r) return;
+    const ra = a.getBoundingClientRect(), rr = r.getBoundingClientRect();
+    if (!ra.width || !rr.width) return;
+    volarFantasma(ra, rr, { rebote: 0.55, duracion: 760 });
+    const destello = document.createElement('div');
+    destello.className = 'destello-rey';
+    destello.style.left = (rr.left + rr.width / 2) + 'px';
+    destello.style.top = (rr.top + rr.height / 2) + 'px';
+    destello.innerHTML = icono('corona');
+    document.body.appendChild(destello);
+    destello.animate([
+        { transform: 'translate(-50%,-50%) scale(0.3)', opacity: 0 },
+        { transform: 'translate(-50%,-50%) scale(1.15)', opacity: 1, offset: 0.35 },
+        { transform: 'translate(-50%,-50%) scale(1.5)', opacity: 0 },
+    ], { duration: 900, delay: 280, easing: 'ease-out', fill: 'both' }).onfinish = () => destello.remove();
+}
+
+// Campana: se balancea sobre quien la tocó y una onda dorada cruza el tapete.
+function animarCampana(jugadorId) {
+    if (menosMovimiento()) return;
+    const origen = jugadorId === socket.id
+        ? document.getElementById('miCarta')
+        : document.querySelector(`.silla:not(.hidden)[data-jugador-id="${CSS.escape(jugadorId)}"]`);
+    const tapete = document.getElementById('tapeteVistas');
+    if (!origen || !tapete) return;
+    const ro = origen.getBoundingClientRect(), rt = tapete.getBoundingClientRect();
+    const cx = ro.left + ro.width / 2, cy = ro.top + ro.height / 2;
+
+    const campana = document.createElement('div');
+    campana.className = 'campana-balanceo';
+    campana.innerHTML = icono('campana');
+    campana.style.left = cx + 'px'; campana.style.top = (ro.top - 6) + 'px';
+    document.body.appendChild(campana);
+    campana.animate([
+        { transform: 'translate(-50%,-100%) rotate(0deg) scale(0.6)', opacity: 0 },
+        { transform: 'translate(-50%,-100%) rotate(-24deg) scale(1.1)', opacity: 1, offset: 0.15 },
+        { transform: 'translate(-50%,-100%) rotate(20deg)', offset: 0.35 },
+        { transform: 'translate(-50%,-100%) rotate(-14deg)', offset: 0.55 },
+        { transform: 'translate(-50%,-100%) rotate(8deg)', offset: 0.75 },
+        { transform: 'translate(-50%,-100%) rotate(0deg)', opacity: 1, offset: 0.9 },
+        { transform: 'translate(-50%,-100%) rotate(0deg)', opacity: 0 },
+    ], { duration: 1500, easing: 'ease-in-out' }).onfinish = () => campana.remove();
+
+    // Onda: un anillo que crece hasta cubrir el tapete desde el asiento.
+    const alcance = Math.hypot(Math.max(cx - rt.left, rt.right - cx), Math.max(cy - rt.top, rt.bottom - cy)) * 2;
+    [0, 260].forEach(retraso => {
+        const onda = document.createElement('div');
+        onda.className = 'onda-campana';
+        onda.style.left = cx + 'px'; onda.style.top = cy + 'px';
+        document.body.appendChild(onda);
+        onda.animate([
+            { width: '20px', height: '20px', opacity: 0.9 },
+            { width: alcance + 'px', height: alcance + 'px', opacity: 0 },
+        ], { duration: 1300, delay: retraso, easing: 'cubic-bezier(.2,.6,.4,1)', fill: 'both' }).onfinish = () => onda.remove();
+    });
+}
+
+// Robo del mazo: una carta vuela del mazo al jugador y la vieja cae a la pila.
+function animarRoboMazo(nombre) {
+    if (menosMovimiento()) return;
+    const mazo = document.getElementById('mazoFlotante');
+    const carta = cartaEnMesa(nombre);
+    if (!mazo || !carta) return;
+    const rm = mazo.getBoundingClientRect(), rc = carta.getBoundingClientRect();
+    if (!rm.width || !rc.width) return;
+    const pila = document.getElementById('cartasPila');
+    const rp = pila && pila.getBoundingClientRect().width ? pila.getBoundingClientRect()
+        : document.getElementById('tapeteVistas').getBoundingClientRect();
+    const centroPila = { left: rp.left + rp.width / 2 - 20, top: rp.top + rp.height / 2 - 30, width: 40, height: 60 };
+    volarFantasma(rc, centroPila, { arco: -18, duracion: 520 });
+    setTimeout(() => volarFantasma(rm, rc, { arco: 22, duracion: 600 }), 180);
     Sonidos.carta();
 }
 
@@ -2321,6 +2413,7 @@ function conectarSocket() {
         document.getElementById('bannerUltimaVuelta').classList.remove('hidden');
         Sonidos.campana();
         vibrar([160, 80, 160]);
+        animarCampana(datos.jugadorId);
     });
 
     // --- ACCIONES EN MESA (MINI-FEED) ---
@@ -2328,6 +2421,10 @@ function conectarSocket() {
         registrarJugadaFeed(datos);
         if (datos.tipo === 'CAMBIO' && datos.jugador && datos.objetivo) {
             animarCambioEntre(datos.jugador, datos.objetivo);
+        } else if (datos.tipo === 'BLOQUEO' && datos.jugador && datos.objetivo) {
+            animarBloqueoRey(datos.jugador, datos.objetivo);
+        } else if (datos.tipo === 'MAZO' && datos.jugador) {
+            animarRoboMazo(datos.jugador);
         }
     });
 
