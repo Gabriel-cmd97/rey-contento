@@ -596,6 +596,8 @@ function actualizarGuiaTurno(esMio, esCampana, campanaTocada) {
 
     const lineas = ['✋ Te quedas con tu carta', textoCambiar];
     if (esCampana && !campanaTocada) lineas.push('🔔 Cierra la ronda: tócala si crees tener la carta más baja');
+    lineas.push('👆 También con tu carta: deslízala a la derecha para cambiar, tócala dos veces para mantener');
+    amagarCarta();
 
     const guia = document.getElementById('guiaAcciones');
     if (guia) {
@@ -604,6 +606,20 @@ function actualizarGuiaTurno(esMio, esCampana, campanaTocada) {
         document.body.classList.add('con-guia'); // sube los avisos para no taparla
     }
     if (destino) dibujarFlechaGuia(document.getElementById('miCarta'), destino);
+}
+
+// La carta hace un amago hacia la derecha para invitar a arrastrarla.
+function amagarCarta() {
+    if (menosMovimiento()) return;
+    const carta = document.getElementById('miCarta');
+    if (!carta || carta.classList.contains('arrastrando')) return;
+    carta.animate([
+        { transform: 'translateX(0) rotate(0deg)' },
+        { transform: 'translateX(22px) rotate(5deg)', offset: 0.3 },
+        { transform: 'translateX(0) rotate(0deg)', offset: 0.55 },
+        { transform: 'translateX(14px) rotate(3deg)', offset: 0.75 },
+        { transform: 'translateX(0) rotate(0deg)' },
+    ], { duration: 1100, delay: 500, easing: 'ease-in-out', composite: 'add' });
 }
 
 // Recordatorio del objetivo al empezar cada ronda.
@@ -1250,6 +1266,7 @@ function inicializarGestosCarta(onMantener, onCambiar) {
     let currentX = 0, currentY = 0;
     let isDragging = false;
     let umbralSonado = false;
+    let ultimoToque = 0; // para el doble toque = MANTENER
 
     function sePuedeJugar() {
         const btnCambiar = document.getElementById('btnCambiar');
@@ -1315,6 +1332,18 @@ function inicializarGestosCarta(onMantener, onCambiar) {
             // Gesto hacia abajo: MANTENER
             carta.style.transform = '';
             if (typeof onMantener === 'function') onMantener();
+        } else if (Math.abs(dx) < 12 && Math.abs(dy) < 12) {
+            // Un toque sin arrastrar. Dos toques seguidos (< 350 ms) = MANTENER.
+            carta.classList.add('soltando');
+            carta.style.transform = '';
+            setTimeout(() => { carta.classList.remove('soltando'); }, 260);
+            const ahora = Date.now();
+            if (ahora - ultimoToque < 350 && sePuedeJugar()) {
+                ultimoToque = 0;
+                if (typeof onMantener === 'function') onMantener();
+            } else {
+                ultimoToque = ahora;
+            }
         } else {
             // Regresar elásticamente a su posición original
             carta.classList.add('soltando');
