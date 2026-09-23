@@ -33,6 +33,9 @@ exacto y 0 victorias). Para ver cuántos quedan sin borrar:
 
 Lo que NO cubre: animaciones, DOM, reconexión real, comportamiento puro del cliente.
 
+La lógica de los bots tiene pruebas unitarias aparte, sin servidor ni base:
+`node --test tests/` (Node 18+, `export PATH=/usr/bin:$PATH`).
+
 ## Arquitectura
 
 **Rey Contento** es un juego de cartas multijugador en tiempo real que corre como un único proceso Node.js.
@@ -75,6 +78,8 @@ quieroJugarOtraVez → iniciarRevancha()
 **`modoRey`**:
 - `SORPRESA` — el 9 está oculto
 - `DECLARADO` — cuando alguien recibe el 9, se revela públicamente de inmediato
+
+**`dificultadBots`** (`bots.js`): `FACIL` (umbral fijo, se equivoca 1 de cada 4), `NORMAL` (calcula la probabilidad de perder si mantiene vs. si cambia) y `DIFICIL` (además cuenta el descarte y recuerda los cambios de la ronda en `bot.memoria`). Los bots solo usan información que un humano atento también tiene. En una simulación de 60 000 rondas pierden ~26, ~19 y ~16 vidas cada 100 rondas.
 
 **`frecuenciaReyes`**: controla qué tan seguido aparecen los 9s — `NORMAL` (aleatorio), `ALTA`, `LOCURA` (sesgados hacia las primeras rondas)
 
@@ -221,6 +226,7 @@ Estas convenciones se aplicaron al pulir el aspecto y la confiabilidad de carga 
 Estas convenciones se aplicaron tras un hardening pass. Si trabajás en código que las toca, mantenelas:
 
 - **Identidad por username, no por socket.id**: handlers que mutan estado de sala (`accionJugador`, `iniciarPartida`, `siguienteRonda`) validan `socket.usuario.username` contra `sala.jugadores[N].nombre`. El `socket.id` cambia en cada reconexión y abre ventanas de race.
+- **Nunca emitir `sala.jugadores` tal cual**: usar `jugadoresPublicos(sala)`. Trae la carta oculta de todos y la memoria de los bots; el helper solo deja pasar `cartaActual` al revelar la ronda o si es un Rey declarado, y calcula `cartaRevelada` en cada envío. Hasta el 23/09/2026 las cartas de todos viajaban en cada turno y se podían ver en las herramientas del navegador.
 - **Whitelist de acciones**: `accionJugador` rechaza cualquier `accion` fuera de `['MANTENER', 'CAMBIAR', 'CAMPANA']` antes de tocar estado.
 - **`sanitizarConfig()`**: toda config que viene del cliente en `crearSala` pasa por este helper en `server.js`. Hace clamp de rangos (vidas 1-10, maxJugadores 2-8, numBots 0..max-1) y valida enums. Agregar nuevos campos de config significa actualizar este helper también.
 - **Passwords de sala**: se hashean con `bcrypt.hashSync` al crear y se comparan con `bcrypt.compareSync` al unirse. **Nunca** guardar `sala.password` en plaintext.

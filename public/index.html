@@ -132,6 +132,14 @@
                             <option value="7">7 Bots</option>
                         </select>
                     </div>
+                    <div class="config-item-nuevo config-full hidden" id="bloqueDificultadBots">
+                        <span class="config-label-nuevo">🧠 Dificultad de los bots</span>
+                        <select id="selectDificultadBots" class="selector-medieval selector-compacto">
+                            <option value="FACIL">Fácil</option>
+                            <option value="NORMAL" selected>Normal</option>
+                            <option value="DIFICIL">Difícil</option>
+                        </select>
+                    </div>
                     <div class="config-item-nuevo config-full">
                         <span class="config-label-nuevo">🔔 Modo de juego</span>
                         <select id="selectModoJuego" class="selector-medieval selector-compacto">
@@ -462,15 +470,19 @@
             const modoJuego = document.getElementById('selectModoJuego')?.value === 'CAMPANA' ? '🔔 Campana' : '⚔️ Clásico';
             const vidas     = document.getElementById('selectVidas')?.value;
             const jugadores = document.getElementById('selectJugadores')?.value;
+            const numBots   = parseInt(document.getElementById('selectBots')?.value || '0');
+            const selDif    = document.getElementById('selectDificultadBots');
+            document.getElementById('bloqueDificultadBots')?.classList.toggle('hidden', numBots === 0);
+            const bots      = numBots > 0 ? ` · 🤖 ${selDif.options[selDif.selectedIndex].text}` : '';
             const resumen   = document.getElementById('resumenConfig');
             if (resumen) {
-                resumen.innerText = `⚙️ ${modoJuego} · ${modo} · ${vidas} ♥️ · ${jugadores} jug`;
+                resumen.innerText = `⚙️ ${modoJuego} · ${modo} · ${vidas} ♥️ · ${jugadores} jug${bots}`;
             }
         }
 
         // Escuchar cambios en selects para actualizar resumen
         document.addEventListener('DOMContentLoaded', () => {
-            ['selectModo','selectReyes','selectVidas','selectJugadores','selectBots','selectModoJuego'].forEach(id => {
+            ['selectModo','selectReyes','selectVidas','selectJugadores','selectBots','selectDificultadBots','selectModoJuego'].forEach(id => {
                 document.getElementById(id)?.addEventListener('change', actualizarResumenConfig);
             });
         });

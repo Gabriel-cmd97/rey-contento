@@ -5,6 +5,7 @@ const { Server } = require('socket.io');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('./db');
+const bots = require('./bots');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const log = require('./logger');
@@ -186,6 +187,7 @@ function sanitizarConfig(raw) {
     const modoJuego     = enLista(raw.modoJuego, ['CLASICO', 'CAMPANA'], 'CLASICO');
     const modoRey       = enLista(raw.modoRey, ['SORPRESA', 'DECLARADO'], 'SORPRESA');
     const frecuenciaReyes = enLista(raw.frecuenciaReyes, ['NORMAL', 'ALTA', 'LOCURA'], 'NORMAL');
+    const dificultadBots = enLista(raw.dificultadBots, bots.DIFICULTADES, 'NORMAL');
 
     let password = null;
     if (typeof raw.password === 'string') {
@@ -194,7 +196,7 @@ function sanitizarConfig(raw) {
         else if (trimmed.length > 50) return null; // rechazar passwords absurdamente largos
     }
 
-    return { vidas, maxJugadores, numBots, modoJuego, modoRey, frecuenciaReyes, password };
+    return { vidas, maxJugadores, numBots, modoJuego, modoRey, frecuenciaReyes, dificultadBots, password };
 }
 
 // Formato del idSala: 5 caracteres alfanuméricos. El alfabeto real es
@@ -289,12 +291,28 @@ function limpiarSala(idSala) {
     delete estadoSalas[idSala];
 }
 
+// Lo que la mesa puede ver de cada jugador. Nunca mandar sala.jugadores tal
+// cual: trae la carta oculta de todos (se veía abriendo las herramientas del
+// navegador) y la memoria de los bots. La carta ajena solo viaja cuando ya es
+// pública: al revelar la ronda o si es un Rey declarado. Cada quien recibe la
+// suya aparte con 'tuCarta'.
+function jugadoresPublicos(sala) {
+    const rondaRevelada = sala.estadoActual === "REVELACION" || sala.estadoActual === "FINALIZADO";
+    const reyDeclarado = sala.config.modoRey === "DECLARADO" && sala.config.modoJuego !== 'CAMPANA';
+    return sala.jugadores.map(({ memoria, cartaActual, cartaRevelada, ...publico }) => {
+        const esReyVisible = reyDeclarado && cartaActual === 9;
+        if (rondaRevelada || esReyVisible) publico.cartaActual = cartaActual;
+        publico.cartaRevelada = esReyVisible;
+        return publico;
+    });
+}
+
 // Helper para emitir actualizarLobby siempre con maxJugadores
 function emitirLobby(idSala) {
     const sala = estadoSalas[idSala];
     if (!sala) return;
     io.to(idSala).emit('actualizarLobby', {
-        jugadores: sala.jugadores,
+        jugadores: jugadoresPublicos(sala),
         maxJugadores: sala.config.maxJugadores
     });
 }
@@ -532,7 +550,7 @@ function resolverRonda(sala, io) {
     vivos.forEach(j => { if (j.cartaActual !== undefined && j.cartaActual !== null) sala.descarte.push(j.cartaActual); });
 
     io.to(sala.idSala).emit('rondaTerminada', {
-        jugadores: sala.jugadores,
+        jugadores: jugadoresPublicos(sala),
         perdedores: perdedores,
         cartaMortal: valorCritico,
         dealerId: sala.jugadores[sala.dealerIndex].id,
@@ -562,7 +580,7 @@ function resolverRonda(sala, io) {
             if (vivos.length <= 1) return;
             sala.estadoActual = "PREPARANDO_NUEVA_RONDA";
             if (!dealerEsBot) io.to(sala.idSala).emit('mensajeGlobal', '⏩ La siguiente ronda empezó automáticamente.');
-            io.to(sala.idSala).emit('nuevaRondaIniciada', { jugadoresActualizados: sala.jugadores });
+            io.to(sala.idSala).emit('nuevaRondaIniciada', { jugadoresActualizados: jugadoresPublicos(sala) });
             iniciarRonda(sala, io);
         }, dealerEsBot ? 2500 : SEG_AUTO_SIGUIENTE_RONDA * 1000);
     }
@@ -646,7 +664,7 @@ function gestionarTurnos(sala, io, esInicio = false) {
         if (esInicio) {
             io.to(sala.idSala).emit('juegoIniciado', {
                 id: jugadorActual.id, nombre: jugadorActual.nombre,
-                tiempo: 0, jugadores: sala.jugadores,
+                tiempo: 0, jugadores: jugadoresPublicos(sala),
                 modoRey: sala.config.modoRey,
                 modoJuego: sala.config.modoJuego || 'CLASICO',
                 campanaTocada: sala.campanaTocada
@@ -682,7 +700,7 @@ function gestionarTurnos(sala, io, esInicio = false) {
 
         const payloadTurno = {
             id: idJugadorEnTurno, nombre: jugadorActual.nombre,
-            tiempo: tiempoTurno, jugadores: sala.jugadores,
+            tiempo: tiempoTurno, jugadores: jugadoresPublicos(sala),
             modoRey: sala.config.modoRey,
             modoJuego: sala.config.modoJuego || 'CLASICO',
             campanaTocada: sala.campanaTocada
@@ -694,21 +712,18 @@ function gestionarTurnos(sala, io, esInicio = false) {
         }
 
         if (jugadorActual.esBot) {
-            let decision;
-            if (sala.config.modoJuego === 'CAMPANA' && !sala.campanaTocada && jugadorActual.cartaActual <= 2) {
-                decision = 'CAMPANA'; // carta baja = seguro en campana → tocar
-            } else if (sala.config.modoJuego === 'CAMPANA') {
-                decision = jugadorActual.cartaActual >= 6 ? 'CAMBIAR' : 'MANTENER';
-            } else {
-                decision = jugadorActual.cartaActual <= 4 ? 'CAMBIAR' : 'MANTENER';
-            }
+            const decision = bots.decidirBot(sala, jugadorActual, {
+                esDealer: indiceActual === sala.dealerIndex,
+                derecha: jugadorDerecha,
+                derechaEsRinger: esCampana && sala.campanaTocada && jugadorDerecha.id === sala.campanaTocadorId,
+            });
             setTimeout(() => {
                 const salaActual = estadoSalas[sala.idSala];
                 if (!salaActual) return;
                 const botVivo = salaActual.jugadores.find(j => j.id === jugadorActual.id && j.vidas > 0);
                 if (!botVivo) return;
                 ejecutarAccion(sala.idSala, decision, io, jugadorActual.id);
-            }, 1200);
+            }, bots.retrasoBot());
             return;
         }
 
@@ -780,6 +795,7 @@ function iniciarRonda(sala, io) {
     });
 
     vivos.forEach(j => { j.cartaActual = sala.mazo.pop(); });
+    bots.olvidarRonda(sala.jugadores);
 
     let jugadoresConNueve = vivos.filter(j => j.cartaActual === 9);
     jugadoresConNueve.forEach(suertudo => {
@@ -837,7 +853,7 @@ function iniciarRonda(sala, io) {
         modoRey: sala.config.modoRey,
         modoJuego: sala.config.modoJuego || 'CLASICO',
         cartasRestantes: sala.mazo.length,
-        jugadores: sala.jugadores
+        jugadores: jugadoresPublicos(sala)
     });
 
     sala.jugadores.forEach(j => {
@@ -946,6 +962,7 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
                     let nuevaCarta = sala.mazo.pop();
                     sala.descarte.push(cartaVieja);
                     jugadorActual.cartaActual = nuevaCarta;
+                    bots.olvidarCarta(sala.jugadores, jugadorActual);
                     io.to(jugadorActual.id).emit('tuCarta', jugadorActual.cartaActual);
                     io.to(idSala).emit('mensajeGlobal', `🃏 ${jugadorActual.nombre} robó del mazo (no puede cambiar con quien tocó la campana).`);
                     io.to(idSala).emit('actualizarMazo', { cartasRestantes: sala.mazo.length });
@@ -966,6 +983,7 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
                 }
             } else {
                 let temp = jugadorActual.cartaActual;
+                bots.recordarCambio(sala.jugadores, jugadorActual, jugadorDerecha, temp, jugadorDerecha.cartaActual);
                 jugadorActual.cartaActual = jugadorDerecha.cartaActual;
                 jugadorDerecha.cartaActual = temp;
                 io.to(jugadorActual.id).emit('tuCarta', jugadorActual.cartaActual);
@@ -1001,6 +1019,7 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
                 }
                 sala.descarte.push(cartaVieja);
                 jugadorActual.cartaActual = nuevaCarta;
+                bots.olvidarCarta(sala.jugadores, jugadorActual);
                 io.to(jugadorActual.id).emit('tuCarta', jugadorActual.cartaActual);
                 io.to(idSala).emit('mensajeGlobal', `🃏 El Dealer (${jugadorActual.nombre}) cambió su carta con el mazo.`);
                 io.to(idSala).emit('actualizarMazo', { cartasRestantes: sala.mazo.length });
@@ -1296,7 +1315,7 @@ io.on('connection', (socket) => {
                     carta: jugadorExistente.cartaActual,
                     ronda: sala.rondaActual,
                     dealer: sala.jugadores[sala.dealerIndex].nombre,
-                    jugadores: sala.jugadores,
+                    jugadores: jugadoresPublicos(sala),
                     estado: sala.estadoActual,
                     turnoEnCurso: sala.jugadores[sala.turnoActualIndex].id,
                     turnoNombre: sala.jugadores[sala.turnoActualIndex].nombre,
@@ -1360,7 +1379,7 @@ io.on('connection', (socket) => {
             return;
         }
 
-        io.to(id).emit('nuevaRondaIniciada', { jugadoresActualizados: sala.jugadores });
+        io.to(id).emit('nuevaRondaIniciada', { jugadoresActualizados: jugadoresPublicos(sala) });
         iniciarRonda(sala, io);
     });
 
@@ -1467,7 +1486,7 @@ io.on('connection', (socket) => {
                             if (jPerdido && !jPerdido.online && jPerdido.vidas > 0) {
                                 jPerdido.vidas = 0;
                                 io.to(id).emit('mensajeGlobal', `☠️ ${jPerdido.nombre} no regresó a tiempo y fue eliminado.`);
-                                io.to(id).emit('nuevaRondaIniciada', { jugadoresActualizados: salaActual.jugadores });
+                                io.to(id).emit('nuevaRondaIniciada', { jugadoresActualizados: jugadoresPublicos(salaActual) });
                             }
                         }
                     }, 180000); // 3 minutos — margen para bloqueo de pantalla en celular

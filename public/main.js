@@ -1498,6 +1498,7 @@ function conectarSocket() {
                 vidas: parseInt(document.getElementById('selectVidas').value),
                 maxJugadores: parseInt(document.getElementById('selectJugadores').value),
                 numBots: parseInt(document.getElementById('selectBots').value),
+                dificultadBots: document.getElementById('selectDificultadBots').value,
                 modoJuego: document.getElementById('selectModoJuego').value,
                 password: document.getElementById('inputPasswordSala').value.trim()
             }
