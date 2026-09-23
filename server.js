@@ -546,15 +546,25 @@ function resolverRonda(sala, io) {
         texto: `Fin de ronda — Carta mortal: ${valorCritico}`
     });
 
-    if (!juegoTerminado && sala.jugadores[sala.dealerIndex].esBot) {
+    // Avance automático: con dealer bot a los 2.5s; con dealer humano a los 15s
+    // por si no presiona "siguiente ronda" (antes la sala quedaba atorada en
+    // REVELACION hasta que el sweeper la borraba). Si el dealer avanza antes,
+    // el estado ya no es REVELACION y este timer no hace nada.
+    const SEG_AUTO_SIGUIENTE_RONDA = 15;
+    if (!juegoTerminado) {
+        const dealerEsBot = sala.jugadores[sala.dealerIndex].esBot;
+        const rondaResuelta = sala.rondaActual;
         setTimeout(() => {
-            if (!estadoSalas[sala.idSala] || sala.estadoActual !== "REVELACION") return;
+            // rondaResuelta: si el dealer ya avanzó y otra ronda llegó a
+            // REVELACION antes de los 15s, este timer viejo no debe saltarla.
+            if (!estadoSalas[sala.idSala] || sala.estadoActual !== "REVELACION" || sala.rondaActual !== rondaResuelta) return;
             let vivos = sala.jugadores.filter(j => j.vidas > 0);
             if (vivos.length <= 1) return;
             sala.estadoActual = "PREPARANDO_NUEVA_RONDA";
+            if (!dealerEsBot) io.to(sala.idSala).emit('mensajeGlobal', '⏩ La siguiente ronda empezó automáticamente.');
             io.to(sala.idSala).emit('nuevaRondaIniciada', { jugadoresActualizados: sala.jugadores });
             iniciarRonda(sala, io);
-        }, 2500);
+        }, dealerEsBot ? 2500 : SEG_AUTO_SIGUIENTE_RONDA * 1000);
     }
 
     if (juegoTerminado) {
