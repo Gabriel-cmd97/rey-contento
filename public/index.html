@@ -65,6 +65,7 @@
             <div class="barra-top-item hidden" id="infoDealer">👑 DEALER:<span id="nombreDealer">...</span></div>
             <div class="barra-top-item hidden" id="infoModo"></div>
             <div class="barra-top-item" style="gap:8px;">
+                <button id="btnToggleGuias" class="btn-sonido-top" title="Guías">💡</button>
                 <button id="btnToggleSonido" class="btn-sonido-top" title="Silenciar / Activar sonido">🔊</button>
                 <button id="btnMiPerfil" class="btn-perfil-top" title="Mi perfil">👤 <span id="displayUsername">...</span></button>
                 <span style="color:var(--verde)">🟢</span>
@@ -227,6 +228,7 @@
                     <div id="panelResumenRonda" class="panel-resumen-overlay hidden">
                         <div class="resumen-box">
                             <div class="resumen-header">⚔️ FIN DE RONDA — Carta mortal: <span id="resumenCartaMortal" class="resumen-mortal-num">—</span></div>
+                            <div id="resumenExplicacion" class="resumen-explicacion hidden"></div>
                             <div id="resumenCartas" class="resumen-cartas-grid"></div>
                             <button id="btnSiguienteRondaResumen" class="boton-medieval btn-latido hidden">SIGUIENTE RONDA ➡️</button>
                         </div>
@@ -260,6 +262,17 @@
                     </div>
 
                     <div id="bannerUltimaVuelta" class="hidden banner-ultima-vuelta">🔔 ¡ÚLTIMA VUELTA!</div>
+                    <div id="bannerObjetivo" class="hidden banner-objetivo"></div>
+
+                    <!-- Guía: flecha de tu carta hacia con quién cambiarías (o el mazo) -->
+                    <svg id="flechaGuia" class="flecha-guia hidden" aria-hidden="true">
+                        <defs>
+                            <marker id="puntaFlechaGuia" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#f1c40f"/>
+                            </marker>
+                        </defs>
+                        <path class="trazo-flecha" d="" marker-end="url(#puntaFlechaGuia)"/>
+                    </svg>
 
                     <div id="bannerEspectador" class="hidden" style="position:absolute; top:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); border:2px solid #7f8c8d; border-radius:20px; padding:6px 20px; z-index:100; color:#bdc3c7; font-size:13px; font-weight:bold; letter-spacing:1px;">
                         👁️ MODO ESPECTADOR
@@ -319,6 +332,7 @@
                 <button class="btn-reaccion" data-emoji="🎭">🎭</button>
                 <button class="btn-reaccion" data-emoji="🍀">🍀</button>
             </div>
+            <div id="guiaAcciones" class="guia-acciones hidden"></div>
             <div class="acciones-row">
                 <button id="btnMantener" class="boton-medieval full-width" disabled>MANTENER</button>
                 <button id="btnCampana" class="boton-campana hidden" disabled>🔔</button>
@@ -392,6 +406,7 @@
             <h3 class="medieval-font" style="color:var(--oro-oscuro);">🎯 Objetivo</h3>
             <p>Ser el último jugador con vida. Al final de cada ronda, quien tenga la carta más baja pierde una ♥️. Sin vidas, quedas eliminado.</p>
 
+            <p>💡 <strong>Guías:</strong> en tus primeras partidas una flecha te señala con quién cambiarías, abajo de los botones ves qué hace cada uno y al final de la ronda te explicamos por qué perdiste o te salvaste. Préndelas o apágalas con el botón 💡 de arriba.</p>
             <h3 class="medieval-font" style="color:var(--oro-oscuro);margin-top:15px;">🃏 Las Cartas</h3>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:13px;margin-bottom:10px;">
                 <span>0 🧦 El Mendigo</span><span>5 🪓 El Verdugo</span>

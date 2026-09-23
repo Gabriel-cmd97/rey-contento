@@ -154,6 +154,10 @@ DEBUG_LOG=1
 
 **Modales**: `modalReglas`, `modalPerfil`, `modalPasswordSala`
 
+**Guías para quien empieza** (sección "GUÍAS PARA QUIEN EMPIEZA" en `main.js`): flecha SVG `#flechaGuia` de tu carta al vecino derecho (o al mazo si eres dealer o tu vecino tocó la campana), texto `#guiaAcciones` bajo los botones, banner `#bannerObjetivo` al iniciar la ronda y `#resumenExplicacion` en el resumen. Se prenden solas las primeras `PARTIDAS_CON_GUIAS` (3) partidas (`localStorage.reyPartidasGuia`, se cuenta en `finDelJuego`); el botón 💡 fija `reyGuias = on|off`. `actualizarGuiaTurno()` se llama desde `actualizarBotonesTurno()`, así que cubre los tres caminos de turno. Regla: **nunca** sugerir si conviene cambiar o mantener.
+
+**`restaurarSesion()` va al FINAL de `main.js`**: `conectarSocket()` usa variables `let` declaradas más abajo; llamarla antes (estaba a media carga) lanzaba "Cannot access ... before initialization", cortaba el resto del archivo y quien volvía con sesión guardada veía la mesa congelada (arreglado el 23/09/2026).
+
 **CSS importante**:
 - `.hidden { display: none !important }` — nunca usar `display: flex !important` en clases que convivan con `hidden` porque el orden en el archivo determina cuál gana cuando tienen igual especificidad
 - `#mazoFlotante.pos-*` — 8 clases de posicionamiento absoluto dentro del tapete que mueven el mazo junto al dealer

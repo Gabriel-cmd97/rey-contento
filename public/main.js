@@ -464,24 +464,175 @@ function lanzarCoronasVictoria() {
 function actualizarBotonesTurno(esMio, esCampana, campanaTocada) {
     const btnCambiar = document.getElementById('btnCambiar');
     btnCambiar.innerText = 'CAMBIAR';
+    actualizarGuiaTurno(esMio, esCampana, campanaTocada);
 
     if (!esMio || !esCampana || !campanaTocada || !campanaRingerId) return;
 
     // Verificar si mi vecino derecho es quien tocó la campana
-    const miIndex = listaJugadoresGlobal.findIndex(j => j.id === socket.id);
-    if (miIndex === -1) return;
-
-    let derechaIndex = miIndex;
-    let intentos = 0;
-    do {
-        derechaIndex = (derechaIndex + 1) % listaJugadoresGlobal.length;
-        intentos++;
-    } while (listaJugadoresGlobal[derechaIndex]?.vidas <= 0 && intentos < listaJugadoresGlobal.length);
-
-    if (listaJugadoresGlobal[derechaIndex]?.id === campanaRingerId) {
+    if (vecinoDerechoLocal()?.id === campanaRingerId) {
         btnCambiar.innerText = '🃏 ROBAR';
         mostrarToast('🔔 No puedes cambiar con quien tocó la campana — si cambias, robarás del mazo.', 'rey', 4000);
     }
+}
+
+// ==========================================
+// GUÍAS PARA QUIEN EMPIEZA
+// ==========================================
+// Ayudas dentro de la ronda: flecha hacia con quién cambias (o al mazo si
+// eres dealer), recordatorio del objetivo al iniciar la ronda, texto bajo los
+// botones y explicación de por qué perdiste o te salvaste. Salen solas en las
+// primeras PARTIDAS_CON_GUIAS partidas; el botón 💡 las prende o apaga a mano.
+// Nunca dicen si conviene cambiar o mantener: eso es el juego.
+const PARTIDAS_CON_GUIAS = 3;
+let modoJuegoActual = 'CLASICO';
+
+function leerLS(clave) { try { return localStorage.getItem(clave); } catch { return null; } }
+function escribirLS(clave, valor) { try { localStorage.setItem(clave, valor); } catch { /* sin storage: guías por defecto */ } }
+
+function partidasConGuia() { return parseInt(leerLS('reyPartidasGuia') || '0', 10) || 0; }
+
+function guiasActivas() {
+    const pref = leerLS('reyGuias');
+    if (pref === 'on') return true;
+    if (pref === 'off') return false;
+    return partidasConGuia() < PARTIDAS_CON_GUIAS;
+}
+
+function pintarBotonGuias() {
+    const b = document.getElementById('btnToggleGuias');
+    if (!b) return;
+    const on = guiasActivas();
+    b.style.opacity = on ? '1' : '0.4';
+    b.title = on ? 'Guías activadas (toca para apagarlas)' : 'Guías apagadas (toca para prenderlas)';
+}
+
+function contarPartidaParaGuias() {
+    const antes = guiasActivas();
+    escribirLS('reyPartidasGuia', String(partidasConGuia() + 1));
+    if (antes && !guiasActivas()) {
+        mostrarToast('💡 Ya le agarraste la onda: apagamos las guías. Puedes prenderlas con 💡.', 'rey', 5000);
+    }
+    pintarBotonGuias();
+}
+
+// Siguiente jugador vivo a mi derecha (con quien cambiaría), o null.
+function vecinoDerechoLocal() {
+    const miIndex = listaJugadoresGlobal.findIndex(j => j.id === socket.id);
+    if (miIndex === -1) return null;
+    let i = miIndex;
+    let intentos = 0;
+    do {
+        i = (i + 1) % listaJugadoresGlobal.length;
+        intentos++;
+    } while (listaJugadoresGlobal[i]?.vidas <= 0 && intentos < listaJugadoresGlobal.length);
+    return i === miIndex ? null : listaJugadoresGlobal[i];
+}
+
+function ocultarGuiaTurno() {
+    document.getElementById('flechaGuia')?.classList.add('hidden');
+    document.getElementById('guiaAcciones')?.classList.add('hidden');
+    document.body.classList.remove('con-guia');
+}
+
+// Flecha curva de tu carta al destino (asiento del vecino o el mazo), dibujada
+// en un SVG que cubre el tapete.
+function dibujarFlechaGuia(origenEl, destinoEl) {
+    const tapete = document.getElementById('tapeteVistas');
+    const svg = document.getElementById('flechaGuia');
+    if (!tapete || !svg || !origenEl || !destinoEl) return;
+    const t = tapete.getBoundingClientRect();
+    const a = origenEl.getBoundingClientRect();
+    const b = destinoEl.getBoundingClientRect();
+    if (!b.width || !a.width) return;
+
+    const x1 = a.left + a.width / 2 - t.left;
+    const y1 = a.top - t.top;
+    let x2 = b.left + b.width / 2 - t.left;
+    let y2 = b.top + b.height / 2 - t.top;
+    // Acortar la punta para no tapar la carta de destino.
+    const dx = x2 - x1, dy = y2 - y1, d = Math.hypot(dx, dy) || 1;
+    const recorte = Math.min(36, d * 0.25);
+    x2 -= dx / d * recorte;
+    y2 -= dy / d * recorte;
+    // Curva jalada hacia el centro del tapete: se lee como "a través de la mesa".
+    const cx = (x1 + x2) / 4 + t.width / 4;
+    const cy = (y1 + y2) / 4 + t.height * 0.22;
+
+    svg.setAttribute('viewBox', `0 0 ${t.width} ${t.height}`);
+    svg.querySelector('.trazo-flecha').setAttribute('d', `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`);
+    svg.classList.remove('hidden');
+}
+
+// Texto bajo los botones + flecha, solo en mi turno y con las guías prendidas.
+function actualizarGuiaTurno(esMio, esCampana, campanaTocada) {
+    ocultarGuiaTurno();
+    if (!esMio || mostrandoRevelacion || !guiasActivas()) return;
+
+    const yo = listaJugadoresGlobal.find(j => j.id === socket.id);
+    const vecino = vecinoDerechoLocal();
+    const mazo = document.getElementById('mazoFlotante');
+    let destino = null;
+    let textoCambiar = '🔄 Cambias tu carta';
+
+    if (yo?.dealer) {
+        destino = mazo;
+        textoCambiar = '🔄 Eres el dealer: cambias tu carta por una del mazo';
+    } else if (vecino && esCampana && campanaTocada && vecino.id === campanaRingerId) {
+        destino = mazo;
+        textoCambiar = '🃏 Robas del mazo (no puedes cambiar con quien tocó la campana)';
+    } else if (vecino) {
+        destino = document.querySelector(`.silla:not(.hidden)[data-jugador-id="${CSS.escape(vecino.id)}"]`);
+        const reyALaVista = !esCampana && vecino.cartaRevelada && vecino.cartaActual === 9;
+        textoCambiar = reyALaVista
+            ? `👑 ${vecino.nombre} tiene al Rey: si cambias, se bloquea`
+            : `🔄 Cambias tu carta con ${vecino.nombre}`;
+    }
+
+    const lineas = ['✋ Te quedas con tu carta', textoCambiar];
+    if (esCampana && !campanaTocada) lineas.push('🔔 Cierra la ronda: tócala si crees tener la carta más baja');
+
+    const guia = document.getElementById('guiaAcciones');
+    if (guia) {
+        guia.innerHTML = lineas.map(l => `<div>${escapeHTML(l)}</div>`).join('');
+        guia.classList.remove('hidden');
+        document.body.classList.add('con-guia'); // sube los avisos para no taparla
+    }
+    if (destino) dibujarFlechaGuia(document.getElementById('miCarta'), destino);
+}
+
+// Recordatorio del objetivo al empezar cada ronda.
+function mostrarObjetivoRonda() {
+    const banner = document.getElementById('bannerObjetivo');
+    if (!banner || !guiasActivas()) return;
+    banner.textContent = modoJuegoActual === 'CAMPANA'
+        ? '🔔 Pierde la carta MÁS ALTA — quieres cartas bajas'
+        : '⚔️ Pierde la carta MÁS BAJA — quieres cartas altas';
+    banner.classList.remove('hidden');
+    clearTimeout(mostrarObjetivoRonda._t);
+    mostrarObjetivoRonda._t = setTimeout(() => banner.classList.add('hidden'), 4500);
+}
+
+// Por qué perdiste o te salvaste, para el resumen de la ronda.
+function explicacionRonda(datos) {
+    const yo = datos.jugadores.find(j => j.id === socket.id);
+    const pierdo = datos.perdedores.includes(socket.id);
+    if (!yo || yo.cartaActual === undefined || (yo.vidas <= 0 && !pierdo)) return '';
+
+    const extremo = modoJuegoActual === 'CAMPANA' ? 'más alta' : 'más baja';
+    const enJuego = datos.jugadores.filter(j =>
+        j.cartaActual !== undefined && (j.vidas > 0 || datos.perdedores.includes(j.id)));
+    if (enJuego.length > 1 && enJuego.every(j => j.cartaActual === datos.cartaMortal)) {
+        return '🤝 Empate total: todos tenían la misma carta, nadie pierde.';
+    }
+    const toqueCampana = datos.campana && datos.campana.tocadorId === socket.id;
+    if (pierdo) {
+        let t = `💔 Perdiste: tu ${yo.cartaActual} era la carta ${extremo}.`;
+        if (toqueCampana && !datos.campana.acertada) t += ' Y tocaste la campana con ella: una vida extra.';
+        return t;
+    }
+    let t = `✅ Te salvaste: la carta ${extremo} fue el ${datos.cartaMortal} y tú tenías ${yo.cartaActual}.`;
+    if (toqueCampana) t += ' ¡Y acertaste la campana!';
+    return t;
 }
 
 // ==========================================
@@ -553,6 +704,13 @@ function mostrarResumenRonda(datos) {
         grid.appendChild(item);
     });
 
+    const explicacion = document.getElementById('resumenExplicacion');
+    if (explicacion) {
+        const texto = guiasActivas() ? explicacionRonda(datos) : '';
+        explicacion.textContent = texto;
+        explicacion.classList.toggle('hidden', !texto);
+    }
+
     const btnSig = document.getElementById('btnSiguienteRondaResumen');
     btnSig.classList.toggle('hidden', datos.juegoTerminado || socket.id !== datos.dealerId);
 
@@ -620,6 +778,7 @@ function mostrarLobbyLimpio() {
     dibujarMesaCircular();
     ocultarResumenRonda();
     ocultarVistaQR();
+    ocultarGuiaTurno();
 }
 
 function resetEstadoSala() {
@@ -680,28 +839,8 @@ async function cargarLeaderboard() {
 cargarLeaderboard();
 
 // Restaurar sesión si hay token guardado y no ha expirado
-(function restaurarSesion() {
-    const token    = localStorage.getItem('reyToken');
-    const username = localStorage.getItem('reyUsername');
-    if (!token || !username) return;
+// restaurarSesion() se llama al final del archivo (ver ahí por qué).
 
-    // Decodificar el payload del JWT para verificar expiración (sin validar firma)
-    try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        if (payload.exp * 1000 < Date.now()) {
-            localStorage.removeItem('reyToken');
-            localStorage.removeItem('reyUsername');
-            return;
-        }
-    } catch { return; }
-
-    miToken = token;
-    miNombreUsuario = username;
-    document.getElementById('displayUsername').innerText = miNombreUsuario;
-    document.getElementById('seccion-inicio').classList.add('hidden');
-    document.getElementById('pantallaJuego').classList.remove('hidden');
-    conectarSocket();
-})();
 
 // ==========================================
 // PERFIL PERSONAL
@@ -786,6 +925,21 @@ if (btnSonido) {
         btnSonido.innerText = activo ? '🔊' : '🔇';
         mostrarToast(activo ? '🔊 Sonido activado' : '🔇 Sonido silenciado', 'rey', 1500);
         if (activo) Sonidos.pop();
+    };
+}
+
+const btnGuias = document.getElementById('btnToggleGuias');
+if (btnGuias) {
+    pintarBotonGuias();
+    btnGuias.onclick = () => {
+        const prender = !guiasActivas();
+        escribirLS('reyGuias', prender ? 'on' : 'off');
+        pintarBotonGuias();
+        mostrarToast(prender ? '💡 Guías activadas' : '💡 Guías apagadas', 'rey', 1500);
+        if (!prender) {
+            ocultarGuiaTurno();
+            document.getElementById('bannerObjetivo')?.classList.add('hidden');
+        }
     };
 }
 
@@ -1365,6 +1519,9 @@ document.addEventListener('visibilitychange', () => {
 // Recalcular mesa circular al redimensionar pantalla o girar el teléfono
 let _resizeTimer = null;
 window.addEventListener('resize', () => {
+    // La flecha guía se calcula con posiciones en pantalla: al girar el
+    // celular quedaría apuntando a un lugar viejo, así que se esconde.
+    document.getElementById('flechaGuia')?.classList.add('hidden');
     clearTimeout(_resizeTimer);
     _resizeTimer = setTimeout(() => {
         const mesa = document.getElementById('mesaDeJuego');
@@ -1793,6 +1950,8 @@ function conectarSocket() {
     // --- TURNOS ---
     socket.on('juegoIniciado', (datosTurno) => {
         const gen = ++_renderGen;
+        if (datosTurno.modoJuego) modoJuegoActual = datosTurno.modoJuego;
+        mostrarObjetivoRonda();
         if (datosTurno.jugadores) listaJugadoresGlobal = datosTurno.jugadores;
         if (datosTurno.modoRey) modoReyActual = datosTurno.modoRey;
         turnoActualId = datosTurno.id;
@@ -1863,6 +2022,7 @@ function conectarSocket() {
 
     socket.on('cambioDeTurno', (datosTurno) => {
         ++_renderGen; // invalidar cadenas de juegoIniciado/tuCarta en vuelo
+        if (datosTurno.modoJuego) modoJuegoActual = datosTurno.modoJuego;
         if (datosTurno.jugadores) listaJugadoresGlobal = datosTurno.jugadores;
         turnoActualId = datosTurno.id;
         if (datosTurno.modoRey) modoReyActual = datosTurno.modoRey;
@@ -1906,6 +2066,7 @@ function conectarSocket() {
     function ejecutarAccionMantener() {
         const btn = document.getElementById('btnMantener');
         if (!btn || btn.disabled || btn.style.display === 'none') return;
+        ocultarGuiaTurno();
         Sonidos.boton();
         vibrar(25);
         const c = document.getElementById('miCarta');
@@ -1924,6 +2085,7 @@ function conectarSocket() {
     function ejecutarAccionCambiar() {
         const btn = document.getElementById('btnCambiar');
         if (!btn || btn.disabled || btn.style.display === 'none') return;
+        ocultarGuiaTurno();
         Sonidos.boton();
         vibrar(35);
         const c = document.getElementById('miCarta');
@@ -1945,6 +2107,7 @@ function conectarSocket() {
     inicializarGestosCarta(ejecutarAccionMantener, ejecutarAccionCambiar);
 
     document.getElementById('btnCampana').onclick = () => {
+        ocultarGuiaTurno();
         Sonidos.campana();
         vibrar([150, 80, 150]);
         socket.emit('accionJugador', { idSala: miSalaActual, accion: 'CAMPANA' });
@@ -2001,6 +2164,7 @@ function conectarSocket() {
 
     // --- FIN DE RONDA ---
     socket.on('rondaTerminada', (datos) => {
+        ocultarGuiaTurno();
         const gen = ++_renderGen;
         // Si el dealer acaba de cambiar su carta, actualizar el display antes de revelar
         if (_cartaPendiente !== null) {
@@ -2159,6 +2323,8 @@ function conectarSocket() {
 
     // --- FIN DEL JUEGO ---
     socket.on('finDelJuego', (ganador) => {
+        ocultarGuiaTurno();
+        contarPartidaParaGuias();
         ++_renderGen;
         ocultarResumenRonda();
         ocultarVistaQR();
@@ -2244,3 +2410,32 @@ function conectarSocket() {
         alert(m);
     });
 }
+
+// Restaurar la sesión guardada AL FINAL del archivo, cuando ya se ejecutó todo
+// lo demás: conectarSocket() usa variables `let` declaradas más abajo en este
+// archivo (_gestosInicializados, _repartiendo...). Llamarla a media carga
+// lanzaba "Cannot access ... before initialization", cortaba el resto de
+// main.js y quien volvía con sesión guardada veía la mesa congelada.
+function restaurarSesion() {
+    const token    = localStorage.getItem('reyToken');
+    const username = localStorage.getItem('reyUsername');
+    if (!token || !username) return;
+
+    // Decodificar el payload del JWT para verificar expiración (sin validar firma)
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.exp * 1000 < Date.now()) {
+            localStorage.removeItem('reyToken');
+            localStorage.removeItem('reyUsername');
+            return;
+        }
+    } catch { return; }
+
+    miToken = token;
+    miNombreUsuario = username;
+    document.getElementById('displayUsername').innerText = miNombreUsuario;
+    document.getElementById('seccion-inicio').classList.add('hidden');
+    document.getElementById('pantallaJuego').classList.remove('hidden');
+    conectarSocket();
+}
+restaurarSesion();
