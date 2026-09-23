@@ -20,10 +20,158 @@ let perdedoresActuales = [];
 let cartasRepartidas = false;
 let modoEspectador = false;
 let _cartaPendiente = null;
+
+// Generación de render: cada socket event que cambia el estado visual del
+// turno/ronda bumpea este contador. Los setTimeout encadenados (vuelo de carta
+// 600ms, delay inicial 200ms) capturan su generación al iniciarse y la
+// verifican antes de mutar el DOM — si otra cosa pasó, abortan sin pisar.
+let _renderGen = 0;
 let modoReyActual = "SORPRESA";
 let cartasDescartadas = [];
 let pilaRenderizadaCount = 0;
 let campanaRingerId = null;
+let _tweenCarta = null; // POC TWEEN.js: tween de vuelo de carta en curso (para cancelarlo)
+
+// ==========================================
+// MOTOR DE AUDIO Y HÁPTICA (Game Feel)
+// ==========================================
+function vibrar(patron) {
+    if ('vibrate' in navigator) {
+        try { navigator.vibrate(patron); } catch (e) {}
+    }
+}
+
+const Sonidos = (function() {
+    let ctx = null;
+    let habilitado = localStorage.getItem('reySonido') !== 'false';
+
+    function getCtx() {
+        if (!ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) ctx = new AudioCtx();
+        }
+        if (ctx && ctx.state === 'suspended') {
+            ctx.resume();
+        }
+        return ctx;
+    }
+
+    const desbloquearAudio = () => {
+        getCtx();
+        window.removeEventListener('pointerdown', desbloquearAudio);
+        window.removeEventListener('keydown', desbloquearAudio);
+    };
+    window.addEventListener('pointerdown', desbloquearAudio, { passive: true });
+    window.addEventListener('keydown', desbloquearAudio, { passive: true });
+
+    function tono(freq, duracion, tipo = 'sine', gainVal = 0.15, decay = true) {
+        if (!habilitado) return;
+        const c = getCtx();
+        if (!c) return;
+        try {
+            const osc = c.createOscillator();
+            const gain = c.createGain();
+            osc.type = tipo;
+            osc.frequency.setValueAtTime(freq, c.currentTime);
+            gain.gain.setValueAtTime(gainVal, c.currentTime);
+            if (decay) {
+                gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + duracion);
+            }
+            osc.connect(gain);
+            gain.connect(c.destination);
+            osc.start();
+            osc.stop(c.currentTime + duracion);
+        } catch (e) {}
+    }
+
+    return {
+        estaHabilitado: () => habilitado,
+        toggle: () => {
+            habilitado = !habilitado;
+            localStorage.setItem('reySonido', habilitado ? 'true' : 'false');
+            return habilitado;
+        },
+        turno: () => {
+            if (!habilitado) return;
+            const notas = [523.25, 659.25, 783.99]; // Acorde C5 - E5 - G5
+            notas.forEach((n, i) => {
+                setTimeout(() => tono(n, 0.3, 'sine', 0.14), i * 80);
+            });
+        },
+        carta: () => {
+            if (!habilitado) return;
+            const c = getCtx();
+            if (!c) return;
+            try {
+                const bufferSize = Math.floor(c.sampleRate * 0.08);
+                const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.35));
+                }
+                const noise = c.createBufferSource();
+                noise.buffer = buffer;
+                const filter = c.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(1500, c.currentTime);
+                filter.Q.setValueAtTime(2, c.currentTime);
+                const gain = c.createGain();
+                gain.gain.setValueAtTime(0.18, c.currentTime);
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(c.destination);
+                noise.start();
+            } catch (e) {
+                tono(440, 0.07, 'triangle', 0.08);
+            }
+        },
+        campana: () => {
+            if (!habilitado) return;
+            const parciales = [587.33, 1174.66, 1762, 2349];
+            const ganancias = [0.24, 0.14, 0.07, 0.03];
+            parciales.forEach((f, i) => {
+                tono(f, 1.8, 'sine', ganancias[i]);
+            });
+        },
+        danio: () => {
+            if (!habilitado) return;
+            const c = getCtx();
+            if (!c) return;
+            try {
+                const osc = c.createOscillator();
+                const gain = c.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, c.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(35, c.currentTime + 0.28);
+                gain.gain.setValueAtTime(0.3, c.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.28);
+                osc.connect(gain);
+                gain.connect(c.destination);
+                osc.start();
+                osc.stop(c.currentTime + 0.28);
+            } catch (e) {}
+        },
+        tick: () => {
+            if (!habilitado) return;
+            tono(950, 0.035, 'square', 0.05);
+        },
+        victoria: () => {
+            if (!habilitado) return;
+            const arpegio = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
+            arpegio.forEach((f, i) => {
+                setTimeout(() => tono(f, 0.45, 'triangle', 0.16), i * 110);
+            });
+        },
+        pop: () => {
+            if (!habilitado) return;
+            tono(680, 0.05, 'sine', 0.1);
+        },
+        boton: () => {
+            if (!habilitado) return;
+            tono(400, 0.035, 'sine', 0.06);
+        }
+    };
+})();
 
 const nombresCartas = {
     0: "El Mendigo", 1: "La Rata", 2: "El Campesino", 3: "El Trovador",
@@ -31,21 +179,205 @@ const nombresCartas = {
     8: "El General", 9: "El Rey Contento"
 };
 
+// Figura de cada carta: SVG medieval (set game-icons, CC-BY 3.0). Se descargaron
+// a /iconos para no depender de un CDN externo en runtime y verse igual en todo
+// dispositivo (a diferencia de los emojis, que cada SO dibuja distinto).
+const figurasCartas = {
+    0: "/iconos/0.svg", 1: "/iconos/1.svg", 2: "/iconos/2.svg", 3: "/iconos/3.svg",
+    4: "/iconos/4.svg", 5: "/iconos/5.svg", 6: "/iconos/6.svg", 7: "/iconos/7.svg",
+    8: "/iconos/8.svg", 9: "/iconos/9.svg"
+};
+// <img> de la figura de una carta al tamaño dado (px). '' si no hay.
+function figuraIMG(n, px) {
+    const src = figurasCartas[n];
+    return src ? `<img src="${src}" alt="" width="${px}" height="${px}" draggable="false" style="vertical-align:middle;">` : '';
+}
+
+// Pinta el frente de la carta principal (#miCarta): número, figura + nombre, y la
+// clase de color (carta-0 / carta-9). Centraliza lo que antes se repetía en cada
+// evento de revelado (juegoIniciado, cambioDeTurno, rondaTerminada, reconexión).
+function pintarCartaPrincipal(carta) {
+    document.getElementById('numeroCarta').innerText = carta;
+    document.getElementById('figuraCarta').innerHTML = figuraIMG(carta, 34);
+    document.getElementById('nombrePersonaje').innerText = nombresCartas[carta];
+    document.getElementById('cartaFrente').className = "face front-character " +
+        (carta === 0 ? "carta-0" : carta === 9 ? "carta-9" : "");
+}
+
 // ==========================================
 // TOASTS
 // ==========================================
+// Escapa caracteres HTML en un string para interpolarlo seguro en innerHTML.
+// Hoy los usernames nuevos están validados con regex restrictiva, pero pueden
+// existir cuentas viejas (pre-validación) con caracteres peligrosos, y los
+// mensajes del server concatenan nombres ⇒ defensa en profundidad.
+function escapeHTML(s) {
+    if (typeof s !== 'string') return '';
+    return s.replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+}
+
 function mostrarToast(mensaje, tipo = '', duracion = 2500) {
     const container = document.getElementById('toastContainer');
     if (!container) return;
     const toast = document.createElement('div');
     toast.className = 'toast-mensaje' + (tipo ? ' toast-' + tipo : '');
-    toast.innerHTML = mensaje;
+    // textContent en lugar de innerHTML: los toasts solo muestran texto plano
+    // (con emojis, que son chars unicode no HTML). Bloquea XSS si un mensaje
+    // del server incluye un username con HTML inyectado.
+    toast.textContent = mensaje;
     container.appendChild(toast);
     while (container.children.length > 2) container.removeChild(container.firstChild);
     setTimeout(() => {
         toast.style.animation = 'toastSalir 0.3s ease forwards';
         setTimeout(() => toast.remove(), 300);
     }, duracion);
+}
+
+// ==========================================
+// MINI-FEED Y BITÁCORA DE JUGADAS
+// ==========================================
+let historialJugadasRonda = [];
+
+function registrarJugadaFeed(evento) {
+    if (!evento) return;
+    const ahora = new Date();
+    const horaFormateada = ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    const item = {
+        tipo: evento.tipo || 'INFO',
+        icono: evento.icono || '📜',
+        jugador: evento.jugador || '',
+        objetivo: evento.objetivo || '',
+        texto: evento.texto || '',
+        hora: horaFormateada
+    };
+
+    historialJugadasRonda.push(item);
+    renderizarMiniFeedHUD();
+    renderizarModalBitacora();
+}
+
+function renderizarMiniFeedHUD() {
+    const contenedor = document.getElementById('miniFeedJugadas');
+    const lista = document.getElementById('miniFeedItems');
+    const contador = document.getElementById('miniFeedContador');
+    if (!contenedor || !lista) return;
+
+    if (historialJugadasRonda.length === 0) {
+        lista.innerHTML = `
+            <div class="mini-feed-item feed-reciente">
+                <span class="feed-icono">⚔️</span>
+                <span class="feed-texto">Esperando primera jugada...</span>
+            </div>
+        `;
+        if (contador) contador.textContent = '';
+        return;
+    }
+
+    const ultimos = historialJugadasRonda.slice(-3).reverse();
+    const clases = ['feed-reciente', 'feed-anterior', 'feed-antiguo'];
+
+    let html = '';
+    ultimos.forEach((ev, idx) => {
+        const claseOpacidad = clases[idx] || 'feed-antiguo';
+        let textoHtml = '';
+
+        if (ev.tipo === 'CAMBIO' && ev.jugador && ev.objetivo) {
+            textoHtml = `<strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong> cambió con <strong class="feed-nombre">${escapeHTML(ev.objetivo)}</strong>`;
+        } else if (ev.tipo === 'MANTENER' && ev.jugador) {
+            textoHtml = `<strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong> se plantó`;
+        } else if (ev.tipo === 'BLOQUEO' && ev.jugador) {
+            textoHtml = `¡Rey frenó a <strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong>!`;
+        } else if (ev.tipo === 'CAMPANA' && ev.jugador) {
+            textoHtml = `¡<strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong> tocó campana!`;
+        } else if (ev.tipo === 'MAZO' && ev.jugador) {
+            textoHtml = `<strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong> cambió con mazo`;
+        } else if (ev.tipo === 'TIMEOUT' && ev.jugador) {
+            textoHtml = `<strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong> agotó tiempo`;
+        } else {
+            textoHtml = escapeHTML(ev.texto);
+        }
+
+        html += `
+            <div class="mini-feed-item ${claseOpacidad}">
+                <span class="feed-icono">${escapeHTML(ev.icono)}</span>
+                <span class="feed-texto">${textoHtml}</span>
+            </div>
+        `;
+    });
+
+    lista.innerHTML = html;
+    if (contador) contador.textContent = `(${historialJugadasRonda.length})`;
+}
+
+function renderizarModalBitacora() {
+    const listaCompleta = document.getElementById('listaBitacoraCompleta');
+    if (!listaCompleta) return;
+
+    if (historialJugadasRonda.length === 0) {
+        listaCompleta.innerHTML = '<div class="bitacora-vacia" style="text-align:center; color:rgba(255,255,255,0.4); font-size:12px; padding:15px;">Aún no hay jugadas registradas en esta ronda.</div>';
+        return;
+    }
+
+    const items = [...historialJugadasRonda].reverse();
+    let html = '';
+    items.forEach(ev => {
+        let textoHtml = '';
+        if (ev.tipo === 'CAMBIO' && ev.jugador && ev.objetivo) {
+            textoHtml = `<strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong> intercambió carta con <strong class="feed-nombre">${escapeHTML(ev.objetivo)}</strong>`;
+        } else if (ev.tipo === 'MANTENER' && ev.jugador) {
+            textoHtml = `<strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong> decidió mantener (se plantó)`;
+        } else if (ev.tipo === 'BLOQUEO' && ev.jugador) {
+            textoHtml = `🛡️ ¡Rey ${ev.objetivo ? 'de ' + escapeHTML(ev.objetivo) + ' ' : ''}bloqueó a <strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong>!`;
+        } else if (ev.tipo === 'CAMPANA' && ev.jugador) {
+            textoHtml = `🔔 ¡<strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong> tocó la campana! Última vuelta`;
+        } else if (ev.tipo === 'MAZO' && ev.jugador) {
+            textoHtml = `🃏 <strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong> cambió carta con el mazo`;
+        } else if (ev.tipo === 'TIMEOUT' && ev.jugador) {
+            textoHtml = `⏰ Tiempo agotado para <strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong> (mantiene auto)`;
+        } else {
+            textoHtml = escapeHTML(ev.texto);
+        }
+
+        html += `
+            <div class="bitacora-fila">
+                <span class="bitacora-fila-icono">${escapeHTML(ev.icono)}</span>
+                <span style="flex:1;">${textoHtml}</span>
+                <span class="bitacora-fila-hora">${escapeHTML(ev.hora)}</span>
+            </div>
+        `;
+    });
+
+    listaCompleta.innerHTML = html;
+}
+
+function abrirModalBitacora() {
+    const modal = document.getElementById('modalBitacora');
+    const badge = document.getElementById('bitacoraRondaBadge');
+    if (badge) {
+        const numRonda = document.getElementById('numRonda')?.innerText || '1';
+        badge.innerText = `Ronda ${numRonda}`;
+    }
+    renderizarModalBitacora();
+    if (modal) modal.classList.remove('hidden');
+}
+
+function cerrarModalBitacora() {
+    const modal = document.getElementById('modalBitacora');
+    if (modal) modal.classList.add('hidden');
+}
+
+function reiniciarHistorialRonda(numRonda = 1) {
+    historialJugadasRonda = [];
+    const feed = document.getElementById('miniFeedJugadas');
+    if (feed) feed.classList.remove('hidden');
+    registrarJugadaFeed({
+        tipo: 'RONDA',
+        icono: '⚔️',
+        texto: `¡Comienza la Ronda ${numRonda}!`
+    });
 }
 
 // ==========================================
@@ -81,7 +413,8 @@ function renderizarPila() {
         el.className = `carta-en-pila ${extra}`;
         el.style.cssText = `--rot:${rot}deg; transform:rotate(${rot}deg); z-index:${i}; top:${i * 0.7}px; left:${i * 0.4}px;`;
         if (esNuevo) el.style.animation = 'cartaLlegaPila 0.4s ease forwards';
-        el.textContent = carta;
+        // Número + figura oscura (/iconos/N.svg) sobre el fondo pergamino de la pila.
+        el.innerHTML = `<span class="pila-num">${carta}</span><img src="/iconos/${carta}.svg" alt="" draggable="false" class="pila-fig">`;
         stack.appendChild(el);
     });
 
@@ -181,6 +514,7 @@ function mostrarReaccion(jugadorId, emoji) {
     el.style.setProperty('--dy', dy + 'px');
 
     document.body.appendChild(el);
+    Sonidos.pop();
     setTimeout(() => el.remove(), 2700);
 }
 
@@ -210,9 +544,10 @@ function mostrarResumenRonda(datos) {
         item.innerHTML = `
             <div class="resumen-carta-cara ${pierde ? 'pierde' : 'sobrevive'}">
                 <div style="font-size:22px;font-weight:bold;color:${color};line-height:1;">${num}</div>
-                <div style="font-size:7px;color:rgba(255,255,255,0.45);margin-top:3px;padding:0 2px;line-height:1.1;">${nombresCartas[num]}</div>
+                <div style="line-height:1;margin-top:1px;">${figuraIMG(num, 16)}</div>
+                <div style="font-size:7px;color:rgba(255,255,255,0.45);margin-top:2px;padding:0 2px;line-height:1.1;">${nombresCartas[num]}</div>
             </div>
-            <div class="resumen-carta-nombre">${j.nombre}</div>
+            <div class="resumen-carta-nombre">${escapeHTML(j.nombre)}</div>
             <div style="font-size:11px;">${pierde ? '💔' : '✅'} ${j.vidas > 0 ? '♥️'.repeat(j.vidas) : '☠️'}</div>
         `;
         grid.appendChild(item);
@@ -250,6 +585,30 @@ function desactivarModoEspectador() {
     document.getElementById('mensajeTurno').style.color = "var(--verde)";
 }
 
+// Resetea TODO el estado relacionado con una sala/partida. Llamar al salir de
+// una sala, ser expulsado, ganar/perder y volver al lobby, o ser reemplazado
+// por otra sesión. Sin este helper, cada call site reseteaba un subconjunto
+// distinto de variables → bugs por estado stale al reentrar a otra sala.
+function resetEstadoSala() {
+    miSalaActual = "";
+    soyElHost = false;
+    listaJugadoresGlobal = [];
+    turnoActualId = "";
+    _cartaPendiente = null;
+    mostrandoRevelacion = false;
+    perdedoresActuales = [];
+    cartasRepartidas = false;
+    cartasDescartadas = [];
+    pilaRenderizadaCount = 0;
+    campanaRingerId = null;
+    historialJugadasRonda = [];
+    const feed = document.getElementById('miniFeedJugadas');
+    if (feed) feed.classList.add('hidden');
+    cerrarModalBitacora();
+    ++_renderGen; // invalidar cualquier animación pendiente
+    desactivarModoEspectador();
+}
+
 // ==========================================
 // LEADERBOARD
 // ==========================================
@@ -276,7 +635,7 @@ async function cargarLeaderboard() {
             return `
             <tr class="fila-leaderboard ${claseExtra} ${clasePropio}" style="animation-delay:${i*80}ms">
                 <td class="td-pos">${medalla}</td>
-                <td class="td-nombre">${esTuNombre ? '<span class="nombre-propio">'+j.username+'</span>' : j.username} ${rachaHTML}</td>
+                <td class="td-nombre">${esTuNombre ? '<span class="nombre-propio">'+escapeHTML(j.username)+'</span>' : escapeHTML(j.username)} ${rachaHTML}</td>
                 <td class="td-stat">${j.victorias}</td>
                 <td class="td-stat">${j.partidas_jugadas}</td>
                 <td class="td-stat">${winrate}%</td>
@@ -332,11 +691,31 @@ document.getElementById('btnCerrarPerfil').addEventListener('click', () => {
     document.getElementById('modalPerfil').classList.add('hidden');
 });
 
+// Event listeners de Bitácora / Mini-feed
+const miniFeedEl = document.getElementById('miniFeedJugadas');
+if (miniFeedEl) miniFeedEl.addEventListener('click', abrirModalBitacora);
+
+const btnCerrarBit = document.getElementById('btnCerrarBitacora');
+if (btnCerrarBit) btnCerrarBit.addEventListener('click', cerrarModalBitacora);
+
+const modalBit = document.getElementById('modalBitacora');
+if (modalBit) {
+    modalBit.addEventListener('click', (e) => {
+        if (e.target === modalBit) cerrarModalBitacora();
+    });
+}
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') cerrarModalBitacora();
+});
+
 // ==========================================
 // AUTH
 // ==========================================
 async function peticionAuth(ruta) {
-    const username = document.getElementById('authUsername').value;
+    // trim del usuario: en celular el teclado/autocompletar suele agregar un espacio
+    // al final, que rompía el login. El password NO se trimea (podría ser válido).
+    const username = document.getElementById('authUsername').value.trim();
     const password = document.getElementById('authPassword').value;
     if (!username || !password) return alert("Completa los datos.");
     try {
@@ -366,6 +745,143 @@ document.getElementById('btnRegistro').addEventListener('click', () => peticionA
 document.getElementById('btnVerReglas').addEventListener('click', () => document.getElementById('modalReglas').classList.remove('hidden'));
 document.getElementById('btnCerrarReglas').addEventListener('click', () => document.getElementById('modalReglas').classList.add('hidden'));
 
+const btnSonido = document.getElementById('btnToggleSonido');
+if (btnSonido) {
+    btnSonido.innerText = Sonidos.estaHabilitado() ? '🔊' : '🔇';
+    btnSonido.onclick = () => {
+        const activo = Sonidos.toggle();
+        btnSonido.innerText = activo ? '🔊' : '🔇';
+        mostrarToast(activo ? '🔊 Sonido activado' : '🔇 Sonido silenciado', 'rey', 1500);
+        if (activo) Sonidos.pop();
+    };
+}
+
+// ==========================================
+// GESTOS TÁCTILES EN LA CARTA (Swipe & Drag)
+// ==========================================
+let _gestosInicializados = false;
+function inicializarGestosCarta(onMantener, onCambiar) {
+    if (_gestosInicializados) return;
+    _gestosInicializados = true;
+
+    const carta = document.getElementById('miCarta');
+    if (!carta) return;
+
+    let startX = 0, startY = 0;
+    let currentX = 0, currentY = 0;
+    let isDragging = false;
+    let umbralSonado = false;
+
+    function sePuedeJugar() {
+        const btnCambiar = document.getElementById('btnCambiar');
+        return turnoActualId === socket?.id && btnCambiar && !btnCambiar.disabled && btnCambiar.style.display !== 'none';
+    }
+
+    carta.addEventListener('pointerdown', (e) => {
+        if (!sePuedeJugar()) return;
+        if (e.button !== 0) return; // solo click o touch principal
+        isDragging = true;
+        umbralSonado = false;
+        startX = e.clientX;
+        startY = e.clientY;
+        currentX = startX;
+        currentY = startY;
+        try { carta.setPointerCapture(e.pointerId); } catch (err) {}
+        carta.classList.remove('soltando', 'lanzada-derecha', 'mantenida-tap');
+        carta.classList.add('arrastrando');
+    });
+
+    carta.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        currentX = e.clientX;
+        currentY = e.clientY;
+        const dx = currentX - startX;
+        const dy = currentY - startY;
+
+        // Limitar rotación para feel natural de naipe físico
+        const rot = Math.max(-12, Math.min(22, dx * 0.12));
+        carta.style.transform = `translate(${dx}px, ${dy * 0.35}px) rotate(${rot}deg) scale(1.05)`;
+
+        // Feedback háptico/sonoro cuando cruza el umbral de 70px hacia la derecha
+        if (dx >= 70 && !umbralSonado) {
+            umbralSonado = true;
+            vibrar(25);
+            Sonidos.pop();
+            carta.style.filter = 'drop-shadow(0 0 16px rgba(241,196,15,0.95))';
+        } else if (dx < 70 && umbralSonado) {
+            umbralSonado = false;
+            carta.style.filter = '';
+        }
+    });
+
+    const finalizarArrastre = (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        try { carta.releasePointerCapture(e.pointerId); } catch (err) {}
+        carta.classList.remove('arrastrando');
+        carta.style.filter = '';
+
+        const dx = currentX - startX;
+        const dy = currentY - startY;
+
+        if (dx >= 70 && sePuedeJugar()) {
+            // Gesto CAMBIAR: lanzar hacia la derecha
+            carta.classList.add('lanzada-derecha');
+            if (typeof onCambiar === 'function') onCambiar();
+            setTimeout(() => {
+                carta.classList.remove('lanzada-derecha');
+                carta.style.transform = '';
+            }, 360);
+        } else if (dy >= 55 && Math.abs(dx) < 35 && sePuedeJugar()) {
+            // Gesto hacia abajo: MANTENER
+            carta.style.transform = '';
+            if (typeof onMantener === 'function') onMantener();
+        } else {
+            // Regresar elásticamente a su posición original
+            carta.classList.add('soltando');
+            carta.style.transform = '';
+            setTimeout(() => { carta.classList.remove('soltando'); }, 260);
+        }
+    };
+
+    carta.addEventListener('pointerup', finalizarArrastre);
+    carta.addEventListener('pointercancel', finalizarArrastre);
+}
+
+// ==========================================
+// COMPARTIR SALA (link + QR)
+// ==========================================
+// Link de invitación: IP pública fija (no window.location.origin) para que el QR
+// sirva aunque el host haya entrado por localhost. /sala/:id redirige a /?sala=:id.
+function linkDeSala() {
+    return `http://34.204.215.13:4000/sala/${miSalaActual}`;
+}
+
+// Renderiza el QR del link de sala y abre el overlay. qrcodejs es `async`: si aún
+// no cargó (o falló), mostramos un fallback y el usuario usa "Copiar link".
+function mostrarVistaQR() {
+    const cont = document.getElementById('qrContenedor');
+    document.getElementById('qrCodigo').innerText = miSalaActual || '-----';
+    cont.innerHTML = ''; // qrcodejs no limpia el contenedor por sí mismo
+    if (typeof QRCode !== 'undefined') {
+        new QRCode(cont, {
+            text: linkDeSala(),
+            width: 220, height: 220,
+            colorDark: '#1a1212', colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    } else {
+        cont.innerHTML = '<div style="font-size:12px;color:#7f8c8d;padding:24px;">No se pudo cargar el generador de QR.<br>Usa el botón "Copiar enlace".</div>';
+    }
+    // "Empezar" desde el QR solo si soy el host.
+    document.getElementById('btnEmpezarQR').classList.toggle('hidden', !soyElHost);
+    document.getElementById('vistaQR').classList.remove('hidden');
+}
+
+function ocultarVistaQR() {
+    document.getElementById('vistaQR')?.classList.add('hidden');
+}
+
 // ==========================================
 // RELOJ VISUAL
 // ==========================================
@@ -373,6 +889,8 @@ function gestionarRelojVisual(idEnTurno, tiempoSegundos) {
     if (intervaloVisual) clearInterval(intervaloVisual);
     const cont = document.getElementById('contenedorReloj');
     const barra = document.getElementById('barraReloj');
+    const foco = document.getElementById('focoTurno');
+    foco?.classList.remove('reloj-urgente');
     const tiempoTotal = tiempoSegundos || 10;
     let t = tiempoTotal;
     cont.style.display = 'inline-block';
@@ -387,12 +905,178 @@ function gestionarRelojVisual(idEnTurno, tiempoSegundos) {
         if (t <= 3) {
             barra.style.background = '#e74c3c';
             document.getElementById('segundosReloj').style.color = '#e74c3c';
+            if (idEnTurno === socket?.id && t > 0) {
+                foco?.classList.add('reloj-urgente');
+                Sonidos.tick();
+                vibrar(35);
+            }
         } else {
             barra.style.background = '#e67e22';
             document.getElementById('segundosReloj').style.color = '#e67e22';
+            foco?.classList.remove('reloj-urgente');
         }
-        if (t <= 0) { clearInterval(intervaloVisual); cont.style.display = 'none'; }
+        if (t <= 0) {
+            clearInterval(intervaloVisual);
+            cont.style.display = 'none';
+            foco?.classList.remove('reloj-urgente');
+        }
     }, 1000);
+}
+
+// ==========================================
+// POC TWEEN.js — VUELO DE CARTA
+// ==========================================
+// Ticker global: TWEEN necesita que algo llame a TWEEN.update() en cada frame.
+// El loop corre SIEMPRE y consulta TWEEN adentro: como el script de TWEEN es
+// `async`, puede no estar definido cuando main.js carga; así, en cuanto aparece,
+// el ticker ya está corriendo y lo empieza a actualizar. Barato cuando no hay
+// tweens (update recorre 0). Si TWEEN nunca carga, el loop no hace nada.
+(function tickTween(t) {
+    if (typeof TWEEN !== 'undefined') TWEEN.update(t);
+    requestAnimationFrame(tickTween);
+})();
+
+// Anima la entrada (vuelo) de la carta propia con TWEEN.js y, al terminar, ejecuta
+// `onComplete` (revelar número + flip + reloj). Reemplaza el keyframe CSS `volarAbajo`
+// + `setTimeout(600)`. Respeta el guard `_renderGen`: si llega otro evento de turno,
+// `_renderGen` cambia y abortamos sin pisar el DOM. Degrada al comportamiento previo
+// si la librería no cargó (CDN bloqueado).
+function animarVueloCartaTween(el, gen, onComplete) {
+    if (typeof TWEEN === 'undefined') {
+        void el.offsetWidth; // forzar reflow para reiniciar el keyframe CSS
+        el.classList.add('volar-desde-centro-bottom');
+        setTimeout(() => { if (gen === _renderGen) onComplete(); }, 600);
+        return;
+    }
+    if (_tweenCarta) { _tweenCarta.stop(); _tweenCarta = null; }
+    // No mezclar con el keyframe CSS: manejamos transform por estilo inline.
+    el.classList.remove('volar-desde-centro-bottom');
+
+    // Vuelo limpio: deslizar desde arriba + escalar con rebote, SIN rotación en Z.
+    // El spin competía con el flip (rotateY de .flipper al revelar) y se percibía
+    // como un "doble reparto". Esto replica el feel del keyframe volarAbajo, pero
+    // movido por TWEEN (que habilita encadenar/escalonar el reparto a futuro).
+    const estado = { y: -250, scale: 0.2, opacity: 0 };
+    const aplicar = () => {
+        el.style.opacity = estado.opacity;
+        el.style.transform = `translateY(${estado.y}px) scale(${estado.scale})`;
+    };
+    aplicar();
+
+    Sonidos.carta();
+    _tweenCarta = new TWEEN.Tween(estado)
+        .to({ y: 0, scale: 1, opacity: 1 }, 600)
+        .easing(TWEEN.Easing.Back.Out) // rebote suave al aterrizar, como el cubic-bezier original
+        .onUpdate(() => { if (gen === _renderGen) aplicar(); })
+        .onComplete(() => {
+            _tweenCarta = null;
+            if (gen !== _renderGen) return;
+            // Limpiar transform inline: el flip vive en .flipper (hijo), no acá.
+            el.style.transform = '';
+            el.style.opacity = '';
+            onComplete();
+        })
+        .start();
+}
+
+// Reparto escalonado: cartas "fantasma" (overlay position:fixed) vuelan desde el
+// mazo hacia cada asiento de oponente, una por una. Es ADITIVO — no toca el DOM
+// de dibujarMesaCircular. Cada carta real boca-abajo (.perfil-carta-reverso) se
+// oculta hasta que su fantasma aterriza, así se ve "dealing" en vez de aparecer.
+// Reemplaza el vuelo CSS simultáneo de oponentes (volar-desde-centro-*), por eso
+// ese se desactiva en dibujarMesaCircular. Fire-and-forget: si la ronda cambia,
+// los fantasmas igual completan y se autoeliminan (referencian nodos viejos, sin
+// efecto sobre el render nuevo).
+const STAGGER_REPARTO_MS = 130;
+// IDs de jugadores cuya carta está "en vuelo" durante el reparto. dibujarMesaCircular
+// consulta este set: si re-renderiza un asiento mientras su fantasma aún vuela (p.ej.
+// el dibujo de juegoIniciado ~700ms después de datosMesa), pinta el reverso oculto
+// (opacity:0). Sin esto, el reverso real reaparecía encimado al fantasma en vuelo.
+let _repartiendo = new Set();
+
+// Devuelve el reverso boca-abajo VIGENTE de un jugador (re-consultando el DOM, porque
+// el asiento pudo re-renderizarse desde que arrancó el reparto). null si no existe.
+function _reversoActualDe(jugadorId) {
+    const silla = Array.from(document.querySelectorAll('.silla:not(.hidden)'))
+        .find(s => s.dataset.jugadorId === jugadorId);
+    return silla ? silla.querySelector('.perfil-carta-reverso') : null;
+}
+
+function repartirCartasEscalonado() {
+    if (typeof TWEEN === 'undefined') return; // sin librería: cartas ya visibles
+    const mazo = document.getElementById('mazoFlotante');
+    if (!mazo || mazo.classList.contains('hidden')) return;
+    const origen = mazo.getBoundingClientRect();
+
+    // Orden de reparto: EMPIEZA por el dealer y va alrededor de la mesa. El mazo
+    // se para sobre el asiento del dealer, así que su carta "sale de arriba del
+    // mazo" primero (viaje corto, natural) y la secuencia termina en un oponente
+    // lejano con un vuelo largo y vistoso — en vez de terminar en el dealer, donde
+    // los dorsos del mazo ya están y el reparto a sí mismo casi no se movía (se veía
+    // estático). Cada asiento expone su jugador en dataset.jugadorId.
+    const jugadores = listaJugadoresGlobal || [];
+    const n = jugadores.length;
+    const dealerIdx = jugadores.findIndex(j => j.dealer);
+    const inicio = (dealerIdx === -1 ? 0 : dealerIdx);
+    const porId = new Map(
+        Array.from(document.querySelectorAll('.silla:not(.hidden)'))
+            .map(s => [s.dataset.jugadorId, s])
+    );
+    const orden = [];
+    for (let k = 0; k < n; k++) {
+        const jug = jugadores[(inicio + k) % n];
+        if (!jug || jug.id === socket.id) continue; // mi carta la maneja juegoIniciado
+        const silla = porId.get(jug.id);
+        if (silla) orden.push({ jug, silla });
+    }
+
+    orden.forEach(({ jug, silla }, i) => {
+        const reverso = silla.querySelector('.perfil-carta-reverso');
+        if (!reverso) return; // oponente revelado o muerto: sin carta boca-abajo
+        const destino = reverso.getBoundingClientRect();
+        _repartiendo.add(jug.id);     // re-renders mantienen el reverso oculto
+        reverso.style.opacity = '0';  // ocultar la real hasta que aterrice el fantasma
+
+        const ghost = document.createElement('div');
+        ghost.className = 'perfil-carta-reverso';
+        // z-index 40: por encima de la mesa (sillas ≤20) para que la carta "vuele"
+        // sobre los asientos, pero por debajo del chrome (paneles/toasts/modales ≥50).
+        // opacity:0 + transform inicial: el fantasma queda OCULTO durante su delay de
+        // stagger. Sin esto, todos los fantasmas se creaban a la vez y quedaban
+        // visibles parados sobre el mazo esperando su turno —y con el tamaño del
+        // asiento destino, no del mazo, así que se notaba la diferencia. onStart lo
+        // hace visible recién cuando arranca su vuelo.
+        ghost.style.cssText =
+            `position:fixed;left:${origen.left}px;top:${origen.top}px;` +
+            `width:${destino.width}px;height:${destino.height}px;` +
+            `margin:0;z-index:40;pointer-events:none;opacity:0;` +
+            `transform:translate(0,0) scale(0.6);`;
+        document.body.appendChild(ghost);
+
+        const dx = destino.left - origen.left;
+        const dy = destino.top - origen.top;
+        const estado = { p: 0, scale: 0.6 };
+        new TWEEN.Tween(estado)
+            .to({ p: 1, scale: 1 }, 360)
+            .delay(i * STAGGER_REPARTO_MS)
+            .easing(TWEEN.Easing.Quadratic.Out)
+            .onStart(() => {
+                ghost.style.opacity = '1';
+                Sonidos.carta();
+            }) // visible al arrancar su vuelo
+            .onUpdate(() => {
+                ghost.style.transform =
+                    `translate(${dx * estado.p}px, ${dy * estado.p}px) scale(${estado.scale})`;
+            })
+            .onComplete(() => {
+                ghost.remove();
+                _repartiendo.delete(jug.id);
+                // Revelar el reverso VIGENTE (el asiento pudo re-renderizarse).
+                const rev = _reversoActualDe(jug.id);
+                if (rev) rev.style.opacity = '';
+            })
+            .start();
+    });
 }
 
 // ==========================================
@@ -448,8 +1132,15 @@ function dibujarMesaCircular() {
     if (!mostrandoRevelacion) miCarta.classList.remove('danio-recibido');
     if (miJugador.vidas === 1) miSilla.classList.add('vida-critica');
     if (miJugador.vidas > 0 && turnoActualId !== "") {
-        if (turnoActualId === socket.id) miSilla.classList.add('turno-activo');
-        else miSilla.classList.add('jugador-opaco');
+        if (turnoActualId === socket.id) {
+            miSilla.classList.add('turno-activo');
+            if (!mostrandoRevelacion) miCarta.classList.add('arrastrable');
+        } else {
+            miSilla.classList.add('jugador-opaco');
+            miCarta.classList.remove('arrastrable');
+        }
+    } else {
+        miCarta.classList.remove('arrastrable');
     }
 
     if (turnoActualId === socket.id && miJugador.vidas > 0) {
@@ -468,6 +1159,47 @@ function dibujarMesaCircular() {
     }
 
     let numOp = oponentes.length;
+
+    // Tamaño adaptable de las cartas boca-abajo: más grandes con pocos oponentes,
+    // se achican cuando la mesa se llena para que entren sin encimarse. Se aplica
+    // como variables CSS en :root, así las usan tanto los asientos como el mazo
+    // (que hereda .perfil-carta-reverso) y siguen coincidiendo entre sí.
+    const esCelular = window.innerWidth <= 768;
+    let reversoW;
+    if (numOp <= 2)       reversoW = esCelular ? 38 : 52;
+    else if (numOp <= 4)  reversoW = esCelular ? 32 : 46;
+    else if (numOp === 5) reversoW = esCelular ? 28 : 42;
+    else                  reversoW = esCelular ? 24 : 36; // 6-7 oponentes
+    const reversoH = Math.round(reversoW * 1.5); // relación 2:3 (0.667)
+    const root = document.documentElement.style;
+    root.setProperty('--reverso-w', reversoW + 'px');
+    root.setProperty('--reverso-h', reversoH + 'px');
+
+    // Mismo criterio para TU carta principal (#miCarta) y las reveladas de oponentes
+    // (.mini-carta-frente): con pocos jugadores se agrandan y aprovechan el espacio;
+    // con la mesa llena se achican. El número y la figura escalan con la carta.
+    let cartaW, miniW;
+    if (numOp <= 2)       { cartaW = esCelular ? 96 : 104; miniW = esCelular ? 58 : 64; }
+    else if (numOp <= 4)  { cartaW = esCelular ? 84 : 92;  miniW = esCelular ? 52 : 58; }
+    else if (numOp === 5) { cartaW = esCelular ? 76 : 84;  miniW = esCelular ? 48 : 54; }
+    else                  { cartaW = esCelular ? 68 : 76;  miniW = esCelular ? 44 : 50; } // 6-7
+    root.setProperty('--carta-w', cartaW + 'px');
+    root.setProperty('--carta-h', Math.round(cartaW * 1.46) + 'px');
+    root.setProperty('--carta-num', Math.round(cartaW * 0.52) + 'px'); // número
+    root.setProperty('--carta-fig', Math.round(cartaW * 0.60) + 'px'); // figura
+    root.setProperty('--mini-w', miniW + 'px');
+    root.setProperty('--mini-h', Math.round(miniW * 1.5) + 'px');
+
+    // Pila central de descarte: adapta a pantalla Y cantidad de jugadores (más
+    // grande con pocos —hay más espacio libre al centro— y más chica con la mesa llena).
+    let pilaW;
+    if (numOp <= 2)       pilaW = esCelular ? 42 : 52;
+    else if (numOp <= 4)  pilaW = esCelular ? 37 : 46;
+    else if (numOp === 5) pilaW = esCelular ? 33 : 42;
+    else                  pilaW = esCelular ? 30 : 38; // 6-7
+    root.setProperty('--pila-w', pilaW + 'px');
+    root.setProperty('--pila-h', Math.round(pilaW * 1.42) + 'px');
+
     let idsSillas = [];
     if (numOp === 1) idsSillas = ['silla-top'];
     else if (numOp === 2) idsSillas = ['silla-left', 'silla-right'];
@@ -476,6 +1208,21 @@ function dibujarMesaCircular() {
     else if (numOp === 5) idsSillas = ['silla-left', 'silla-top-left', 'silla-top', 'silla-top-right', 'silla-right'];
     else if (numOp === 6) idsSillas = ['silla-bottom-left', 'silla-left', 'silla-top-left', 'silla-top-right', 'silla-right', 'silla-bottom-right'];
     else if (numOp === 7) idsSillas = ['silla-bottom-left', 'silla-left', 'silla-top-left', 'silla-top', 'silla-top-right', 'silla-right', 'silla-bottom-right'];
+
+    // Calcular a quién le cambiaría yo si es mi turno (vecino derecho activo)
+    let idObjetivoDerecha = null;
+    const esMiTurno = (turnoActualId === socket.id && miJugador.vidas > 0 && !mostrandoRevelacion);
+    if (esMiTurno && !miJugador.dealer) {
+        let derIdx = miIndex;
+        let intentos = 0;
+        do {
+            derIdx = (derIdx + 1) % listaJugadoresGlobal.length;
+            intentos++;
+        } while (listaJugadoresGlobal[derIdx]?.vidas <= 0 && intentos < listaJugadoresGlobal.length);
+        if (listaJugadoresGlobal[derIdx] && listaJugadoresGlobal[derIdx].id !== campanaRingerId) {
+            idObjetivoDerecha = listaJugadoresGlobal[derIdx].id;
+        }
+    }
 
     oponentes.forEach((op, i) => {
         // Guard: si idsSillas[i] es undefined (numOp fuera de rango soportado)
@@ -490,10 +1237,15 @@ function dibujarMesaCircular() {
         let estaMuerto = (op.vidas <= 0);
         let claseDanio = (mostrandoRevelacion && perdedoresActuales.includes(op.id)) ? 'danio-recibido' : '';
         let animReparto = cartasRepartidas ? '' : 'animacion-reparto';
-        let claseVuelo = cartasRepartidas ? '' : `volar-desde-centro-${idSilla.replace('silla-', '')}`;
+        // El vuelo de entrada de oponentes lo maneja repartirCartasEscalonado()
+        // (fantasmas TWEEN desde el mazo). Se desactiva el vuelo CSS simultáneo
+        // para no duplicar la animación.
+        let claseVuelo = '';
 
+        const esObjetivo = (idObjetivoDerecha !== null && op.id === idObjetivoDerecha);
+        const claseObjetivo = esObjetivo ? 'objetivo-intercambio' : '';
         const claseVidaCritica = (op.vidas === 1 && !estaMuerto) ? 'vida-critica' : '';
-        divSilla.className = `silla ${idSilla.replace('silla-', '')} ${esSuTurno ? 'turno-activo' : ''} ${claseVidaCritica}`.trim();
+        divSilla.className = `silla ${idSilla.replace('silla-', '')} ${esSuTurno ? 'turno-activo' : ''} ${claseVidaCritica} ${claseObjetivo}`.trim();
         divSilla.dataset.jugadorId = op.id;
 
         let cartaHTML = '';
@@ -503,7 +1255,8 @@ function dibujarMesaCircular() {
                 cartaHTML = `
                     <div class="mini-carta-frente ${extra} ${claseDanio} efecto-revelar">
                         <div style="font-size:34px;font-weight:bold;line-height:1;">${op.cartaActual}</div>
-                        <div style="font-size:11px;text-align:center;line-height:1.1;margin-top:5px;">${nombresCartas[op.cartaActual]}</div>
+                        <div style="line-height:1;margin-top:2px;">${figuraIMG(op.cartaActual, 22)}</div>
+                        <div style="font-size:11px;text-align:center;line-height:1.1;margin-top:4px;">${nombresCartas[op.cartaActual]}</div>
                     </div>`;
             } else if (op.vidas > 0) {
                 const debeRevelar = (op.cartaRevelada === true) || (modoReyActual === 'DECLARADO' && op.cartaActual === 9);
@@ -512,10 +1265,14 @@ function dibujarMesaCircular() {
                     cartaHTML = `
                         <div class="mini-carta-frente ${extra}" style="border:2px solid var(--oro);box-shadow:0 0 15px rgba(241,196,15,0.8);">
                             <div style="font-size:34px;font-weight:bold;line-height:1;">${op.cartaActual}</div>
-                            <div style="font-size:11px;text-align:center;line-height:1.1;margin-top:5px;">${nombresCartas[op.cartaActual]}</div>
+                            <div style="line-height:1;margin-top:2px;">${figuraIMG(op.cartaActual, 22)}</div>
+                            <div style="font-size:11px;text-align:center;line-height:1.1;margin-top:4px;">${nombresCartas[op.cartaActual]}</div>
                         </div>`;
                 } else {
-                    cartaHTML = `<div class="perfil-carta-reverso ${claseVuelo}"></div>`;
+                    // Si la carta está en vuelo (reparto escalonado), pintar el
+                    // reverso oculto para que no aparezca encimado al fantasma.
+                    const estiloReparto = _repartiendo.has(op.id) ? ' style="opacity:0"' : '';
+                    cartaHTML = `<div class="perfil-carta-reverso ${claseVuelo}"${estiloReparto}></div>`;
                 }
             }
         }
@@ -525,7 +1282,7 @@ function dibujarMesaCircular() {
 
         divSilla.innerHTML = `
             <div class="perfil-oponente ${claseEstado} ${animReparto} ${claseDanio}">
-                <div style="font-size:13px;font-weight:bold;line-height:1.2;word-wrap:break-word;">${icono} ${op.nombre}</div>
+                <div style="font-size:13px;font-weight:bold;line-height:1.2;word-wrap:break-word;">${icono} ${escapeHTML(op.nombre)}</div>
                 <span class="vidas-destacadas">${estaMuerto ? '☠️ 0' : '♥️ ' + op.vidas}</span>
             </div>
             ${cartaHTML}
@@ -540,9 +1297,10 @@ function dibujarMesaCircular() {
         const juegoActivo = mesaDeJuego && !mesaDeJuego.classList.contains('hidden');
         if (dealer && juegoActivo) {
             // Quitar clases de posición anteriores
-            mazoFlotante.className = mazoFlotante.className.replace(/pos-\S+/g, '').trim();
+            mazoFlotante.className = mazoFlotante.className.replace(/pos-\S+/g, '').replace('objetivo-mazo', '').trim();
             if (dealer.id === socket.id) {
                 mazoFlotante.classList.add('pos-bottom');
+                if (esMiTurno) mazoFlotante.classList.add('objetivo-mazo');
             } else {
                 const idx = oponentes.findIndex(o => o.id === dealer.id);
                 if (idx !== -1 && idsSillas[idx]) {
@@ -569,6 +1327,26 @@ document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && miToken && socket && !socket.connected) {
         socket.connect();
     }
+});
+
+// Recalcular mesa circular al redimensionar pantalla o girar el teléfono
+let _resizeTimer = null;
+window.addEventListener('resize', () => {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(() => {
+        const mesa = document.getElementById('mesaDeJuego');
+        if (mesa && !mesa.classList.contains('hidden') && listaJugadoresGlobal && listaJugadoresGlobal.length > 0) {
+            dibujarMesaCircular();
+        }
+    }, 150);
+});
+window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+        const mesa = document.getElementById('mesaDeJuego');
+        if (mesa && !mesa.classList.contains('hidden') && listaJugadoresGlobal && listaJugadoresGlobal.length > 0) {
+            dibujarMesaCircular();
+        }
+    }, 250);
 });
 
 function conectarSocket() {
@@ -601,13 +1379,17 @@ function conectarSocket() {
         }
     });
 
+    // El servidor está bajando para shutdown/restart. Avisamos al usuario con
+    // un toast no bloqueante; Socket.io reconecta solo cuando vuelva el server.
+    socket.on('servidorReiniciando', (mensaje) => {
+        mostrarToast(mensaje || '⏳ Servidor reiniciando... esperando reconexión.', 'rey', 5000);
+    });
+
     // El servidor cerró esta sesión porque la cuenta inició desde otra pestaña
     // o dispositivo. Desactivar reconexión automática y volver al lobby inicial.
     socket.on('sesionReemplazada', (mensaje) => {
         socket.io.opts.reconnection = false;
-        miSalaActual = null;
-        soyElHost = false;
-        listaJugadoresGlobal = [];
+        resetEstadoSala();
 
         document.getElementById('mesaDeJuego')?.classList.add('hidden');
         document.getElementById('pantallaVictoria')?.classList.add('hidden');
@@ -719,9 +1501,8 @@ function conectarSocket() {
     document.getElementById('btnSalirLobby').onclick = () => {
         if (miSalaActual) {
             socket.emit('abandonarSala', miSalaActual);
-            miSalaActual = "";
-            soyElHost = false;
         }
+        resetEstadoSala();
         document.getElementById('panelJugadores').classList.add('hidden');
         document.getElementById('mostrarCodigo').classList.add('hidden');
         document.getElementById('lobbyTabs')?.classList.remove('hidden');
@@ -731,16 +1512,23 @@ function conectarSocket() {
         if (typeof switchTab === 'function') switchTab('crear');
     };
 
+    document.getElementById('btnMostrarQR').onclick = mostrarVistaQR;
+    document.getElementById('btnVolverQR').onclick = ocultarVistaQR;
+    document.getElementById('btnEmpezarQR').onclick = () => {
+        ocultarVistaQR();
+        socket.emit('iniciarPartida', miSalaActual);
+    };
+
     document.getElementById('btnCopiarLink').onclick = () => {
-        const link = `http://34.204.215.13:4000/sala/${miSalaActual}`;
+        const link = linkDeSala();
         const btn = document.getElementById('btnCopiarLink');
         const exito = () => {
-            btn.innerText = "Copiado!";
-            setTimeout(() => { btn.innerText = "COPIAR LINK"; }, 2000);
+            btn.innerText = "¡Copiado!";
+            setTimeout(() => { btn.innerText = "🔗 ENLACE"; }, 2000);
         };
         const error = () => {
-            btn.innerText = "Error al copiar";
-            setTimeout(() => { btn.innerText = "COPIAR LINK"; }, 2000);
+            btn.innerText = "Error";
+            setTimeout(() => { btn.innerText = "🔗 ENLACE"; }, 2000);
         };
 
         // navigator.clipboard solo existe en contexto seguro (HTTPS o localhost).
@@ -771,6 +1559,20 @@ function conectarSocket() {
             j.nombre === miNombreUsuario ? { ...j, id: socket.id } : j
         );
 
+        // Re-evaluar host: jugadores[0] siempre es el host (el server splicea al
+        // que abandona). Si yo soy ahora jugadores[0] aunque no haya creado la
+        // sala, me toca empezar la partida. Sin esto, si el host abandona, la
+        // sala queda sin nadie que pueda apretar "Empezar".
+        const esHostAhora = jugadores.length > 0 && jugadores[0].nombre === miNombreUsuario;
+        if (esHostAhora && !soyElHost) {
+            mostrarToast('👑 Ahora eres el host de la sala.', 'rey', 3000);
+        }
+        soyElHost = esHostAhora;
+        const btnEmpezar = document.getElementById('btnEmpezar');
+        if (btnEmpezar) {
+            btnEmpezar.classList.toggle('hidden', !soyElHost);
+        }
+
         const colores = ['#c0392b','#2980b9','#27ae60','#8e44ad','#e67e22','#16a085','#d35400','#2c3e50'];
         document.getElementById('listaJugadores').innerHTML = jugadores.map((j, i) => {
             const inicial = j.nombre.charAt(0).toUpperCase();
@@ -785,7 +1587,7 @@ function conectarSocket() {
                     : 'background:rgba(46,204,113,0.2);color:#2ecc71';
             return `<li>
                 <div class="jugador-avatar-lobby" style="background:${color};">${esBot ? '🤖' : inicial}</div>
-                <span class="jugador-nombre-lobby">${j.nombre}</span>
+                <span class="jugador-nombre-lobby">${escapeHTML(j.nombre)}</span>
                 <span class="jugador-badge-lobby" style="${badgeStyle}">${badge}</span>
             </li>`;
         }).join('');
@@ -814,8 +1616,20 @@ function conectarSocket() {
     });
 
     socket.on('datosMesa', (datos) => {
+        // Revelar la mesa ANTES de dibujar/repartir. En la ronda 1, datosMesa
+        // llega antes que tuCarta (que es quien normalmente saca el lobby), así
+        // que sin esto la mesa sigue oculta: #mazoFlotante y los asientos tienen
+        // rects 0 y repartirCartasEscalonado() salía temprano → el reparto solo
+        // se veía desde la ronda 2. Idempotente con tuCarta.
+        document.getElementById('seccion-lobby').classList.add('hidden');
+        document.getElementById('mesaDeJuego').classList.remove('hidden');
+        document.getElementById('infoRonda').classList.remove('hidden');
+        document.getElementById('infoDealer').classList.remove('hidden');
+        ocultarVistaQR(); // por si quedó abierto cuando el host inició la partida
+
         document.getElementById('numRonda').innerText = datos.ronda;
         document.getElementById('nombreDealer').innerText = datos.dealer;
+        reiniciarHistorialRonda(datos.ronda);
 
         // Actualizar modo inmediatamente
         if (datos.modoRey) {
@@ -838,6 +1652,10 @@ function conectarSocket() {
         if (datos.jugadores) {
             listaJugadoresGlobal = datos.jugadores;
             dibujarMesaCircular();
+            // Reparto escalonado de las cartas de oponentes desde el mazo. Va
+            // sincrónico tras dibujar (mismo frame) para no mostrar las cartas
+            // reales antes de ocultarlas. datosMesa llega una vez por ronda.
+            repartirCartasEscalonado();
         }
     });
 
@@ -859,27 +1677,19 @@ function conectarSocket() {
         document.getElementById('panelAccionesPartida').classList.remove('hidden');
         document.getElementById('barraReacciones')?.classList.remove('hidden');
 
+        // Guardar la carta y dejar que el evento siguiente (juegoIniciado,
+        // cambioDeTurno o rondaTerminada) la revele con su animación. NO revelar
+        // acá el 9 de DECLARADO: tuCarta llega ~500ms antes de juegoIniciado, que
+        // hace ++_renderGen e invalida el callback de revelado de esta animación
+        // (race) → la carta quedaba mostrando el dorso. El revelado público del 9
+        // en DECLARADO es responsabilidad del server (mensajeGlobal) y del render
+        // de oponentes (cartaRevelada); la carta propia se anima como en SORPRESA.
         _cartaPendiente = carta;
-
-        // DECLARADO: el 9 se revela de inmediato sin esperar juegoIniciado
-        if (modoReyActual === 'DECLARADO' && carta === 9) {
-            const contenedorCarta = document.getElementById('miCarta');
-            contenedorCarta.classList.remove('flipped', 'volar-desde-centro-bottom', 'danio-recibido');
-            void contenedorCarta.offsetWidth;
-            contenedorCarta.classList.add('volar-desde-centro-bottom');
-            // 600ms: esperar que termine la animación de vuelo antes de revelar y girar
-            setTimeout(() => {
-                document.getElementById('numeroCarta').innerText = carta;
-                document.getElementById('nombrePersonaje').innerText = nombresCartas[carta];
-                document.getElementById('cartaFrente').className = 'face front-character carta-9';
-                contenedorCarta.classList.add('flipped');
-                _cartaPendiente = null; // consumida, juegoIniciado no la reanimará
-            }, 600);
-        }
     });
 
     // --- RECONEXIÓN ---
     socket.on('reconexionExitosa', (datos) => {
+        ++_renderGen;
         miSalaActual = datos.idSala;
         listaJugadoresGlobal = datos.jugadores.map(j =>
             j.nombre === miNombreUsuario ? { ...j, id: socket.id } : j
@@ -887,10 +1697,16 @@ function conectarSocket() {
 
         document.getElementById('seccion-inicio').classList.add('hidden');
         document.getElementById('seccion-lobby').classList.add('hidden');
+        // Entrar a la mesa SIEMPRE oculta victoria/resumen/QR: si te reconectás
+        // estando en esas pantallas, no deben quedar mezcladas sobre la mesa.
+        document.getElementById('pantallaVictoria').classList.add('hidden');
+        ocultarResumenRonda();
+        ocultarVistaQR();
         document.getElementById('mesaDeJuego').classList.remove('hidden');
         document.getElementById('panelAccionesPartida').classList.remove('hidden');
         document.getElementById('numRonda').innerText = datos.ronda;
         document.getElementById('nombreDealer').innerText = datos.dealer;
+        reiniciarHistorialRonda(datos.ronda);
         document.getElementById('infoRonda').classList.remove('hidden');
         document.getElementById('infoDealer').classList.remove('hidden');
         if (datos.modoRey) {
@@ -907,10 +1723,7 @@ function conectarSocket() {
         cartasRepartidas = true;
         dibujarMesaCircular();
 
-        document.getElementById('numeroCarta').innerText = datos.carta;
-        document.getElementById('nombrePersonaje').innerText = nombresCartas[datos.carta];
-        document.getElementById('cartaFrente').className = "face front-character " +
-            (datos.carta === 0 ? "carta-0" : datos.carta === 9 ? "carta-9" : "");
+        pintarCartaPrincipal(datos.carta);
         setTimeout(() => { document.getElementById('miCarta').classList.add('flipped'); }, 700);
 
         if (datos.estado === "REVELACION") {
@@ -940,6 +1753,7 @@ function conectarSocket() {
 
     // --- TURNOS ---
     socket.on('juegoIniciado', (datosTurno) => {
+        const gen = ++_renderGen;
         if (datosTurno.jugadores) listaJugadoresGlobal = datosTurno.jugadores;
         if (datosTurno.modoRey) modoReyActual = datosTurno.modoRey;
         turnoActualId = datosTurno.id;
@@ -964,6 +1778,10 @@ function conectarSocket() {
 
         const esMio = socket.id === datosTurno.id;
         const esCampana = datosTurno.modoJuego === 'CAMPANA';
+        if (esMio) {
+            Sonidos.turno();
+            vibrar([80, 40, 80]);
+        }
         document.getElementById('mensajeTurno').innerText = esMio ? "COMIENZAS TU!" : `Inicia ${datosTurno.nombre}...`;
         document.getElementById('btnMantener').style.display = esMio ? "inline-block" : "none";
         document.getElementById('btnCambiar').style.display = esMio ? "inline-block" : "none";
@@ -976,25 +1794,25 @@ function conectarSocket() {
         document.getElementById('btnSiguienteRonda').style.display = "none";
 
         setTimeout(() => {
+            // Si otro evento (cambioDeTurno, rondaTerminada, etc.) ya bumpeó la
+            // generación, abortar SIN consumir _cartaPendiente — el nuevo evento
+            // la procesará.
+            if (gen !== _renderGen) return;
             const carta = _cartaPendiente;
             _cartaPendiente = null;
 
             if (carta !== null && carta !== undefined) {
                 const contenedorCarta = document.getElementById('miCarta');
                 contenedorCarta.classList.remove('flipped', 'volar-desde-centro-bottom', 'danio-recibido');
-                void contenedorCarta.offsetWidth;
-                contenedorCarta.classList.add('volar-desde-centro-bottom');
-                // Esperar que termine el vuelo (600ms) para revelar y girar la carta
-                // El reloj inicia aquí: el jugador empieza a ver su carta al mismo tiempo
-                setTimeout(() => {
-                    document.getElementById('numeroCarta').innerText = carta;
-                    document.getElementById('nombrePersonaje').innerText = nombresCartas[carta];
-                    document.getElementById('cartaFrente').className = "face front-character " +
-                        (carta === 0 ? "carta-0" : carta === 9 ? "carta-9" : "");
+                // POC TWEEN.js: el vuelo lo maneja animarVueloCartaTween; al terminar
+                // (onComplete) se revela la carta, se gira y arranca el reloj —el reloj
+                // inicia con la carta a la vista, igual que con el setTimeout previo.
+                animarVueloCartaTween(contenedorCarta, gen, () => {
+                    pintarCartaPrincipal(carta);
                     contenedorCarta.classList.add('flipped');
                     actualizarBotonesTurno(esMio, esCampana, datosTurno.campanaTocada);
                     gestionarRelojVisual(datosTurno.id, datosTurno.tiempo);
-                }, 600);
+                });
             } else {
                 // Sin carta que animar: iniciar reloj y revisar si es penultimo jugador
                 actualizarBotonesTurno(esMio, esCampana, datosTurno.campanaTocada);
@@ -1005,6 +1823,7 @@ function conectarSocket() {
     });
 
     socket.on('cambioDeTurno', (datosTurno) => {
+        ++_renderGen; // invalidar cadenas de juegoIniciado/tuCarta en vuelo
         if (datosTurno.jugadores) listaJugadoresGlobal = datosTurno.jugadores;
         turnoActualId = datosTurno.id;
         if (datosTurno.modoRey) modoReyActual = datosTurno.modoRey;
@@ -1013,10 +1832,7 @@ function conectarSocket() {
         if (_cartaPendiente !== null) {
             const carta = _cartaPendiente;
             _cartaPendiente = null;
-            document.getElementById('numeroCarta').innerText = carta;
-            document.getElementById('nombrePersonaje').innerText = nombresCartas[carta];
-            document.getElementById('cartaFrente').className = "face front-character " +
-                (carta === 0 ? "carta-0" : carta === 9 ? "carta-9" : "");
+            pintarCartaPrincipal(carta);
             const c = document.getElementById('miCarta');
             if (!c.classList.contains('flipped')) c.classList.add('flipped');
         }
@@ -1032,6 +1848,10 @@ function conectarSocket() {
         dibujarMesaCircular();
         const esMio = socket.id === datosTurno.id;
         const esCampana = datosTurno.modoJuego === 'CAMPANA';
+        if (esMio) {
+            Sonidos.turno();
+            vibrar([80, 40, 80]);
+        }
         document.getElementById('mensajeTurno').innerText = esMio ? "ES TU TURNO!" : `Esperando a ${datosTurno.nombre}...`;
         document.getElementById('btnMantener').style.display = esMio ? "inline-block" : "none";
         document.getElementById('btnCambiar').style.display = esMio ? "inline-block" : "none";
@@ -1044,18 +1864,50 @@ function conectarSocket() {
         gestionarRelojVisual(datosTurno.id, datosTurno.tiempo);
     });
 
-    document.getElementById('btnMantener').onclick = () =>
+    function ejecutarAccionMantener() {
+        const btn = document.getElementById('btnMantener');
+        if (!btn || btn.disabled || btn.style.display === 'none') return;
+        Sonidos.boton();
+        vibrar(25);
+        const c = document.getElementById('miCarta');
+        if (c) {
+            c.classList.add('mantenida-tap');
+            setTimeout(() => c.classList.remove('mantenida-tap'), 350);
+        }
+        btn.disabled = true;
+        const btnCambiar = document.getElementById('btnCambiar');
+        if (btnCambiar) btnCambiar.disabled = true;
+        const btnCampana = document.getElementById('btnCampana');
+        if (btnCampana) btnCampana.disabled = true;
         socket.emit('accionJugador', { idSala: miSalaActual, accion: 'MANTENER' });
+    }
 
-    document.getElementById('btnCambiar').onclick = () => {
+    function ejecutarAccionCambiar() {
+        const btn = document.getElementById('btnCambiar');
+        if (!btn || btn.disabled || btn.style.display === 'none') return;
+        Sonidos.boton();
+        vibrar(35);
+        const c = document.getElementById('miCarta');
+        if (c) {
+            c.classList.remove('volar-desde-centro-bottom');
+            c.classList.add('efecto-intercambio');
+            setTimeout(() => { c.classList.remove('efecto-intercambio'); }, 1000);
+        }
+        btn.disabled = true;
+        const btnMantener = document.getElementById('btnMantener');
+        if (btnMantener) btnMantener.disabled = true;
+        const btnCampana = document.getElementById('btnCampana');
+        if (btnCampana) btnCampana.disabled = true;
         socket.emit('accionJugador', { idSala: miSalaActual, accion: 'CAMBIAR' });
-        let miCartaVisual = document.getElementById('miCarta');
-        miCartaVisual.classList.remove('volar-desde-centro-bottom');
-        miCartaVisual.classList.add('efecto-intercambio');
-        setTimeout(() => { miCartaVisual.classList.remove('efecto-intercambio'); }, 1000);
-    };
+    }
+
+    document.getElementById('btnMantener').onclick = ejecutarAccionMantener;
+    document.getElementById('btnCambiar').onclick = ejecutarAccionCambiar;
+    inicializarGestosCarta(ejecutarAccionMantener, ejecutarAccionCambiar);
 
     document.getElementById('btnCampana').onclick = () => {
+        Sonidos.campana();
+        vibrar([150, 80, 150]);
         socket.emit('accionJugador', { idSala: miSalaActual, accion: 'CAMPANA' });
         document.getElementById('btnCampana').disabled = true;
     };
@@ -1065,6 +1917,13 @@ function conectarSocket() {
         document.getElementById('btnCampana').classList.add('hidden');
         document.getElementById('btnCampana').disabled = true;
         document.getElementById('bannerUltimaVuelta').classList.remove('hidden');
+        Sonidos.campana();
+        vibrar([160, 80, 160]);
+    });
+
+    // --- ACCIONES EN MESA (MINI-FEED) ---
+    socket.on('accionMesa', (datos) => {
+        registrarJugadaFeed(datos);
     });
 
     // --- MENSAJES GLOBALES ---
@@ -1074,6 +1933,16 @@ function conectarSocket() {
         else if (m.includes('Rey')) tipo = 'rey';
         else if (m.includes('eliminado')) tipo = 'danio';
         mostrarToast(m, tipo, 2500);
+
+        // Si es un evento del sistema de la partida, registrarlo en la bitácora
+        if (m.includes('ha sido eliminado') || m.includes('mezclada de nuevo') || m.includes('Empate total')) {
+            registrarJugadaFeed({
+                tipo: 'INFO',
+                icono: m.includes('eliminado') ? '💀' : (m.includes('Empate') ? '🤝' : '🔀'),
+                texto: m
+            });
+        }
+
         // Flash rojo solo en modo Sorpresa — en Declarado el 9 ya es conocido
         if (m.includes('BLOQUEO REAL') && modoReyActual !== 'DECLARADO') {
             const tapete = document.getElementById('tapeteVistas');
@@ -1084,6 +1953,7 @@ function conectarSocket() {
     });
 
     socket.on('turnoSaltadoVisual', (idJugador) => {
+        ++_renderGen;
         turnoActualId = idJugador;
         dibujarMesaCircular();
         document.getElementById('btnMantener').style.display = "none";
@@ -1092,14 +1962,12 @@ function conectarSocket() {
 
     // --- FIN DE RONDA ---
     socket.on('rondaTerminada', (datos) => {
+        const gen = ++_renderGen;
         // Si el dealer acaba de cambiar su carta, actualizar el display antes de revelar
         if (_cartaPendiente !== null) {
             const carta = _cartaPendiente;
             _cartaPendiente = null;
-            document.getElementById('numeroCarta').innerText = carta;
-            document.getElementById('nombrePersonaje').innerText = nombresCartas[carta];
-            document.getElementById('cartaFrente').className = "face front-character " +
-                (carta === 0 ? "carta-0" : carta === 9 ? "carta-9" : "");
+            pintarCartaPrincipal(carta);
             const c = document.getElementById('miCarta');
             if (!c.classList.contains('flipped')) c.classList.add('flipped');
         }
@@ -1108,8 +1976,16 @@ function conectarSocket() {
         turnoActualId = "";
         listaJugadoresGlobal = datos.jugadores;
 
+        registrarJugadaFeed({
+            tipo: 'FIN_RONDA',
+            icono: '💀',
+            texto: `Fin de ronda · Carta mortal: ${datos.cartaMortal}`
+        });
+
         if (datos.perdedores.includes(socket.id)) {
             document.getElementById('miCarta').classList.add('danio-recibido');
+            Sonidos.danio();
+            vibrar([120, 60, 200]);
         }
 
         const yoMori = datos.jugadores.find(j => j.id === socket.id && j.vidas <= 0);
@@ -1130,10 +2006,18 @@ function conectarSocket() {
         document.getElementById('btnCampana').classList.add('hidden');
         document.getElementById('btnCampana').disabled = true;
 
-        mostrarResumenRonda(datos);
-        if (datos.juegoTerminado) {
-            mostrarToast('EL JUEGO HA TERMINADO!', 'rey', 5000);
-        }
+        // Mostrar el resumen tras un respiro: la carta nueva del dealer (y las
+        // cartas reveladas en la mesa) ya se actualizaron arriba de forma síncrona,
+        // así el jugador alcanza a ver qué carta le tocó al cambiar con el mazo
+        // ANTES de que el pop-up de resultados la tape. Guard de gen por si llegó
+        // otro evento en el ínterin.
+        setTimeout(() => {
+            if (gen !== _renderGen) return;
+            mostrarResumenRonda(datos);
+            if (datos.juegoTerminado) {
+                mostrarToast('EL JUEGO HA TERMINADO!', 'rey', 5000);
+            }
+        }, 1400);
     });
 
     document.getElementById('btnSiguienteRonda').onclick = () => {
@@ -1181,6 +2065,7 @@ function conectarSocket() {
     });
 
     socket.on('revanchaIniciando', () => {
+        ++_renderGen;
         desactivarModoEspectador();
         document.getElementById('pantallaVictoria').classList.add('hidden');
         document.getElementById('mesaDeJuego').classList.remove('hidden');
@@ -1204,6 +2089,7 @@ function conectarSocket() {
 
     // --- NUEVA RONDA ---
     socket.on('nuevaRondaIniciada', (datos) => {
+        ++_renderGen;
         desactivarModoEspectador();
         ocultarResumenRonda();
         document.getElementById('bannerUltimaVuelta').classList.add('hidden');
@@ -1234,11 +2120,18 @@ function conectarSocket() {
 
     // --- FIN DEL JUEGO ---
     socket.on('finDelJuego', (ganador) => {
+        ++_renderGen;
         ocultarResumenRonda();
+        ocultarVistaQR();
         lanzarCoronasVictoria();
+        Sonidos.victoria();
+        if (ganador.id === socket.id) {
+            vibrar([100, 50, 100, 50, 250]);
+        }
         document.getElementById('mesaDeJuego').classList.add('hidden');
         document.getElementById('panelJugadores').classList.add('hidden');
         document.getElementById('mostrarCodigo').classList.add('hidden');
+        document.getElementById('panelAccionesPartida').classList.add('hidden');
         document.getElementById('pantallaVictoria').classList.remove('hidden');
         document.getElementById('nombreGanador').innerText = ganador.nombre;
         document.getElementById('contadorRevancha').innerText = '';
@@ -1251,6 +2144,10 @@ function conectarSocket() {
     document.getElementById('btnVolverLobby').onclick = () => {
         desactivarModoEspectador();
         document.getElementById('pantallaVictoria').classList.add('hidden');
+        // Volver al lobby oculta explícitamente mesa y footer: así nunca quedan
+        // visibles junto al lobby (ambos son hermanos dentro de pantallaJuego).
+        document.getElementById('mesaDeJuego').classList.add('hidden');
+        document.getElementById('panelAccionesPartida').classList.add('hidden');
         document.getElementById('seccion-lobby').classList.remove('hidden');
         document.getElementById('lobbyTabs')?.classList.remove('hidden');
         document.getElementById('panelConfiguracion').classList.remove('hidden');
@@ -1266,14 +2163,7 @@ function conectarSocket() {
         document.getElementById('infoModo').classList.add('hidden');
         document.getElementById('btnEmpezar').style.display = "";
 
-        cartasRepartidas = false;
-        _cartaPendiente = null;
-        mostrandoRevelacion = false;
-        perdedoresActuales = [];
-        turnoActualId = "";
-        miSalaActual = "";
-        soyElHost = false;
-        listaJugadoresGlobal = [];
+        resetEstadoSala();
 
         document.getElementById('listaJugadores').innerHTML = "";
         dibujarMesaCircular();
@@ -1312,7 +2202,7 @@ function conectarSocket() {
             return;
         }
 
-        miSalaActual = "";
+        resetEstadoSala();
         document.getElementById('panelJugadores').classList.add('hidden');
         document.getElementById('mostrarCodigo').classList.add('hidden');
         document.getElementById('lobbyTabs')?.classList.remove('hidden');

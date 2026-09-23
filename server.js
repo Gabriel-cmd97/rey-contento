@@ -7,9 +7,74 @@ const jwt = require('jsonwebtoken');
 const pool = require('./db');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const log = require('./logger');
+
+// Errores de DB que NO indican un bug del código — son cortes/locks pasajeros
+// que típicamente desaparecen en milisegundos. Reintentar es seguro y mejora
+// la robustez frente a hipos de red entre el server y AWS RDS.
+const ERRORES_DB_TRANSIENT = new Set([
+    'ECONNRESET',
+    'PROTOCOL_CONNECTION_LOST',
+    'PROTOCOL_SEQUENCE_TIMEOUT',
+    'ETIMEDOUT',
+    'ER_LOCK_WAIT_TIMEOUT',
+    'ER_LOCK_DEADLOCK',
+]);
+
+// Ejecuta `fn` con reintentos exponenciales (100ms, 200ms, 300ms) ante errores
+// transient. Errores permanentes (ER_DUP_ENTRY, ER_BAD_FIELD_ERROR, etc.)
+// se propagan inmediatamente sin retry.
+async function conRetry(fn, ctx = {}) {
+    const maxIntentos = 3;
+    for (let intento = 1; intento <= maxIntentos; intento++) {
+        try {
+            return await fn();
+        } catch (err) {
+            if (!ERRORES_DB_TRANSIENT.has(err.code) || intento === maxIntentos) {
+                throw err;
+            }
+            log.warn('DB transient error, reintentando', {
+                intento, codigo: err.code, ...ctx
+            });
+            await new Promise(r => setTimeout(r, 100 * intento));
+        }
+    }
+}
+
+// CORS: si ALLOWED_ORIGINS está definido en .env, restringe a esos orígenes.
+// Si no, permite cualquiera (modo dev). En producción SIEMPRE setear esta var
+// para evitar que sitios ajenos embeban el juego o scrapeen el leaderboard.
+// Ejemplo .env: ALLOWED_ORIGINS=http://34.204.215.13:4000,http://localhost:4000
+const origenesPermitidos = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
+    : null;
+
+function verificarOrigen(origin, callback) {
+    // null = sin restricción (dev)
+    if (!origenesPermitidos) return callback(null, true);
+    // origin vacío = same-origin, curl, mobile native, server-to-server
+    if (!origin) return callback(null, true);
+    if (origenesPermitidos.includes(origin)) return callback(null, true);
+    log.warn('CORS bloqueó origen', { origin });
+    callback(new Error('Origen no permitido'));
+}
 
 const app = express();
-app.use(cors());
+
+// Security headers básicos — evita dep nueva (helmet).
+// - X-Frame-Options: bloquea iframes (clickjacking)
+// - X-Content-Type-Options: previene MIME-type sniffing (XSS via tipo)
+// - Referrer-Policy: no leakea URL a sitios externos al hacer links
+// - Permissions-Policy: deniega APIs del navegador que no usamos
+app.use((req, res, next) => {
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    next();
+});
+
+app.use(cors({ origin: verificarOrigen, credentials: false }));
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -21,13 +86,62 @@ const limitarAuth = rateLimit({
     legacyHeaders: false,
 });
 
+// Más estricto para login: 10 intentos por IP cada 15 min mitiga brute force.
+const limitarLogin = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { error: 'Demasiados intentos de login. Espera 15 minutos.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Lectura de stats (/leaderboard, /mis-stats): pegan a la DB sin auth y se
+// consultan en cada carga de la pantalla de inicio. Límite generoso para no
+// romper uso legítimo, pero acotado para frenar scraping/abuso del endpoint.
+const limitarLectura = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    message: { error: 'Demasiadas solicitudes. Espera unos minutos.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Validación de credenciales:
+// - Registro restrictivo (regex): nuevos usernames con set acotado para evitar
+//   colisiones visuales y caracteres problemáticos.
+// - Login permisivo (solo tipo y longitud): no romper logins de cuentas pre-existentes.
+function esUsernameRegistro(v) {
+    return typeof v === 'string' && /^[A-Za-z0-9._-]{3,20}$/.test(v);
+}
+function esUsernameLogin(v) {
+    return typeof v === 'string' && v.length >= 1 && v.length <= 100;
+}
+function esPasswordValida(v) {
+    return typeof v === 'string' && v.length >= 4 && v.length <= 100;
+}
+
+// Hash dummy precomputado: cuando el username no existe en /login, igual hacemos
+// un bcrypt.compare contra este hash para que la respuesta tarde lo mismo que un
+// login válido — impide enumerar usuarios midiendo el tiempo de respuesta.
+const HASH_DUMMY_LOGIN = bcrypt.hashSync('contrasena-dummy-nunca-matcheada', 10);
+
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, { cors: { origin: verificarOrigen, credentials: false } });
+if (!origenesPermitidos) {
+    log.warn('ALLOWED_ORIGINS no configurado — permitiendo cualquier origen (modo dev)');
+}
 
 const estadoSalas = {};
 const temporizadores = {};
 const temporizadoresDesconexion = {};
-const JWT_SECRET = process.env.JWT_SECRET || 'secreto_temporal';
+// Fail-fast si falta JWT_SECRET. Sin esto, un deploy sin .env usaba el
+// fallback 'secreto_temporal' (hardcoded en el repo) → cualquiera con acceso
+// al código puede forjar tokens válidos.
+if (!process.env.JWT_SECRET) {
+    log.error('JWT_SECRET no definido en .env. Abortando boot.');
+    process.exit(1);
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // ── Rate limiter para eventos de socket ──────────────────────
 const _socketRates = {};
@@ -83,6 +197,18 @@ function sanitizarConfig(raw) {
     return { vidas, maxJugadores, numBots, modoJuego, modoRey, frecuenciaReyes, password };
 }
 
+// Formato del idSala: 5 caracteres alfanuméricos. El alfabeto real es
+// más restringido (sin I/O/0/1) pero permitir todo A-Z0-9 es suficiente:
+// un id que no exista en estadoSalas igual cae al "sala no existe".
+function esIdSalaValido(v) {
+    return typeof v === 'string' && /^[A-Z0-9]{5}$/i.test(v);
+}
+
+// Whitelist de emojis de reacciones — debe coincidir con data-emoji del HTML.
+// Sin esto, un cliente puede broadcastear strings arbitrarios (XSS no aplica
+// porque el cliente sanitiza, pero sí puede mandar payloads gigantes).
+const EMOJIS_REACCION = new Set(['😱', '🤡', '👑', '💀', '🎭', '🍀']);
+
 // Fisher-Yates: distribución uniforme garantizada (a diferencia de sort(() => Math.random()-0.5))
 function barajar(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -118,6 +244,51 @@ function crearMazo(config) {
     return base; // 76 cartas, 9s concentrados hacia el final (=primeras rondas)
 }
 
+// Marca actividad reciente en una sala. Se usa para que el sweeper no borre
+// salas vivas. Llamar al crear, al unirse, y en cada acción de jugador.
+function tocarSala(sala) {
+    if (sala) sala.ultimaActividad = Date.now();
+}
+
+// Límites globales para prevenir DoS por memoria: un atacante con muchos
+// tokens válidos podría crear miles de salas. El sweeper limpia las muertas
+// pero estos caps son la defensa de primera línea.
+const MAX_SALAS_GLOBAL = 500;
+const MAX_SALAS_POR_USUARIO = 5;
+
+// Cuenta cuántas salas activas tienen al usuario como jugador humano (incluye
+// salas que creó y salas a las que se unió). Recorre todo estadoSalas, pero
+// con MAX_SALAS_GLOBAL=500 y ~6 jugadores cada una son ~3000 comparaciones —
+// trivial. Si esto creciera, mantener un índice {username: Set<idSala>}.
+function contarSalasDelUsuario(username) {
+    let count = 0;
+    for (const id in estadoSalas) {
+        if (estadoSalas[id].jugadores.some(j => j.nombre === username && !j.esBot)) {
+            count++;
+        }
+    }
+    return count;
+}
+
+// Centraliza el borrado de salas: cancela timers de turno y de desconexión
+// asociados antes de quitar la sala del registro. Llamar a este helper en lugar
+// de `delete estadoSalas[id]` evita timers fantasma sobre estado ya borrado.
+function limpiarSala(idSala) {
+    const sala = estadoSalas[idSala];
+    if (!sala) return;
+    if (temporizadores[idSala]) {
+        clearTimeout(temporizadores[idSala]);
+        delete temporizadores[idSala];
+    }
+    sala.jugadores.forEach(j => {
+        if (temporizadoresDesconexion[j.nombre]) {
+            clearTimeout(temporizadoresDesconexion[j.nombre]);
+            delete temporizadoresDesconexion[j.nombre];
+        }
+    });
+    delete estadoSalas[idSala];
+}
+
 // Helper para emitir actualizarLobby siempre con maxJugadores
 function emitirLobby(idSala) {
     const sala = estadoSalas[idSala];
@@ -147,57 +318,93 @@ io.use((socket, next) => {
 // RUTAS AUTH
 // ==========================================
 app.post('/registro', limitarAuth, async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password } = req.body || {};
+    if (!esUsernameRegistro(username)) {
+        return res.status(400).json({ error: 'El usuario debe tener 3-20 caracteres (letras, números, . _ -).' });
+    }
+    if (!esPasswordValida(password)) {
+        return res.status(400).json({ error: 'La contraseña debe tener entre 4 y 100 caracteres.' });
+    }
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        await pool.execute('INSERT INTO usuarios (username, password_hash) VALUES (?, ?)', [username, hashedPassword]);
+        await conRetry(
+            () => pool.execute('INSERT INTO usuarios (username, password_hash) VALUES (?, ?)', [username, hashedPassword]),
+            { op: 'registro', username }
+        );
         res.status(201).json({ mensaje: '¡Cuenta creada! Ya puedes iniciar sesión.' });
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY') {
             res.status(400).json({ error: 'Ese nombre de usuario ya está ocupado.' });
         } else {
+            log.error('Registro falló', { error: error.message, codigo: error.code, username });
             res.status(500).json({ error: 'Error en la base de datos.' });
         }
     }
 });
 
-app.post('/login', limitarAuth, async (req, res) => {
-    const { username, password } = req.body;
+app.post('/login', limitarLogin, async (req, res) => {
+    const { username, password } = req.body || {};
+    // Mensaje genérico para input inválido — no revelar si era el user o el pass.
+    if (!esUsernameLogin(username) || !esPasswordValida(password)) {
+        return res.status(401).json({ error: 'Credenciales inválidas.' });
+    }
     try {
-        const [rows] = await pool.execute('SELECT * FROM usuarios WHERE username = ?', [username]);
-        if (rows.length === 0) return res.status(401).json({ error: 'Usuario no encontrado.' });
+        const [rows] = await conRetry(
+            () => pool.execute('SELECT * FROM usuarios WHERE username = ?', [username]),
+            { op: 'login' }
+        );
         const user = rows[0];
-        const passwordValida = await bcrypt.compare(password, user.password_hash);
-        if (!passwordValida) return res.status(401).json({ error: 'Contraseña incorrecta.' });
+        // Compararar siempre contra UN hash (real o dummy) para que el tiempo
+        // de respuesta no permita enumerar usernames existentes.
+        const hashAComparar = user ? user.password_hash : HASH_DUMMY_LOGIN;
+        const passwordValida = await bcrypt.compare(password, hashAComparar);
+        if (!user || !passwordValida) {
+            return res.status(401).json({ error: 'Credenciales inválidas.' });
+        }
         const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '8h' });
         res.json({ mensaje: 'Login exitoso', token, username: user.username });
     } catch (error) {
+        log.error('Login falló', { error: error.message, codigo: error.code });
         res.status(500).json({ error: 'Error en el servidor.' });
     }
 });
 
-app.get('/leaderboard', async (req, res) => {
+app.get('/leaderboard', limitarLectura, async (req, res) => {
     try {
-        const [rows] = await pool.execute(
-            'SELECT username, victorias, partidas_jugadas, racha_actual, racha_maxima FROM usuarios ORDER BY victorias DESC LIMIT 10'
+        const [rows] = await conRetry(
+            () => pool.execute(
+                'SELECT username, victorias, partidas_jugadas, racha_actual, racha_maxima FROM usuarios ORDER BY victorias DESC LIMIT 10'
+            ),
+            { op: 'leaderboard' }
         );
         res.json(rows);
     } catch (error) {
-        res.status(500).json({ error: 'No se pudo cargar el Salón de la Fama' });
+        log.error('Leaderboard falló', { error: error.message, codigo: error.code });
+        // Degradación elegante: devolver lista vacía en lugar de 500.
+        // El juego sigue funcionando, la UI muestra "sin datos".
+        res.json([]);
     }
 });
 
-app.get('/mis-stats/:username', async (req, res) => {
+app.get('/mis-stats/:username', limitarLectura, async (req, res) => {
+    const username = req.params.username;
+    if (!esUsernameLogin(username)) {
+        return res.status(400).json({ error: 'Username inválido.' });
+    }
     try {
-        const [rows] = await pool.execute(
-            'SELECT username, victorias, partidas_jugadas, racha_actual, racha_maxima FROM usuarios WHERE username = ?',
-            [req.params.username]
+        const [rows] = await conRetry(
+            () => pool.execute(
+                'SELECT username, victorias, partidas_jugadas, racha_actual, racha_maxima FROM usuarios WHERE username = ?',
+                [username]
+            ),
+            { op: 'mis-stats', username }
         );
         if (rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
         const u = rows[0];
         const winrate = u.partidas_jugadas > 0 ? Math.round((u.victorias / u.partidas_jugadas) * 100) : 0;
         res.json({ ...u, winrate });
     } catch (error) {
+        log.error('mis-stats falló', { error: error.message, codigo: error.code, username });
         res.status(500).json({ error: 'Error al cargar stats' });
     }
 });
@@ -217,30 +424,39 @@ async function registrarFinPartida(sala, ganador) {
     const placeholders = usernames.map(() => '?').join(',');
 
     // Sumar partida jugada a todos
-    await pool.execute(
-        `UPDATE usuarios SET partidas_jugadas = partidas_jugadas + 1 WHERE username IN (${placeholders})`,
-        usernames
-    ).catch(err => console.error(err));
+    await conRetry(
+        () => pool.execute(
+            `UPDATE usuarios SET partidas_jugadas = partidas_jugadas + 1 WHERE username IN (${placeholders})`,
+            usernames
+        ),
+        { op: 'update_partidas_jugadas' }
+    ).catch(err => log.error('Fallo update partidas_jugadas', { error: err.message, codigo: err.code, usernames }));
 
     if (!ganador.id || ganador.esBot) return;
 
     // Ganador: victoria + racha
-    await pool.execute(
-        `UPDATE usuarios SET victorias = victorias + 1,
-         racha_actual = racha_actual + 1,
-         racha_maxima = GREATEST(racha_maxima, racha_actual + 1)
-         WHERE username = ?`,
-        [ganador.nombre]
-    ).catch(err => console.error(err));
+    await conRetry(
+        () => pool.execute(
+            `UPDATE usuarios SET victorias = victorias + 1,
+             racha_actual = racha_actual + 1,
+             racha_maxima = GREATEST(racha_maxima, racha_actual + 1)
+             WHERE username = ?`,
+            [ganador.nombre]
+        ),
+        { op: 'update_victoria', ganador: ganador.nombre }
+    ).catch(err => log.error('Fallo update victoria', { error: err.message, codigo: err.code, ganador: ganador.nombre }));
 
     // Perdedores humanos: resetear racha
     const perdedores = humanos.filter(j => j.nombre !== ganador.nombre).map(j => j.nombre);
     if (perdedores.length > 0) {
         const placeholdersPerd = perdedores.map(() => '?').join(',');
-        await pool.execute(
-            `UPDATE usuarios SET racha_actual = 0 WHERE username IN (${placeholdersPerd})`,
-            perdedores
-        ).catch(err => console.error(err));
+        await conRetry(
+            () => pool.execute(
+                `UPDATE usuarios SET racha_actual = 0 WHERE username IN (${placeholdersPerd})`,
+                perdedores
+            ),
+            { op: 'reset_racha' }
+        ).catch(err => log.error('Fallo reset racha', { error: err.message, codigo: err.code, perdedores }));
     }
 }
 
@@ -324,6 +540,12 @@ function resolverRonda(sala, io) {
         campana: campanaInfo
     });
 
+    io.to(sala.idSala).emit('accionMesa', {
+        tipo: 'FIN_RONDA',
+        icono: '💀',
+        texto: `Fin de ronda — Carta mortal: ${valorCritico}`
+    });
+
     if (!juegoTerminado && sala.jugadores[sala.dealerIndex].esBot) {
         setTimeout(() => {
             if (!estadoSalas[sala.idSala] || sala.estadoActual !== "REVELACION") return;
@@ -345,7 +567,10 @@ function resolverRonda(sala, io) {
             sala.votosRevancha = new Set();
             sala.revanchaIniciada = false;
             setTimeout(() => {
-                if (estadoSalas[sala.idSala] && sala.estadoActual === "FINALIZADO" && sala.votosRevancha.size > 0) {
+                // Guard explícito de votosRevancha (puede ser undefined si el flow
+                // se rompió antes) y de tamaño > 0 para no iniciar revancha vacía.
+                if (estadoSalas[sala.idSala] && sala.estadoActual === "FINALIZADO"
+                    && sala.votosRevancha && sala.votosRevancha.size > 0) {
                     iniciarRevancha(sala, io);
                 }
             }, 60000);
@@ -408,6 +633,15 @@ function gestionarTurnos(sala, io, esInicio = false) {
     }
 
     if (debeSaltar) {
+        if (esInicio) {
+            io.to(sala.idSala).emit('juegoIniciado', {
+                id: jugadorActual.id, nombre: jugadorActual.nombre,
+                tiempo: 0, jugadores: sala.jugadores,
+                modoRey: sala.config.modoRey,
+                modoJuego: sala.config.modoJuego || 'CLASICO',
+                campanaTocada: sala.campanaTocada
+            });
+        }
         jugadorActual.yaJugo = true;
         io.to(sala.idSala).emit('turnoSaltadoVisual', jugadorActual.id);
         io.to(sala.idSala).emit('mensajeGlobal', razon);
@@ -417,13 +651,24 @@ function gestionarTurnos(sala, io, esInicio = false) {
                 resolverRonda(sala, io);
             } else {
                 sala.turnoActualIndex = (sala.turnoActualIndex + 1) % sala.jugadores.length;
+                // gestionarTurnos ya arranca el reloj con la duración correcta del
+                // jugador (10s online / 30s offline). No volver a llamar iniciarReloj
+                // sin argumento: pisaría esa duración con el default de 10s.
                 gestionarTurnos(sala, io, false);
-                iniciarReloj(sala.idSala, io);
             }
         }, 1200);
     } else {
         let idJugadorEnTurno = jugadorActual.id;
         let tiempoTurno = jugadorActual.online ? 10 : 30;
+
+        // Primer turno de la ronda: el cliente arranca el reloj visual recién tras
+        // el vuelo+flip de la carta (~800ms después de juegoIniciado), mientras que
+        // el cronómetro real del server arrancaría ya. Sin compensar, el server
+        // cortaría el turno con ~1s todavía visible en pantalla. Sumamos ese
+        // colchón SOLO al timer real (`tiempo` que ve el cliente queda igual) para
+        // que el cronómetro real y el reloj visual lleguen a 0 a la vez.
+        const SEG_EXTRA_PRIMER_TURNO = 1;
+        const tiempoReloj = esInicio ? tiempoTurno + SEG_EXTRA_PRIMER_TURNO : tiempoTurno;
 
         const payloadTurno = {
             id: idJugadorEnTurno, nombre: jugadorActual.nombre,
@@ -457,7 +702,7 @@ function gestionarTurnos(sala, io, esInicio = false) {
             return;
         }
 
-        iniciarReloj(sala.idSala, io, tiempoTurno);
+        iniciarReloj(sala.idSala, io, tiempoReloj);
     }
 }
 
@@ -471,7 +716,13 @@ function iniciarReloj(idSala, io, tiempoSegundos) {
             ? `⏰ Tiempo agotado para ${jugadorActual.nombre}. Se mantiene su carta.`
             : `📵 ${jugadorActual.nombre} está desconectado. Se mantiene su carta automáticamente.`;
         io.to(idSala).emit('mensajeGlobal', razonTimeout);
-        ejecutarAccion(idSala, 'MANTENER', io, jugadorActual.id);
+        io.to(idSala).emit('accionMesa', {
+            tipo: 'TIMEOUT',
+            icono: '⏰',
+            jugador: jugadorActual.nombre,
+            texto: `Tiempo agotado: ${jugadorActual.nombre} mantiene`
+        });
+        ejecutarAccion(idSala, 'MANTENER', io, jugadorActual.id, true);
     }, (tiempoSegundos || 10) * 1000);
 }
 
@@ -480,6 +731,12 @@ function iniciarRonda(sala, io) {
     if (!estadoSalas[sala.idSala]) return;
     sala.rondaActual += 1;
     sala.estadoActual = "TURNOS_INTERCAMBIO";
+
+    io.to(sala.idSala).emit('accionMesa', {
+        tipo: 'RONDA',
+        icono: '⚔️',
+        texto: `Comienza la Ronda ${sala.rondaActual}`
+    });
 
     // Reset campana
     sala.campanaTocada       = false;
@@ -588,9 +845,10 @@ function iniciarRonda(sala, io) {
     setTimeout(() => { gestionarTurnos(sala, io, true); }, 500);
 }
 
-function ejecutarAccion(idSala, accion, io, socketId) {
+function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
     let sala = estadoSalas[idSala];
     if (!sala) return;
+    tocarSala(sala); // actividad para el sweeper
 
     if (temporizadores[idSala]) {
         clearTimeout(temporizadores[idSala]);
@@ -612,6 +870,12 @@ function ejecutarAccion(idSala, accion, io, socketId) {
 
         io.to(idSala).emit('campanaTocada', { jugadorId: socketId, nombre: jugadorActual.nombre });
         io.to(idSala).emit('mensajeGlobal', `🔔 ¡${jugadorActual.nombre} tocó la campana! Última vuelta para todos.`);
+        io.to(idSala).emit('accionMesa', {
+            tipo: 'CAMPANA',
+            icono: '🔔',
+            jugador: jugadorActual.nombre,
+            texto: `¡${jugadorActual.nombre} tocó la campana!`
+        });
 
         // Avanzar al siguiente jugador vivo
         let intentos = 0;
@@ -628,8 +892,9 @@ function ejecutarAccion(idSala, accion, io, socketId) {
 
         setTimeout(() => {
             if (!estadoSalas[idSala]) return;
+            // gestionarTurnos arranca el reloj con la duración correcta; no volver
+            // a llamar iniciarReloj sin argumento (pisaría con el default de 10s).
             gestionarTurnos(sala, io, false);
-            iniciarReloj(idSala, io);
         }, 500);
         return;
     }
@@ -650,12 +915,19 @@ function ejecutarAccion(idSala, accion, io, socketId) {
             if (bloqueRey) {
                 const msgBloqueo = sala.config.modoRey === "DECLARADO"
                     ? `🛡️ ${jugadorActual.nombre} no puede cambiar — el Rey ya está a la vista.`
-                    : `🛡️ ¡BLOQUEO REAL! ${jugadorActual.nombre} chocó con el Rey.`;
+                    : `🛡️ ¡BLOQUEO REAL! ${jugadorActual.nombre} chocó con el Rey de ${jugadorDerecha.nombre}.`;
                 io.to(idSala).emit('mensajeGlobal', msgBloqueo);
+                io.to(idSala).emit('accionMesa', {
+                    tipo: 'BLOQUEO',
+                    icono: '👑',
+                    jugador: jugadorActual.nombre,
+                    objetivo: jugadorDerecha.nombre,
+                    texto: `¡Rey de ${jugadorDerecha.nombre} frenó a ${jugadorActual.nombre}!`
+                });
             } else if (derechaEsRinger) {
                 // Jugador adyacente al que tocó campana → roba del mazo en vez de intercambiar
                 if (sala.mazo.length === 0 && sala.descarte.length > 0) {
-                    sala.mazo = sala.descarte.sort(() => Math.random() - 0.5);
+                    sala.mazo = barajar([...sala.descarte]);
                     sala.descarte = [];
                     io.to(sala.idSala).emit('mensajeGlobal', '🔀 ¡La baraja se agotó y fue mezclada de nuevo!');
                 }
@@ -667,8 +939,20 @@ function ejecutarAccion(idSala, accion, io, socketId) {
                     io.to(jugadorActual.id).emit('tuCarta', jugadorActual.cartaActual);
                     io.to(idSala).emit('mensajeGlobal', `🃏 ${jugadorActual.nombre} robó del mazo (no puede cambiar con quien tocó la campana).`);
                     io.to(idSala).emit('actualizarMazo', { cartasRestantes: sala.mazo.length });
+                    io.to(idSala).emit('accionMesa', {
+                        tipo: 'MAZO',
+                        icono: '🃏',
+                        jugador: jugadorActual.nombre,
+                        texto: `${jugadorActual.nombre} robó del mazo (campana)`
+                    });
                 } else {
                     io.to(idSala).emit('mensajeGlobal', `⚠️ No quedan cartas en el mazo, ${jugadorActual.nombre} mantiene.`);
+                    io.to(idSala).emit('accionMesa', {
+                        tipo: 'MANTENER',
+                        icono: '✋',
+                        jugador: jugadorActual.nombre,
+                        texto: `${jugadorActual.nombre} mantiene (sin cartas)`
+                    });
                 }
             } else {
                 let temp = jugadorActual.cartaActual;
@@ -676,7 +960,14 @@ function ejecutarAccion(idSala, accion, io, socketId) {
                 jugadorDerecha.cartaActual = temp;
                 io.to(jugadorActual.id).emit('tuCarta', jugadorActual.cartaActual);
                 io.to(jugadorDerecha.id).emit('tuCarta', jugadorDerecha.cartaActual);
-                io.to(idSala).emit('mensajeGlobal', `🔄 ${jugadorActual.nombre} intercambió carta.`);
+                io.to(idSala).emit('mensajeGlobal', `🔄 ${jugadorActual.nombre} cambió con ${jugadorDerecha.nombre}.`);
+                io.to(idSala).emit('accionMesa', {
+                    tipo: 'CAMBIO',
+                    icono: '🔄',
+                    jugador: jugadorActual.nombre,
+                    objetivo: jugadorDerecha.nombre,
+                    texto: `${jugadorActual.nombre} cambió con ${jugadorDerecha.nombre}`
+                });
                 if (sala.config.modoRey === "DECLARADO" && sala.config.modoJuego !== 'CAMPANA') {
                     jugadorActual.cartaRevelada = jugadorActual.cartaActual === 9;
                     jugadorDerecha.cartaRevelada = jugadorDerecha.cartaActual === 9;
@@ -685,7 +976,7 @@ function ejecutarAccion(idSala, accion, io, socketId) {
         } else {
             // Reshuffle descarte si el mazo está vacío
             if (sala.mazo.length === 0 && sala.descarte.length > 0) {
-                sala.mazo = sala.descarte.sort(() => Math.random() - 0.5);
+                sala.mazo = barajar([...sala.descarte]);
                 sala.descarte = [];
                 io.to(sala.idSala).emit('mensajeGlobal', '🔀 ¡La baraja se agotó y fue mezclada de nuevo!');
             }
@@ -703,12 +994,32 @@ function ejecutarAccion(idSala, accion, io, socketId) {
                 io.to(jugadorActual.id).emit('tuCarta', jugadorActual.cartaActual);
                 io.to(idSala).emit('mensajeGlobal', `🃏 El Dealer (${jugadorActual.nombre}) cambió su carta con el mazo.`);
                 io.to(idSala).emit('actualizarMazo', { cartasRestantes: sala.mazo.length });
+                io.to(idSala).emit('accionMesa', {
+                    tipo: 'MAZO',
+                    icono: '🃏',
+                    jugador: jugadorActual.nombre,
+                    texto: `Dealer (${jugadorActual.nombre}) cambió con el mazo`
+                });
             } else {
                 io.to(idSala).emit('mensajeGlobal', `⚠️ No quedan cartas en el mazo, el Dealer mantiene.`);
+                io.to(idSala).emit('accionMesa', {
+                    tipo: 'MANTENER',
+                    icono: '✋',
+                    jugador: jugadorActual.nombre,
+                    texto: `${jugadorActual.nombre} mantiene (sin cartas)`
+                });
             }
         }
     } else {
-        io.to(idSala).emit('mensajeGlobal', `✋ ${jugadorActual.nombre} decidió mantener.`);
+        if (!porTimeout) {
+            io.to(idSala).emit('mensajeGlobal', `✋ ${jugadorActual.nombre} decidió mantener.`);
+            io.to(idSala).emit('accionMesa', {
+                tipo: 'MANTENER',
+                icono: '✋',
+                jugador: jugadorActual.nombre,
+                texto: `${jugadorActual.nombre} se plantó`
+            });
+        }
     }
 
     jugadorActual.yaJugo = true;
@@ -746,42 +1057,75 @@ function iniciarRevancha(sala, io) {
     if (!estadoSalas[sala.idSala]) return;
     if (sala.estadoActual !== "FINALIZADO") return;
     if (sala.revanchaIniciada) return;
-    sala.revanchaIniciada = true;
+    if (!sala.votosRevancha || sala.votosRevancha.size === 0) return;
 
-    // Solo quedan los humanos que votaron revancha
-    sala.jugadores = sala.jugadores.filter(j => !j.esBot && sala.votosRevancha.has(j.nombre));
-    sala.jugadores.forEach(j => {
-        j.vidas = sala.config.vidas;
-        j.yaJugo = false;
-        j.vecesRey = 0;
-        j.reyAnterior = false;
-        j.cartaRevelada = false;
-    });
-
-    // Rellenar con bots si no completaron el número de jugadores
-    const botsNecesarios = sala.config.maxJugadores - sala.jugadores.length;
-    const nombresUsadosRev = sala.jugadores.map(j => j.nombre);
-    for (let i = 1; i <= botsNecesarios; i++) {
-        const nombre = nombreBotAleatorio(nombresUsadosRev);
-        nombresUsadosRev.push(nombre);
-        sala.jugadores.push({
-            id: 'bot_revancha_' + i, nombre,
-            vidas: sala.config.vidas, yaJugo: false,
-            online: true, esBot: true,
-            vecesRey: 0, reyAnterior: false
-        });
+    // Si todos los votantes se desconectaron mientras esperábamos, no tiene
+    // sentido empezar revancha. La sala muere natural al swept.
+    const votantesOnline = sala.jugadores.filter(
+        j => !j.esBot && j.online && sala.votosRevancha.has(j.nombre)
+    );
+    if (votantesOnline.length === 0) {
+        log.info('Revancha cancelada: sin votantes online', { idSala: sala.idSala });
+        return;
     }
 
-    sala.votosRevancha = new Set();
-    sala.revanchaIniciada = false;
-    sala.rondaActual = 0;
-    sala.dealerIndex = 0;
-    sala.mazo = crearMazo(sala.config);
-    sala.descarte = [];
-    sala.estadoActual = "EN_JUEGO";
+    sala.revanchaIniciada = true;
+    tocarSala(sala);
 
-    io.to(sala.idSala).emit('revanchaIniciando');
-    setTimeout(() => { iniciarRonda(sala, io); }, 1500);
+    // try/finally garantiza que `revanchaIniciada` se libera aunque algo falle
+    // entre acá y el set explícito a false al final. Sin esto, un error dejaría
+    // la sala atascada (próximas llamadas a iniciarRevancha serían no-op).
+    try {
+        // Cancelar timers de desconexión de jugadores que NO seguirán en la revancha
+        // (bots, humanos offline, o humanos que no votaron). Sin esto, un timer
+        // pendiente podría disparar y emitir "no regresó a tiempo" sobre alguien
+        // que ya no existe.
+        sala.jugadores.forEach(j => {
+            const sigue = !j.esBot && j.online && sala.votosRevancha.has(j.nombre);
+            if (!sigue && temporizadoresDesconexion[j.nombre]) {
+                clearTimeout(temporizadoresDesconexion[j.nombre]);
+                delete temporizadoresDesconexion[j.nombre];
+            }
+        });
+
+        // Solo quedan los humanos online que votaron revancha
+        sala.jugadores = sala.jugadores.filter(
+            j => !j.esBot && j.online && sala.votosRevancha.has(j.nombre)
+        );
+        sala.jugadores.forEach(j => {
+            j.vidas = sala.config.vidas;
+            j.yaJugo = false;
+            j.vecesRey = 0;
+            j.reyAnterior = false;
+            j.cartaRevelada = false;
+        });
+
+        // Rellenar con bots si no completaron el número de jugadores
+        const botsNecesarios = sala.config.maxJugadores - sala.jugadores.length;
+        const nombresUsadosRev = sala.jugadores.map(j => j.nombre);
+        for (let i = 1; i <= botsNecesarios; i++) {
+            const nombre = nombreBotAleatorio(nombresUsadosRev);
+            nombresUsadosRev.push(nombre);
+            sala.jugadores.push({
+                id: 'bot_revancha_' + i, nombre,
+                vidas: sala.config.vidas, yaJugo: false,
+                online: true, esBot: true,
+                vecesRey: 0, reyAnterior: false
+            });
+        }
+
+        sala.votosRevancha = new Set();
+        sala.rondaActual = 0;
+        sala.dealerIndex = 0;
+        sala.mazo = crearMazo(sala.config);
+        sala.descarte = [];
+        sala.estadoActual = "EN_JUEGO";
+
+        io.to(sala.idSala).emit('revanchaIniciando');
+        setTimeout(() => { iniciarRonda(sala, io); }, 1500);
+    } finally {
+        sala.revanchaIniciada = false;
+    }
 }
 
 // ==========================================
@@ -789,7 +1133,7 @@ function iniciarRevancha(sala, io) {
 // ==========================================
 io.on('connection', (socket) => {
     const nombreUsuarioLogueado = socket.usuario.username;
-    console.log(`🌐 Socket conectado: ${nombreUsuarioLogueado} (${socket.id})`);
+    log.info('Socket conectado', { user: nombreUsuarioLogueado, socketId: socket.id });
 
     // Radar de partidas pendientes
     let salaPendiente = null;
@@ -807,23 +1151,52 @@ io.on('connection', (socket) => {
     }
 
     socket.on('abandonarSala', (idSala) => {
+        if (!permitir(socket.id, 'abandonarSala', 1000)) return;
+        if (!esIdSalaValido(idSala)) return;
         let sala = estadoSalas[idSala];
         if (!sala) return;
         let idx = sala.jugadores.findIndex(j => j.nombre === nombreUsuarioLogueado);
         if (idx !== -1) {
             if (sala.estadoActual === "LOBBY") {
                 sala.jugadores.splice(idx, 1);
-                if (sala.jugadores.length === 0) delete estadoSalas[idSala];
+                if (sala.jugadores.length === 0) limpiarSala(idSala);
                 else emitirLobby(idSala);
             } else {
                 sala.jugadores[idx].vidas = 0;
                 sala.jugadores[idx].online = false;
                 io.to(idSala).emit('mensajeGlobal', `🏳️ ${nombreUsuarioLogueado} ha desertado de la corte.`);
+
+                // Si el desertor estaba en turno, su carta quedó con vidas=0 y
+                // ejecutarAccion corta temprano en `vidas <= 0` → la partida se
+                // colgaría hasta que el sweeper borre la sala. Cancelar el timer
+                // de turno y avanzar manualmente al siguiente jugador vivo.
+                if (sala.estadoActual === "TURNOS_INTERCAMBIO" && sala.turnoActualIndex === idx) {
+                    if (temporizadores[idSala]) {
+                        clearTimeout(temporizadores[idSala]);
+                        delete temporizadores[idSala];
+                    }
+                    if (idx === sala.dealerIndex) {
+                        resolverRonda(sala, io);
+                    } else {
+                        let intentos = 0;
+                        do {
+                            sala.turnoActualIndex = (sala.turnoActualIndex + 1) % sala.jugadores.length;
+                            intentos++;
+                        } while (
+                            intentos < sala.jugadores.length &&
+                            sala.jugadores[sala.turnoActualIndex] &&
+                            sala.jugadores[sala.turnoActualIndex].vidas <= 0
+                        );
+                        gestionarTurnos(sala, io, false);
+                    }
+                }
             }
         }
     });
 
-    socket.on('crearSala', ({ configuracion }) => {
+    socket.on('crearSala', (payload) => {
+        if (!payload || typeof payload !== 'object') return;
+        const { configuracion } = payload;
         if (!permitir(socket.id, 'crearSala', 3000)) return;
 
         // Sanitizar configuración — el cliente puede mandar cualquier cosa.
@@ -844,7 +1217,8 @@ io.on('connection', (socket) => {
             idSala, estadoActual: "LOBBY", config: cfg, password, hostId: socket.id,
             jugadores: [{ id: socket.id, nombre: nombreUsuarioLogueado, vidas: cfg.vidas, yaJugo: false, online: true }],
             dealerIndex: 0, turnoActualIndex: 1, mazo: [], descarte: [], rondaActual: 1,
-            campanaTocada: false, campanaTocadorId: null, campanaTocadorIndex: -1
+            campanaTocada: false, campanaTocadorId: null, campanaTocadorIndex: -1,
+            ultimaActividad: Date.now() // para el sweeper de salas zombi
         };
 
         const numBots = cfg.numBots;
@@ -861,15 +1235,26 @@ io.on('connection', (socket) => {
         socket.join(idSala);
         socket.emit('salaCreada', idSala);
         emitirLobby(idSala); // ← USA HELPER
-        console.log(`🏰 Sala ${idSala} creada por ${nombreUsuarioLogueado}`);
+        log.info('Sala creada', { idSala, host: nombreUsuarioLogueado, bots: cfg.numBots });
     });
 
-    socket.on('unirseSala', ({ idSala, password }) => {
+    socket.on('unirseSala', (payload) => {
+        // Límite generoso: el cliente puede reconectar legítimamente por
+        // visibilitychange, lock de teléfono, etc. 500ms basta para bloquear
+        // spam sin romper reconexiones genuinas (suelen estar a >1s entre sí).
+        if (!permitir(socket.id, 'unirseSala', 500)) return;
+        if (!payload || typeof payload !== 'object') return;
+        const { idSala, password } = payload;
+
         const username = socket.usuario ? socket.usuario.username : null;
         if (!username) return socket.emit('errorSala', 'Error de sesión. Vuelve a iniciar.');
 
-        const sala = estadoSalas[idSala?.toUpperCase()];
+        if (!esIdSalaValido(idSala)) return socket.emit('errorSala', 'Código de sala inválido.');
+        if (password !== undefined && password !== null && typeof password !== 'string') return;
+
+        const sala = estadoSalas[idSala.toUpperCase()];
         if (!sala) return socket.emit('errorSala', 'La sala no existe.');
+        tocarSala(sala); // actividad para el sweeper
 
         let jugadorExistente = sala.jugadores.find(j => j.nombre === username);
 
@@ -929,6 +1314,8 @@ io.on('connection', (socket) => {
     });
 
     socket.on('iniciarPartida', (idSala) => {
+        if (!permitir(socket.id, 'iniciarPartida', 1000)) return;
+        if (!esIdSalaValido(idSala)) return;
         let sala = estadoSalas[idSala];
         if (sala && sala.jugadores[0].nombre === nombreUsuarioLogueado) {
             sala.rondaActual = 0;
@@ -936,11 +1323,13 @@ io.on('connection', (socket) => {
             sala.mazo = crearMazo(sala.config);
             sala.descarte = [];
             iniciarRonda(sala, io);
-            console.log(`🎮 Partida iniciada en sala ${idSala}`);
+            log.info('Partida iniciada', { idSala, jugadores: sala.jugadores.length });
         }
     });
 
     socket.on('siguienteRonda', (id) => {
+        if (!permitir(socket.id, 'siguienteRonda', 300)) return;
+        if (!esIdSalaValido(id)) return;
         const sala = estadoSalas[id];
         if (!sala || sala.jugadores[sala.dealerIndex].nombre !== nombreUsuarioLogueado || sala.estadoActual !== "REVELACION") return;
 
@@ -965,8 +1354,11 @@ io.on('connection', (socket) => {
         iniciarRonda(sala, io);
     });
 
-    socket.on('accionJugador', ({ idSala, accion }) => {
+    socket.on('accionJugador', (payload) => {
+        if (!payload || typeof payload !== 'object') return;
+        const { idSala, accion } = payload;
         if (!permitir(socket.id, 'accionJugador', 400)) return;
+        if (!esIdSalaValido(idSala)) return;
         if (!['MANTENER', 'CAMBIAR', 'CAMPANA'].includes(accion)) return;
 
         // Validar identidad por nombre (no socket.id) para sobrevivir reconexiones
@@ -980,21 +1372,39 @@ io.on('connection', (socket) => {
     });
 
     socket.on('quieroJugarOtraVez', (idSala) => {
+        if (!permitir(socket.id, 'quieroJugarOtraVez', 500)) return;
+        if (!esIdSalaValido(idSala)) return;
         const sala = estadoSalas[idSala];
         if (!sala || sala.estadoActual !== "FINALIZADO") return;
         if (!sala.votosRevancha) sala.votosRevancha = new Set();
+
+        // El jugador debe estar realmente en la sala y online — un socket viejo
+        // con token válido no debería poder votar revancha de salas ajenas.
+        const jugador = sala.jugadores.find(
+            j => !j.esBot && j.nombre === socket.usuario.username && j.online
+        );
+        if (!jugador) return;
+
         sala.votosRevancha.add(socket.usuario.username);
+        tocarSala(sala);
         const humanos = sala.jugadores.filter(j => !j.esBot && j.online);
         io.to(idSala).emit('contadorRevancha', {
             votos: sala.votosRevancha.size,
             total: humanos.length
         });
-        if (sala.votosRevancha.size >= humanos.length) {
+        if (humanos.length > 0 && sala.votosRevancha.size >= humanos.length) {
             iniciarRevancha(sala, io);
         }
     });
 
-    socket.on('reaccion', ({ idSala, emoji }) => {
+    socket.on('reaccion', (payload) => {
+        // El cliente tiene cooldown de 2500ms, pero el servidor lo refuerza con
+        // 300ms — bloquea spam si alguien hace bypass del cliente.
+        if (!permitir(socket.id, 'reaccion', 300)) return;
+        if (!payload || typeof payload !== 'object') return;
+        const { idSala, emoji } = payload;
+        if (!esIdSalaValido(idSala)) return;
+        if (!EMOJIS_REACCION.has(emoji)) return; // bloquea payloads gigantes / arbitrarios
         const sala = estadoSalas[idSala];
         if (!sala) return;
         const jugador = sala.jugadores.find(j => j.id === socket.id);
@@ -1016,13 +1426,15 @@ io.on('connection', (socket) => {
                 if (sala.estadoActual === "LOBBY") {
                     sala.jugadores.splice(idx, 1);
                     if (sala.jugadores.length === 0) {
-                        delete estadoSalas[id];
+                        limpiarSala(id);
                     } else {
                         emitirLobby(id); // ← USA HELPER
                     }
                 } else if (sala.estadoActual === "FINALIZADO") {
                     jugador.online = false;
-                    if (sala.jugadores.every(j => !j.online)) delete estadoSalas[id];
+                    // Ignorar bots: tienen online=true siempre, sin esto la sala
+                    // nunca se borra cuando se juega contra IA.
+                    if (sala.jugadores.every(j => j.esBot || !j.online)) limpiarSala(id);
                 } else {
                     jugador.online = false;
                     io.to(id).emit('mensajeGlobal', `⚠️ ${jugador.nombre} perdió la conexión. Tiene 3 minutos para volver.`);
@@ -1038,6 +1450,7 @@ io.on('connection', (socket) => {
                     }
 
                     temporizadoresDesconexion[jugador.nombre] = setTimeout(() => {
+                        delete temporizadoresDesconexion[jugador.nombre]; // limpiar la propia entry
                         let salaActual = estadoSalas[id];
                         if (salaActual) {
                             let jPerdido = salaActual.jugadores.find(x => x.nombre === jugador.nombre);
@@ -1047,7 +1460,7 @@ io.on('connection', (socket) => {
                                 io.to(id).emit('nuevaRondaIniciada', { jugadoresActualizados: salaActual.jugadores });
                             }
                         }
-                    }, 180000); // 3 minutos — margen para bloqueo de pantalla en móvil
+                    }, 180000); // 3 minutos — margen para bloqueo de pantalla en celular
                 }
                 break;
             }
@@ -1055,32 +1468,155 @@ io.on('connection', (socket) => {
     });
 });
 
+// DDL (ALTER TABLE) no admite placeholders para nombres de columna ni tipos,
+// así que tenemos que interpolar strings. Para evitar que un cambio futuro
+// descuidado introduzca SQL injection, validamos cada nombre contra una regex
+// estricta y la definición contra un whitelist explícito.
+const REGEX_NOMBRE_COLUMNA = /^[a-z_][a-z0-9_]{0,63}$/;
+const DEFINICIONES_COLUMNA_PERMITIDAS = new Set([
+    'INT DEFAULT 0',
+    'INT DEFAULT NULL',
+    'VARCHAR(255) DEFAULT NULL',
+    'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+]);
+
 async function agregarColumnasSiNoExisten() {
     const columnas = [
-        { nombre: 'partidas_jugadas', tipo: 'INT DEFAULT 0' },
-        { nombre: 'racha_actual',     tipo: 'INT DEFAULT 0' },
-        { nombre: 'racha_maxima',     tipo: 'INT DEFAULT 0' },
+        { nombre: 'partidas_jugadas', def: 'INT DEFAULT 0' },
+        { nombre: 'racha_actual',     def: 'INT DEFAULT 0' },
+        { nombre: 'racha_maxima',     def: 'INT DEFAULT 0' },
     ];
     for (const col of columnas) {
-        const [rows] = await pool.execute(
-            `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS
-             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuarios' AND COLUMN_NAME = ?`,
-            [col.nombre]
+        if (!REGEX_NOMBRE_COLUMNA.test(col.nombre)) {
+            log.error('Nombre de columna inválido, salteando', { columna: col.nombre });
+            continue;
+        }
+        if (!DEFINICIONES_COLUMNA_PERMITIDAS.has(col.def)) {
+            log.error('Definición de columna no permitida, salteando', {
+                columna: col.nombre, def: col.def
+            });
+            continue;
+        }
+        const [rows] = await conRetry(
+            () => pool.execute(
+                `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuarios' AND COLUMN_NAME = ?`,
+                [col.nombre]
+            ),
+            { op: 'check_columna', columna: col.nombre }
         );
         if (rows[0].cnt === 0) {
-            await pool.execute(`ALTER TABLE usuarios ADD COLUMN ${col.nombre} ${col.tipo}`);
-            console.log(`✅ Columna '${col.nombre}' creada`);
+            // Interpolación segura: ambos campos pasaron las validaciones de arriba.
+            await conRetry(
+                () => pool.execute(`ALTER TABLE usuarios ADD COLUMN ${col.nombre} ${col.def}`),
+                { op: 'alter_table', columna: col.nombre }
+            );
+            log.info('Columna creada en migración', { columna: col.nombre });
         }
     }
 }
 
 const PUERTO = process.env.PORT || 4000;
 server.listen(PUERTO, async () => {
-    console.log(`🚀 Servidor en puerto ${PUERTO}`);
+    log.info('Servidor iniciado', { puerto: PUERTO });
     try {
         await agregarColumnasSiNoExisten();
-        console.log('✅ Columnas de stats verificadas');
+        log.info('Migración de stats verificada');
     } catch (err) {
-        console.error('⚠️ Error en migración de stats:', err.message);
+        log.error('Migración de stats falló', { error: err.message });
     }
 });
+
+// ==========================================
+// SWEEPER DE SALAS ZOMBI
+// ==========================================
+// Cada 5 min recorre estadoSalas y borra las que quedaron atascadas:
+// - LOBBY/EN_JUEGO/REVELACION sin actividad por 30 min → host nunca empezó,
+//   todos se desconectaron sin disparar el handler, partida congelada, etc.
+// - FINALIZADO sin actividad por 10 min → fin de partida, nadie pidió revancha.
+// Sin esto: salas pueden persistir en memoria del proceso indefinidamente.
+const SWEEPER_INTERVAL_MS = 5 * 60 * 1000;
+const SALA_INACTIVA_MS = 30 * 60 * 1000;
+const SALA_FINALIZADA_MS = 10 * 60 * 1000;
+
+function sweepSalasZombi() {
+    const ahora = Date.now();
+    const aBorrar = [];
+    for (const id in estadoSalas) {
+        const sala = estadoSalas[id];
+        const inactividad = ahora - (sala.ultimaActividad || 0);
+        const limite = sala.estadoActual === "FINALIZADO" ? SALA_FINALIZADA_MS : SALA_INACTIVA_MS;
+        if (inactividad > limite) {
+            aBorrar.push({ id, estado: sala.estadoActual, minutos: Math.round(inactividad / 60000) });
+        }
+    }
+    for (const { id, estado, minutos } of aBorrar) {
+        log.info('Sweeper borra sala zombi', { idSala: id, estado, inactividad_min: minutos });
+        limpiarSala(id);
+    }
+}
+
+const sweeperInterval = setInterval(sweepSalasZombi, SWEEPER_INTERVAL_MS);
+
+// ==========================================
+// SHUTDOWN GRACEFUL
+// ==========================================
+// Sin esto: SIGTERM/SIGINT corta la conexión de los sockets bruscamente, las
+// partidas activas mueren sin aviso, y timers pendientes pueden hacer ruido en
+// los logs. Con esto: avisar al cliente, cancelar timers, cerrar todo en orden.
+let cerrando = false;
+async function shutdownGracefully(signal) {
+    if (cerrando) {
+        log.warn('Segunda señal de shutdown, forzando salida', { signal });
+        process.exit(1);
+    }
+    cerrando = true;
+    log.info('Shutdown graceful iniciado', { signal });
+
+    // Avisar a clientes — el frontend mostrará un toast y dejará que Socket.io
+    // reconecte automáticamente cuando el servidor vuelva.
+    io.emit('servidorReiniciando', 'El servidor se está reiniciando.');
+
+    // Dar tiempo a que el paquete viaje antes de cerrar las conexiones.
+    await new Promise(r => setTimeout(r, 500));
+
+    // Cancelar TODOS los timers pendientes para no disparar callbacks sobre
+    // estado que estamos por destruir.
+    clearInterval(sweeperInterval);
+    for (const id of Object.keys(temporizadores)) clearTimeout(temporizadores[id]);
+    for (const username of Object.keys(temporizadoresDesconexion)) clearTimeout(temporizadoresDesconexion[username]);
+
+    // Cerrar Socket.io (rechaza conexiones nuevas y cierra las existentes).
+    await new Promise(resolve => io.close(resolve));
+    log.info('Socket.io cerrado');
+
+    // Cerrar HTTP server, con timeout duro de 5s por si hay requests colgados.
+    const httpCerrado = new Promise(resolve => {
+        server.close(err => {
+            if (err) log.error('Error cerrando HTTP server', { error: err.message });
+            else log.info('HTTP server cerrado');
+            resolve();
+        });
+    });
+    await Promise.race([
+        httpCerrado,
+        new Promise(r => setTimeout(() => {
+            log.warn('HTTP server no cerró en 5s, forzando');
+            r();
+        }, 5000)),
+    ]);
+
+    // Cerrar pool de DB para liberar las conexiones.
+    try {
+        await pool.end();
+        log.info('Pool MySQL cerrado');
+    } catch (e) {
+        log.error('Error cerrando pool', { error: e.message });
+    }
+
+    log.info('Shutdown completado');
+    process.exit(0);
+}
+
+process.on('SIGTERM', () => shutdownGracefully('SIGTERM'));
+process.on('SIGINT', () => shutdownGracefully('SIGINT'));

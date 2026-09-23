@@ -99,8 +99,23 @@ body {
 }
 
 /* =========================================
-   BOTONES
+   BOTONES Y CONTROLES TÁCTILES
    ========================================= */
+button,
+input,
+select,
+.btn-reaccion,
+.boton-medieval,
+.boton-lobby,
+.boton-campana,
+.lobby-tab,
+.btn-copiar-link,
+.btn-perfil-top,
+.carta-naipe {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
 .boton-medieval {
     background-color: #3498db;
     border: 3px solid #2980b9;
@@ -552,14 +567,20 @@ body {
 }
 
 /* Posiciones dinámicas del mazo según quién es el dealer */
-#mazoFlotante.pos-bottom     { bottom: 30px;  left: calc(50% + 60px);  top: auto;   right: auto; }
-#mazoFlotante.pos-top        { top: 8px;       left: calc(50% + 55px);  bottom: auto; right: auto; }
-#mazoFlotante.pos-left       { left: 8px;      top: calc(50% + 45px);   right: auto; bottom: auto; }
-#mazoFlotante.pos-right      { right: 8px;     top: calc(50% - 75px);   left: auto;  bottom: auto; }
-#mazoFlotante.pos-top-left   { top: 18%;       left: 8%;                right: auto; bottom: auto; }
-#mazoFlotante.pos-top-right  { top: 18%;       right: 8%;               left: auto;  bottom: auto; }
-#mazoFlotante.pos-bottom-left  { bottom: 20%;  left: 6%;                right: auto; top: auto; }
-#mazoFlotante.pos-bottom-right { bottom: 20%;  right: 6%;               left: auto;  top: auto; }
+/* Despeje del mazo CALCULADO en función del tamaño de carta (vars que setea
+   dibujarMesaCircular: --carta-w para tu carta, --reverso-w/h para oponentes/mazo).
+   Así el mazo se aleja solo cuando las cartas crecen (pocos jugadores) y se acerca
+   cuando se achican (mesa llena), sin offsets fijos que queden cortos. El +Npx
+   extra cubre el perfil del jugador y el glow de turno (scale 1.1). */
+#mazoFlotante.pos-bottom { bottom: 30px; left: calc(50% + var(--carta-w, 85px) / 2 + 48px); top: auto; right: auto; }
+#mazoFlotante.pos-top    { top: 8px;     left: calc(50% + var(--reverso-w, 30px) + 55px); bottom: auto; right: auto; }
+#mazoFlotante.pos-left   { left: 8px;    top: calc(50% + var(--reverso-h, 45px) + 25px);  right: auto; bottom: auto; }
+#mazoFlotante.pos-right  { right: 8px;   top: calc(50% - var(--reverso-h, 45px) - 35px);  left: auto;  bottom: auto; }
+/* Diagonales: corridas al interior desde la esquina, proporcional al tamaño de carta. */
+#mazoFlotante.pos-top-left     { top: calc(14% + var(--reverso-h, 45px));    left: calc(8% + var(--reverso-w, 30px));  right: auto; bottom: auto; }
+#mazoFlotante.pos-top-right    { top: calc(14% + var(--reverso-h, 45px));    right: calc(8% + var(--reverso-w, 30px)); left: auto;  bottom: auto; }
+#mazoFlotante.pos-bottom-left  { bottom: calc(15% + var(--reverso-h, 45px)); left: calc(6% + var(--reverso-w, 30px));  right: auto; top: auto; }
+#mazoFlotante.pos-bottom-right { bottom: calc(15% + var(--reverso-h, 45px)); right: calc(6% + var(--reverso-w, 30px)); left: auto;  top: auto; }
 
 .silla.top-left    { top: 8%;    left: 15%;  transform: translate(-50%, -50%); }
 .silla.top-right   { top: 8%;    right: 15%; transform: translate(50%, -50%); }
@@ -571,7 +592,9 @@ body {
    ========================================= */
 .mi-perfil-esquina {
     position: absolute;
-    bottom: 147px;
+    /* Sobre la carta: sigue su altura adaptable (--carta-h) + offset del asiento
+       (.silla.bottom) + margen, para no encimarse cuando la carta crece. */
+    bottom: calc(var(--carta-h, 125px) + 41px);
     left: 50%;
     transform: translateX(-50%);
     background: linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(40,20,10,0.95) 100%);
@@ -605,7 +628,37 @@ body {
 /* =========================================
    MI CARTA 3D
    ========================================= */
-.carta-naipe { width: 85px; height: 125px; perspective: 600px; margin: 0 auto; }
+/* Tamaño adaptable por cantidad de jugadores (vars seteadas por dibujarMesaCircular,
+   con fallback). Misma idea que --reverso-*: pocos jugadores → cartas más grandes. */
+.carta-naipe { width: var(--carta-w, 85px); height: var(--carta-h, 125px); perspective: 600px; margin: 0 auto; }
+
+/* Estados táctiles e interactivos para gestos (Swipe & Drag) */
+.carta-naipe.arrastrable {
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+}
+.carta-naipe.arrastrando {
+    cursor: grabbing;
+    transition: none !important;
+    z-index: 50 !important;
+}
+.carta-naipe.soltando {
+    transition: transform 0.26s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+.carta-naipe.lanzada-derecha {
+    transition: transform 0.36s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.36s ease-out !important;
+    transform: translate(160px, -50px) rotate(28deg) scale(0.65) !important;
+    opacity: 0 !important;
+}
+.carta-naipe.mantenida-tap {
+    animation: pulsoMantener 0.35s ease-out forwards;
+}
+@keyframes pulsoMantener {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(0.92) translateY(8px); }
+    100% { transform: scale(1); }
+}
 .flipper { width: 100%; height: 100%; position: relative; transition: transform 0.6s; transform-style: preserve-3d; }
 .flipped .flipper { transform: rotateY(180deg); }
 .face {
@@ -621,11 +674,17 @@ body {
     border: 3px solid rgba(241,196,15,0.4) !important;
 }
 .front-character {
-    background: linear-gradient(145deg, #fff 0%, #f8f5f0 100%);
+    /* Tono pergamino cálido (papel envejecido) — combina con la estética medieval
+       y mantiene legibles el número y la figura oscuros. Las cartas especiales
+       (carta-9 dorada, carta-0 gris) lo pisan con !important. */
+    background: linear-gradient(150deg, #f8efd6 0%, #efdfba 55%, #e6d2a6 100%);
     transform: rotateY(180deg);
-    color: black;
+    color: #2e2113;
 }
-#numeroCarta { font-size: 60px; font-weight: bold; margin: -5px; font-family: 'Cinzel', serif; }
+#numeroCarta { font-size: var(--carta-num, 60px); font-weight: bold; margin: -5px; font-family: 'Cinzel', serif; }
+/* Figura grande en la carta principal — pareja con el número (~mitad y mitad).
+   Escala junto con la carta (var --carta-fig); pisa el width/height del <img>. */
+#figuraCarta img { width: var(--carta-fig, 50px); height: var(--carta-fig, 50px); }
 
 .carta-9 { background: linear-gradient(145deg, #fff9c4 0%, #fff3a0 100%) !important; }
 .carta-9 #numeroCarta { color: var(--oro-oscuro) !important; }
@@ -649,7 +708,10 @@ body {
 }
 
 .perfil-carta-reverso {
-    width: 30px; height: 45px;
+    /* Tamaño adaptable: lo setea dibujarMesaCircular() según la cantidad de
+       oponentes (vars --reverso-w/h en :root). El mazo hereda esta clase, así que
+       también se adapta y sigue coincidiendo con las cartas de los asientos. */
+    width: var(--reverso-w, 30px); height: var(--reverso-h, 45px);
     background-image: repeating-linear-gradient(-45deg, #1d1d1d, #1d1d1d 2px, #3e2723 2px, #3e2723 4px);
     border: 2px solid white;
     border-radius: 5px;
@@ -672,31 +734,36 @@ body {
 }
 .carta-en-pila {
     position: absolute;
-    width: 36px;
-    height: 50px;
+    /* Tamaño adaptable a la pantalla (var seteada por dibujarMesaCircular). */
+    width: var(--pila-w, 36px);
+    height: var(--pila-h, 50px);
     top: 0; left: 0;
     border-radius: 5px;
-    border: 1.5px solid rgba(241,196,15,0.55);
-    background: linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 100%);
+    border: 1.5px solid rgba(241,196,15,0.6);
+    /* Pergamino, igual que las cartas reales (.front-character). */
+    background: linear-gradient(150deg, #f8efd6 0%, #efdfba 55%, #e6d2a6 100%);
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 1px;
     font-family: 'MedievalSharp', serif;
-    font-size: 16px;
     font-weight: bold;
-    color: var(--oro);
+    color: #2e2113;
     box-shadow: 0 2px 6px rgba(0,0,0,0.7);
 }
+.carta-en-pila .pila-num { font-size: calc(var(--pila-w, 36px) * 0.42); line-height: 1; }
+.carta-en-pila .pila-fig { width: 62%; height: auto; }
 .carta-en-pila.rey-pila {
-    background: linear-gradient(135deg, #3d0a0a 0%, #6b1515 100%);
+    background: linear-gradient(145deg, #fff9c4 0%, #fff3a0 100%); /* dorado, como .carta-9 */
     border-color: var(--oro);
-    color: #fff;
+    color: var(--oro-oscuro);
     box-shadow: 0 0 8px rgba(241,196,15,0.45), 0 2px 6px rgba(0,0,0,0.7);
 }
 .carta-en-pila.cero-pila {
-    background: linear-gradient(135deg, #0a1a3d 0%, #152b6b 100%);
-    border-color: #85c1e9;
-    color: #85c1e9;
+    background: linear-gradient(145deg, #ecf0f1 0%, #dde4e8 100%); /* gris, como .carta-0 */
+    border-color: #b0b8bd;
+    color: #7f8c8d;
 }
 .pila-contador {
     font-size: 10px;
@@ -736,11 +803,13 @@ body {
 }
 .mini-carta-reverso { background: repeating-linear-gradient(45deg, #2c3e50, #2c3e50 5px, #34495e 5px, #34495e 10px); }
 .mini-carta-frente {
-    background-color: white; color: black;
+    /* Mismo pergamino que tu carta (.front-character). Las variantes
+       .mini-carta-0 / .mini-carta-9 lo pisan después para sus colores especiales. */
+    background: linear-gradient(150deg, #f8efd6 0%, #efdfba 55%, #e6d2a6 100%); color: #2e2113;
     font-size: 24px; font-weight: bold;
     display: flex; justify-content: center; align-items: center;
     font-family: 'MedievalSharp';
-    width: 75px !important; height: 110px !important;
+    width: var(--mini-w, 56px) !important; height: var(--mini-h, 84px) !important;
     flex-direction: column !important;
     padding: 5px;
     transition: all 0.4s ease;
@@ -1190,6 +1259,58 @@ body {
     transform: scale(0.95) !important;
 }
 
+/* Objetivo de intercambio: jugador a tu derecha cuando es tu turno */
+.silla.objetivo-intercambio .perfil-oponente {
+    border-color: var(--oro) !important;
+    box-shadow:
+        0 0 0 2px var(--oro),
+        0 0 16px rgba(241,196,15,0.85),
+        0 0 30px rgba(241,196,15,0.45) !important;
+    transform: scale(1.06) !important;
+    opacity: 1 !important;
+    filter: none !important;
+}
+
+.silla.objetivo-intercambio::after {
+    content: '🔄 OBJETIVO';
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    background: rgba(0,0,0,0.88);
+    color: var(--oro);
+    padding: 1px 6px;
+    border-radius: 8px;
+    border: 1px solid var(--oro);
+    white-space: nowrap;
+    font-family: var(--fuente-medieval);
+    letter-spacing: 0.5px;
+    z-index: 30;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.7);
+    animation: fadeSlideUp 0.25s ease both;
+}
+
+/* Mazo resaltado cuando el Dealer debe robar */
+#mazoFlotante.objetivo-mazo {
+    animation: pulsoMazo 1.2s ease-in-out infinite;
+}
+@keyframes pulsoMazo {
+    0%, 100% { filter: drop-shadow(0 0 8px rgba(241,196,15,0.6)); transform: scale(1); }
+    50%       { filter: drop-shadow(0 0 22px rgba(241,196,15,1)); transform: scale(1.1); }
+}
+
+/* Tensión en los últimos 3 segundos del reloj */
+@keyframes pulsoUrgenciaReloj {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 2px #e74c3c, 0 0 20px rgba(231,76,60,0.8) !important; }
+    50%       { transform: scale(1.04); box-shadow: 0 0 0 3px #ff7675, 0 0 35px rgba(231,76,60,1) !important; }
+}
+.foco-turno-medieval.reloj-urgente {
+    border-color: #e74c3c !important;
+    animation: pulsoUrgenciaReloj 0.5s ease-in-out infinite !important;
+}
+
 /* Vida crítica — 1 vida restante */
 @keyframes pulsarPeligro {
     0%, 100% { box-shadow: 0 0 0 2px #e74c3c, 0 0 10px rgba(231,76,60,0.6); }
@@ -1391,14 +1512,20 @@ body {
 @media (min-width: 768px) {
     .panel-items-grid { grid-template-columns: repeat(4, 1fr); }
 
-    #mesaDeJuego { padding-bottom: 0; }
+    /* justify-content: center centra la mesa verticalmente en el alto disponible
+       (#mesaDeJuego es flex-column y solo contiene la mesa) — antes quedaba pegada
+       arriba con espacio vacío abajo. */
+    #mesaDeJuego { padding-bottom: 0; justify-content: center; }
+    /* En escritorio la mesa se muestra como una COLUMNA RETRATO centrada (tipo
+       celular), no a lo ancho: cap de ancho + alta, con aire arriba/abajo. Las
+       posiciones diagonales de los asientos usan %, así que escalan al achicar la mesa. */
     .tapete-virtual {
-        width: 90%;
-        max-width: 900px;
-        height: 80vh;
-        min-height: 500px;
-        margin: 55px auto 10px auto;
-        border-radius: 80px;
+        width: 96%;
+        max-width: 470px;
+        height: min(86vh, 760px);
+        min-height: 0;
+        margin: 0 auto;
+        border-radius: 70px;
     }
     .mazo-dealer {
     left: -55px;
@@ -1408,13 +1535,12 @@ body {
     .foco-turno-medieval { padding: 8px 20px; border-radius: 30px; }
     #mensajeTurno { font-size: 15px !important; }
 
-    .carta-naipe { width: 90px; height: 130px; }
-    #numeroCarta { font-size: 48px; }
-    #nombrePersonaje { font-size: 12px !important; }
+    /* Tamaño de carta/número/figura lo controla la var adaptable (--carta-*). */
+    #nombrePersonaje { font-size: 11px !important; }
 
     .silla.bottom { bottom: 15px; }
     .mi-perfil-esquina {
-        bottom: 153px;
+        bottom: calc(var(--carta-h, 150px) + 22px); /* sobre la carta (silla.bottom 15px + margen) */
         left: 50%;
         transform: translateX(-50%);
         padding: 4px 12px;
@@ -1431,14 +1557,14 @@ body {
     .silla.bottom-left { bottom: 15%; left: 15%; transform: translate(-30%, 50%); }
     .silla.bottom-right{ bottom: 15%; right: 15%;transform: translate(30%, 50%); }
 
-    .mini-carta-frente { width: 52px !important; height: 76px !important; }
-    .mini-carta-frente div:first-child { font-size: 22px !important; }
+    /* .mini-carta-frente width/height lo controla la var --mini-* (adaptable). */
+    .mini-carta-frente div:first-child { font-size: 20px !important; }
     .mini-carta-frente div:last-child  { font-size: 8px !important; }
 
     .perfil-oponente {
-        min-width: 70px !important;
-        max-width: 115px !important;
-        border-radius: 12px !important;
+        min-width: 58px !important;
+        max-width: 95px !important;
+        border-radius: 10px !important;
     }
 
     .crónicas-medievales { height: 130px; }
@@ -1469,29 +1595,41 @@ body {
 }
 
 /* =========================================
-   MÓVIL @media (max-width: 768px)
+   CELULAR @media (max-width: 768px)
    ========================================= */
 @media (max-width: 768px) {
     .panel-items-grid { grid-template-columns: 1fr; }
     .item-config-label { font-size: 12px; }
-    .selector-medieval { font-size: 14px; padding: 8px; }
+    /* Prevenir auto-zoom en iOS Safari: fuentes a 16px en inputs/selects móviles */
+    .selector-medieval,
+    .selector-compacto,
+    #inputPasswordSala {
+        font-size: 16px !important;
+    }
+    .selector-medieval { padding: 8px; }
     .panel-configuracion { padding: 12px; }
-    .main-seccion-centro { margin-top: 48px; padding: 10px; }
+    .main-seccion-centro {
+        margin-top: calc(48px + env(safe-area-inset-top, 0px));
+        padding: 10px;
+    }
     .contenedor-login { padding: 20px 15px; border-width: 6px; }
     .lista-jugadores { font-size: 15px; margin-top: 8px; }
     .lista-jugadores li { padding: 8px; margin-top: 5px; }
 
-    .barra-top-juego { padding: 5px 8px; }
+    /* Barra superior con soporte safe-area para notch / dynamic island */
+    .barra-top-juego {
+        padding: max(6px, env(safe-area-inset-top, 6px)) max(10px, env(safe-area-inset-right, 10px)) 6px max(10px, env(safe-area-inset-left, 10px));
+    }
     .barra-top-item { font-size: 9px; gap: 2px; }
     .barra-top-item span { font-size: 10px; margin-left: 2px; }
 
-    #mesaDeJuego { padding-bottom: 90px; }
+    #mesaDeJuego { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
     .tapete-virtual {
         width: 98%;
-        height: 74vh;
+        height: min(74vh, 640px);
         border-width: 5px;
         border-radius: 60px;
-        margin: 38px auto 3px auto;
+        margin: calc(38px + env(safe-area-inset-top, 0px)) auto 3px auto;
     }
 
 .mazo-dealer {
@@ -1509,13 +1647,12 @@ body {
     #contenedorReloj { width: 100px; margin-top: 3px; }
     #segundosReloj { font-size: 11px !important; }
 
-    .carta-naipe { width: 72px; height: 108px; }
-    #numeroCarta { font-size: 38px; }
+    /* carta/número/figura: tamaño por var adaptable (--carta-*). */
     #nombrePersonaje { font-size: 10px !important; margin-top: 4px; }
 
     .silla.bottom { bottom: 12px; }
     .mi-perfil-esquina {
-        bottom: 119px;
+        bottom: calc(var(--carta-h, 108px) + 18px); /* sobre la carta (silla.bottom 12px + margen) */
         left: 50%;
         transform: translateX(-50%);
         padding: 3px 8px;
@@ -1541,20 +1678,47 @@ body {
     .perfil-oponente div { font-size: 9px !important; line-height: 1.1; }
     .vidas-destacadas { font-size: 11px !important; margin-top: 2px; letter-spacing: 0; }
 
-    .perfil-carta-reverso { width: 22px; height: 34px; }
-    .mini-carta-frente { width: 48px !important; height: 72px !important; }
+    /* El tamaño boca-abajo lo controla dibujarMesaCircular() (vars --reverso-w/h),
+       adaptado a la cantidad de jugadores y ya con valores menores para celular. */
+    /* .mini-carta-frente width/height lo controla la var --mini-* (adaptable). */
     .mini-carta-frente div:first-child { font-size: 20px !important; }
     .mini-carta-frente div:last-child  { font-size: 8px !important; }
 
     .btn-latido { font-size: 13px !important; padding: 8px 16px !important; margin-top: 4px !important; }
-    .panel-acciones-fijo { padding: 8px 10px; gap: 8px; }
-    .panel-acciones-fijo button { font-size: 15px; padding: 10px; }
+    
+    /* Panel de acciones con soporte safe-area para barra inferior de iOS */
+    .panel-acciones-fijo {
+        padding: 8px max(10px, env(safe-area-inset-right, 10px)) max(12px, env(safe-area-inset-bottom, 12px)) max(10px, env(safe-area-inset-left, 10px));
+        gap: 8px;
+    }
+    .panel-acciones-fijo button {
+        font-size: 15px;
+        padding: 12px 10px;
+        min-height: 46px;
+    }
 
     .crónicas-medievales { height: 80px; font-size: 11px; padding: 5px 8px; }
 
- 
-    #toastContainer { bottom: 95px; }
+    #toastContainer { bottom: calc(105px + env(safe-area-inset-bottom, 0px)); }
     .toast-mensaje { font-size: 11px; padding: 5px 14px; }
+
+    .mini-feed-hud {
+        width: 220px;
+        padding: 3px 8px 3px;
+        margin-top: 3px;
+        border-radius: 10px;
+    }
+    .mini-feed-item {
+        font-size: 10px;
+        gap: 5px;
+    }
+    .feed-icono {
+        font-size: 11px;
+    }
+    .mini-feed-hint {
+        font-size: 8px;
+        margin-top: 2px;
+    }
 
     #bannerEspectador {
     position: absolute;
@@ -1928,6 +2092,22 @@ body {
 }
 .btn-perfil-top:hover { opacity: 0.75; }
 
+.btn-sonido-top {
+    background: none;
+    border: none;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0 2px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease, opacity 0.2s;
+    user-select: none;
+}
+.btn-sonido-top:hover { transform: scale(1.15); opacity: 0.85; }
+.btn-sonido-top:active { transform: scale(0.92); }
+
 /* ── INPUT CONTRASEÑA EN CONFIG ── */
 #inputPasswordSala {
     width: 100%;
@@ -1954,4 +2134,166 @@ body {
 @keyframes pulsoCrear {
     0%, 100% { box-shadow: 0 4px 0 rgba(0,0,0,0.4), 0 0 0 rgba(192,57,43,0); }
     50%       { box-shadow: 0 4px 0 rgba(0,0,0,0.4), 0 0 18px rgba(192,57,43,0.5); }
+}
+
+/* =========================================
+   MINI-FEED / BITÁCORA RÁPIDA DE JUGADAS
+   ========================================= */
+.mini-feed-hud {
+    margin-top: 6px;
+    background: linear-gradient(135deg, rgba(12, 12, 18, 0.92) 0%, rgba(22, 16, 26, 0.95) 100%);
+    border: 1px solid rgba(241, 196, 15, 0.35);
+    border-radius: 12px;
+    padding: 4px 10px 3px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    width: 250px;
+    max-width: 86vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.mini-feed-hud:hover {
+    border-color: rgba(241, 196, 15, 0.65);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.75), 0 0 12px rgba(241, 196, 15, 0.25);
+}
+
+.mini-feed-hud:active {
+    transform: scale(0.97);
+}
+
+.mini-feed-items {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mini-feed-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    line-height: 1.25;
+    color: var(--pergamino, #f5f0e8);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 0.3s ease;
+}
+
+.mini-feed-item.feed-reciente {
+    opacity: 1;
+    animation: feedSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.mini-feed-item.feed-anterior {
+    opacity: 0.72;
+}
+
+.mini-feed-item.feed-antiguo {
+    opacity: 0.45;
+}
+
+.feed-icono {
+    font-size: 12px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.feed-texto {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.feed-nombre {
+    color: var(--oro, #f1c40f);
+    font-weight: bold;
+}
+
+.mini-feed-hint {
+    margin-top: 3px;
+    font-size: 8.5px;
+    letter-spacing: 0.5px;
+    color: rgba(241, 196, 15, 0.8);
+    font-family: 'MedievalSharp', serif;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+@keyframes feedSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Modal Bitácora Lista */
+.bitacora-historial-scroll {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: 52vh;
+    padding: 6px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 10px;
+    border: 1px solid rgba(241, 196, 15, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.bitacora-fila {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    font-size: 12px;
+    color: var(--pergamino, #f5f0e8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    transition: background 0.15s ease;
+}
+
+.bitacora-fila:last-child {
+    border-bottom: none;
+}
+
+.bitacora-fila:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.bitacora-fila-icono {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.bitacora-fila-hora {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.4);
+    font-family: monospace;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+@media (max-height: 560px) {
+    .mini-feed-hud {
+        width: 195px;
+        padding: 2px 6px;
+    }
+    .mini-feed-item.feed-antiguo {
+        display: none !important;
+    }
 }

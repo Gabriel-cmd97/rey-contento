@@ -14,7 +14,18 @@ bash start.sh   # ejecuta PORT=4000 yarn node server.js
 yarn install
 ```
 
-No hay suite de pruebas ni linter configurado.
+Sin linter. Hay un script de tests E2E en `tests/e2e.js` que cubre auth, validación de inputs, sesión reemplazada, password de sala (bcrypt), whitelist de acciones y reacciones. Cómo correrlo:
+
+```bash
+# Una vez: instalar deps de testing fuera del proyecto (no están en package.json)
+mkdir -p /tmp/rey-tests && cd /tmp/rey-tests
+npm init -y && npm install socket.io-client@4 node-fetch@2
+
+# Con el server corriendo en :4000
+NODE_PATH=/tmp/rey-tests/node_modules node tests/e2e.js
+```
+
+Lo que NO cubre: animaciones, DOM, reconexión real, comportamiento puro del cliente.
 
 ## Arquitectura
 
@@ -95,6 +106,15 @@ JWT_SECRET=
 PORT=4000
 ```
 
+Opcionales:
+```
+ALLOWED_ORIGINS=http://34.204.215.13:4000,http://localhost:4000
+DEBUG_LOG=1
+```
+
+- **`ALLOWED_ORIGINS`**: lista comma-separated de orígenes permitidos para CORS (HTTP + Socket.io). Si NO está definido, se permite cualquier origen y se loguea un warning al arrancar. En producción debe estar definido.
+- **`DEBUG_LOG`**: si está set (valor truthy), activa nivel `log.debug(...)`. Default off.
+
 ### Frontend (`public/main.js`)
 
 **Variables globales clave**:
@@ -133,6 +153,63 @@ PORT=4000
 
 **ID de jugadores**: en el evento `actualizarLobby`, el cliente remapea su propio jugador con `id: socket.id` para asegurar la coincidencia local. En `juegoIniciado`, `cambioDeTurno` y `reconexionExitosa`, `listaJugadoresGlobal` se reemplaza directamente con `datos.jugadores` que viene del servidor (con los socket IDs reales vigentes). `dibujarMesaCircular()` usa `findIndex(j => j.id === socket.id)` para identificar al jugador local; si no lo encuentra, cae en index 0 en lugar de fallar.
 
+### Invariantes de timing (cliente ↔ servidor)
+
+La cadena de un inicio de ronda es: el server emite `datosMesa` + `tuCarta` (t=0) y luego `juegoIniciado` (t=+500ms); el cliente guarda la carta en `tuCarta` y la anima al recibir el evento de turno. Estos invariantes mantienen sincronizados el cronómetro real del server y el reloj visual del cliente. Si tocás este flujo, preservalos:
+
+- **La carta SOLO se revela en el evento posterior a `tuCarta`**, nunca dentro de `tuCarta`. `tuCarta` únicamente hace `_cartaPendiente = carta`; el revelado (flip + número) lo hacen `juegoIniciado`, `cambioDeTurno` o `rondaTerminada`, que consumen `_cartaPendiente`. **Nunca** revelar/animar dentro de `tuCarta` con un `setTimeout` propio: `juegoIniciado` llega ~500ms después y hace `++_renderGen`, que invalida ese callback (race) → la carta queda mostrando el dorso. Esto pasaba con el 9 de DECLARADO. El revelado público del 9 en DECLARADO es responsabilidad del server (`mensajeGlobal`) y del render de oponentes (`cartaRevelada`), no de la carta propia.
+- **`iniciarReloj()` siempre con duración explícita**. Nunca llamarla sin el 3er argumento: el default de 10s pisaría la duración real del jugador (10s online / 30s offline / 8s al desconectar en turno). `gestionarTurnos` ya arranca el reloj con la duración correcta — no agregar una segunda llamada a `iniciarReloj` "por las dudas" después de `gestionarTurnos`.
+- **Colchón del primer turno de la ronda**. En `gestionarTurnos`, cuando `esInicio === true`, el timer REAL del server usa `tiempoTurno + SEG_EXTRA_PRIMER_TURNO` (1s), pero el campo `tiempo` enviado al cliente queda en `tiempoTurno`. Esto compensa que el reloj visual del cliente arranca ~800ms tarde (espera el vuelo de carta de 600ms + 200ms de delay) — sin el colchón el server cortaría el turno con ~1s aún visible en pantalla. En `cambioDeTurno` no se aplica porque ahí el reloj visual arranca sincrónico.
+
+### Convenciones de frontend visual (animaciones, íconos, carga)
+
+Estas convenciones se aplicaron al pulir el aspecto y la confiabilidad de carga del cliente. Si tocás estas zonas, mantenelas:
+
+**Carga sin recursos externos bloqueantes**
+- `socket.io` se sirve LOCAL desde el propio servidor: `<script src="/socket.io/socket.io.min.js">` (mismo origen, versión exacta del backend). **Nunca** volver a un CDN externo bloqueante — si el CDN falla o va lento, la página no carga (`main.js` necesita `io`).
+- Librerías no críticas (TWEEN.js, qrcodejs) se cargan con `async` desde CDN, y el código tolera su ausencia (`typeof TWEEN/QRCode === 'undefined'` → fallback). Nunca hacerlas bloqueantes ni que `main.js` dependa de ellas al cargar.
+- Google Fonts no-bloqueante (`media="print" onload="this.media='all'"` + `<noscript>`).
+- **CSS crítico inline en `<head>`**: `<style>.hidden{display:none!important}</style>`. Imprescindible: sin él, antes de que cargue `style.css` los overlays con estilo inline (ej. `#vistaQR` con `display:flex`) parpadean visibles (FOUC). Todo overlay nuevo oculto por `.hidden` depende de esto.
+
+**Overlays robustos en móvil**
+- Los overlays a pantalla completa usan `position:fixed; inset:0; -webkit-overflow-scrolling:touch; transform:translateZ(0)`. El `inset:0` (no `width/height:100%`) y la capa de composición (`translateZ(0)`) evitan el "ghosting"/doble-render de elementos `fixed` en iOS. Patrón en `modalReglas` y `vistaQR`.
+
+**Animaciones (TWEEN.js)**
+- Ticker global corre SIEMPRE vía `requestAnimationFrame` y llama `TWEEN.update()` solo si TWEEN existe (porque carga `async`).
+- Vuelo de tu carta: `animarVueloCartaTween(el, gen, onComplete)`. Respeta `_renderGen` (aborta si llegó otro evento). **Sin rotación en Z** (competía con el flip → parecía doble reparto).
+- Reparto escalonado de oponentes: `repartirCartasEscalonado()` se dispara en `datosMesa`. Cartas "fantasma" (overlay `position:fixed`, z-index 40) vuelan del mazo a cada asiento, en orden DESDE el dealer. Reglas: el set `_repartiendo` marca qué jugadores tienen carta en vuelo y `dibujarMesaCircular` pinta sus reversos en `opacity:0` (para que un re-render no muestre la carta real encimada al fantasma); cada fantasma nace `opacity:0` y se hace visible en `onStart` (no durante su `delay`, si no quedaban cartas estáticas sobre el mazo).
+- Resumen de ronda con respiro: `rondaTerminada` revela la carta nueva del dealer de inmediato pero demora `mostrarResumenRonda` ~1400ms (con guard de `gen`), para que el jugador vea qué carta sacó del mazo antes de que el pop-up la tape.
+
+**Figuras de cartas (íconos SVG)**
+- Las figuras son SVG locales en `public/iconos/0.svg`…`9.svg` (set game-icons.net, CC-BY 3.0 — atribución al pie del modal de reglas). **No** usar emojis (cada SO los dibuja distinto) ni un CDN de íconos en runtime.
+- Mapa `figurasCartas` (n → ruta) + helper `figuraIMG(n, px)` que devuelve el `<img>`. La carta principal se pinta con `pintarCartaPrincipal(carta)` (número + figura + nombre + clase de color) — centraliza lo que antes se repetía en 4 eventos de revelado (`juegoIniciado`, `cambioDeTurno`, `rondaTerminada`, `reconexionExitosa`).
+- Tamaño de la figura en la carta principal por CSS (`#figuraCarta img`, vía var); el `px` de `figuraIMG` es solo fallback.
+- La pila central de descarte (`renderizarPila`) usa las figuras OSCURAS (`/iconos/N.svg`) sobre fondo pergamino. El mazo (`#mazoFlotante`) lleva un emblema heráldico dorado (`/iconos/mazo.svg`, fleur-de-lys) centrado en el dorso.
+
+**Tamaños de carta adaptables (vars en `:root`)**
+- `dibujarMesaCircular()` calcula y setea en `:root`, según la cantidad de oponentes (`numOp`) y si es celular (`window.innerWidth <= 768`), TODAS las dimensiones de carta: `--reverso-w/h` (boca-abajo), `--carta-w/h` + `--carta-num` + `--carta-fig` (tu carta: número y figura escalan con ella), `--mini-w/h` (oponentes revelados) y `--pila-w/h` (pila central). Regla general: **menos jugadores → cartas más grandes** (aprovechan el espacio); **mesa llena → más chicas**.
+- El CSS base usa esas vars (con fallback); **no** poner tamaños fijos de carta en las media queries (pisarían las vars). Patrón heredado del de `--reverso-*`.
+- El mazo HEREDA `.perfil-carta-reverso` (sin `width/height` inline) → coincide siempre con los asientos y la carta del reparto.
+- El contenedor de nombre/vidas propio (`#miPerfil`) se posiciona con `bottom: calc(var(--carta-h) + offset)` para seguir la altura (variable) de tu carta y no encimarse.
+
+**Tono de cartas (pergamino)**
+- `.front-character` (tu carta), `.mini-carta-frente` (oponentes revelados) y `.carta-en-pila` (pila) comparten el mismo degradado pergamino. Las especiales lo pisan: `.carta-9`/`.mini-carta-9`/`.rey-pila` doradas, `.carta-0`/`.mini-carta-0`/`.cero-pila` grises.
+
+**Despeje del mazo (auto-ajustable)**
+- Las posiciones del mazo (`#mazoFlotante.pos-*`) calculan su offset con `calc()` en función del tamaño de carta (`--carta-w` para `pos-bottom`, `--reverso-w/h` para el resto), porque `.turno-activo` hace `scale(1.1)` + glow de ~70px. Así el mazo **se aleja solo cuando las cartas crecen** y se acerca cuando se achican — **no** volver a offsets fijos (quedaban cortos al cambiar el tamaño de carta). El `+Npx` de cada fórmula cubre el perfil + el glow.
+
+**Layout de escritorio (formato celular)**
+- En escritorio (`@media min-width:768px`) la mesa se muestra como **columna retrato centrada** (no a lo ancho): `.tapete-virtual` con `max-width: 470px`, `height: min(86vh, 760px)`, y `#mesaDeJuego { justify-content: center }` para centrarla verticalmente (es flex-column y solo contiene la mesa). Los asientos diagonales usan `%`, así que escalan al achicar la mesa.
+
+**Visibilidad de pantallas (sin mezcla)**
+- Jerarquía: top-level `seccion-inicio`, `pantallaJuego` (contiene `seccion-lobby` y `mesaDeJuego`) y `pantallaVictoria`. Dentro de `pantallaJuego`, lobby y mesa son excluyentes.
+- Entrar a la mesa (`reconexionExitosa`, `tuCarta`, `datosMesa`) SIEMPRE oculta victoria, resumen y QR — si te reconectás desde esas pantallas no deben quedar encimadas.
+- `finDelJuego` oculta mesa, footer (`panelAccionesPartida`), código, reacciones y QR antes de mostrar victoria. `btnVolverLobby` oculta mesa y footer explícitamente.
+
+**Compartir sala**: `linkDeSala()` arma el link con IP pública fija (no `window.location.origin`, para que sirva aunque el host haya entrado por localhost). Reusado por "Copiar enlace" y el QR (`vistaQR` + `mostrarVistaQR`/`ocultarVistaQR`).
+
+**Idioma**: todo el texto visible en **español de México (tuteo)** — "tú"/"tienes"/"escanea", nunca voseo ("vos"/"tenés"/"escaneá"). Vocabulario: **"celular"** (no "móvil"), **"enlace"** (no "link"). Los identificadores de código preexistentes (`btnCopiarLink`, `linkDeSala`, clase `btn-copiar-link`) se mantienen.
+
 ### Convenciones de seguridad y robustez
 
 Estas convenciones se aplicaron tras un hardening pass. Si trabajás en código que las toca, mantenelas:
@@ -141,8 +218,10 @@ Estas convenciones se aplicaron tras un hardening pass. Si trabajás en código 
 - **Whitelist de acciones**: `accionJugador` rechaza cualquier `accion` fuera de `['MANTENER', 'CAMBIAR', 'CAMPANA']` antes de tocar estado.
 - **`sanitizarConfig()`**: toda config que viene del cliente en `crearSala` pasa por este helper en `server.js`. Hace clamp de rangos (vidas 1-10, maxJugadores 2-8, numBots 0..max-1) y valida enums. Agregar nuevos campos de config significa actualizar este helper también.
 - **Passwords de sala**: se hashean con `bcrypt.hashSync` al crear y se comparan con `bcrypt.compareSync` al unirse. **Nunca** guardar `sala.password` en plaintext.
-- **Shuffle**: usar siempre el helper `barajar()` (Fisher-Yates). **Nunca** `arr.sort(() => Math.random() - 0.5)` — no produce distribución uniforme.
+- **Shuffle**: usar siempre el helper `barajar()` (Fisher-Yates). **Nunca** `arr.sort(() => Math.random() - 0.5)` — no produce distribución uniforme. Esto aplica a TODOS los reshuffles, incluidos los de `ejecutarAccion` cuando el mazo se agota (robo del dealer y robo del vecino del ringer) — todos pasan por `barajar([...sala.descarte])`.
 - **Guards de existencia de sala en timers**: `resolverRonda`, `iniciarRonda` e `iniciarRevancha` empiezan con `if (!estadoSalas[sala.idSala]) return;`. Cualquier nueva función que se invoque desde un `setTimeout` debería hacer lo mismo, o el callback puede ejecutarse sobre una sala ya borrada.
 - **Sesión duplicada**: al hacer `unirseSala` con un username que ya tiene socket vivo, el servidor reasigna el id ANTES de desconectar al socket anterior (orden importante — invertido, el `disconnect` handler limpia al jugador legítimo) y emite `sesionReemplazada` con un delay de 150ms para que el paquete viaje antes del close. El cliente desactiva `socket.io.opts.reconnection` al recibirlo.
 - **DOM listeners dentro de `conectarSocket()`**: usar asignación `.onclick = fn` (o `.oninput`, etc.), **nunca** `.addEventListener`. La asignación es idempotente — si `conectarSocket()` corre dos veces, no duplica handlers.
 - **Cleanup de socket viejo**: `conectarSocket()` empieza removiendo todos los listeners y desconectando el socket previo si existe. No quitar esto: sin ello, los handlers del socket viejo siguen disparándose en eventos del nuevo.
+- **Avanzar turno al sacar a un jugador en su turno**: cualquier handler que ponga `vidas = 0` a un jugador que está en turno (`abandonarSala`) debe cancelar `temporizadores[idSala]` y avanzar al siguiente vivo (o llamar `resolverRonda` si era el dealer). Sin esto la partida se cuelga: el timer dispara `ejecutarAccion('MANTENER')`, que corta temprano en `if (jugadorActual.vidas <= 0) return` sin avanzar, y la sala queda atascada hasta que el sweeper la borre (30 min).
+- **Rate limit de endpoints de lectura**: `/leaderboard` y `/mis-stats` usan el limiter `limitarLectura` (200 req/15min por IP). Pegan a la DB sin auth y se consultan en cada carga de la pantalla de inicio, así que el límite es generoso pero acotado para frenar scraping. Todo endpoint HTTP nuevo que toque la DB debe llevar algún limiter (`limitarAuth`/`limitarLogin`/`limitarLectura` según el caso).

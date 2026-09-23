@@ -1,6 +1,7 @@
 // db.js
 const mysql = require('mysql2/promise');
 require('dotenv').config(); // Carga las variables del archivo .env
+const log = require('./logger');
 
 // Creamos un Pool de conexiones hacia tu AWS RDS MariaDB
 const pool = mysql.createPool({
@@ -16,11 +17,11 @@ const pool = mysql.createPool({
 // Probamos la conexión al arrancar
 pool.getConnection()
     .then(connection => {
-        console.log('✅ Conectado exitosamente a AWS RDS MariaDB');
+        log.info('Conectado a AWS RDS MariaDB');
         connection.release();
     })
     .catch(err => {
-        console.error('❌ Error fatal conectando a RDS:', err.message);
+        log.error('Fallo fatal conectando a RDS', { error: err.message, host: process.env.DB_HOST });
     });
 
 module.exports = pool;
