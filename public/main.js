@@ -877,8 +877,21 @@ if (modalBit) {
     });
 }
 
+// Atajos de teclado en la mesa: M mantener, C cambiar, B campana. Hacen lo
+// mismo que tocar el botón (que ya ignora el clic si no es tu turno).
+const ATAJOS_MESA = { m: 'btnMantener', c: 'btnCambiar', b: 'btnCampana' };
+
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') cerrarModalBitacora();
+    if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+    if (e.target.closest?.('input, textarea, select, [contenteditable]')) return;
+    const id = ATAJOS_MESA[e.key.toLowerCase()];
+    if (!id || document.getElementById('mesaDeJuego')?.classList.contains('hidden')) return;
+    const btn = document.getElementById(id);
+    if (btn && !btn.disabled && !btn.classList.contains('hidden') && btn.style.display !== 'none') {
+        e.preventDefault();
+        btn.click();
+    }
 });
 
 // ==========================================

@@ -2365,3 +2365,72 @@ body.con-guia #toastContainer { bottom: calc(165px + env(safe-area-inset-bottom,
     margin: 6px 0 8px;
     line-height: 1.35;
 }
+
+/* =========================================
+   ACCIONES DEL TURNO — piezas del mundo del juego
+   MANTENER: madera con filo de oro (te plantas).
+   CAMBIAR: oro acuñado (la jugada activa).
+   Van al final para ganarle a los estilos base de #btnMantener/#btnCambiar.
+   ========================================= */
+#btnMantener {
+    background: linear-gradient(180deg, #7b5a4d 0%, var(--madera) 100%);
+    border-bottom: 4px solid #22150f;
+    box-shadow: inset 0 0 0 1px rgba(241,196,15,0.55), 0 6px 14px rgba(0,0,0,0.45);
+    color: #f6e7c1;
+}
+#btnCambiar {
+    background: linear-gradient(180deg, #f9dd7a 0%, #d4a514 55%, var(--oro-oscuro) 100%);
+    border-bottom: 4px solid #6e5608;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), 0 6px 14px rgba(0,0,0,0.45);
+    color: var(--madera);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.45);
+}
+#btnMantener, #btnCambiar {
+    position: relative;
+    letter-spacing: 1.5px;
+    /* Corre cada vez que el botón vuelve a mostrarse: al empezar tu turno. */
+    animation: acciones-entran 0.32s cubic-bezier(.2,.9,.3,1.25);
+}
+@keyframes acciones-entran {
+    from { transform: translateY(14px) scale(0.96); opacity: 0; }
+    to   { transform: none; opacity: 1; }
+}
+
+/* Letra del atajo de teclado, solo donde hay mouse (computadora). */
+@media (hover: hover) and (pointer: fine) {
+    .acciones-row [data-tecla]::after {
+        content: attr(data-tecla);
+        position: absolute;
+        top: 5px;
+        right: 7px;
+        font-family: Georgia, serif;
+        font-size: 10px;
+        line-height: 1;
+        padding: 2px 4px;
+        border-radius: 3px;
+        border: 1px solid currentColor;
+        opacity: 0.55;
+        text-shadow: none;
+    }
+    .acciones-row .boton-campana { position: relative; }
+}
+
+/* Foco visible para quien juega con teclado. */
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+.btn-reaccion:focus-visible {
+    outline: 3px solid var(--oro);
+    outline-offset: 3px;
+}
+
+/* Quien pidió menos movimiento en su sistema: sin animaciones en bucle
+   (latidos, brillos, la flecha guía) y transiciones casi instantáneas. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

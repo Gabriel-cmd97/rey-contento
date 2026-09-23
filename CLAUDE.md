@@ -227,6 +227,8 @@ Estas convenciones se aplicaron al pulir el aspecto y la confiabilidad de carga 
 
 **Compartir sala**: `linkDeSala()` arma el link con IP pública fija (no `window.location.origin`, para que sirva aunque el host haya entrado por localhost). Reusado por "Copiar enlace" y el QR (`vistaQR` + `mostrarVistaQR`/`ocultarVistaQR`).
 
+**Botones de acción y accesibilidad** (bloque final de `style.css`): MANTENER en madera con filo de oro y CAMBIAR en oro acuñado, dentro de la paleta del juego (no volver a azul/rojo genéricos). Suben con `acciones-entran` cada vez que se muestran (inicio de tu turno). Atajos de teclado `ATAJOS_MESA` en `main.js` (M, C, B) que simulan el clic; la letra se ve solo con `(hover: hover) and (pointer: fine)` vía `data-tecla`. Foco `:focus-visible` dorado y `prefers-reduced-motion` que apaga las animaciones en bucle.
+
 **Idioma**: todo el texto visible en **español de México (tuteo)** — "tú"/"tienes"/"escanea", nunca voseo ("vos"/"tenés"/"escaneá"). Vocabulario: **"celular"** (no "móvil"), **"enlace"** (no "link"). Los identificadores de código preexistentes (`btnCopiarLink`, `linkDeSala`, clase `btn-copiar-link`) se mantienen.
 
 ### Convenciones de seguridad y robustez
