@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('./db');
 const bots = require('./bots');
+const { barajar, crearMazo, siguienteVivo, resolverCartas } = require('./reglas');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const log = require('./logger');
@@ -214,41 +215,6 @@ function esIdSalaValido(v) {
 // Sin esto, un cliente puede broadcastear strings arbitrarios (XSS no aplica
 // porque el cliente sanitiza, pero sí puede mandar payloads gigantes).
 const EMOJIS_REACCION = new Set(['😱', '🤡', '👑', '💀', '🎭', '🍀']);
-
-// Fisher-Yates: distribución uniforme garantizada (a diferencia de sort(() => Math.random()-0.5))
-function barajar(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-}
-
-function crearMazo(config) {
-    // Base: 4 ceros + 8 de cada número 1-8 = 68 cartas
-    const base = [];
-    for (let i = 0; i < 4; i++) base.push(0);
-    for (let n = 1; n <= 8; n++) {
-        for (let i = 0; i < 8; i++) base.push(n);
-    }
-    barajar(base);
-
-    if (config.frecuenciaReyes === 'NORMAL') {
-        // Completamente aleatorio — 9s distribuidos orgánicamente
-        return barajar([...base, 9,9,9,9,9,9,9,9]);
-    }
-
-    // ALTA / LOCURA: insertar los 8 nines sesgados hacia el tope del array
-    // pop() sirve desde el final → tope = primeras rondas
-    for (let i = 0; i < 8; i++) {
-        const len = base.length; // crece de 68 a 75
-        const fraccion = config.frecuenciaReyes === 'LOCURA' ? 0.35 : 0.55;
-        const min = Math.floor(len * (1 - fraccion));
-        const pos  = min + Math.floor(Math.random() * (len - min + 1));
-        base.splice(pos, 0, 9);
-    }
-    return base; // 76 cartas, 9s concentrados hacia el final (=primeras rondas)
-}
 
 // Marca actividad reciente en una sala. Se usa para que el sweeper no borre
 // salas vivas. Llamar al crear, al unirse, y en cada acción de jugador.
@@ -496,53 +462,8 @@ function resolverRonda(sala, io) {
     let vivos = sala.jugadores.filter(j => j.vidas > 0);
     if (vivos.length === 0) return;
 
-    const esModoCampana = sala.config.modoJuego === 'CAMPANA';
-
-    // En campana pierde el que tiene la carta MÁS ALTA; en clásico pierde el MÁS BAJO
-    const valorCritico = esModoCampana
-        ? Math.max(...vivos.map(j => j.cartaActual))
-        : Math.min(...vivos.map(j => j.cartaActual));
-    const empateTotal = vivos.every(j => j.cartaActual === valorCritico);
-    let perdedores = [];
-
-    // Penalización si nadie tocó la campana (auto-resolve por 2 vueltas)
-    if (esModoCampana && !sala.campanaTocada && sala.vueltasCampana >= 2) {
-        // El que tiene la carta más alta pierde 1 vida extra (ya la perderá también en resolución normal)
-        const maxVal = Math.max(...vivos.map(j => j.cartaActual));
-        vivos.filter(j => j.cartaActual === maxVal).forEach(j => {
-            j.vidas -= 1;
-            if (!perdedores.includes(j.id)) perdedores.push(j.id);
-        });
-        io.to(sala.idSala).emit('mensajeGlobal', `⏰ Nadie tocó la campana — el cobarde con la carta más alta paga doble.`);
-    }
-
-    // Penalización campana: en modo campana, el ringer pierde si tiene la carta MÁS ALTA
-    let campanaInfo = null;
-    if (sala.campanaTocada && sala.campanaTocadorId) {
-        const ringer = sala.jugadores.find(j => j.id === sala.campanaTocadorId);
-        if (ringer && ringer.vidas > 0) {
-            const ringerPierde = !empateTotal && ringer.cartaActual === valorCritico;
-            campanaInfo = { tocadorId: ringer.id, acertada: !ringerPierde };
-            if (ringerPierde) {
-                ringer.vidas -= 1;
-                if (!perdedores.includes(ringer.id)) perdedores.push(ringer.id);
-                io.to(sala.idSala).emit('mensajeGlobal', `🔔❌ ${ringer.nombre} tocó la campana pero tenía la carta mortal! -1 vida extra.`);
-            } else {
-                io.to(sala.idSala).emit('mensajeGlobal', `🔔✅ ¡${ringer.nombre} acertó la campana!`);
-            }
-        }
-    }
-
-    if (!empateTotal) {
-        sala.jugadores.forEach(j => {
-            if (j.vidas > 0 && j.cartaActual === valorCritico) {
-                j.vidas -= 1;
-                if (!perdedores.includes(j.id)) perdedores.push(j.id);
-            }
-        });
-    } else {
-        io.to(sala.idSala).emit('mensajeGlobal', `🤝 ¡Empate total! Todos tienen ${valorCritico} — nadie pierde vida esta ronda.`);
-    }
+    const { valorCritico, perdedores, campanaInfo, mensajes } = resolverCartas(sala);
+    mensajes.forEach(m => io.to(sala.idSala).emit('mensajeGlobal', m));
 
     let sobrevivientes = sala.jugadores.filter(j => j.vidas > 0);
     const humanosVivos = sobrevivientes.filter(j => !j.esBot);
@@ -626,13 +547,7 @@ function gestionarTurnos(sala, io, esInicio = false) {
         return;
     }
     let jugadorActual = sala.jugadores[indiceActual];
-    let indiceDerecha = indiceActual;
-    let intentosDerecha = 0;
-    do {
-        indiceDerecha = (indiceDerecha + 1) % sala.jugadores.length;
-        intentosDerecha++;
-    } while (sala.jugadores[indiceDerecha].vidas <= 0 && intentosDerecha < sala.jugadores.length);
-    let jugadorDerecha = sala.jugadores[indiceDerecha];
+    let jugadorDerecha = sala.jugadores[siguienteVivo(sala.jugadores, indiceActual)];
 
     if (jugadorActual.vidas <= 0) {
         if (indiceActual === sala.dealerIndex) {
@@ -911,11 +826,7 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
         });
 
         // Avanzar al siguiente jugador vivo
-        let intentos = 0;
-        do {
-            sala.turnoActualIndex = (sala.turnoActualIndex + 1) % sala.jugadores.length;
-            intentos++;
-        } while (intentos < sala.jugadores.length && sala.jugadores[sala.turnoActualIndex] && sala.jugadores[sala.turnoActualIndex].vidas <= 0);
+        sala.turnoActualIndex = siguienteVivo(sala.jugadores, sala.turnoActualIndex);
 
         // Si no hay más jugadores vivos después del ringer → resolver directo
         if (!sala.jugadores[sala.turnoActualIndex] || sala.jugadores[sala.turnoActualIndex].vidas <= 0 || sala.turnoActualIndex === indiceActual) {
@@ -934,14 +845,7 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
 
     if (accion === 'CAMBIAR') {
         if (indiceActual !== sala.dealerIndex) {
-            let indiceDerecha = indiceActual;
-            let intentos = 0;
-            do {
-                indiceDerecha = (indiceDerecha + 1) % sala.jugadores.length;
-                intentos++;
-            } while (sala.jugadores[indiceDerecha].vidas <= 0 && intentos < sala.jugadores.length);
-
-            let jugadorDerecha = sala.jugadores[indiceDerecha];
+            let jugadorDerecha = sala.jugadores[siguienteVivo(sala.jugadores, indiceActual)];
             const bloqueRey = sala.config.modoJuego !== 'CAMPANA' && jugadorDerecha.cartaActual === 9;
             const derechaEsRinger = sala.config.modoJuego === 'CAMPANA' && sala.campanaTocada && jugadorDerecha.id === sala.campanaTocadorId;
 
@@ -1076,15 +980,7 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
                 return;
             }
         }
-        let intentos = 0;
-        do {
-            sala.turnoActualIndex = (sala.turnoActualIndex + 1) % sala.jugadores.length;
-            intentos++;
-        } while (
-            intentos < sala.jugadores.length &&
-            sala.jugadores[sala.turnoActualIndex] &&
-            sala.jugadores[sala.turnoActualIndex].vidas <= 0
-        );
+        sala.turnoActualIndex = siguienteVivo(sala.jugadores, sala.turnoActualIndex);
         gestionarTurnos(sala, io, false);
     }
 }

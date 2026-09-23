@@ -33,7 +33,7 @@ exacto y 0 victorias). Para ver cuántos quedan sin borrar:
 
 Lo que NO cubre: animaciones, DOM, reconexión real, comportamiento puro del cliente.
 
-La lógica de los bots tiene pruebas unitarias aparte, sin servidor ni base:
+Las reglas del juego (`reglas.js`) y los bots (`bots.js`) tienen pruebas unitarias aparte, sin servidor ni base:
 `node --test tests/*.test.js` (Node 18+, `export PATH=/usr/bin:$PATH`).
 
 ## Arquitectura
@@ -41,7 +41,9 @@ La lógica de los bots tiene pruebas unitarias aparte, sin servidor ni base:
 **Rey Contento** es un juego de cartas multijugador en tiempo real que corre como un único proceso Node.js.
 
 ### Stack
-- **Backend**: Express 5 + Socket.io 4 — `server.js`
+- **Backend**: Express 5 + Socket.io 4 — `server.js` (sockets, turnos, timers y lo que se envía a cada quien)
+- **Reglas puras**: `reglas.js` — `barajar`, `crearMazo`, `siguienteVivo` (siguiente jugador vivo a la derecha) y `resolverCartas` (resta vidas al final de la ronda y devuelve perdedores + mensajes). No habla con sockets: una regla nueva va aquí, con su prueba en `tests/reglas.test.js`
+- **Bots**: `bots.js`
 - **Base de datos**: Pool de conexiones MySQL2 hacia AWS RDS MariaDB — `db.js`
 - **Frontend**: Vanilla JS + HTML/CSS plano servido como estáticos desde `public/`
 - **Auth**: JWT (expiración 8h) emitido al hacer login; se pasa como `socket.handshake.auth.token` en cada conexión Socket.io. El token se persiste en `localStorage` y se restaura automáticamente al recargar la página (`restaurarSesion()` en `main.js`)
