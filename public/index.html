@@ -58,6 +58,7 @@
     <symbol id="i-cambio" viewBox="0 0 24 24"><path d="M4 9h14l-3.5-3.5M20 15H6l3.5 3.5"/></symbol>
     <symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
     <symbol id="i-niebla" viewBox="0 0 24 24"><path d="M4 8h13M7 12h13M4 16h11M9 20h8M12 4h6"/></symbol>
     <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h3M21 17v4h-1M17 17h.01"/></symbol>
     <symbol id="i-globo" viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-9l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM8 10h8M8 13h5"/></symbol>
@@ -418,6 +419,7 @@
                     <div class="centro-mesa-wrapper">
                         <div class="foco-turno-medieval" id="focoTurno">
                             <h3 id="mensajeTurno" style="color:var(--verde); margin:0; font-size:16px;">Esperando...</h3>
+                           <p id="infoMesa" class="info-mesa"></p>
                            <div id="contenedorReloj" style="display:none; margin-top:6px; width:130px;">
     <div style="position:relative; background:rgba(255,255,255,0.1); border-radius:10px; height:8px; overflow:visible;">
         <div id="barraReloj" style="height:100%; width:100%; background:#e67e22; border-radius:10px; transition:width 1s linear, background .3s;"></div>
@@ -457,6 +459,17 @@
             </section>
         </main>
 
+        <!-- Mesa limpia: menú y bitácora en las esquinas (solo durante la partida) -->
+        <button id="btnBitacoraMesa" class="boton-esquina esquina-izq" title="Bitácora de la ronda" aria-label="Bitácora de la ronda"><svg class="icono" aria-hidden="true"><use href="#i-pergamino"/></svg><span id="contadorBitacoraMesa" class="contador-esquina hidden"></span></button>
+        <button id="btnMenuMesa" class="boton-esquina esquina-der" title="Menú" aria-label="Menú" aria-expanded="false" aria-controls="panelMenuMesa"><svg class="icono" aria-hidden="true"><use href="#i-menu"/></svg></button>
+        <div id="panelMenuMesa" class="panel-menu-mesa hidden" role="menu">
+            <button role="menuitem" data-accion="guias"><svg class="icono" aria-hidden="true"><use href="#i-foco"/></svg> <span>Guías</span></button>
+            <button role="menuitem" data-accion="sonido"><svg class="icono" aria-hidden="true"><use href="#i-altavoz"/></svg> <span>Sonido</span></button>
+            <button role="menuitem" data-accion="bitacora"><svg class="icono" aria-hidden="true"><use href="#i-pergamino"/></svg> <span>Bitácora de la ronda</span></button>
+            <button role="menuitem" data-accion="reglas"><svg class="icono" aria-hidden="true"><use href="#i-libro"/></svg> <span>¿Cómo se juega?</span></button>
+            <button role="menuitem" data-accion="perfil"><svg class="icono" aria-hidden="true"><use href="#i-persona"/></svg> <span>Mi perfil</span></button>
+        </div>
+
         <!-- Footer acciones -->
         <footer id="panelAccionesPartida" class="hidden panel-acciones-fijo">
             <div id="barraReacciones" class="barra-reacciones hidden">
@@ -472,6 +485,7 @@
             <div id="panelFrases" class="panel-frases hidden" role="menu" aria-label="Frases rápidas"></div>
             <div id="barraPoderes" class="barra-poderes hidden" aria-label="Tus poderes"></div>
             <div class="acciones-row">
+                <button id="btnReacciones" class="btn-abrir-reacciones" aria-expanded="false" aria-controls="barraReacciones" title="Reacciones y frases">😀</button>
                 <button id="btnMantener" class="boton-medieval full-width" data-tecla="M" disabled>MANTENER</button>
                 <button id="btnCampana" class="boton-campana hidden" data-tecla="B" disabled><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> </button>
                 <button id="btnCambiar"  class="boton-medieval full-width" data-tecla="C" disabled>CAMBIAR</button>

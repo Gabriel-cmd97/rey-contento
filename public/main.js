@@ -242,6 +242,11 @@ function mostrarToast(mensaje, tipo = '', duracion = 2500) {
 let historialJugadasRonda = [];
 
 function registrarJugadaFeed(evento) {
+    const cont = document.getElementById('contadorBitacoraMesa');
+    if (cont && document.body.classList.contains('en-mesa')) {
+        cont.textContent = String((parseInt(cont.textContent, 10) || 0) + 1);
+        cont.classList.remove('hidden');
+    }
     if (!evento) return;
     const ahora = new Date();
     const horaFormateada = ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -371,6 +376,8 @@ function cerrarModalBitacora() {
 }
 
 function reiniciarHistorialRonda(numRonda = 1) {
+    const cont = document.getElementById('contadorBitacoraMesa');
+    if (cont) { cont.textContent = ''; cont.classList.add('hidden'); }
     historialJugadasRonda = [];
     const feed = document.getElementById('miniFeedJugadas');
     if (feed) feed.classList.remove('hidden');
@@ -482,6 +489,86 @@ function actualizarBotonesTurno(esMio, esCampana, campanaTocada) {
 function icono(nombre) {
     return `<svg class="icono" aria-hidden="true"><use href="#i-${nombre}"/></svg>`;
 }
+
+// ==========================================
+// MESA LIMPIA
+// ==========================================
+// Durante la partida se oculta la barra de arriba (body.en-mesa): la ronda y
+// el modo van bajo el reloj (#infoMesa), sonido/guías/perfil/reglas en el menú
+// de la esquina, la bitácora en su botón y las reacciones tras 😀.
+window.addEventListener('DOMContentLoaded', () => {
+    const mesa = document.getElementById('mesaDeJuego');
+    if (!mesa) return;
+    const aplicar = () => {
+        const enMesa = !mesa.classList.contains('hidden');
+        document.body.classList.toggle('en-mesa', enMesa);
+        if (!enMesa) { cerrarMenuMesa(); cerrarReacciones(); }
+    };
+    new MutationObserver(aplicar).observe(mesa, { attributes: true, attributeFilter: ['class'] });
+    aplicar();
+});
+
+function pintarInfoMesa() {
+    const info = document.getElementById('infoMesa');
+    if (!info) return;
+    const ronda = document.getElementById('numRonda')?.innerText || '1';
+    const rey = modoReyActual === 'DECLARADO' ? 'Rey declarado' : 'Rey sorpresa';
+    info.textContent = `Ronda ${ronda} · ${modoJuegoActual === 'CAMPANA' ? 'Campana' : rey}`;
+}
+
+function cerrarMenuMesa() {
+    document.getElementById('panelMenuMesa')?.classList.add('hidden');
+    document.getElementById('btnMenuMesa')?.setAttribute('aria-expanded', 'false');
+}
+
+function abrirMenuMesa() {
+    const panel = document.getElementById('panelMenuMesa');
+    // Estado actual de guías y sonido en sus etiquetas
+    panel.querySelector('[data-accion="guias"] span').textContent = guiasActivas() ? 'Guías: activadas' : 'Guías: apagadas';
+    panel.querySelector('[data-accion="sonido"] span').textContent = Sonidos.estaHabilitado() ? 'Sonido: activado' : 'Sonido: silenciado';
+    panel.querySelector('[data-accion="sonido"] use').setAttribute('href', Sonidos.estaHabilitado() ? '#i-altavoz' : '#i-silencio');
+    panel.classList.remove('hidden');
+    document.getElementById('btnMenuMesa').setAttribute('aria-expanded', 'true');
+}
+
+document.getElementById('btnMenuMesa')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('panelMenuMesa').classList.contains('hidden') ? abrirMenuMesa() : cerrarMenuMesa();
+});
+document.getElementById('panelMenuMesa')?.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-accion]');
+    if (!b) return;
+    const accion = b.dataset.accion;
+    if (accion === 'guias') document.getElementById('btnToggleGuias')?.click();
+    if (accion === 'sonido') document.getElementById('btnToggleSonido')?.click();
+    if (accion === 'bitacora') abrirModalBitacora();
+    if (accion === 'reglas') document.getElementById('modalReglas')?.classList.remove('hidden');
+    if (accion === 'perfil') document.getElementById('btnMiPerfil')?.click();
+    cerrarMenuMesa();
+});
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('#panelMenuMesa, #btnMenuMesa')) cerrarMenuMesa();
+});
+document.getElementById('btnBitacoraMesa')?.addEventListener('click', () => {
+    abrirModalBitacora();
+    document.getElementById('contadorBitacoraMesa')?.classList.add('hidden');
+});
+
+// Reacciones plegadas: 😀 las muestra; se pliegan al usarlas o a los 8 s.
+let _cierreReacciones = null;
+function cerrarReacciones() {
+    document.getElementById('barraReacciones')?.classList.remove('abierta');
+    document.getElementById('btnReacciones')?.setAttribute('aria-expanded', 'false');
+    clearTimeout(_cierreReacciones);
+}
+document.getElementById('btnReacciones')?.addEventListener('click', () => {
+    const barra = document.getElementById('barraReacciones');
+    const abrir = !barra.classList.contains('abierta');
+    barra.classList.toggle('abierta', abrir);
+    document.getElementById('btnReacciones').setAttribute('aria-expanded', String(abrir));
+    clearTimeout(_cierreReacciones);
+    if (abrir) _cierreReacciones = setTimeout(cerrarReacciones, 8000);
+});
 
 // ==========================================
 // ALTO DEL PANEL DE ABAJO
@@ -2459,6 +2546,7 @@ function repartirCartasEscalonado() {
 // MOTOR VISUAL DE LA MESA
 // ==========================================
 function dibujarMesaCircular() {
+    pintarInfoMesa();
     if (!listaJugadoresGlobal || listaJugadoresGlobal.length === 0) return;
 
     // Limpiar TODAS las sillas posibles, no solo las 3 cardinales. Sin esto,
@@ -3594,6 +3682,7 @@ function conectarSocket() {
             if (_cooldownReaccion) return;
             const emoji = btn.dataset.emoji;
             socket.emit('reaccion', { idSala: miSalaActual, emoji });
+            cerrarReacciones();
             mostrarReaccion(socket.id, emoji);
             _cooldownReaccion = true;
             btn.style.opacity = '0.35';
@@ -3624,6 +3713,7 @@ function conectarSocket() {
             if (_cooldownFrase) return;
             const frase = Number(chip.dataset.frase);
             socket.emit('frase', { idSala: miSalaActual, frase });
+            cerrarReacciones();
             mostrarFrase(socket.id, frase);
             _cooldownFrase = true;
             document.getElementById('btnFrases').style.opacity = '0.35';
