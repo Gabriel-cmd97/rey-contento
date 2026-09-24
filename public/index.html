@@ -131,40 +131,52 @@
 
             <!-- PANEL CREAR -->
             <section class="lobby-panel" id="panelConfiguracion">
-                <button id="btnRapida" class="boton-oro boton-lobby full-width"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Partida rápida</button>
-                <p class="practica-lema">Te sentamos en una mesa de 4 · si faltan jugadores, completamos con bots</p>
-                <button id="btnPractica" class="boton-madera boton-lobby full-width"><svg class="icono" aria-hidden="true"><use href="#i-diana"/></svg> Aprender a jugar</button>
-                <p class="practica-lema">Partida de práctica guiada contra 2 bots · 3 rondas · no cuenta en tus estadísticas</p>
-                <button id="btnPracticaPoderes" class="boton-madera boton-lobby full-width"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Aprende eventos y poderes</button>
-                <p class="practica-lema">Otra práctica de 3 rondas: Mundo al revés, el Oráculo y el Escudo</p>
-                <p class="lobby-section-label">Reglas de la casa</p>
-                <div class="config-grid-nuevo">
-                    <div class="config-item-nuevo">
-                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-naipe"/></svg> Modo Rey</span>
-                        <select id="selectModo" class="selector-medieval selector-compacto">
-                            <option value="SORPRESA">Sorpresa</option>
-                            <option value="DECLARADO">Declarado</option>
-                        </select>
+                <!-- 1. Jugar ahora -->
+                <div class="lobby-bloque">
+                    <p class="lobby-section-label">Jugar ahora</p>
+                    <button id="btnRapida" class="boton-oro boton-lobby full-width boton-rapida"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Partida rápida</button>
+                    <p class="practica-lema">Te sentamos en una mesa de 4 · si faltan jugadores, completamos con bots</p>
+                </div>
+
+                <!-- 2. Aprender -->
+                <div class="lobby-bloque">
+                    <p class="lobby-section-label">Aprender</p>
+                    <div class="aprender-fila">
+                        <button id="btnPractica" class="tarjeta-aprender">
+                            <svg class="icono" aria-hidden="true"><use href="#i-diana"/></svg>
+                            <strong>Aprender a jugar</strong>
+                            <span>3 rondas guiadas</span>
+                        </button>
+                        <button id="btnPracticaPoderes" class="tarjeta-aprender">
+                            <svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg>
+                            <strong>Eventos y poderes</strong>
+                            <span>3 rondas guiadas</span>
+                        </button>
                     </div>
-                    <div class="config-item-nuevo">
-                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-llama"/></svg> Reyes</span>
-                        <select id="selectReyes" class="selector-medieval selector-compacto">
-                            <option value="NORMAL">Normal</option>
-                            <option value="ALTA">Alta</option>
-                            <option value="LOCURA">Locura</option>
+                </div>
+
+                <!-- 3. Crear mesa -->
+                <div class="lobby-bloque">
+                    <p class="lobby-section-label">Crear mesa para tus amigos</p>
+                    <div class="config-grid-nuevo">
+                        <div class="config-item-nuevo">
+                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-naipe"/></svg> Modo de juego</span>
+                            <select id="selectModoJuego" class="selector-medieval selector-compacto">
+                            <option value="CLASICO">Clásico</option>
+                            <option value="CAMPANA">Campana</option>
                         </select>
-                    </div>
-                    <div class="config-item-nuevo">
-                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-corazon"/></svg> Vidas</span>
-                        <select id="selectVidas" class="selector-medieval selector-compacto">
+                        </div>
+                        <div class="config-item-nuevo">
+                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-corazon"/></svg> Vidas</span>
+                            <select id="selectVidas" class="selector-medieval selector-compacto">
                             <option value="1">1 vida</option>
                             <option value="3" selected>3 vidas</option>
                             <option value="5">5 vidas</option>
                         </select>
-                    </div>
-                    <div class="config-item-nuevo">
-                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-grupo"/></svg> Jugadores</span>
-                        <select id="selectJugadores" class="selector-medieval selector-compacto">
+                        </div>
+                        <div class="config-item-nuevo">
+                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-grupo"/></svg> Jugadores</span>
+                            <select id="selectJugadores" class="selector-medieval selector-compacto">
                             <option value="2">2 máx</option>
                             <option value="3">3 máx</option>
                             <option value="4">4 máx</option>
@@ -173,10 +185,10 @@
                             <option value="7">7 máx</option>
                             <option value="8" selected>8 máx</option>
                         </select>
-                    </div>
-                    <div class="config-item-nuevo config-full">
-                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-bot"/></svg> Bots de relleno</span>
-                        <select id="selectBots" class="selector-medieval selector-compacto">
+                        </div>
+                        <div class="config-item-nuevo">
+                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-bot"/></svg> Bots de relleno</span>
+                            <select id="selectBots" class="selector-medieval selector-compacto">
                             <option value="0" selected>Sin bots</option>
                             <option value="1">1 Bot</option>
                             <option value="2">2 Bots</option>
@@ -186,53 +198,72 @@
                             <option value="6">6 Bots</option>
                             <option value="7">7 Bots</option>
                         </select>
+                        </div>
+                        <div class="config-item-nuevo config-full hidden" id="bloqueDificultadBots">
+                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-nivel"/></svg> Dificultad de los bots</span>
+                            <select id="selectDificultadBots" class="selector-medieval selector-compacto">
+                            <option value="FACIL">Fácil</option>
+                            <option value="NORMAL" selected>Normal</option>
+                            <option value="DIFICIL">Difícil</option>
+                        </select>
+                        </div>
                     </div>
-                    <div class="config-item-nuevo config-full">
-                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-reloj"/></svg> Tiempo por turno</span>
-                        <select id="selectTiempoTurno" class="selector-medieval selector-compacto">
+                    <details class="mas-opciones" id="masOpciones">
+                        <summary>
+                            <span><svg class="icono" aria-hidden="true"><use href="#i-ajustes"/></svg> Más opciones</span>
+                            <span id="resumenMasOpciones" class="resumen-mas-opciones"></span>
+                        </summary>
+                        <div class="config-grid-nuevo">
+                            <div class="config-item-nuevo">
+                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-mascara"/></svg> Modo Rey</span>
+                            <select id="selectModo" class="selector-medieval selector-compacto">
+                            <option value="SORPRESA">Sorpresa</option>
+                            <option value="DECLARADO">Declarado</option>
+                        </select>
+                        </div>
+                            <div class="config-item-nuevo">
+                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-llama"/></svg> Reyes</span>
+                            <select id="selectReyes" class="selector-medieval selector-compacto">
+                            <option value="NORMAL">Normal</option>
+                            <option value="ALTA">Alta</option>
+                            <option value="LOCURA">Locura</option>
+                        </select>
+                        </div>
+                            <div class="config-item-nuevo config-full">
+                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-reloj"/></svg> Tiempo por turno</span>
+                            <select id="selectTiempoTurno" class="selector-medieval selector-compacto">
                             <option value="7">7 s · Rápido</option>
                             <option value="10" selected>10 s · Normal</option>
                             <option value="15">15 s · Tranquilo</option>
                             <option value="20">20 s · Relajado</option>
                         </select>
-                    </div>
-                    <div class="config-item-nuevo config-full">
-                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Eventos de ronda (modo clásico)</span>
-                        <select id="selectEventos" class="selector-medieval selector-compacto">
+                        </div>
+                            <div class="config-item-nuevo config-full">
+                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Eventos de ronda (modo clásico)</span>
+                            <select id="selectEventos" class="selector-medieval selector-compacto">
                             <option value="SI" selected>Activados</option>
                             <option value="NO">Desactivados</option>
                         </select>
-                    </div>
-                    <div class="config-item-nuevo config-full">
-                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-ojo"/></svg> Poderes (al perder una vida ganas uno)</span>
-                        <select id="selectPoderes" class="selector-medieval selector-compacto">
+                        </div>
+                            <div class="config-item-nuevo config-full">
+                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-ojo"/></svg> Poderes (al perder una vida ganas uno)</span>
+                            <select id="selectPoderes" class="selector-medieval selector-compacto">
                             <option value="NO" selected>Desactivados</option>
                             <option value="SI">Activados</option>
                         </select>
-                    </div>
-                    <div class="config-item-nuevo config-full hidden" id="bloqueDificultadBots">
-                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-nivel"/></svg> Dificultad de los bots</span>
-                        <select id="selectDificultadBots" class="selector-medieval selector-compacto">
-                            <option value="FACIL">Fácil</option>
-                            <option value="NORMAL" selected>Normal</option>
-                            <option value="DIFICIL">Difícil</option>
-                        </select>
-                    </div>
-                    <div class="config-item-nuevo config-full">
-                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> Modo de juego</span>
-                        <select id="selectModoJuego" class="selector-medieval selector-compacto">
-                            <option value="CLASICO">Clásico</option>
-                            <option value="CAMPANA">Campana</option>
-                        </select>
-                    </div>
-                    <div class="config-item-nuevo config-full">
-                        <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-candado"/></svg> Contraseña de sala (opcional)</span>
-                        <input type="text" id="inputPasswordSala" class="selector-compacto" placeholder="Sin contraseña = sala abierta" maxlength="20" autocomplete="off">
-                    </div>
+                        </div>
+                            <div class="config-item-nuevo config-full">
+                                <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-candado"/></svg> Contraseña de sala (opcional)</span>
+                                <input type="text" id="inputPasswordSala" class="selector-compacto" placeholder="Sin contraseña = sala abierta" maxlength="20" autocomplete="off">
+                            </div>
+                        </div>
+                    </details>
                 </div>
-                <div class="lobby-sticky-bottom">
+
+                <!-- 4. Acciones siempre a la mano -->
+                <div class="lobby-acciones-fijas">
                     <button id="btnCrearSala" class="boton-oro boton-lobby full-width" disabled>CREAR PARTIDA</button>
-                    <button id="btnVerReglas" class="boton-lobby-ghost full-width margin-top-10"><svg class="icono" aria-hidden="true"><use href="#i-libro"/></svg> ¿Cómo se juega?</button>
+                    <button id="btnVerReglas" class="boton-lobby-ghost full-width"><svg class="icono" aria-hidden="true"><use href="#i-libro"/></svg> ¿Cómo se juega?</button>
                 </div>
             </section>
 
@@ -285,7 +316,7 @@
                 <p id="rapidaEspera" class="rapida-espera hidden" role="status" aria-live="polite"></p>
 
                 <!-- Botones siempre visibles -->
-                <div class="lobby-sticky-bottom" style="margin-top:12px;">
+                <div class="lobby-sticky-bottom lobby-acciones-fijas">
                     <button id="btnEmpezar" class="boton-oro boton-lobby full-width hidden">¡EMPEZAR JUEGO!</button>
                     <button id="btnSalirLobby" class="boton-lobby-ghost full-width margin-top-10"><svg class="icono" aria-hidden="true"><use href="#i-cerrar"/></svg> Cancelar / Salir</button>
                 </div>
@@ -671,6 +702,14 @@
             document.getElementById('bloqueDificultadBots')?.classList.toggle('hidden', numBots === 0);
             const bots      = numBots > 0 ? ` · ${ic('bot')} ${selDif.options[selDif.selectedIndex].text}` : '';
             const tiempo    = document.getElementById('selectTiempoTurno')?.value || '10';
+            // Resumen de "Más opciones" para verlo sin desplegar
+            const extras = [modo, `${tiempo} s`];
+            if (document.getElementById('selectReyes')?.value !== 'NORMAL') extras.push('Reyes ' + document.getElementById('selectReyes').selectedOptions[0].text);
+            if (document.getElementById('selectEventos')?.value === 'NO') extras.push('sin eventos');
+            if (document.getElementById('selectPoderes')?.value === 'SI') extras.push('con poderes');
+            if (document.getElementById('inputPasswordSala')?.value.trim()) extras.push('con contraseña');
+            const resMas = document.getElementById('resumenMasOpciones');
+            if (resMas) resMas.textContent = extras.join(' · ');
             const resumen   = document.getElementById('resumenConfig');
             if (resumen) {
                 resumen.innerHTML = `${ic('ajustes')} ${modoJuego} · ${modo} · ${vidas} ${ic('corazon')} · ${jugadores} jug · ${ic('reloj')} ${tiempo}s${bots}`;
@@ -682,6 +721,8 @@
             ['selectModo','selectReyes','selectVidas','selectJugadores','selectBots','selectDificultadBots','selectTiempoTurno','selectModoJuego','selectEventos','selectPoderes'].forEach(id => {
                 document.getElementById(id)?.addEventListener('change', actualizarResumenConfig);
             });
+            document.getElementById('inputPasswordSala')?.addEventListener('input', actualizarResumenConfig);
+            actualizarResumenConfig();
         });
     </script>
     <!-- POC TWEEN.js: animación del vuelo de carta. UMD expone global TWEEN.

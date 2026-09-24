@@ -267,6 +267,8 @@ Estas convenciones se aplicaron al pulir el aspecto y la confiabilidad de carga 
 
 **Jerarquía de botones fuera de la mesa**: `.boton-oro` para la acción principal de cada pantalla (Crear partida, Empezar, Revancha) y `.boton-madera` para volver/salir. No usar `boton-medieval-verde`/`-rojo` en pantallas nuevas.
 
+**Lobby a pantalla completa**: la pestaña Crear tiene tres `.lobby-bloque` (Jugar ahora → Partida rápida; Aprender → dos `.tarjeta-aprender`; Crear mesa → lo esencial a la vista y el resto dentro de `<details id="masOpciones">`, con resumen en `#resumenMasOpciones` que arma `actualizarResumenConfig()`). Las acciones principales de Crear y de la sala de espera van en `.lobby-acciones-fijas` (sticky al fondo, respeta el área segura). `#seccion-lobby` ocupa `100dvh` menos la barra superior. Todos los `id` de los selectores se conservan: si agregas una opción de sala, ponla en "Más opciones" salvo que sea esencial.
+
 **Lobby**: `.lobby-blason` (emblema `mazo.svg` + nombre + lema) arriba de las pestañas; dentro de una sala se achica con `:has(#panelJugadores:not(.hidden))`.
 
 **Victoria**: `pintarFinalPartida(ganador)` pone título distinto si ganaste, tu lugar y la tabla final (`#tablaFinal`). El servidor solo manda al ganador, así que el orden de caída lo anota `registrarCaidas()` en cada `rondaTerminada` (`_caidasPartida`, se vacía al pintar el final).

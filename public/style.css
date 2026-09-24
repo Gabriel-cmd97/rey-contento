@@ -3323,3 +3323,113 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
 .carta-oraculo small { font-size: 8px; }
 .carta-oraculo.saliendo { opacity: 0; transition: opacity 0.4s; }
 @keyframes oraculo-sube { from { opacity: 0; transform: translate(-50%, -50%) rotateY(90deg); } to { opacity: 1; transform: translate(-50%, -110%); } }
+
+/* =========================================
+   LOBBY A PANTALLA COMPLETA
+   Tres bloques (jugar ahora · aprender · crear mesa) y las acciones fijas
+   abajo. Unirse y la sala de espera usan la misma columna.
+   ========================================= */
+#seccion-lobby.main-seccion-centro {
+    justify-content: flex-start;
+    align-items: stretch;
+    width: 100%;
+    max-width: 520px;
+    margin: 55px auto 0;
+    min-height: calc(100dvh - 55px);
+    padding: 10px 16px 0;
+    box-sizing: border-box;
+}
+#seccion-lobby .lobby-blason { margin-bottom: 12px; }
+#seccion-lobby .lobby-blason-emblema { width: 34px; }
+#seccion-lobby .lobby-blason-nombre { font-size: clamp(26px, 8vw, 34px); margin-top: 2px; }
+#seccion-lobby .lobby-tabs, #seccion-lobby .lobby-panel { max-width: none; }
+#seccion-lobby .lobby-tabs { margin-bottom: 14px; }
+#seccion-lobby .lobby-tab { padding: 12px 0; font-size: 13px; }
+#seccion-lobby .lobby-panel { display: flex; flex-direction: column; flex: 1; }
+#panelConfiguracion:not(.hidden), #panelJugadores:not(.hidden), #panelUnirse:not(.hidden) { display: flex; }
+
+.lobby-bloque { margin-bottom: 16px; }
+.lobby-bloque .lobby-section-label { margin-bottom: 8px; }
+.lobby-bloque .practica-lema { margin: 6px 0 0; }
+
+.boton-rapida { padding-block: 16px; font-size: 17px; }
+
+.aprender-fila { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tarjeta-aprender {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding: 12px;
+    text-align: left;
+    border-radius: 12px;
+    border: 1px solid rgba(241,196,15,0.35);
+    background: linear-gradient(180deg, rgba(123,90,77,0.55), rgba(62,39,35,0.75));
+    color: #f6e7c1;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.12s, border-color 0.2s;
+}
+.tarjeta-aprender:active { transform: scale(0.97); }
+.tarjeta-aprender:hover { border-color: rgba(241,196,15,0.7); }
+.tarjeta-aprender .icono { width: 22px; height: 22px; color: #ffe27a; }
+.tarjeta-aprender strong { font-family: var(--fuente-medieval); font-size: 14px; line-height: 1.15; font-weight: normal; }
+.tarjeta-aprender span { font-family: Georgia, serif; font-size: 11px; color: var(--texto-suave); }
+.tarjeta-aprender.practica-nueva::after { position: absolute; top: 8px; right: 8px; margin: 0; }
+
+/* Selectores más grandes y fáciles de tocar */
+#seccion-lobby .config-item-nuevo { padding: 10px 12px; min-height: 58px; justify-content: center; }
+#seccion-lobby .selector-compacto { font-size: 15px; padding-block: 2px; }
+#seccion-lobby .config-grid-nuevo { margin-bottom: 8px; }
+
+/* Más opciones (desplegable) */
+.mas-opciones { border: 1px solid rgba(241,196,15,0.25); border-radius: 12px; background: rgba(0,0,0,0.18); }
+.mas-opciones > summary {
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    cursor: pointer;
+    font-family: var(--fuente-medieval);
+    font-size: 14px;
+    color: #ffe27a;
+}
+.mas-opciones > summary::-webkit-details-marker { display: none; }
+.mas-opciones > summary::after { content: '▾'; color: #ffe27a; transition: transform 0.2s; }
+.mas-opciones[open] > summary::after { transform: rotate(180deg); }
+.resumen-mas-opciones {
+    flex: 1;
+    text-align: right;
+    font-family: Georgia, serif;
+    font-size: 11px;
+    color: var(--texto-suave);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mas-opciones .config-grid-nuevo { padding: 0 10px 10px; }
+.mas-opciones #inputPasswordSala { font-size: 15px; }
+
+/* Acciones fijas al fondo de la pantalla */
+.lobby-acciones-fijas {
+    position: sticky;
+    bottom: 0;
+    margin-top: auto;
+    margin-inline: -16px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: linear-gradient(180deg, rgba(43,29,26,0) 0%, rgba(43,29,26,0.92) 28%, #2b1d1a 100%);
+    z-index: 20;
+}
+.lobby-acciones-fijas .boton-lobby-ghost { margin: 0; }
+.lobby-acciones-fijas .margin-top-10 { margin-top: 0; }
+#btnCrearSala { padding-block: 15px; font-size: 16px; }
+
+/* Resumen de la sala (pill) no se estira */
+#seccion-lobby .config-resumen-pill { align-self: flex-start; }

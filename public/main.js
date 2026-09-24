@@ -1198,7 +1198,6 @@ function pintarBotonPractica() {
     if (!b) return;
     // La acción principal del lobby es la partida rápida (oro); la práctica va
     // en madera y avisa si todavía no la haces.
-    b.className = 'boton-madera boton-lobby full-width';
     b.classList.toggle('practica-nueva', !leerLS('reyPracticaHecha'));
     document.getElementById('btnPracticaPoderes')?.classList.toggle('practica-nueva', !leerLS('reyPracticaPoderesHecha'));
 }
