@@ -553,6 +553,7 @@ document.getElementById('panelMenuMesa')?.addEventListener('click', (e) => {
     if (accion === 'bitacora') abrirModalBitacora();
     if (accion === 'reglas') document.getElementById('modalReglas')?.classList.remove('hidden');
     if (accion === 'perfil') document.getElementById('btnMiPerfil')?.click();
+    if (accion === 'salir') document.getElementById('modalSalirPartida')?.classList.remove('hidden');
     cerrarMenuMesa();
 });
 document.addEventListener('click', (e) => {
@@ -3833,6 +3834,9 @@ function conectarSocket() {
     socket.on('contadorRevancha', (datos) => {
         document.getElementById('contadorRevancha').innerText =
             `${datos.votos} de ${datos.total} quieren revancha`;
+        const esperando = document.querySelector('#listaJugadores li');
+        if (esperando && esperando.textContent.startsWith('La partida acaba de terminar'))
+            esperando.textContent = `La partida acaba de terminar. Entras en la revancha en cuanto los demás la acepten (${datos.votos} de ${datos.total} listos).`;
     });
 
     socket.on('revanchaIniciando', () => {
@@ -3915,6 +3919,29 @@ function conectarSocket() {
     });
 
     // --- VOLVER AL LOBBY ---
+    // Salir a media partida (menú de la mesa): se avisa al servidor para que
+    // la mesa siga sin ti y vuelves al lobby como con "Volver a la Corte".
+    document.getElementById('btnCancelarSalir').onclick = () =>
+        document.getElementById('modalSalirPartida').classList.add('hidden');
+    document.getElementById('btnConfirmarSalir').onclick = () => {
+        document.getElementById('modalSalirPartida').classList.add('hidden');
+        if (miSalaActual) socket.emit('abandonarSala', miSalaActual);
+        setTimeout(() => document.getElementById('btnVolverLobby').click(), 150);
+    };
+
+    // Llegaste a una mesa que ya terminó: entras en su revancha.
+    socket.on('esperandoRevancha', (d) => {
+        miSalaActual = d.idSala;
+        document.getElementById('seccion-lobby').classList.remove('hidden');
+        document.getElementById('lobbyTabs')?.classList.add('hidden');
+        document.getElementById('panelConfiguracion').classList.add('hidden');
+        document.getElementById('panelUnirse').classList.add('hidden');
+        document.getElementById('panelJugadores').classList.remove('hidden');
+        document.getElementById('listaJugadores').innerHTML =
+            `<li>La partida acaba de terminar. Entras en la revancha en cuanto los demás la acepten (${d.votos} de ${d.total} listos).</li>`;
+        mostrarToast('🚪 Entraste: juegas en la revancha.', 'rey', 4000);
+    });
+
     document.getElementById('btnVolverLobby').onclick = () => {
         mostrarLobbyLimpio();
         socket.disconnect();

@@ -487,6 +487,7 @@
             <button role="menuitem" data-accion="bitacora"><svg class="icono" aria-hidden="true"><use href="#i-pergamino"/></svg> <span>Bitácora de la ronda</span></button>
             <button role="menuitem" data-accion="reglas"><svg class="icono" aria-hidden="true"><use href="#i-libro"/></svg> <span>¿Cómo se juega?</span></button>
             <button role="menuitem" data-accion="perfil"><svg class="icono" aria-hidden="true"><use href="#i-persona"/></svg> <span>Mi perfil</span></button>
+            <button role="menuitem" data-accion="salir" class="menu-salir"><svg class="icono" aria-hidden="true"><use href="#i-flecha"/></svg> <span>Salir de la partida</span></button>
         </div>
 
         <!-- Footer acciones -->
@@ -779,5 +780,15 @@
          muestra un fallback y siguen disponibles el código y "Copiar link". -->
     <script async src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="main.js"></script>
+<div id="modalSalirPartida" class="hidden" role="dialog" aria-modal="true" aria-labelledby="tituloSalirPartida">
+    <div class="caja-salir">
+        <h2 id="tituloSalirPartida" class="medieval-font">¿Salir de la partida?</h2>
+        <p>Pierdes esta partida y la mesa sigue sin ti. Puedes volver a entrar con el código cuando termine, para la revancha.</p>
+        <div class="acciones-salir">
+            <button id="btnConfirmarSalir" class="boton-madera">Sí, salir</button>
+            <button id="btnCancelarSalir" class="boton-oro">Seguir jugando</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>

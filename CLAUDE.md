@@ -107,6 +107,11 @@ Al crear una sala se puede enviar `configuracion.password`. El servidor la guard
 
 Si se acaba el tiempo de un jugador, `iniciarReloj` juega por él con `decisionPorAusente()` (cálculo de bot NORMAL, no solo mantener) y suma `turnosSinJugar`. Con `TURNOS_PARA_AUTOMATICO` (2) seguidos, `activarAutomatico()` lo pone en modo automático: `gestionarTurnos` lo trata como bot (ritmo de bot, puede usar poderes) y la mesa ve "Auto" en su asiento. Desconectarse más de 3 minutos también lo pone en automático (antes lo eliminaba). Recupera el control con `volverAJugar` (botón del aviso `#avisoAutomatico`), con cualquier jugada o poder, o al reconectarse (`desactivarAutomatico`). En la práctica no aplica.
 
+### Salir y llegar tarde
+
+- **Salir de la partida**: opción del menú de la mesa (`data-accion="salir"`) con confirmación propia `#modalSalirPartida`; manda `abandonarSala` (el servidor hace `socket.leave`, la mesa sigue sin ti) y vuelve al lobby como "Volver a la Corte". Si sales desde la victoria, dejas de contar para la revancha.
+- **Llegar cuando ya terminó**: `unirseSala` a una sala FINALIZADA (no práctica ni rápida) te sienta y cuenta como voto de revancha (`esperandoRevancha` en el cliente); entras en lugar de un bot. A media partida el aviso dice que podrás entrar en la revancha.
+
 ### Salas sin humanos
 
 `cerrarSalasSinHumanos()` (cada minuto) cierra una partida en juego si lleva `SALA_SIN_HUMANOS_MS` (5 min) sin ningún humano conectado en la mesa (vivo o mirando). Sin esto, los bots —y los humanos en automático— la seguían jugando para siempre y el sweeper no la veía inactiva. `sala.ultimoHumano` se reinicia al restaurar tras un reinicio para dar tiempo a reconectarse.

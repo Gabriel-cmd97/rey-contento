@@ -1815,6 +1815,16 @@ io.on('connection', (socket) => {
             } else {
                 sala.jugadores[idx].vidas = 0;
                 sala.jugadores[idx].online = false;
+                socket.leave(idSala); // ya no recibe los eventos de esa mesa
+                if (sala.estadoActual === "FINALIZADO") {
+                    // Se fue de la pantalla de victoria: ya no cuenta para la revancha.
+                    sala.votosRevancha?.delete(nombreUsuarioLogueado);
+                    const humanos = sala.jugadores.filter(j => !j.esBot && j.online);
+                    const votos = sala.votosRevancha?.size || 0;
+                    io.to(idSala).emit('contadorRevancha', { votos, total: humanos.length });
+                    if (votos && votos >= humanos.length) iniciarRevancha(sala, io);
+                    return;
+                }
                 io.to(idSala).emit('mensajeGlobal', `🏳️ ${nombreUsuarioLogueado} ha desertado de la corte.`);
 
                 // Si el desertor estaba en turno, su carta quedó con vidas=0 y
@@ -2043,7 +2053,29 @@ io.on('connection', (socket) => {
             return;
         }
 
-        if (sala.estadoActual !== "LOBBY") return socket.emit('errorSala', 'El juego ya comenzó.');
+        // La partida ya terminó y esperan revancha: quien llega entra directo a
+        // ella (cuenta como voto). Antes tenían que salirse todos y crear otra
+        // sala para que un amigo que llegó tarde pudiera jugar.
+        if (sala.estadoActual === "FINALIZADO" && !sala.revanchaIniciada && !sala.config.practica && !sala.config.rapida) {
+            const humanos = sala.jugadores.filter(j => !j.esBot && j.online).length;
+            if (humanos >= sala.config.maxJugadores) return socket.emit('errorSala', 'La sala está llena.');
+            if (sala.password && !bcrypt.compareSync((password || '').trim(), sala.password)) {
+                return socket.emit('errorSala', 'WRONG_PASSWORD');
+            }
+            socket.join(sala.idSala);
+            sala.jugadores.push({ id: socket.id, nombre: username, vidas: 0, yaJugo: false, online: true });
+            sala.jugadoresAlEmpezar = (sala.jugadoresAlEmpezar || 0) + (sala.jugadores.some(j => j.esBot) ? 0 : 1); // sin bots, la mesa crece
+            sala.votosRevancha ||= new Set();
+            sala.votosRevancha.add(username);
+            tocarSala(sala);
+            io.to(sala.idSala).emit('mensajeGlobal', `🚪 ${username} llegó y entra en la revancha.`);
+            const total = sala.jugadores.filter(j => !j.esBot && j.online).length;
+            io.to(sala.idSala).emit('contadorRevancha', { votos: sala.votosRevancha.size, total });
+            socket.emit('esperandoRevancha', { idSala: sala.idSala, votos: sala.votosRevancha.size, total });
+            if (sala.votosRevancha.size >= total) iniciarRevancha(sala, io);
+            return;
+        }
+        if (sala.estadoActual !== "LOBBY") return socket.emit('errorSala', 'La partida está en curso. Podrás entrar cuando termine, en la revancha.');
         if (sala.jugadores.length >= sala.config.maxJugadores) return socket.emit('errorSala', 'La sala está llena.');
         if (sala.password && !bcrypt.compareSync((password || '').trim(), sala.password)) {
             return socket.emit('errorSala', 'WRONG_PASSWORD');
