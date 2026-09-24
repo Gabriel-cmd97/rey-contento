@@ -16,6 +16,7 @@ const path = require('path');
 const { barajar, crearMazo, siguienteVivo, resolverCartas } = require('./reglas');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const compression = require('compression');
 const log = require('./logger');
 
 // Errores de DB que NO indican un bug del código — son cortes/locks pasajeros
@@ -85,7 +86,48 @@ app.use((req, res, next) => {
 
 app.use(cors({ origin: verificarOrigen, credentials: false }));
 app.use(express.json());
-app.use(express.static('public'));
+app.use(compression()); // gzip: main.js/style.css/index.html pesan ~4 veces menos
+
+// ==========================================
+// CACHÉ DE ARCHIVOS CON VERSIÓN
+// ==========================================
+// index.html se sirve con main.js?v=<huella> y style.css?v=<huella>, donde la
+// huella sale del contenido. Así esos archivos se guardan un año en el
+// celular y, en cuanto cambian, la huella cambia y se descargan solos.
+// index.html siempre se revalida (no-cache) para no quedar con una versión vieja.
+const DIR_PUBLICO = path.join(__dirname, 'public');
+const _huellas = {}; // archivo → { mtimeMs, huella }
+function huellaDe(archivo) {
+    const ruta = path.join(DIR_PUBLICO, archivo);
+    const { mtimeMs } = fs.statSync(ruta);
+    const guardada = _huellas[archivo];
+    if (guardada && guardada.mtimeMs === mtimeMs) return guardada.huella;
+    const huella = crypto.createHash('sha1').update(fs.readFileSync(ruta)).digest('hex').slice(0, 10);
+    _huellas[archivo] = { mtimeMs, huella };
+    return huella;
+}
+let _indexCache = { clave: '', html: '' };
+function servirIndex(req, res) {
+    const clave = `${huellaDe('index.html')}-${huellaDe('main.js')}-${huellaDe('style.css')}`;
+    if (_indexCache.clave !== clave) {
+        _indexCache = {
+            clave,
+            html: fs.readFileSync(path.join(DIR_PUBLICO, 'index.html'), 'utf8')
+                .replace('href="style.css"', `href="style.css?v=${huellaDe('style.css')}"`)
+                .replace('src="main.js"', `src="main.js?v=${huellaDe('main.js')}"`),
+        };
+    }
+    res.setHeader('Cache-Control', 'no-cache');
+    res.type('html').send(_indexCache.html);
+}
+app.get(['/', '/index.html'], servirIndex);
+app.use((req, res, next) => {
+    if (req.query.v) res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); // con versión: un año
+    else if (req.path.startsWith('/iconos/')) res.setHeader('Cache-Control', 'public, max-age=86400'); // íconos: un día
+    else res.setHeader('Cache-Control', 'no-cache'); // lo demás: se revalida (ETag → 304 si no cambió)
+    next();
+});
+app.use(express.static('public', { cacheControl: false }));
 
 const limitarAuth = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -203,10 +245,14 @@ function sanitizarConfig(raw) {
 
     // Partida de práctica guiada: mesa fija contra 2 bots con guion
     // (practica.js). Todo lo demás de la config se ignora.
-    if (raw.practica === true) {
-        return { vidas: 3, maxJugadores: 3, numBots: 2, modoJuego: 'CLASICO', modoRey: 'DECLARADO',
+    // Dos guiones (practica.js): 'basica' y 'poderes' (eventos y poderes).
+    const tipoPractica = raw.practica === true || raw.practica === 'basica' ? 'basica'
+        : raw.practica === 'poderes' ? 'poderes' : null;
+    if (tipoPractica) {
+        return { vidas: 3, maxJugadores: 3, numBots: 2, modoJuego: 'CLASICO',
+                 modoRey: tipoPractica === 'basica' ? 'DECLARADO' : 'SORPRESA',
                  frecuenciaReyes: 'NORMAL', dificultadBots: 'NORMAL', tiempoTurno: 60,
-                 practica: true, eventos: false, password: null };
+                 practica: tipoPractica, eventos: false, poderes: tipoPractica === 'poderes', password: null };
     }
 
     let password = null;
@@ -701,7 +747,7 @@ function resolverRonda(sala, io) {
             sala.caidas.push({ nombre: j.nombre, ronda: sala.rondaActual });
         }
     });
-    if (sala.config.poderes) {
+    if (sala.config.poderes && !sala.config.practica) { // en la práctica los poderes los da el guion
         sala.jugadores.filter(j => perdedores.includes(j.id) && j.vidas > 0).forEach(j => {
             const id = poderes.darPoder(j);
             if (!id) return;
@@ -1093,7 +1139,17 @@ function iniciarRonda(sala, io) {
     sala.enDuelo = vivos.length === 2 && sala.jugadores.length > 2;
     const anunciarDuelo = sala.enDuelo && !sala.dueloAnunciado;
     if (anunciarDuelo) sala.dueloAnunciado = true;
-    sala.evento = eventos.elegirEvento(sala, vivos.length);
+    // En la práctica el evento lo pone el guion; si no, se sortea.
+    sala.evento = sala.config.practica ? practica.eventoDeRonda(sala) : eventos.elegirEvento(sala, vivos.length);
+    // Poderes que el guion de práctica regala al empezar la ronda.
+    if (sala.config.practica) {
+        practica.poderesDeRonda(sala).forEach(({ indice, poder }) => {
+            const j = sala.jugadores[indice];
+            if (!j || j.vidas <= 0) return;
+            (j.poderes ||= []).push(poder);
+            if (!j.esBot) io.to(j.id).emit('poderGanado', { poder: poderes.CATALOGO[poder], poderes: j.poderes });
+        });
+    }
     // Presentaciones antes de jugar (el cliente las muestra con estos tiempos).
     const MS_INTRO_DUELO = 2800, MS_INTRO_EVENTO = 2600;
     const introMs = (anunciarDuelo ? MS_INTRO_DUELO : 0) + (sala.evento ? MS_INTRO_EVENTO : 0);
@@ -1137,7 +1193,8 @@ function iniciarRonda(sala, io) {
         }, introMs + MS_REVELAR_REY);
     }
 
-    setTimeout(() => { gestionarTurnos(sala, io, true); }, introMs + (hayReyDeclarado ? MS_REVELAR_REY + 600 : 500));
+    const esperaGuion = sala.config.practica ? practica.esperaInicio(sala) : 0; // tiempo para leer en la práctica
+    setTimeout(() => { gestionarTurnos(sala, io, true); }, introMs + esperaGuion + (hayReyDeclarado ? MS_REVELAR_REY + 600 : 500));
 }
 
 // Arranca la partida de una sala en LOBBY (la llaman "Empezar juego" y el

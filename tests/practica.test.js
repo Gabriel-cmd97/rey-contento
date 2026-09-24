@@ -34,3 +34,30 @@ test('ronda 3: A (tu derecha) tiene el Rey y nadie cambia → tú te salvas', ()
     const r = resolverCartas(mesa([tu, a, b]));
     assert.ok(!r.perdedores.includes('tu'));
 });
+
+const { GUIONES } = require('../practica');
+const conEvento = (cartas, evento) => ({ ...mesa(cartas), evento });
+
+test('práctica de poderes, ronda 1: con Mundo al revés cambias tu 8 con A y A pierde', () => {
+    const r1 = GUIONES.poderes[1];
+    assert.strictEqual(r1.evento, 'MUNDO_AL_REVES');
+    const [tu, a, b] = r1.cartas;
+    const res = resolverCartas(conEvento([a, tu, b], 'MUNDO_AL_REVES')); // tú y A intercambian
+    assert.deepStrictEqual(res.perdedores, ['A']);
+});
+
+test('práctica de poderes, ronda 2: el Oráculo muestra un 8 y robándolo te salvas', () => {
+    const r2 = GUIONES.poderes[2];
+    assert.deepStrictEqual(r2.poderes[0], ['ORACULO']);
+    const [, a, b] = r2.cartas;
+    const res = resolverCartas(mesa([r2.mazo, a, b]));
+    assert.ok(!res.perdedores.includes('tu'));
+});
+
+test('práctica de poderes, ronda 3: con el escudo el cambio de B rebota y B pierde', () => {
+    const r3 = GUIONES.poderes[3];
+    assert.strictEqual(r3.bots[2], 'CAMBIAR');
+    assert.deepStrictEqual(r3.poderes[0], ['ESCUDO']);
+    const res = resolverCartas(mesa(r3.cartas)); // nadie cambió gracias al escudo
+    assert.deepStrictEqual(res.perdedores, ['B']);
+});

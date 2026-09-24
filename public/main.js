@@ -1164,11 +1164,12 @@ function terminarEsperaRapida() {
 // Partida de 3 rondas contra 2 bots con cartas preparadas (practica.js en el
 // servidor). Un globo sobre la mesa explica cada momento. Los textos suponen
 // ese guion: si cambias las cartas allá, revisa los textos aquí.
-let _practica = null; // { nombreA, nombreB, dichos: Set } mientras dura
+let _practica = null; // { tipo, nombreA, nombreB, dichos: Set } mientras dura
 
-function empezarPractica() {
-    _practica = { nombreA: 'A', nombreB: 'B', dichos: new Set() };
-    socket.emit('crearSala', { configuracion: { practica: true } });
+// tipo: 'basica' (Aprender a jugar) o 'poderes' (Aprende eventos y poderes).
+function empezarPractica(tipo = 'basica') {
+    _practica = { tipo, nombreA: 'A', nombreB: 'B', dichos: new Set() };
+    socket.emit('crearSala', { configuracion: { practica: tipo } });
 }
 
 function mostrarCoach(html, { boton = null, alPulsar = null } = {}) {
@@ -1185,8 +1186,8 @@ function mostrarCoach(html, { boton = null, alPulsar = null } = {}) {
 
 function terminarPractica() {
     if (miSalaActual) socket.emit('abandonarSala', miSalaActual);
+    escribirLS(_practica?.tipo === 'poderes' ? 'reyPracticaPoderesHecha' : 'reyPracticaHecha', '1');
     _practica = null;
-    escribirLS('reyPracticaHecha', '1');
     document.getElementById('coachPractica')?.classList.add('hidden');
     mostrarLobbyLimpio();
     pintarBotonPractica();
@@ -1199,6 +1200,7 @@ function pintarBotonPractica() {
     // en madera y avisa si todavía no la haces.
     b.className = 'boton-madera boton-lobby full-width';
     b.classList.toggle('practica-nueva', !leerLS('reyPracticaHecha'));
+    document.getElementById('btnPracticaPoderes')?.classList.toggle('practica-nueva', !leerLS('reyPracticaPoderesHecha'));
 }
 
 // Un paso del guion solo se dice una vez.
@@ -1210,6 +1212,7 @@ function decirUnaVez(clave, html, opciones) {
 
 function practicaEvento(tipo, datos) {
     if (!_practica) return;
+    if (_practica.tipo === 'poderes') return practicaPoderesEvento(tipo, datos);
     const A = `<strong>${escapeHTML(_practica.nombreA)}</strong>`;
     const B = `<strong>${escapeHTML(_practica.nombreB)}</strong>`;
     const ronda = parseInt(document.getElementById('numRonda')?.innerText || '0', 10);
@@ -1380,7 +1383,10 @@ function pintarBarraPoderes() {
     if (!barra) return;
     barra.classList.toggle('hidden', misPoderes.length === 0);
     const yo = listaJugadoresGlobal.find(j => j.id === socket.id);
-    const enRonda = turnoActualId && !mostrandoRevelacion && yo && yo.vidas > 0;
+    // La ronda está en juego desde el reparto (antes del primer turno ya se
+    // puede levantar el Escudo) hasta la revelación.
+    const mesaVisible = !document.getElementById('mesaDeJuego')?.classList.contains('hidden');
+    const enRonda = mesaVisible && !mostrandoRevelacion && yo && yo.vidas > 0;
     const miTurno = enRonda && turnoActualId === socket.id;
     barra.innerHTML = misPoderes.map(id => {
         const p = PODERES[id] || { titulo: id, icono: 'rayo' };
@@ -1415,6 +1421,49 @@ function asientoDe(nombre) {
     if (nombre === miNombreUsuario) return document.getElementById('miCarta');
     const j = listaJugadoresGlobal.find(x => x.nombre === nombre);
     return j ? document.querySelector(`.silla:not(.hidden)[data-jugador-id="${CSS.escape(j.id)}"]`) : null;
+}
+
+// Pasos de la práctica de eventos y poderes (guion 'poderes' de practica.js).
+function practicaPoderesEvento(tipo, datos) {
+    const ronda = parseInt(document.getElementById('numRonda')?.innerText || '0', 10);
+    const nombre = (i) => `<strong>${escapeHTML(i === 1 ? _practica.nombreA : _practica.nombreB)}</strong>`;
+    if (tipo === 'ronda') {
+        const js = datos.jugadores || [];
+        if (js[1]) _practica.nombreA = js[1].nombre;
+        if (js[2]) _practica.nombreB = js[2].nombre;
+        if (datos.ronda === 2) decirUnaVez('p-r2', `Ronda 2. Cuando pierdes una vida ganas un <b>poder</b> de un solo uso. Esta vez te regalamos uno: el <b>Oráculo</b>. Lo ves arriba de tus botones.`);
+        if (datos.ronda === 3) decirUnaVez('p-r3', `Última ronda. Tienes un <b>8</b> y un poder nuevo: el <b>Escudo</b>. ${nombre(2)}, a tu izquierda, juega antes que tú y va a querer quitarte tu carta. <b>¡Toca Escudo ya!</b> Se puede usar en cualquier momento de la ronda.`);
+        return;
+    }
+    if (tipo === 'turno' && datos.id === socket.id) {
+        if (ronda === 1) decirUnaVez('p-r1-tu', `<b>Evento de ronda: Mundo al revés.</b> A veces una ronda trae una regla especial; esta vez <b>pierde la carta más alta</b>. Tu 8 ahora es peligroso: cámbialo con ${nombre(1)} (desliza a la derecha o toca <b>CAMBIAR</b>).`);
+        if (ronda === 2) decirUnaVez('p-r2-tu', `Eres el dealer y tienes un 3. Antes de decidir, toca <b>Oráculo</b>: te muestra la carta de arriba del mazo.`);
+        if (ronda === 3) {
+            const conEscudo = listaJugadoresGlobal.find(j => j.id === socket.id)?.escudo;
+            decirUnaVez('p-r3-tu', conEscudo
+                ? `Tu escudo aguantó. Con un 8 te conviene quedarte: toca <b>MANTENER</b> (o dos veces tu carta).`
+                : `Sin escudo, ${nombre(2)} te cambió su carta. La próxima vez levántalo antes de su turno. Ahora decide con lo que tienes.`);
+        }
+        return;
+    }
+    if (tipo === 'poder' && datos.poder?.id === 'ORACULO') {
+        decirUnaVez('p-oraculo', `Arriba del mazo hay un <b>${datos.carta}</b>: ¡conviene robarlo! Toca <b>CAMBIAR</b> para cambiar tu 3 por esa carta.`);
+        return;
+    }
+    if (tipo === 'accion') {
+        if (datos.tipo === 'ESCUDO' && datos.jugador === miNombreUsuario) decirUnaVez('p-escudo', `Escudo arriba: nadie puede cambiar contigo esta ronda. Mira qué hace ${nombre(2)}…`);
+        if (datos.tipo === 'BLOQUEO_ESCUDO') decirUnaVez('p-rebote', `¡Rebotó! Tu escudo frenó a ${nombre(2)}.`);
+        return;
+    }
+    if (tipo === 'fin') {
+        const miCarta = document.getElementById('numeroCarta')?.innerText;
+        if (ronda === 1) decirUnaVez('p-f1', miCarta === '2'
+            ? `¡Eso! Con el mundo al revés, ${nombre(1)} se quedó con tu 8 y perdió. Hay 5 eventos distintos; salen solos en modo clásico y la etiqueta de arriba te recuerda cuál está activo.`
+            : `Con el mundo al revés, tu 8 era la carta más alta y perdiste. Hay 5 eventos distintos; la etiqueta de arriba te recuerda cuál está activo.`);
+        if (ronda === 2) decirUnaVez('p-f2', (miCarta === '8' ? `Robaste el 8 y te salvaste. ` : ``) + `Así se usan los poderes: primero el poder, luego tu jugada. Toca <b>SIGUIENTE RONDA</b>.`);
+        if (ronda >= 3) decirUnaVez('p-f3', `<b>¡Listo!</b> Ya conoces los eventos y los poderes. Hay dos poderes más: <b>Espiar</b> (ves la carta de tu vecino) y <b>Salto</b> (cambias con quien está dos lugares a tu derecha). Para jugar con poderes, actívalos al crear una sala.`,
+            { boton: 'Terminar práctica', alPulsar: terminarPractica });
+    }
 }
 
 // ==========================================
@@ -1941,7 +1990,9 @@ if (btnRapida) btnRapida.onclick = () => { if (socket?.connected) empezarRapida(
 const btnPractica = document.getElementById('btnPractica');
 if (btnPractica) {
     pintarBotonPractica();
-    btnPractica.onclick = () => { if (socket?.connected) empezarPractica(); };
+    btnPractica.onclick = () => { if (socket?.connected) empezarPractica('basica'); };
+    const btnPracticaPoderes = document.getElementById('btnPracticaPoderes');
+    if (btnPracticaPoderes) btnPracticaPoderes.onclick = () => { if (socket?.connected) empezarPractica('poderes'); };
 }
 document.getElementById('coachSalir')?.addEventListener('click', terminarPractica);
 
@@ -2725,6 +2776,7 @@ function conectarSocket() {
         setTimeout(() => { aviso.classList.add('saliendo'); setTimeout(() => aviso.remove(), 400); }, 3800);
     });
     socket.on('resultadoPoder', (r) => {
+        setTimeout(() => practicaEvento('poder', r), 400);
         if (r.poder.id === 'ESPIAR') {
             _espiado = { id: r.objetivoId, carta: r.carta };
             dibujarMesaCircular();
@@ -2917,6 +2969,7 @@ function conectarSocket() {
             document.getElementById('miCarta')?.classList.remove('flipped');
         }
         programarRevelacionRey(datos.jugadores, datos.introMs || 0);
+        setTimeout(pintarBarraPoderes, 0); // el Escudo ya se puede usar antes del primer turno
         setTimeout(() => practicaEvento('ronda', datos), 0);
         // Revelar la mesa ANTES de dibujar/repartir. En la ronda 1, datosMesa
         // llega antes que tuCarta (que es quien normalmente saca el lobby), así
@@ -3240,6 +3293,7 @@ function conectarSocket() {
     // --- ACCIONES EN MESA (MINI-FEED) ---
     socket.on('accionMesa', (datos) => {
         registrarJugadaFeed(datos);
+        practicaEvento('accion', datos);
         if (datos.tipo === 'CAMBIO' && datos.jugador && datos.objetivo) {
             animarCambioEntre(datos.jugador, datos.objetivo);
         } else if (datos.tipo === 'BLOQUEO' && datos.jugador && datos.objetivo) {
