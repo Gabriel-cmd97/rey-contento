@@ -1334,7 +1334,11 @@ function empezarPartida(sala) {
 // Mesa pública de 4: el jugador entra a la primera sala rápida con lugar o se
 // crea una. Empieza sola a los RAPIDA_ESPERA_MS o en cuanto se llena, y los
 // lugares vacíos se completan con bots.
-const RAPIDA_ESPERA_MS = 20000;
+// 45 s de espera: da tiempo de enseñar el QR o mandar el enlace. "Esperar más"
+// suma RAPIDA_EXTRA_MS, sin pasar de RAPIDA_ESPERA_MAX_MS desde que se creó.
+const RAPIDA_ESPERA_MS = 45000;
+const RAPIDA_EXTRA_MS = 30000;
+const RAPIDA_ESPERA_MAX_MS = 120000;
 const temporizadoresRapida = {}; // idSala → timeout de arranque
 
 function configRapida() {
@@ -1906,6 +1910,22 @@ io.on('connection', (socket) => {
         socket.emit('salasAbiertas', salas);
     });
 
+    // "Esperar 30 s más" en la sala de espera de una partida rápida.
+    socket.on('rapidaMasTiempo', (idSala) => {
+        if (!permitir(socket.id, 'rapidaMasTiempo', 1500)) return;
+        if (!esIdSalaValido(idSala)) return;
+        const sala = estadoSalas[idSala];
+        if (!sala || !sala.config.rapida || sala.estadoActual !== "LOBBY") return;
+        if (!sala.jugadores.some(j => j.nombre === nombreUsuarioLogueado)) return;
+        const tope = (sala.creadaEn || Date.now()) + RAPIDA_ESPERA_MAX_MS;
+        const nuevo = Math.min(tope, Math.max(sala.arrancaEn, Date.now()) + RAPIDA_EXTRA_MS);
+        if (nuevo <= sala.arrancaEn) return socket.emit('errorSala', 'La espera ya llegó a su máximo (2 minutos).');
+        sala.arrancaEn = nuevo;
+        clearTimeout(temporizadoresRapida[idSala]);
+        temporizadoresRapida[idSala] = setTimeout(() => arrancarRapida(idSala), sala.arrancaEn - Date.now());
+        io.to(idSala).emit('rapidaTiempo', { faltanMs: sala.arrancaEn - Date.now(), alMaximo: sala.arrancaEn >= tope, quien: nombreUsuarioLogueado });
+    });
+
     socket.on('partidaRapida', () => {
         if (!permitir(socket.id, 'partidaRapida', 2000)) return;
         const username = socket.usuario ? socket.usuario.username : null;
@@ -1921,7 +1941,7 @@ io.on('connection', (socket) => {
                 idSala, estadoActual: "LOBBY", config: configRapida(), password: null, hostId: null,
                 jugadores: [], dealerIndex: 0, turnoActualIndex: 1, mazo: [], descarte: [], rondaActual: 1,
                 campanaTocada: false, campanaTocadorId: null, campanaTocadorIndex: -1,
-                ultimaActividad: Date.now(), arrancaEn: Date.now() + RAPIDA_ESPERA_MS,
+                ultimaActividad: Date.now(), arrancaEn: Date.now() + RAPIDA_ESPERA_MS, creadaEn: Date.now(),
             };
             temporizadoresRapida[idSala] = setTimeout(() => arrancarRapida(idSala), RAPIDA_ESPERA_MS);
             log.info('Sala rápida creada', { idSala, por: username });

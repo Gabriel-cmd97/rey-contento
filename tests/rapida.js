@@ -1,5 +1,5 @@
 // Partida rápida: 2 jugadores caen en la misma mesa y arranca sola con bots
-// a los 20 s; 4 jugadores la llenan y arranca al instante.
+// a los 45 s; 4 jugadores la llenan y arranca al instante.
 // Se corre desde tests/run.sh (necesita el server en :4000).
 const fetch = require('node-fetch'); const { io } = require('socket.io-client');
 const URL = 'http://localhost:4000';
@@ -20,7 +20,7 @@ const mesa = (s, ms) => new Promise((r, x) => { const t = setTimeout(() => x(new
   const [a, b] = [await jugador('a'), await jugador('b')];
   const ua = await unirse(a); const t0 = Date.now(); const ub = await unirse(b);
   console.log('misma sala:', ua.idSala === ub.idSala, '| faltan', Math.round(ua.faltanMs / 1000), 's');
-  const d = await mesa(a, 25000);
+  const d = await mesa(a, 50000);
   console.log(`arrancó a los ${((Date.now() - t0) / 1000).toFixed(1)} s con ${d.jugadores.length} jugadores:`, d.jugadores.map(j => j.nombre + (j.esBot ? '(bot)' : '')).join(', '));
   a.disconnect(); b.disconnect();
   // 2) cuatro jugadores → arranca en cuanto se llena

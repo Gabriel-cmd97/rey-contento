@@ -1326,6 +1326,7 @@ function terminarEsperaRapida() {
     if (_rapida?.intervalo) clearInterval(_rapida.intervalo);
     _rapida = null;
     document.getElementById('rapidaEspera')?.classList.add('hidden');
+    document.getElementById('btnRapidaMasTiempo')?.classList.add('hidden');
     document.getElementById('resumenConfig')?.classList.remove('hidden');
 }
 
@@ -3045,12 +3046,24 @@ function conectarSocket() {
         document.getElementById('panelUnirse').classList.add('hidden');
         document.getElementById('panelJugadores').classList.remove('hidden');
         document.getElementById('rapidaEspera').classList.remove('hidden');
+        const btnMas = document.getElementById('btnRapidaMasTiempo');
+        btnMas.classList.remove('hidden');
+        btnMas.disabled = false;
+        btnMas.onclick = () => { btnMas.disabled = true; socket.emit('rapidaMasTiempo', miSalaActual); setTimeout(() => { btnMas.disabled = false; }, 1500); };
         // El resumen refleja los selectores del lobby, no la mesa rápida (4 jugadores).
         document.getElementById('resumenConfig')?.classList.add('hidden');
         document.getElementById('mostrarCodigo').classList.remove('hidden'); // para invitar a alguien a tu mesa
         document.getElementById('codigoDisplay').innerText = idSala;
         pintarEsperaRapida();
         _rapida.intervalo = setInterval(pintarEsperaRapida, 1000);
+    });
+
+    socket.on('rapidaTiempo', ({ faltanMs, alMaximo, quien }) => {
+        if (!_rapida) return;
+        _rapida.fin = Date.now() + faltanMs;
+        pintarEsperaRapida();
+        mostrarToast(`${quien === miNombreUsuario ? 'Pediste' : quien + ' pidió'} más tiempo: empieza en ${Math.ceil(faltanMs / 1000)} s`, 'rey', 2500);
+        if (alMaximo) document.getElementById('btnRapidaMasTiempo')?.classList.add('hidden');
     });
 
     socket.on('salaCreada', (id) => {
