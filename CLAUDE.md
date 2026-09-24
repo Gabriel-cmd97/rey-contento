@@ -259,6 +259,7 @@ Estas convenciones se aplicaron al pulir el aspecto y la confiabilidad de carga 
 - *Robo del mazo* (`accionMesa` `MAZO`, dealer o vecino del que tocó la campana): `animarRoboMazo()` — carta del mazo al jugador y la vieja a la pila.
 - `volarFantasma(desde, hacia, { arco, duracion, rebote })` es el vuelo común de carta boca abajo; úsalo para cualquier animación nueva de cartas.
 - *Pérdida de vida*: `animarPerdidaVida()` parte un corazón sobre las vidas y, si quedó eliminado, pone el sello de calavera.
+- *Cuenta regresiva del resumen*: `rondaTerminada` trae `autoSiguienteMs` (cuánto falta para que la siguiente ronda empiece sola; `null` si termina la partida o la práctica). `iniciarCuentaResumen()` lo descuenta desde que llegó el evento (`datos._recibido`), no desde que aparece el resumen, así llega a cero junto con el servidor. Si cambias las pausas del servidor, la cuenta se ajusta sola.
 - Todo se salta con `menosMovimiento()` (prefers-reduced-motion). El servidor da tiempo a verlo: `MS_PAUSA_BOT` (5 s) antes de que un dealer bot avance y `MS_PAUSA_VICTORIA` (4.5 s) antes de `finDelJuego`; si se alarga la revelación, ajustar esas pausas.
 
 **Idioma**: todo el texto visible en **español de México (tuteo)** — "tú"/"tienes"/"escanea", nunca voseo ("vos"/"tenés"/"escaneá"). Vocabulario: **"celular"** (no "móvil"), **"enlace"** (no "link"). Los identificadores de código preexistentes (`btnCopiarLink`, `linkDeSala`, clase `btn-copiar-link`) se mantienen.

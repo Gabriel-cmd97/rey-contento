@@ -487,13 +487,33 @@ function resolverRonda(sala, io) {
     // Enviar cartas reveladas al descarte (persistente entre rondas)
     vivos.forEach(j => { if (j.cartaActual !== undefined && j.cartaActual !== null) sala.descarte.push(j.cartaActual); });
 
+    // Pausas tras revelar: el cliente voltea las cartas una por una (~180 ms
+    // por jugador) y después muestra el resumen, así que hay que dejarle ver.
+    const MS_PAUSA_BOT = 5000;       // dealer bot: pasa a la siguiente ronda
+    const MS_PAUSA_VICTORIA = 4500;  // fin de partida: muestra la victoria
+    // Con dealer humano, la ronda sigue sola a los 15 s por si no presiona
+    // "siguiente ronda" (antes la sala quedaba atorada en REVELACION).
+    const SEG_AUTO_SIGUIENTE_RONDA = 15;
+    // La práctica termina al revelar la última ronda del guion: el cliente
+    // muestra el cierre y el jugador sale de la sala.
+    const finDePractica = sala.config.practica && sala.rondaActual >= practica.ULTIMA_RONDA;
+    const dealerEsBot = sala.jugadores[sala.dealerIndex].esBot;
+    // En la práctica hay que dar tiempo a leer las explicaciones.
+    const pausaBot = sala.config.practica ? 9000 : MS_PAUSA_BOT;
+    const pausaHumano = sala.config.practica ? 60 : SEG_AUTO_SIGUIENTE_RONDA;
+    // Milisegundos hasta que la siguiente ronda empiece sola (null: no hay).
+    // Se manda al cliente para que muestre la cuenta regresiva en el resumen.
+    const msAutoSiguiente = (juegoTerminado || finDePractica) ? null
+        : (dealerEsBot ? pausaBot : pausaHumano * 1000);
+
     io.to(sala.idSala).emit('rondaTerminada', {
         jugadores: jugadoresPublicos(sala),
         perdedores: perdedores,
         cartaMortal: valorCritico,
         dealerId: sala.jugadores[sala.dealerIndex].id,
         juegoTerminado: juegoTerminado,
-        campana: campanaInfo
+        campana: campanaInfo,
+        autoSiguienteMs: msAutoSiguiente,
     });
 
     io.to(sala.idSala).emit('accionMesa', {
@@ -502,28 +522,13 @@ function resolverRonda(sala, io) {
         texto: `Fin de ronda — Carta mortal: ${valorCritico}`
     });
 
-    // Pausas tras revelar: el cliente voltea las cartas una por una (~180 ms
-    // por jugador) y después muestra el resumen, así que hay que dejarle ver.
-    const MS_PAUSA_BOT = 5000;       // dealer bot: pasa a la siguiente ronda
-    const MS_PAUSA_VICTORIA = 4500;  // fin de partida: muestra la victoria
-
-    // Avance automático: con dealer bot a los MS_PAUSA_BOT; con dealer humano a los 15s
-    // por si no presiona "siguiente ronda" (antes la sala quedaba atorada en
-    // REVELACION hasta que el sweeper la borraba). Si el dealer avanza antes,
-    // el estado ya no es REVELACION y este timer no hace nada.
-    const SEG_AUTO_SIGUIENTE_RONDA = 15;
-    // La práctica termina al revelar la última ronda del guion: el cliente
-    // muestra el cierre y el jugador sale de la sala.
-    const finDePractica = sala.config.practica && sala.rondaActual >= practica.ULTIMA_RONDA;
-    if (!juegoTerminado && !finDePractica) {
-        const dealerEsBot = sala.jugadores[sala.dealerIndex].esBot;
-        // En la práctica hay que dar tiempo a leer las explicaciones.
-        const pausaBot = sala.config.practica ? 9000 : MS_PAUSA_BOT;
-        const pausaHumano = sala.config.practica ? 60 : SEG_AUTO_SIGUIENTE_RONDA;
+    // Avance automático. Si el dealer avanza antes, el estado ya no es
+    // REVELACION y este timer no hace nada.
+    if (msAutoSiguiente !== null) {
         const rondaResuelta = sala.rondaActual;
         setTimeout(() => {
             // rondaResuelta: si el dealer ya avanzó y otra ronda llegó a
-            // REVELACION antes de los 15s, este timer viejo no debe saltarla.
+            // REVELACION antes de tiempo, este timer viejo no debe saltarla.
             if (!estadoSalas[sala.idSala] || sala.estadoActual !== "REVELACION" || sala.rondaActual !== rondaResuelta) return;
             let vivos = sala.jugadores.filter(j => j.vidas > 0);
             if (vivos.length <= 1) return;
@@ -531,7 +536,7 @@ function resolverRonda(sala, io) {
             if (!dealerEsBot) io.to(sala.idSala).emit('mensajeGlobal', '⏩ La siguiente ronda empezó automáticamente.');
             io.to(sala.idSala).emit('nuevaRondaIniciada', { jugadoresActualizados: jugadoresPublicos(sala) });
             iniciarRonda(sala, io);
-        }, dealerEsBot ? pausaBot : pausaHumano * 1000);
+        }, msAutoSiguiente);
     }
 
     if (juegoTerminado) {

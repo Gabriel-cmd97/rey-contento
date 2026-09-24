@@ -2894,3 +2894,28 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
     from { opacity: 0; transform: translate(-50%, -80%) scale(0.85); }
     to   { opacity: 1; transform: translate(-50%, -100%) scale(1); }
 }
+
+/* Cuenta regresiva del resumen de ronda */
+.resumen-cuenta { margin: 10px 0 4px; text-align: center; }
+.resumen-cuenta p {
+    margin: 0 0 6px;
+    font-size: 14px;
+    color: var(--pergamino);
+    font-variant-numeric: tabular-nums;
+}
+.resumen-cuenta strong { color: #ffe27a; }
+.resumen-cuenta-barra {
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(246,231,193,0.15);
+    overflow: hidden;
+}
+.resumen-cuenta-barra span {
+    display: block;
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #d4a514, #ffe27a);
+    transition: width 0.25s linear;
+}
+.resumen-cuenta.urgente strong { color: #ff8a7a; }
+.resumen-cuenta.urgente .resumen-cuenta-barra span { background: linear-gradient(90deg, #c0392b, #ff8a7a); }

@@ -1178,11 +1178,48 @@ function mostrarResumenRonda(datos) {
 
     const btnSig = document.getElementById('btnSiguienteRondaResumen');
     btnSig.classList.toggle('hidden', datos.juegoTerminado || socket.id !== datos.dealerId);
+    // La cuenta se mide desde que el servidor resolvió la ronda, no desde que
+    // aparece el resumen (sale ~1–2 s después, tras la revelación).
+    const msRestantes = datos.autoSiguienteMs ? datos.autoSiguienteMs - (Date.now() - (datos._recibido || Date.now())) : 0;
+    if (msRestantes > 0) iniciarCuentaResumen(msRestantes, socket.id === datos.dealerId);
+    else detenerCuentaResumen();
 
     panel.classList.remove('hidden');
 }
 
+// Cuenta regresiva del resumen: cuánto falta para que la siguiente ronda
+// empiece sola (el servidor manda autoSiguienteMs en rondaTerminada).
+let _cuentaResumen = null; // { fin, total, intervalo }
+
+function iniciarCuentaResumen(ms, soyDealer) {
+    detenerCuentaResumen();
+    const caja = document.getElementById('resumenCuenta');
+    if (!caja || !ms) return;
+    _cuentaResumen = { fin: Date.now() + ms, total: ms };
+    const barra = document.getElementById('resumenCuentaBarra');
+    const pintar = () => {
+        if (!_cuentaResumen) return;
+        const resta = Math.max(0, _cuentaResumen.fin - Date.now());
+        const seg = Math.ceil(resta / 1000);
+        document.getElementById('resumenCuentaTexto').innerHTML = seg > 0
+            ? `${icono('reloj')} Siguiente ronda en <strong>${seg} s</strong>${soyDealer ? ' · o tócala ya' : ''}`
+            : `${icono('espadas')} ¡Empieza la siguiente ronda!`;
+        barra.style.width = (resta / _cuentaResumen.total * 100) + '%';
+        caja.classList.toggle('urgente', seg <= 3);
+    };
+    pintar();
+    _cuentaResumen.intervalo = setInterval(pintar, 250);
+    caja.classList.remove('hidden');
+}
+
+function detenerCuentaResumen() {
+    if (_cuentaResumen?.intervalo) clearInterval(_cuentaResumen.intervalo);
+    _cuentaResumen = null;
+    document.getElementById('resumenCuenta')?.classList.add('hidden');
+}
+
 function ocultarResumenRonda() {
+    detenerCuentaResumen();
     document.getElementById('panelResumenRonda')?.classList.add('hidden');
 }
 
@@ -2701,6 +2738,7 @@ function conectarSocket() {
 
     // --- FIN DE RONDA ---
     socket.on('rondaTerminada', (datos) => {
+        datos._recibido = Date.now();
         setTimeout(() => practicaEvento('fin', datos), 1600);
         ocultarGuiaTurno();
         registrarCaidas(datos);
