@@ -799,7 +799,7 @@ function explicacionRonda(datos) {
 // Revelación con suspenso, cambios visibles entre asientos y corazón que se
 // rompe. Son adorno: no cambian reglas ni tiempos del servidor, y con
 // "reducir movimiento" se saltan.
-const PASO_REVELAR_MS = 180;   // entre carta y carta al revelar
+const PASO_REVELAR_MS = 450;   // entre carta y carta al revelar (suspenso: ~3 s con 6 jugadores)
 let _inicioRevelacion = 0;     // performance.now() del fin de ronda
 
 function menosMovimiento() {

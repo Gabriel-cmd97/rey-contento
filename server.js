@@ -788,8 +788,10 @@ function resolverRonda(sala, io) {
 
     // Pausas tras revelar: el cliente voltea las cartas una por una (~180 ms
     // por jugador) y después muestra el resumen, así que hay que dejarle ver.
-    const MS_PAUSA_BOT = 8000;       // dealer bot: pasa a la siguiente ronda (tiempo para ver quién tenía qué)
-    const MS_PAUSA_VICTORIA = 4500;  // fin de partida: muestra la victoria
+    // La revelación dura ~0.45 s por jugador (más suspenso); el resumen sale al
+    // terminar y hay que dejar verlo.
+    const MS_PAUSA_BOT = 11000;      // dealer bot: pasa a la siguiente ronda (tiempo para ver quién tenía qué)
+    const MS_PAUSA_VICTORIA = 6500;  // fin de partida: muestra la victoria
     // Con dealer humano, la ronda sigue sola a los 15 s por si no presiona
     // "siguiente ronda" (antes la sala quedaba atorada en REVELACION).
     const SEG_AUTO_SIGUIENTE_RONDA = 15;
@@ -799,7 +801,7 @@ function resolverRonda(sala, io) {
     if (finDePractica) sala.jugadores.filter(j => !j.esBot).forEach(j => otorgarLogro(sala, j.nombre, 'aprendiz'));
     const dealerEsBot = sala.jugadores[sala.dealerIndex].esBot;
     // En la práctica hay que dar tiempo a leer las explicaciones.
-    const pausaBot = sala.config.practica ? 9000 : MS_PAUSA_BOT;
+    const pausaBot = sala.config.practica ? 12000 : MS_PAUSA_BOT;
     const pausaHumano = sala.config.practica ? 60 : SEG_AUTO_SIGUIENTE_RONDA;
     // Milisegundos hasta que la siguiente ronda empiece sola (null: no hay).
     // Se manda al cliente para que muestre la cuenta regresiva en el resumen.
