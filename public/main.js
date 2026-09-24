@@ -464,6 +464,7 @@ function lanzarCoronasVictoria() {
 function actualizarBotonesTurno(esMio, esCampana, campanaTocada) {
     const btnCambiar = document.getElementById('btnCambiar');
     btnCambiar.innerText = 'CAMBIAR';
+    pintarBarraPoderes();
     actualizarGuiaTurno(esMio, esCampana, campanaTocada);
 
     if (!esMio || !esCampana || !campanaTocada || !campanaRingerId) return;
@@ -600,6 +601,7 @@ function actualizarGuiaTurno(esMio, esCampana, campanaTocada) {
 
     const lineas = ['✋ Te quedas con tu carta', textoCambiar];
     if (eventoActual?.id === 'NIEBLA') lineas.push('🌫️ Niebla: decides sin ver tu carta');
+    if (misPoderes.length) lineas.push('✨ Tienes poderes: úsalos antes de decidir');
     if (eventoActual?.id === 'MUNDO_AL_REVES') lineas.push('🔄 Mundo al revés: esta ronda pierde la carta más alta');
     if (esCampana && !campanaTocada) lineas.push('🔔 Cierra la ronda: tócala si crees tener la carta más baja');
     lineas.push('👆 También con tu carta: deslízala a la derecha para cambiar, tócala dos veces para mantener');
@@ -759,23 +761,27 @@ function animarCambioEntre(nombreA, nombreB) {
 
 // Bloqueo del Rey: la carta sale hacia el Rey, choca a medio camino y rebota;
 // la carta del Rey destella en dorado.
-function animarBloqueoRey(nombreActor, nombreRey) {
+function animarBloqueoRey(nombreActor, nombreRey, iconoDestello = 'corona') {
     if (menosMovimiento()) return;
     const a = cartaEnMesa(nombreActor), r = cartaEnMesa(nombreRey);
     if (!a || !r) return;
     const ra = a.getBoundingClientRect(), rr = r.getBoundingClientRect();
     if (!ra.width || !rr.width) return;
     volarFantasma(ra, rr, { rebote: 0.55, duracion: 760 });
-    destelloRey(rr, 280);
+    destelloIcono(rr, iconoDestello, 280);
 }
 
 // Corona dorada que destella sobre un rectángulo de pantalla (la carta del Rey).
-function destelloRey(rect, retraso = 0) {
+function destelloRey(rect, retraso = 0) { destelloIcono(rect, 'corona', retraso); }
+
+// Ícono que destella sobre un rectángulo (corona, ojo, escudo…).
+function destelloIcono(rect, nombreIcono, retraso = 0) {
+    if (menosMovimiento() || !rect || !rect.width) return;
     const destello = document.createElement('div');
     destello.className = 'destello-rey';
     destello.style.left = (rect.left + rect.width / 2) + 'px';
     destello.style.top = (rect.top + rect.height / 2) + 'px';
-    destello.innerHTML = icono('corona');
+    destello.innerHTML = icono(nombreIcono);
     document.body.appendChild(destello);
     destello.animate([
         { transform: 'translate(-50%,-50%) scale(0.3)', opacity: 0 },
@@ -1356,6 +1362,62 @@ function animarChoqueDuelo(datos) {
 }
 
 // ==========================================
+// PODERES (modo opcional)
+// ==========================================
+// El servidor manda 'misPoderes' (ids) y aplica los efectos; aquí se muestran
+// los botones y lo que devuelven Espiar y Oráculo (solo para ti).
+const PODERES = {
+    ESPIAR:  { titulo: 'Espiar',  icono: 'ojo',    enTuTurno: true },
+    ORACULO: { titulo: 'Oráculo', icono: 'naipe',  enTuTurno: true },
+    SALTO:   { titulo: 'Salto',   icono: 'flecha', enTuTurno: true },
+    ESCUDO:  { titulo: 'Escudo',  icono: 'escudo', enTuTurno: false },
+};
+let misPoderes = [];
+let _espiado = null; // { id, carta } visible solo para ti hasta que termina la ronda
+
+function pintarBarraPoderes() {
+    const barra = document.getElementById('barraPoderes');
+    if (!barra) return;
+    barra.classList.toggle('hidden', misPoderes.length === 0);
+    const yo = listaJugadoresGlobal.find(j => j.id === socket.id);
+    const enRonda = turnoActualId && !mostrandoRevelacion && yo && yo.vidas > 0;
+    const miTurno = enRonda && turnoActualId === socket.id;
+    barra.innerHTML = misPoderes.map(id => {
+        const p = PODERES[id] || { titulo: id, icono: 'rayo' };
+        const activo = p.enTuTurno ? miTurno : (enRonda && !yo.escudo);
+        return `<button class="btn-poder" data-poder="${id}" ${activo ? '' : 'disabled'} title="${escapeHTML(p.titulo)}">${icono(p.icono)}<span>${escapeHTML(p.titulo)}</span></button>`;
+    }).join('');
+    barra.querySelectorAll('.btn-poder').forEach(b => {
+        b.onclick = () => {
+            if (b.disabled) return;
+            b.disabled = true;
+            Sonidos.boton();
+            socket.emit('usarPoder', { idSala: miSalaActual, poder: b.dataset.poder });
+        };
+    });
+}
+
+// Oráculo: la carta de arriba aparece unos segundos sobre el mazo.
+function mostrarCartaSobreMazo(carta) {
+    const mazo = document.getElementById('mazoFlotante');
+    const r = mazo?.getBoundingClientRect();
+    if (!r || !r.width) return;
+    const c = document.createElement('div');
+    c.className = 'carta-oraculo';
+    c.innerHTML = `<b>${carta}</b>${figuraIMG(carta, 20)}<small>${escapeHTML(nombresCartas[carta] || '')}</small>`;
+    c.style.left = (r.left + r.width / 2) + 'px';
+    c.style.top = (r.top + r.height / 2) + 'px';
+    document.body.appendChild(c);
+    setTimeout(() => { c.classList.add('saliendo'); setTimeout(() => c.remove(), 400); }, 3500);
+}
+
+function asientoDe(nombre) {
+    if (nombre === miNombreUsuario) return document.getElementById('miCarta');
+    const j = listaJugadoresGlobal.find(x => x.nombre === nombre);
+    return j ? document.querySelector(`.silla:not(.hidden)[data-jugador-id="${CSS.escape(j.id)}"]`) : null;
+}
+
+// ==========================================
 // PANTALLA DE VICTORIA — tabla final
 // ==========================================
 // El servidor solo manda al ganador, así que el orden de caída se anota aquí
@@ -1604,6 +1666,7 @@ function mostrarLobbyLimpio() {
     document.querySelectorAll('.corona-victoria').forEach(el => el.remove());
     cerrarEscaner();
     eventoActual = null; ocultarEvento(); marcarDuelo(false);
+    misPoderes = []; _espiado = null; pintarBarraPoderes();
     document.getElementById('presentacionDuelo')?.classList.add('hidden');
 }
 
@@ -2264,6 +2327,7 @@ function dibujarMesaCircular() {
 
     const nombreMesa = document.getElementById('miNombreMesa');
     const vidasMesa = document.getElementById('misVidasMesa');
+    document.getElementById('miPerfil')?.classList.toggle('con-escudo', !!miJugador.escudo && miJugador.vidas > 0);
     if (nombreMesa) nombreMesa.innerHTML = icono(miJugador.dealer ? 'corona' : 'persona') + ' ' + escapeHTML(miJugador.nombre);
     if (vidasMesa) vidasMesa.innerHTML = miJugador.vidas > 0 ? icono('corazon') + ' ' + miJugador.vidas : icono('calavera') + ' 0';
 
@@ -2412,6 +2476,16 @@ function dibujarMesaCircular() {
                         <div style="line-height:1;margin-top:2px;">${figuraIMG(op.cartaActual, 22)}</div>
                         <div style="font-size:11px;text-align:center;line-height:1.1;margin-top:4px;">${nombresCartas[op.cartaActual]}</div>
                     </div>`;
+            } else if (op.vidas > 0 && _espiado && _espiado.id === op.id) {
+                // Espiada: solo tú la ves, marcada con el ojo.
+                const n = _espiado.carta;
+                cartaHTML = `
+                    <div class="mini-carta-frente carta-espiada ${n === 9 ? 'mini-carta-9' : n === 0 ? 'mini-carta-0' : ''}">
+                        <span class="marca-espiada">${icono('ojo')}</span>
+                        <div style="font-size:34px;font-weight:bold;line-height:1;">${n}</div>
+                        <div style="line-height:1;margin-top:2px;">${figuraIMG(n, 22)}</div>
+                        <div style="font-size:11px;text-align:center;line-height:1.1;margin-top:4px;">${nombresCartas[n]}</div>
+                    </div>`;
             } else if (op.vidas > 0) {
                 const debeRevelar = ((op.cartaRevelada === true) || (modoReyActual === 'DECLARADO' && op.cartaActual === 9))
                     && performance.now() >= _reyOcultoHasta; // en DECLARADO se voltea a los 2 s del reparto
@@ -2436,9 +2510,9 @@ function dibujarMesaCircular() {
         let claseEstado = estaMuerto ? 'jugador-eliminado' : '';
 
         divSilla.innerHTML = `
-            <div class="perfil-oponente ${claseEstado} ${animReparto} ${claseDanio}">
+            <div class="perfil-oponente ${claseEstado} ${animReparto} ${claseDanio} ${op.escudo && !estaMuerto ? 'con-escudo' : ''}">
                 <div style="font-size:13px;font-weight:bold;line-height:1.2;word-wrap:break-word;">${iconoAsiento} ${escapeHTML(op.nombre)}</div>
-                <span class="vidas-destacadas">${estaMuerto ? icono('calavera') + ' 0' : icono('corazon') + ' ' + op.vidas}</span>
+                <span class="vidas-destacadas">${estaMuerto ? icono('calavera') + ' 0' : icono('corazon') + ' ' + op.vidas}${op.numPoderes && !estaMuerto ? `<span class="num-poderes" title="Poderes guardados">${icono('rayo')}${op.numPoderes}</span>` : ''}</span>
             </div>
             ${cartaHTML}
         `;
@@ -2627,6 +2701,7 @@ function conectarSocket() {
                 dificultadBots: document.getElementById('selectDificultadBots').value,
                 tiempoTurno: parseInt(document.getElementById('selectTiempoTurno').value),
                 eventos: document.getElementById('selectEventos').value !== 'NO',
+                poderes: document.getElementById('selectPoderes').value === 'SI',
                 modoJuego: document.getElementById('selectModoJuego').value,
                 password: document.getElementById('inputPasswordSala').value.trim()
             }
@@ -2634,6 +2709,32 @@ function conectarSocket() {
     };
 
     socket.on('salasAbiertas', pintarSalasAbiertas);
+
+    // --- PODERES ---
+    socket.on('misPoderes', (lista) => { misPoderes = Array.isArray(lista) ? lista : []; pintarBarraPoderes(); });
+    socket.on('poderGanado', ({ poder, poderes }) => {
+        misPoderes = poderes || misPoderes;
+        pintarBarraPoderes();
+        const aviso = document.createElement('div');
+        aviso.className = 'aviso-logro';
+        aviso.setAttribute('role', 'status');
+        aviso.innerHTML = `<span class="aviso-logro-icono">${icono(poder.icono)}</span>
+            <span><small>Ganaste un poder</small><strong>${escapeHTML(poder.titulo)}</strong>${escapeHTML(poder.descripcion)}</span>`;
+        document.body.appendChild(aviso);
+        Sonidos.pop();
+        setTimeout(() => { aviso.classList.add('saliendo'); setTimeout(() => aviso.remove(), 400); }, 3800);
+    });
+    socket.on('resultadoPoder', (r) => {
+        if (r.poder.id === 'ESPIAR') {
+            _espiado = { id: r.objetivoId, carta: r.carta };
+            dibujarMesaCircular();
+            mostrarToast(`👁️ ${r.objetivo} tiene ${r.carta === 9 ? 'al Rey' : `un ${r.carta}`} (${nombresCartas[r.carta]})`, 'rey', 3500);
+        } else if (r.poder.id === 'ORACULO') {
+            mostrarCartaSobreMazo(r.carta);
+            mostrarToast(`🔮 Arriba del mazo hay ${r.carta === 9 ? 'un Rey' : `un ${r.carta}`} (${nombresCartas[r.carta]})`, 'rey', 3500);
+        }
+    });
+    socket.on('errorPoder', (m) => { mostrarToast(m, 'danio', 3000); pintarBarraPoderes(); });
 
     socket.on('rapidaUnido', ({ idSala, faltanMs }) => {
         miSalaActual = idSala; soyElHost = false;
@@ -2804,6 +2905,7 @@ function conectarSocket() {
 
     socket.on('datosMesa', (datos) => {
         terminarEsperaRapida();
+        _espiado = null;
         eventoActual = datos.evento || null;
         ocultarEvento();
         marcarDuelo(datos.duelo);
@@ -3144,6 +3246,18 @@ function conectarSocket() {
             animarBloqueoRey(datos.jugador, datos.objetivo);
         } else if (datos.tipo === 'MAZO' && datos.jugador) {
             animarRoboMazo(datos.jugador);
+        } else if (datos.tipo === 'BLOQUEO_ESCUDO' && datos.jugador && datos.objetivo) {
+            animarBloqueoRey(datos.jugador, datos.objetivo, 'escudo');
+        } else if (datos.tipo === 'ESCUDO' && datos.jugador) {
+            const j = listaJugadoresGlobal.find(x => x.nombre === datos.jugador);
+            if (j) j.escudo = true;
+            dibujarMesaCircular();
+            pintarBarraPoderes();
+            destelloIcono(asientoDe(datos.jugador)?.getBoundingClientRect(), 'escudo');
+        } else if (datos.tipo === 'ESPIAR' && datos.objetivo) {
+            destelloIcono(asientoDe(datos.objetivo)?.getBoundingClientRect(), 'ojo');
+        } else if (datos.tipo === 'ORACULO') {
+            destelloIcono(document.getElementById('mazoFlotante')?.getBoundingClientRect(), 'naipe');
         }
     });
 
@@ -3188,6 +3302,8 @@ function conectarSocket() {
         setTimeout(() => practicaEvento('fin', datos), 1600);
         ocultarGuiaTurno();
         registrarCaidas(datos);
+        _espiado = null;
+        setTimeout(pintarBarraPoderes, 0);
         if (enDuelo) animarChoqueDuelo(datos);
         const gen = ++_renderGen;
         // Niebla: tu carta se descubre recién ahora.

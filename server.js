@@ -9,6 +9,7 @@ const bots = require('./bots');
 const practica = require('./practica');
 const logros = require('./logros');
 const eventos = require('./eventos');
+const poderes = require('./poderes');
 const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
@@ -216,7 +217,9 @@ function sanitizarConfig(raw) {
     }
 
     const conEventos = raw.eventos !== false; // eventos de ronda (solo afectan al modo clásico)
-    return { vidas, maxJugadores, numBots, modoJuego, modoRey, frecuenciaReyes, dificultadBots, tiempoTurno, eventos: conEventos, password };
+    const conPoderes = raw.poderes === true;  // modo "Con poderes" (opcional)
+    return { vidas, maxJugadores, numBots, modoJuego, modoRey, frecuenciaReyes, dificultadBots, tiempoTurno,
+             eventos: conEventos, poderes: conPoderes, password };
 }
 
 // Formato del idSala: 5 caracteres alfanuméricos. El alfabeto real es
@@ -288,7 +291,10 @@ function jugadoresPublicos(sala) {
     const rondaRevelada = sala.estadoActual === "REVELACION" || sala.estadoActual === "FINALIZADO";
     const reyDeclarado = sala.config.modoRey === "DECLARADO" && sala.config.modoJuego !== 'CAMPANA';
     const sinCampana = sala.config.modoJuego !== 'CAMPANA';
-    return sala.jugadores.map(({ memoria, cartaActual, cartaRevelada, reyDescubierto, ...publico }) => {
+    const escudos = sala.escudos || [];
+    return sala.jugadores.map(({ memoria, cartaActual, cartaRevelada, reyDescubierto, poderes: susPoderes, ...publico }) => {
+        publico.numPoderes = (susPoderes || []).length; // la mesa ve cuántos, no cuáles
+        publico.escudo = escudos.includes(publico.nombre);
         const esReyVisible = cartaActual === 9 && (reyDeclarado || (sinCampana && reyDescubierto));
         if (rondaRevelada || esReyVisible) publico.cartaActual = cartaActual;
         publico.cartaRevelada = esReyVisible;
@@ -695,6 +701,14 @@ function resolverRonda(sala, io) {
             sala.caidas.push({ nombre: j.nombre, ronda: sala.rondaActual });
         }
     });
+    if (sala.config.poderes) {
+        sala.jugadores.filter(j => perdedores.includes(j.id) && j.vidas > 0).forEach(j => {
+            const id = poderes.darPoder(j);
+            if (!id) return;
+            if (!j.esBot) io.to(j.id).emit('poderGanado', { poder: poderes.CATALOGO[id], poderes: j.poderes });
+            io.to(sala.idSala).emit('accionMesa', { tipo: 'PODER', icono: '✨', jugador: j.nombre, texto: `${j.nombre} ganó un poder` });
+        });
+    }
     if (campanaInfo && campanaInfo.acertada && !sala.config.practica) {
         const ringer = sala.jugadores.find(j => j.id === campanaInfo.tocadorId);
         if (ringer) otorgarLogro(sala, ringer.nombre, 'oido_fino');
@@ -907,19 +921,34 @@ function gestionarTurnos(sala, io, esInicio = false) {
         }
 
         if (jugadorActual.esBot) {
-            const decision = sala.config.practica
+            const esDealer = indiceActual === sala.dealerIndex;
+            const decidir = () => sala.config.practica
                 ? practica.decisionBot(sala, indiceActual)
                 : bots.decidirBot(sala, jugadorActual, {
-                esDealer: indiceActual === sala.dealerIndex,
+                esDealer,
                 derecha: jugadorDerecha,
                 derechaEsRinger: esCampana && sala.campanaTocada && jugadorDerecha.id === sala.campanaTocadorId,
             });
-            setTimeout(() => {
+            const sigueSuTurno = () => {
                 const salaActual = estadoSalas[sala.idSala];
-                if (!salaActual) return;
-                const botVivo = salaActual.jugadores.find(j => j.id === jugadorActual.id && j.vidas > 0);
-                if (!botVivo) return;
-                ejecutarAccion(sala.idSala, decision, io, jugadorActual.id);
+                return salaActual && salaActual.estadoActual === "TURNOS_INTERCAMBIO"
+                    && salaActual.jugadores[salaActual.turnoActualIndex]?.id === jugadorActual.id && jugadorActual.vidas > 0;
+            };
+            setTimeout(() => {
+                if (!sigueSuTurno()) return;
+                // Modo con poderes: el bot puede usar uno antes de jugar.
+                const pierdeLaMasAlta = esCampana || sala.evento === 'MUNDO_AL_REVES';
+                const poder = sala.config.poderes && !sala.config.practica ? poderes.poderParaBot(jugadorActual, {
+                    esDealer, pierdeLaMasAlta, mercado: sala.evento === 'MERCADO', niebla: sala.evento === 'NIEBLA',
+                    puedeSaltar: !esDealer && sala.evento !== 'MERCADO' && sala.jugadores.filter(j => j.vidas > 0).length >= 3,
+                }) : null;
+                const r = poder ? usarPoder(sala, indiceActual, poder) : { error: true };
+                if (poder === 'SALTO' && !r.error) return; // el salto ya fue su jugada
+                // Tras espiar u oráculo decide con lo que vio; si no, como siempre.
+                const decision = (!r.error && r.carta !== undefined)
+                    ? (poderes.mejorQue(r.carta, jugadorActual.cartaActual, pierdeLaMasAlta) ? 'CAMBIAR' : 'MANTENER')
+                    : decidir();
+                setTimeout(() => { if (sigueSuTurno()) ejecutarAccion(sala.idSala, decision, io, jugadorActual.id); }, poder && !r.error ? 900 : 0);
             }, bots.retrasoBot());
             return;
         }
@@ -956,6 +985,7 @@ function iniciarRonda(sala, io) {
     // ronda 1: partida nueva o revancha).
     // Lo de la ronda anterior deja de valer: evento y castigos de la Amnistía.
     sala.evento = null;
+    sala.escudos = [];
     sala.castigados = sala.castigadosSiguiente || [];
     sala.castigadosSiguiente = [];
     if (sala.rondaActual === 1) {
@@ -1164,6 +1194,57 @@ function arrancarRapida(idSala) {
     empezarPartida(sala);
 }
 
+// Aplica un poder de `sala.jugadores[idx]`. Devuelve { error } o
+// { carta } (lo que vio con Espiar u Oráculo). El Salto ejecuta la jugada.
+function usarPoder(sala, idx, poder) {
+    const j = sala.jugadores[idx];
+    const def = poderes.CATALOGO[poder];
+    if (!def || !sala.config.poderes) return { error: 'Esta mesa no tiene poderes.' };
+    if (!j || j.vidas <= 0 || !(j.poderes || []).includes(poder)) return { error: 'No tienes ese poder.' };
+    if (sala.estadoActual !== "TURNOS_INTERCAMBIO") return { error: 'Los poderes se usan durante la ronda.' };
+    const esSuTurno = sala.turnoActualIndex === idx;
+    if (def.enTuTurno && !esSuTurno) return { error: `${def.titulo} solo se usa en tu turno.` };
+    const aviso = (texto) => io.to(sala.idSala).emit('mensajeGlobal', texto);
+    const privado = (datos) => { if (!j.esBot) io.to(j.id).emit('resultadoPoder', datos); };
+    let resultado = {};
+
+    if (poder === 'ESPIAR') {
+        const objetivo = sala.jugadores[siguienteVivo(sala.jugadores, idx)];
+        if (!objetivo || objetivo === j) return { error: 'No hay a quién espiar.' };
+        poderes.quitarPoder(j, poder);
+        resultado.carta = objetivo.cartaActual;
+        if (j.esBot) (j.memoria ||= {})[objetivo.id] = objetivo.cartaActual;
+        privado({ poder: def, objetivo: objetivo.nombre, objetivoId: objetivo.id, carta: objetivo.cartaActual });
+        aviso(`👁️ ${j.nombre} espió la carta de ${objetivo.nombre}.`);
+        io.to(sala.idSala).emit('accionMesa', { tipo: 'ESPIAR', icono: '👁️', jugador: j.nombre, objetivo: objetivo.nombre, texto: `${j.nombre} espió a ${objetivo.nombre}` });
+    } else if (poder === 'ORACULO') {
+        if (sala.mazo.length === 0 && sala.descarte.length > 0) { sala.mazo = barajar([...sala.descarte]); sala.descarte = []; }
+        if (sala.mazo.length === 0) return { error: 'El mazo está vacío.' };
+        poderes.quitarPoder(j, poder);
+        resultado.carta = sala.mazo[sala.mazo.length - 1];
+        privado({ poder: def, carta: resultado.carta });
+        aviso(`🔮 ${j.nombre} consultó al Oráculo.`);
+        io.to(sala.idSala).emit('accionMesa', { tipo: 'ORACULO', icono: '🔮', jugador: j.nombre, texto: `${j.nombre} consultó al Oráculo` });
+    } else if (poder === 'ESCUDO') {
+        if ((sala.escudos || []).includes(j.nombre)) return { error: 'Ya tienes el escudo arriba.' };
+        poderes.quitarPoder(j, poder);
+        (sala.escudos ||= []).push(j.nombre);
+        aviso(`🛡️ ${j.nombre} levantó un escudo: nadie puede cambiar con él esta ronda.`);
+        io.to(sala.idSala).emit('accionMesa', { tipo: 'ESCUDO', icono: '🛡️', jugador: j.nombre, jugadorId: j.id, texto: `${j.nombre} levantó un escudo` });
+    } else if (poder === 'SALTO') {
+        if (idx === sala.dealerIndex) return { error: 'El dealer no puede saltar: si cambia, roba del mazo.' };
+        if (sala.evento === 'MERCADO') return { error: 'En el Mercado no hay cambios entre jugadores.' };
+        const uno = siguienteVivo(sala.jugadores, idx), dos = siguienteVivo(sala.jugadores, uno);
+        if (dos === idx || dos === uno) return { error: 'No hay nadie dos lugares a tu derecha.' };
+        poderes.quitarPoder(j, poder);
+        if (!j.esBot) io.to(j.id).emit('misPoderes', j.poderes);
+        ejecutarAccion(sala.idSala, 'CAMBIAR', io, j.id, false, { objetivoIndex: dos });
+        return resultado;
+    }
+    if (!j.esBot) io.to(j.id).emit('misPoderes', j.poderes);
+    return resultado;
+}
+
 // ¿El Rey protege esta ronda? No en campana (ahí el 9 es la peor carta) ni
 // con el evento "Mundo al revés" (pierde la más alta y el Rey queda expuesto).
 function reyProtegido(sala) {
@@ -1195,7 +1276,8 @@ function programarGraciaDesconexion(idSala, nombre) {
     }, 180000);
 }
 
-function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
+// `opciones.objetivoIndex` cambia con otro jugador en lugar del vecino (poder Salto).
+function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false, opciones = {}) {
     let sala = estadoSalas[idSala];
     if (!sala) return;
     tocarSala(sala); // actividad para el sweeper
@@ -1250,11 +1332,19 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
     if (accion === 'CAMBIAR') {
         // Con el evento "Mercado" todos roban del mazo, como el dealer.
         if (indiceActual !== sala.dealerIndex && sala.evento !== 'MERCADO') {
-            let jugadorDerecha = sala.jugadores[siguienteVivo(sala.jugadores, indiceActual)];
-            const bloqueRey = reyProtegido(sala) && jugadorDerecha.cartaActual === 9;
-            const derechaEsRinger = sala.config.modoJuego === 'CAMPANA' && sala.campanaTocada && jugadorDerecha.id === sala.campanaTocadorId;
+            const esSalto = opciones.objetivoIndex !== undefined;
+            let jugadorDerecha = sala.jugadores[esSalto ? opciones.objetivoIndex : siguienteVivo(sala.jugadores, indiceActual)];
+            const bloqueEscudo = (sala.escudos || []).includes(jugadorDerecha.nombre);
+            const bloqueRey = !bloqueEscudo && reyProtegido(sala) && jugadorDerecha.cartaActual === 9;
+            const derechaEsRinger = !esSalto && sala.config.modoJuego === 'CAMPANA' && sala.campanaTocada && jugadorDerecha.id === sala.campanaTocadorId;
 
-            if (bloqueRey) {
+            if (bloqueEscudo) {
+                io.to(idSala).emit('mensajeGlobal', `🛡️ El escudo de ${jugadorDerecha.nombre} rebotó el cambio de ${jugadorActual.nombre}.`);
+                io.to(idSala).emit('accionMesa', {
+                    tipo: 'BLOQUEO_ESCUDO', icono: '🛡️', jugador: jugadorActual.nombre, objetivo: jugadorDerecha.nombre,
+                    texto: `El escudo de ${jugadorDerecha.nombre} rebotó a ${jugadorActual.nombre}`
+                });
+            } else if (bloqueRey) {
                 jugadorDerecha.reyDescubierto = true; // ya todos lo saben: se ve en la mesa
                 if (!sala.config.practica) otorgarLogro(sala, jugadorDerecha.nombre, 'muro_del_rey');
                 const msgBloqueo = sala.config.modoRey === "DECLARADO"
@@ -1306,7 +1396,9 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
                 jugadorDerecha.cartaActual = temp;
                 enviarCarta(sala, jugadorActual);
                 enviarCarta(sala, jugadorDerecha);
-                io.to(idSala).emit('mensajeGlobal', `🔄 ${jugadorActual.nombre} cambió con ${jugadorDerecha.nombre}.`);
+                io.to(idSala).emit('mensajeGlobal', esSalto
+                    ? `🏹 ${jugadorActual.nombre} saltó y cambió con ${jugadorDerecha.nombre}.`
+                    : `🔄 ${jugadorActual.nombre} cambió con ${jugadorDerecha.nombre}.`);
                 io.to(idSala).emit('accionMesa', {
                     tipo: 'CAMBIO',
                     icono: '🔄',
@@ -1683,6 +1775,7 @@ io.on('connection', (socket) => {
             }
 
             if (sala.estadoActual !== "LOBBY") {
+                if (sala.config.poderes) socket.emit('misPoderes', jugadorExistente.poderes || []);
                 socket.emit('reconexionExitosa', {
                     idSala: sala.idSala,
                     carta: sala.evento === 'NIEBLA' ? null : jugadorExistente.cartaActual,
@@ -1810,6 +1903,19 @@ io.on('connection', (socket) => {
         if (!jugador) return;
         // Broadcast to others in the room
         socket.to(idSala).emit('reaccionJugador', { jugadorId: socket.id, emoji });
+    });
+
+    socket.on('usarPoder', (payload) => {
+        if (!permitir(socket.id, 'usarPoder', 800)) return;
+        if (!payload || typeof payload !== 'object') return;
+        const { idSala, poder } = payload;
+        if (!esIdSalaValido(idSala) || !poderes.IDS.includes(poder)) return;
+        const sala = estadoSalas[idSala];
+        if (!sala) return;
+        const idx = sala.jugadores.findIndex(j => j.nombre === nombreUsuarioLogueado);
+        if (idx === -1) return;
+        const r = usarPoder(sala, idx, poder);
+        if (r.error) socket.emit('errorPoder', r.error);
     });
 
     socket.on('frase', (payload) => {
