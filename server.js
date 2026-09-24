@@ -268,7 +268,9 @@ function sanitizarConfig(raw) {
     // de 4 o 6 y al empezar se completa con bots.
     const equipos = enLista(Number.parseInt(raw.equipos, 10), [0, 2, 3], 0);
     const maxMesa = equipos ? equipos * 2 : maxJugadores;
-    return { vidas, maxJugadores: maxMesa, numBots: Math.min(numBots, maxMesa - 1), modoJuego, modoRey, frecuenciaReyes,
+    // En parejas los bots no ocupan lugares desde el lobby (dejarían fuera a
+    // los amigos): entran al empezar, solo en los lugares que quedaron libres.
+    return { vidas, maxJugadores: maxMesa, numBots: equipos ? 0 : Math.min(numBots, maxMesa - 1), modoJuego, modoRey, frecuenciaReyes,
              dificultadBots, tiempoTurno, eventos: conEventos, poderes: conPoderes, equipos, password };
 }
 
