@@ -1267,6 +1267,11 @@ function pintarChipEvento() {
     chip.classList.toggle('hidden', !eventoActual);
 }
 
+// Tiempo que la carta de evento queda al centro para leerla. El servidor
+// espera MS_INTRO_EVENTO (4.4 s) antes del primer turno: si cambias este
+// valor, cambia también aquel en server.js.
+const MS_CARTA_EVENTO = 4000;
+
 // Carta grande al centro; al terminar se encoge a la etiqueta de arriba.
 function mostrarCartaEvento(evento, retraso = 0) {
     const carta = document.getElementById('cartaEvento');
@@ -1282,7 +1287,7 @@ function mostrarCartaEvento(evento, retraso = 0) {
         setTimeout(() => {
             carta.classList.add('saliendo');
             setTimeout(() => { carta.classList.add('hidden'); pintarChipEvento(); }, 350);
-        }, 2200);
+        }, MS_CARTA_EVENTO);
     }, retraso);
 }
 

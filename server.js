@@ -1151,7 +1151,8 @@ function iniciarRonda(sala, io) {
         });
     }
     // Presentaciones antes de jugar (el cliente las muestra con estos tiempos).
-    const MS_INTRO_DUELO = 2800, MS_INTRO_EVENTO = 2600;
+    // El evento se muestra MS_CARTA_EVENTO en el cliente (4 s para leerlo con calma) + 400 ms de salida.
+    const MS_INTRO_DUELO = 2800, MS_INTRO_EVENTO = 4400;
     const introMs = (anunciarDuelo ? MS_INTRO_DUELO : 0) + (sala.evento ? MS_INTRO_EVENTO : 0);
     if (sala.evento) {
         const ev = eventos.CATALOGO[sala.evento];

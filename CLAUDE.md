@@ -172,7 +172,7 @@ DEBUG_LOG=1
 
 **Duelo final**: `sala.enDuelo` cuando quedan 2 vivos en una partida que empezó con 3 o más. La primera ronda de duelo trae `anunciarDuelo` (pantalla de versus). En `rondaTerminada` el cliente hace chocar las cartas (`animarChoqueDuelo`) y el servidor da 2 s extra antes de seguir o de la victoria.
 
-**Presentaciones y tiempos**: `datosMesa` trae `introMs` (versus 2.8 s + carta de evento 2.6 s, si aplican). El Rey declarado se revela a `introMs + MS_REVELAR_REY` y el primer turno arranca después; el cliente usa el mismo `introMs` para no adelantarse.
+**Presentaciones y tiempos**: `datosMesa` trae `introMs` (versus 2.8 s + carta de evento 4.4 s, si aplican; la carta se ve 4 s = `MS_CARTA_EVENTO` en main.js). El Rey declarado se revela a `introMs + MS_REVELAR_REY` y el primer turno arranca después; el cliente usa el mismo `introMs` para no adelantarse.
 
 **Frases rápidas** (botón de globo junto a las reacciones): el cliente manda `frase { idSala, frase: <número> }`; el servidor valida `0 ≤ frase < TOTAL_FRASES` (límite 1 cada 2 s) y reenvía `fraseJugador`. Los textos viven solo en `FRASES_RAPIDAS` de `main.js`: **si agregas o quitas frases, actualiza `TOTAL_FRASES` en `server.js`**. Nunca texto libre. `mostrarFrase()` pone un globo de pergamino sobre el asiento (uno por jugador, 3 s).
 
