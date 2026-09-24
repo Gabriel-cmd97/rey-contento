@@ -243,7 +243,9 @@ function sanitizarConfig(raw) {
     const modoJuego     = enLista(raw.modoJuego, ['CLASICO', 'CAMPANA'], 'CLASICO');
     const modoRey       = enLista(raw.modoRey, ['SORPRESA', 'DECLARADO'], 'SORPRESA');
     const frecuenciaReyes = enLista(raw.frecuenciaReyes, ['NORMAL', 'ALTA', 'LOCURA'], 'NORMAL');
-    const dificultadBots = enLista(raw.dificultadBots, bots.DIFICULTADES, 'NORMAL');
+    // Dificultad fija: ya no se elige al crear sala (demasiadas opciones).
+    // FACIL y DIFICIL siguen en bots.js por si se vuelven a ofrecer.
+    const dificultadBots = 'NORMAL';
 
     // Partida de práctica guiada: mesa fija contra 2 bots con guion
     // (practica.js). Todo lo demás de la config se ignora.
