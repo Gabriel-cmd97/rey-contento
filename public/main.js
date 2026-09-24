@@ -1059,6 +1059,61 @@ document.getElementById('inputFotoQR')?.addEventListener('change', async (e) => 
 document.getElementById('btnCerrarEscaner')?.addEventListener('click', cerrarEscaner);
 
 // ==========================================
+// MESAS ABIERTAS (pestaña Unirse)
+// ==========================================
+// Mientras la pestaña Unirse está a la vista se pide la lista cada 4 s.
+let _sondeoSalas = null;
+
+function unirseVisible() {
+    const panel = document.getElementById('panelUnirse');
+    return panel && !panel.classList.contains('hidden')
+        && !document.getElementById('seccion-lobby')?.classList.contains('hidden')
+        && document.getElementById('pantallaJuego') && !document.getElementById('pantallaJuego').classList.contains('hidden')
+        && document.visibilityState === 'visible';
+}
+
+function pedirSalasAbiertas() {
+    if (!unirseVisible()) { clearInterval(_sondeoSalas); _sondeoSalas = null; return; }
+    if (socket?.connected) socket.emit('listarSalas');
+}
+
+window.alAbrirUnirse = () => {
+    pedirSalasAbiertas();
+    clearInterval(_sondeoSalas);
+    _sondeoSalas = setInterval(pedirSalasAbiertas, 4000);
+};
+
+const NOMBRE_MODO_JUEGO = { CLASICO: 'Clásico', CAMPANA: 'Campana' };
+
+function pintarSalasAbiertas(salas) {
+    const lista = document.getElementById('listaSalasAbiertas');
+    if (!lista) return;
+    if (!salas.length) {
+        lista.innerHTML = '<li class="salas-vacio">No hay mesas esperando ahora. Prueba la <strong>partida rápida</strong> en la pestaña Crear.</li>';
+        return;
+    }
+    lista.innerHTML = salas.map(s => {
+        const titulo = s.rapida ? 'Partida rápida' : `Mesa de ${escapeHTML(s.anfitrion)}`;
+        const detalle = [`${s.vidas} ${s.vidas === 1 ? 'vida' : 'vidas'}`, NOMBRE_MODO_JUEGO[s.modoJuego] || '',
+            s.modoRey === 'DECLARADO' ? 'Rey declarado' : 'Rey sorpresa'].filter(Boolean).join(' · ');
+        const extra = s.rapida && s.faltanMs != null ? ` · empieza en ${Math.ceil(s.faltanMs / 1000)} s` : '';
+        return `<li class="sala-abierta">
+            <span class="sala-abierta-info">
+                <strong>${titulo}</strong>
+                <span>${icono('grupo')} ${s.jugadores}/${s.max} · ${detalle}${extra}</span>
+            </span>
+            <button class="boton-oro sala-abierta-entrar" data-sala="${escapeHTML(s.idSala)}">Entrar</button>
+        </li>`;
+    }).join('');
+    lista.querySelectorAll('.sala-abierta-entrar').forEach(b => {
+        b.onclick = () => {
+            document.getElementById('inputCodigo').value = b.dataset.sala;
+            document.getElementById('btnUnirseSala').click();
+        };
+    });
+}
+
+// ==========================================
 // PARTIDA RÁPIDA
 // ==========================================
 // El servidor te sienta en una mesa pública de 4 y la arranca sola: al llenarse
@@ -1612,10 +1667,69 @@ async function peticionAuth(ruta) {
                 document.getElementById('seccion-inicio').classList.add('hidden');
                 document.getElementById('pantallaJuego').classList.remove('hidden');
                 conectarSocket();
+            } else if (data.codigoRecuperacion) {
+                mostrarCodigoRecuperacion(data.codigoRecuperacion, data.mensaje);
             } else alert(data.mensaje);
         } else alert(data.error);
     } catch (e) { alert("Error de servidor"); }
 }
+
+// ==========================================
+// CÓDIGO DE RECUPERACIÓN
+// ==========================================
+function mostrarCodigoRecuperacion(codigo, mensaje = '') {
+    document.getElementById('codigoValor').textContent = codigo;
+    const m = document.getElementById('codigoMensaje');
+    m.textContent = mensaje;
+    m.classList.toggle('hidden', !mensaje);
+    document.getElementById('modalCodigo').classList.remove('hidden');
+}
+document.getElementById('btnCodigoGuardado').addEventListener('click', () => document.getElementById('modalCodigo').classList.add('hidden'));
+document.getElementById('btnCopiarCodigo').addEventListener('click', async () => {
+    const codigo = document.getElementById('codigoValor').textContent;
+    try { await navigator.clipboard.writeText(codigo); mostrarToast('Código copiado', 'rey', 1500); }
+    catch { mostrarToast('No se pudo copiar: toma una captura de pantalla.', 'danio', 3000); }
+});
+
+document.getElementById('btnOlvide').addEventListener('click', () => {
+    document.getElementById('recUsuario').value = document.getElementById('authUsername').value.trim();
+    document.getElementById('recError').classList.add('hidden');
+    document.getElementById('modalRecuperar').classList.remove('hidden');
+});
+document.getElementById('btnCancelarRecuperar').addEventListener('click', () => document.getElementById('modalRecuperar').classList.add('hidden'));
+document.getElementById('btnRecuperar').addEventListener('click', async () => {
+    const err = document.getElementById('recError');
+    const cuerpo = {
+        username: document.getElementById('recUsuario').value.trim(),
+        codigo: document.getElementById('recCodigo').value,
+        password: document.getElementById('recPassword').value,
+    };
+    if (!cuerpo.username || !cuerpo.codigo || !cuerpo.password) {
+        err.textContent = 'Completa los tres campos.'; err.classList.remove('hidden'); return;
+    }
+    try {
+        const res = await fetch(`${URL_SERVIDOR}/recuperar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) });
+        const data = await res.json();
+        if (!res.ok) { err.textContent = data.error || 'No se pudo cambiar la contraseña.'; err.classList.remove('hidden'); return; }
+        document.getElementById('modalRecuperar').classList.add('hidden');
+        document.getElementById('recCodigo').value = ''; document.getElementById('recPassword').value = '';
+        document.getElementById('authUsername').value = data.username;
+        document.getElementById('authPassword').value = '';
+        // El código usado ya no sirve: se muestra el nuevo.
+        mostrarCodigoRecuperacion(data.codigoRecuperacion, data.mensaje + ' Este es tu código nuevo; el anterior ya no sirve.');
+    } catch {
+        err.textContent = 'Sin conexión con el servidor. Inténtalo de nuevo.'; err.classList.remove('hidden');
+    }
+});
+
+document.getElementById('btnNuevoCodigo').addEventListener('click', async () => {
+    try {
+        const res = await fetch(`${URL_SERVIDOR}/codigo-recuperacion`, { method: 'POST', headers: { Authorization: `Bearer ${miToken}` } });
+        const data = await res.json();
+        if (!res.ok) return mostrarToast(data.error || 'No se pudo generar el código.', 'danio', 3500);
+        mostrarCodigoRecuperacion(data.codigoRecuperacion, 'Código nuevo generado. El anterior ya no sirve.');
+    } catch { mostrarToast('Sin conexión con el servidor.', 'danio', 3000); }
+});
 
 document.getElementById('btnLogin').addEventListener('click', () => peticionAuth('/login'));
 document.getElementById('btnRegistro').addEventListener('click', () => peticionAuth('/registro'));
@@ -2240,6 +2354,7 @@ function dibujarMesaCircular() {
 // ==========================================
 // Reconectar cuando el teléfono se desbloquea o la pestaña vuelve a ser visible
 document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && unirseVisible()) window.alAbrirUnirse();
     if (document.visibilityState === 'visible' && miToken && socket && !socket.connected) {
         socket.connect();
     }
@@ -2391,6 +2506,8 @@ function conectarSocket() {
             }
         });
     };
+
+    socket.on('salasAbiertas', pintarSalasAbiertas);
 
     socket.on('rapidaUnido', ({ idSala, faltanMs }) => {
         miSalaActual = idSala; soyElHost = false;

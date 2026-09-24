@@ -130,6 +130,7 @@ DEBUG_LOG=1
 
 - **`ALLOWED_ORIGINS`**: lista comma-separated de orígenes permitidos para CORS (HTTP + Socket.io). Si NO está definido, se permite cualquier origen y se loguea un warning al arrancar. En producción debe estar definido.
 - **`DEBUG_LOG`**: si está set (valor truthy), activa nivel `log.debug(...)`. Default off.
+- **`PANEL_CLAVE`**: clave del panel de uso (`/estadisticas.html`), que se manda en el encabezado `x-clave` a `GET /api/panel`. Sin ella el panel queda apagado.
 
 ### Frontend (`public/main.js`)
 
@@ -158,6 +159,12 @@ DEBUG_LOG=1
 **Logros e historial**: catálogo en `logros.js` (única fuente; el cliente lo recibe en `/mis-stats` → `catalogoLogros` y en el aviso `logroDesbloqueado`). Tablas `historial` (una fila por humano y partida) y `logros` (PK username+logro), creadas por `crearTablasSiNoExisten()` al arrancar. El servidor lleva `sala.caidas` y `sala.vidasPerdidas` (se reinician en la ronda 1); `registrarHistorialYLogros()` guarda el historial y decide los logros de fin de partida con `logrosDeFinDePartida()`. Los de momento (`oido_fino`, `muro_del_rey`, `aprendiz`) se otorgan con `otorgarLogro()` donde ocurren. La práctica no suma nada salvo `aprendiz`. `/mis-stats` devuelve también `logros` y las últimas 10 partidas; el perfil los pinta con `pintarLogrosPerfil()` y `pintarHistorialPerfil()`. Para un logro nuevo: agrégalo al catálogo y otórgalo en `server.js`.
 
 **Escanear QR para unirse** (botón en la pestaña Unirse): el QR de la sala lleva `linkDeSala()` y `codigoDesdeQR()` saca el código (…/sala/ABCDE, ?sala= o el código solo). Mientras el juego vaya por HTTP el navegador **no permite la cámara en vivo**, así que se usa `<input type="file" capture="environment">` (foto) y `leerQRDeFoto()` la decodifica con jsQR (se carga de jsdelivr al usarlo). Con HTTPS (`isSecureContext`) el mismo botón abre `#escanerQR` con la cámara en vivo. Al leer un código se llena `#inputCodigo` y se simula el clic en "Unirse a la partida".
+
+**Mesas abiertas** (pestaña Unirse): evento `listarSalas` → `salasAbiertas` con las salas en LOBBY sin contraseña, sin práctica, con lugar y al menos un humano conectado. El cliente la pide cada 4 s solo mientras la pestaña Unirse está a la vista (`window.alAbrirUnirse`, lo llama `switchTab`).
+
+**Recuperación de cuenta** (sin correo): al registrarse, `/registro` devuelve `codigoRecuperacion` (12 caracteres, se muestra una sola vez en `#modalCodigo`); en la base solo queda su hash bcrypt en `usuarios.codigo_recuperacion`. `POST /recuperar { username, codigo, password }` (límite de login, error único, comparación contra hash dummy) cambia la contraseña y entrega un código nuevo. `POST /codigo-recuperacion` con `Authorization: Bearer <token>` genera uno nuevo desde el perfil (sirve a cuentas anteriores a esta función).
+
+**Panel de uso** (`/estadisticas.html`, clave `PANEL_CLAVE`): `GET /api/panel` junta totales, partidas y jugadores por día (14 días, hora de CDMX = UTC-6), ronda de caída, abandonos, modos, logros y lo que pasa en vivo (`io.engine.clientsCount`, salas en memoria). Las partidas se cuentan por `historial.partida` (`sala.idPartida`); las filas anteriores a esa columna se agrupan por ganador y minuto.
 
 **Frases rápidas** (botón de globo junto a las reacciones): el cliente manda `frase { idSala, frase: <número> }`; el servidor valida `0 ≤ frase < TOTAL_FRASES` (límite 1 cada 2 s) y reenvía `fraseJugador`. Los textos viven solo en `FRASES_RAPIDAS` de `main.js`: **si agregas o quitas frases, actualiza `TOTAL_FRASES` en `server.js`**. Nunca texto libre. `mostrarFrase()` pone un globo de pergamino sobre el asiento (uno por jugador, 3 s).
 

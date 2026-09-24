@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Rey Contento · Uso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap">
+<style>
+    :root {
+        color-scheme: dark;
+        --fondo: #1f1512;
+        --madera: #2e201b;
+        --borde: rgba(241,196,15,0.28);
+        --oro: #f1c40f;
+        --oro-claro: #ffe27a;
+        --pergamino: #f3e6c8;
+        --suave: rgba(243,230,200,0.72);
+        --verde: #58d68d;
+        --rojo: #ff8a7a;
+        --titulo: 'MedievalSharp', Georgia, serif;
+        --texto: Georgia, 'Times New Roman', serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        background: radial-gradient(ellipse at 50% 0%, #3a2820 0%, var(--fondo) 60%);
+        background-color: var(--fondo);
+        color: var(--pergamino);
+        font-family: var(--texto);
+        min-height: 100vh;
+    }
+    .envoltura { max-width: 980px; margin: 0 auto; padding: 20px 16px 40px; padding-inline: max(16px, env(safe-area-inset-left)); }
+    header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+    h1 { font-family: var(--titulo); color: var(--oro); font-size: clamp(24px, 5vw, 32px); margin: 0; text-wrap: balance; }
+    h1 small { display: block; font-family: var(--texto); font-size: 13px; color: var(--suave); font-style: italic; }
+    .actualizado { font-size: 12px; color: var(--suave); font-variant-numeric: tabular-nums; }
+    h2 { font-family: var(--titulo); font-size: 16px; letter-spacing: 1px; color: var(--oro-claro); margin: 0 0 12px; font-weight: normal; }
+
+    .cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .cifra { background: var(--madera); border: 1px solid var(--borde); border-radius: 12px; padding: 12px 14px; }
+    .cifra b { display: block; font-family: var(--titulo); font-size: 30px; color: var(--oro-claro); line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .cifra span { font-size: 12px; color: var(--suave); }
+
+    .vivo { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; padding: 10px 14px; margin-bottom: 18px;
+            border: 1px dashed var(--borde); border-radius: 12px; font-size: 14px; }
+    .vivo .punto { width: 9px; height: 9px; border-radius: 50%; background: var(--verde); box-shadow: 0 0 8px var(--verde); }
+    .vivo strong { color: var(--oro-claro); font-variant-numeric: tabular-nums; }
+
+    .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+    .tarjeta { background: var(--madera); border: 1px solid var(--borde); border-radius: 14px; padding: 16px; min-width: 0; }
+    .tarjeta.ancha { grid-column: 1 / -1; }
+    .nota { font-size: 12px; color: var(--suave); margin: 10px 0 0; line-height: 1.4; }
+
+    /* Barras verticales por día */
+    .dias { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; align-items: end; height: 150px; }
+    .dia { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 3px; min-width: 0; }
+    .dia .barras { display: flex; gap: 2px; align-items: flex-end; height: 120px; width: 100%; justify-content: center; }
+    .dia .b { width: 45%; max-width: 14px; border-radius: 3px 3px 0 0; min-height: 1px; }
+    .b.partidas { background: var(--oro); }
+    .b.jugadores { background: #c9a36b; opacity: 0.75; }
+    .dia small { font-size: 10px; color: var(--suave); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .dia .valor { font-size: 10px; color: var(--oro-claro); font-variant-numeric: tabular-nums; min-height: 12px; }
+    .leyenda { display: flex; gap: 14px; font-size: 12px; color: var(--suave); margin-top: 8px; flex-wrap: wrap; }
+    .leyenda i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+
+    /* Barras horizontales */
+    .filas { display: flex; flex-direction: column; gap: 7px; }
+    .fila { display: grid; grid-template-columns: 7.5em 1fr 3em; gap: 8px; align-items: center; font-size: 13px; }
+    .fila .pista { height: 12px; background: rgba(243,230,200,0.08); border-radius: 6px; overflow: hidden; }
+    .fila .relleno { height: 100%; background: linear-gradient(90deg, #b8860b, var(--oro)); border-radius: 6px; }
+    .fila .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--oro-claro); }
+    .fila .etiqueta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .vacio { font-style: italic; color: var(--suave); font-size: 13px; }
+
+    /* Acceso */
+    .acceso { max-width: 360px; margin: 12vh auto 0; text-align: center; background: var(--madera); border: 1px solid var(--borde);
+              border-radius: 16px; padding: 24px 20px; }
+    .acceso p { color: var(--suave); font-size: 14px; }
+    .acceso input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--borde); background: rgba(0,0,0,0.35);
+                    color: var(--pergamino); font-size: 16px; text-align: center; margin: 6px 0 12px; }
+    .acceso button { width: 100%; padding: 12px; border: none; border-radius: 10px; font-family: var(--titulo); font-size: 16px; letter-spacing: 1px;
+                     background: linear-gradient(180deg, #f9dd7a, #d4a514 55%, #b18f0f); color: #3e2723; cursor: pointer; }
+    .error { color: var(--rojo); font-size: 13px; min-height: 18px; }
+    button:focus-visible, input:focus-visible { outline: 3px solid var(--oro); outline-offset: 2px; }
+    [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="envoltura">
+    <section id="acceso" class="acceso">
+        <h1>Rey Contento<small>Panel de uso</small></h1>
+        <p>Escribe la clave del panel (<code>PANEL_CLAVE</code> en el <code>.env</code> del juego).</p>
+        <form id="formClave">
+            <input id="inputClave" type="password" autocomplete="current-password" aria-label="Clave del panel">
+            <p id="errorClave" class="error" role="alert"></p>
+            <button type="submit">Entrar</button>
+        </form>
+    </section>
+
+    <main id="panel" hidden>
+        <header>
+            <h1>Rey Contento<small>Cómo se está usando el juego</small></h1>
+            <span id="actualizado" class="actualizado"></span>
+        </header>
+
+        <div class="cifras">
+            <div class="cifra"><b id="cUsuarios">–</b><span>jugadores registrados</span></div>
+            <div class="cifra"><b id="cNuevos">–</b><span>registros nuevos (7 días)</span></div>
+            <div class="cifra"><b id="cActivos">–</b><span>jugaron en los últimos 7 días</span></div>
+            <div class="cifra"><b id="cPartidas">–</b><span>partidas terminadas</span></div>
+            <div class="cifra"><b id="cLogros">–</b><span>logros ganados</span></div>
+        </div>
+
+        <div class="vivo" aria-live="polite">
+            <span class="punto" aria-hidden="true"></span>
+            <span>Ahora: <strong id="vConectados">–</strong> conectados</span>
+            <span><strong id="vHumanos">–</strong> en una mesa</span>
+            <span><strong id="vJugando">–</strong> mesas jugando</span>
+            <span><strong id="vEsperando">–</strong> esperando jugadores</span>
+        </div>
+
+        <div class="rejilla">
+            <section class="tarjeta ancha">
+                <h2>Últimos 14 días</h2>
+                <div id="graficaDias" class="dias"></div>
+                <div class="leyenda">
+                    <span><i style="background:var(--oro)"></i>Partidas terminadas</span>
+                    <span><i style="background:#c9a36b;opacity:.75"></i>Jugadores distintos</span>
+                    <span id="leyendaRegistros"></span>
+                </div>
+                <p class="nota">Días en hora de la Ciudad de México. Solo cuentan partidas terminadas (no las abandonadas por todos ni las de práctica).</p>
+            </section>
+
+            <section class="tarjeta">
+                <h2>En qué ronda caen los jugadores</h2>
+                <div id="graficaCaidas" class="filas"></div>
+                <p id="notaAbandonos" class="nota"></p>
+            </section>
+
+            <section class="tarjeta">
+                <h2>Qué se juega</h2>
+                <div id="graficaModos" class="filas"></div>
+            </section>
+
+            <section class="tarjeta ancha">
+                <h2>Logros ganados</h2>
+                <div id="graficaLogros" class="filas"></div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<script>
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const NOMBRE_MODO = { CLASICO: 'Clásico', CAMPANA: 'Campana', RAPIDA: 'Partida rápida' };
+    let clave = '';
+    try { clave = sessionStorage.getItem('panelClave') || ''; } catch { /* sin storage */ }
+
+    function barrasHorizontales(contenedor, filas, vacio) {
+        if (!filas.length) { contenedor.innerHTML = `<p class="vacio">${vacio}</p>`; return; }
+        const max = Math.max(1, ...filas.map(f => f.n));
+        contenedor.innerHTML = filas.map(f => `
+            <div class="fila">
+                <span class="etiqueta" title="${esc(f.etiqueta)}">${esc(f.etiqueta)}</span>
+                <span class="pista"><span class="relleno" style="width:${(f.n / max * 100).toFixed(1)}%;display:block"></span></span>
+                <span class="n">${f.n}</span>
+            </div>`).join('');
+    }
+
+    function pintar(d) {
+        $('cUsuarios').textContent = d.totales.usuarios;
+        $('cNuevos').textContent = d.totales.nuevos7;
+        $('cActivos').textContent = d.totales.activos7;
+        $('cPartidas').textContent = d.totales.partidas;
+        $('cLogros').textContent = d.totales.logros;
+        $('vConectados').textContent = d.enVivo.conectados;
+        $('vHumanos').textContent = d.enVivo.humanosEnMesa;
+        $('vJugando').textContent = d.enVivo.salasJugando;
+        $('vEsperando').textContent = d.enVivo.salasEsperando;
+        $('actualizado').textContent = 'Actualizado ' + new Date(d.generado).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        // Una sola escala para las dos series del día.
+        const max = Math.max(1, ...d.dias.map(x => Math.max(x.partidas, x.jugadores)));
+        const hoy = d.dias[d.dias.length - 1].dia;
+        $('graficaDias').innerHTML = d.dias.map((x, i) => {
+            const [, mes, dia] = x.dia.split('-');
+            // Etiqueta cada 3 días (y hoy) para que no se encimen en el celular.
+            const etiqueta = x.dia === hoy ? 'hoy' : ((d.dias.length - 1 - i) % 3 === 0 ? `${Number(dia)}/${Number(mes)}` : '');
+            return `<div class="dia" title="${x.dia}: ${x.partidas} partidas, ${x.jugadores} jugadores, ${x.registros} registros">
+                <span class="valor">${x.partidas || ''}</span>
+                <span class="barras">
+                    <span class="b partidas" style="height:${x.partidas / max * 100}%"></span>
+                    <span class="b jugadores" style="height:${x.jugadores / max * 100}%"></span>
+                </span>
+                <small>${etiqueta || '&nbsp;'}</small>
+            </div>`;
+        }).join('');
+        const regs = d.dias.reduce((n, x) => n + x.registros, 0);
+        $('leyendaRegistros').textContent = `${regs} ${regs === 1 ? 'registro' : 'registros'} en estos 14 días`;
+
+        barrasHorizontales($('graficaCaidas'), d.caidas.map(c => ({ etiqueta: `Ronda ${c.ronda}`, n: c.n })),
+            'Todavía no hay partidas terminadas.');
+        const pct = d.abandonos.total ? Math.round(d.abandonos.n / d.abandonos.total * 100) : 0;
+        $('notaAbandonos').textContent = d.abandonos.total
+            ? `Además, ${d.abandonos.n} de ${d.abandonos.total} participaciones (${pct} %) terminaron con el jugador fuera antes del final (abandonó o se desconectó).`
+            : '';
+        barrasHorizontales($('graficaModos'), d.modos.map(m => ({ etiqueta: NOMBRE_MODO[m.modo] || m.modo, n: m.n })),
+            'Todavía no hay partidas terminadas.');
+        barrasHorizontales($('graficaLogros'), d.logros.map(l => ({ etiqueta: l.titulo, n: l.n })), '');
+    }
+
+    async function cargar() {
+        const res = await fetch('/api/panel', { headers: { 'x-clave': clave } });
+        if (res.status === 401) throw new Error('Clave incorrecta.');
+        if (!res.ok) throw new Error('No se pudo cargar el panel. Inténtalo de nuevo.');
+        pintar(await res.json());
+    }
+
+    async function entrar() {
+        try {
+            await cargar();
+            try { sessionStorage.setItem('panelClave', clave); } catch { /* sin storage */ }
+            $('acceso').hidden = true;
+            $('panel').hidden = false;
+            setInterval(() => cargar().catch(() => {}), 30000);
+        } catch (e) {
+            $('errorClave').textContent = e.message;
+            $('acceso').hidden = false;
+        }
+    }
+
+    $('formClave').addEventListener('submit', (e) => {
+        e.preventDefault();
+        clave = $('inputClave').value.trim();
+        $('errorClave').textContent = '';
+        entrar();
+    });
+    if (clave) entrar();
+</script>
+</body>
+</html>

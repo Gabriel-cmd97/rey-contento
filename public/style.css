@@ -3039,3 +3039,59 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
 }
 .escaner-ayuda { position: relative; margin: 0; color: var(--pergamino); font-family: Georgia, serif; font-size: 15px; }
 .escaner-qr .boton-madera { position: relative; min-width: 160px; }
+
+/* =========================================
+   MESAS ABIERTAS (pestaña Unirse)
+   ========================================= */
+.salas-abiertas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.sala-abierta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(20,12,8,0.55);
+    border: 1px solid rgba(241,196,15,0.3);
+}
+.sala-abierta-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.sala-abierta-info strong { font-family: var(--fuente-medieval); color: #ffe27a; font-size: 15px; overflow-wrap: anywhere; }
+.sala-abierta-info span { font-family: Georgia, serif; font-size: 12px; color: var(--texto-suave); }
+.sala-abierta-info .icono { width: 14px; height: 14px; }
+.sala-abierta-entrar { padding: 8px 14px; font-size: 13px; flex-shrink: 0; }
+.salas-vacio { text-align: center; font-family: Georgia, serif; font-style: italic; font-size: 13px; color: var(--texto-suave); padding: 10px 0; }
+.salas-vacio strong { color: #ffe27a; font-style: normal; }
+
+/* =========================================
+   RECUPERACIÓN DE CUENTA
+   ========================================= */
+.enlace-suave {
+    display: block;
+    margin: 14px auto 0;
+    background: none;
+    border: none;
+    color: var(--texto-suave);
+    font-family: Georgia, serif;
+    font-size: 13px;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.modal-titulo { color: var(--oro); margin: 0 0 12px; text-align: center; font-size: 19px; }
+.perfil-nota { font-family: Georgia, serif; font-size: 13px; line-height: 1.4; color: var(--texto-suave); margin: 0 0 10px; }
+.perfil-nota strong { color: #ffe27a; }
+.codigo-recuperacion {
+    margin: 6px 0 12px;
+    padding: 12px;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    font-size: 24px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    color: #ffe27a;
+    background: rgba(0,0,0,0.4);
+    border: 1px dashed rgba(241,196,15,0.6);
+    border-radius: 10px;
+    user-select: all;
+    font-variant-numeric: tabular-nums;
+}
+#modalRecuperar .medieval-input { width: 100%; margin-bottom: 8px; }
+.rec-error { color: #ff8a7a; font-family: Georgia, serif; font-size: 13px; margin: 4px 0 0; }

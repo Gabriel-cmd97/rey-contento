@@ -9,6 +9,7 @@ const bots = require('./bots');
 const practica = require('./practica');
 const logros = require('./logros');
 const fs = require('fs');
+const crypto = require('crypto');
 const path = require('path');
 const { barajar, crearMazo, siguienteVivo, resolverCartas } = require('./reglas');
 const cors = require('cors');
@@ -321,6 +322,139 @@ io.use((socket, next) => {
 // ==========================================
 // RUTAS AUTH
 // ==========================================
+// ==========================================
+// CÓDIGO DE RECUPERACIÓN DE CUENTA
+// ==========================================
+// No se pide correo: al registrarse (o desde el perfil) el jugador recibe un
+// código de 12 caracteres que se muestra una sola vez; en la base solo queda
+// su hash bcrypt. Con usuario + código se cambia la contraseña, y el código
+// usado se reemplaza por uno nuevo.
+const ALFABETO_CODIGO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sin 0/O ni 1/I
+function generarCodigoRecuperacion() {
+    let c = '';
+    for (let i = 0; i < 12; i++) c += ALFABETO_CODIGO[crypto.randomInt(ALFABETO_CODIGO.length)];
+    return `${c.slice(0, 4)}-${c.slice(4, 8)}-${c.slice(8)}`;
+}
+// Acepta el código con o sin guiones, espacios o minúsculas.
+function normalizarCodigo(c) {
+    return String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+async function nuevoCodigoRecuperacion(username) {
+    const codigo = generarCodigoRecuperacion();
+    const hash = await bcrypt.hash(normalizarCodigo(codigo), 10);
+    await conRetry(
+        () => pool.execute('UPDATE usuarios SET codigo_recuperacion = ? WHERE username = ?', [hash, username]),
+        { op: 'guardar_codigo', username }
+    );
+    return codigo;
+}
+
+app.post('/recuperar', limitarLogin, async (req, res) => {
+    const { username, codigo, password } = req.body || {};
+    const error = 'Usuario o código de recuperación incorrectos.';
+    if (!esUsernameLogin(username) || normalizarCodigo(codigo).length !== 12) return res.status(401).json({ error });
+    if (!esPasswordValida(password)) return res.status(400).json({ error: 'La contraseña nueva debe tener entre 4 y 100 caracteres.' });
+    try {
+        const [rows] = await conRetry(
+            () => pool.execute('SELECT username, codigo_recuperacion FROM usuarios WHERE username = ?', [username]),
+            { op: 'recuperar' });
+        const user = rows[0];
+        // Siempre comparar contra un hash (real o dummy): mismo tiempo exista o no.
+        const valido = await bcrypt.compare(normalizarCodigo(codigo), (user && user.codigo_recuperacion) || HASH_DUMMY_LOGIN);
+        if (!user || !user.codigo_recuperacion || !valido) return res.status(401).json({ error });
+        const hashPassword = await bcrypt.hash(password, 10);
+        await conRetry(
+            () => pool.execute('UPDATE usuarios SET password_hash = ? WHERE username = ?', [hashPassword, user.username]),
+            { op: 'recuperar_password', username });
+        const codigoRecuperacion = await nuevoCodigoRecuperacion(user.username);
+        log.info('Contraseña recuperada con código', { username: user.username });
+        res.json({ mensaje: 'Listo: cambiaste tu contraseña. Ya puedes iniciar sesión.', username: user.username, codigoRecuperacion });
+    } catch (e) {
+        log.error('Recuperar falló', { error: e.message, codigo: e.code });
+        res.status(500).json({ error: 'Error en el servidor.' });
+    }
+});
+
+// Genera un código nuevo (invalida el anterior). Requiere sesión iniciada.
+app.post('/codigo-recuperacion', limitarAuth, async (req, res) => {
+    const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+    let datos;
+    try { datos = jwt.verify(token, JWT_SECRET); } catch { return res.status(401).json({ error: 'Tu sesión expiró. Vuelve a iniciar sesión.' }); }
+    try {
+        const codigoRecuperacion = await nuevoCodigoRecuperacion(datos.username);
+        res.json({ codigoRecuperacion });
+    } catch (e) {
+        log.error('Nuevo código falló', { error: e.message });
+        res.status(500).json({ error: 'Error en el servidor.' });
+    }
+});
+
+// ==========================================
+// PANEL DE USO (/estadisticas.html)
+// ==========================================
+// Protegido con PANEL_CLAVE (.env) en el encabezado x-clave. Sin clave
+// configurada, el panel queda apagado.
+function claveDelPanelValida(req) {
+    const esperada = process.env.PANEL_CLAVE || '';
+    const recibida = String(req.headers['x-clave'] || '');
+    if (!esperada || recibida.length !== esperada.length) return false;
+    return crypto.timingSafeEqual(Buffer.from(recibida), Buffer.from(esperada));
+}
+
+app.get('/api/panel', limitarLectura, async (req, res) => {
+    if (!claveDelPanelValida(req)) return res.status(401).json({ error: 'Clave incorrecta.' });
+    const q = async (sql, p = []) => (await conRetry(() => pool.execute(sql, p), { op: 'panel' }))[0];
+    try {
+        const DIAS = 14;
+        // Las filas guardadas antes de existir la columna `partida` se agrupan
+        // por ganador y minuto (las de una misma partida se insertan juntas).
+        const ID_PARTIDA = "COALESCE(partida, CONCAT('antes-', COALESCE(ganador, ''), '-', DATE_FORMAT(fecha, '%Y%m%d%H%i')))";
+        const [totales] = await q(`SELECT
+            (SELECT COUNT(*) FROM usuarios) AS usuarios,
+            (SELECT COUNT(*) FROM usuarios WHERE fecha_registro >= NOW() - INTERVAL 7 DAY) AS nuevos7,
+            (SELECT COUNT(DISTINCT ${ID_PARTIDA}) FROM historial) AS partidas,
+            (SELECT COUNT(DISTINCT username) FROM historial WHERE fecha >= NOW() - INTERVAL 7 DAY) AS activos7,
+            (SELECT COUNT(*) FROM logros) AS logros`);
+        const porDia = await q(`SELECT DATE(fecha - INTERVAL 6 HOUR) AS dia, COUNT(DISTINCT ${ID_PARTIDA}) AS partidas, COUNT(DISTINCT username) AS jugadores
+            FROM historial WHERE fecha - INTERVAL 6 HOUR >= DATE(NOW() - INTERVAL 6 HOUR) - INTERVAL ${DIAS - 1} DAY GROUP BY DATE(fecha - INTERVAL 6 HOUR)`);
+        const registros = await q(`SELECT DATE(fecha_registro - INTERVAL 6 HOUR) AS dia, COUNT(*) AS n FROM usuarios
+            WHERE fecha_registro - INTERVAL 6 HOUR >= DATE(NOW() - INTERVAL 6 HOUR) - INTERVAL ${DIAS - 1} DAY GROUP BY DATE(fecha_registro - INTERVAL 6 HOUR)`);
+        const modos = await q(`SELECT modo, COUNT(DISTINCT ${ID_PARTIDA}) AS n FROM historial GROUP BY modo ORDER BY n DESC`);
+        const caidas = await q(`SELECT cayo_ronda AS ronda, COUNT(*) AS n FROM historial WHERE cayo_ronda IS NOT NULL GROUP BY cayo_ronda ORDER BY cayo_ronda`);
+        const [abandonos] = await q(`SELECT COUNT(*) AS n, (SELECT COUNT(*) FROM historial) AS total FROM historial WHERE cayo_ronda IS NULL AND lugar <> 1`);
+        const logrosGanados = await q(`SELECT logro, COUNT(*) AS n FROM logros GROUP BY logro`);
+
+        // En vivo, desde la memoria del servidor.
+        const salas = Object.values(estadoSalas);
+        const enVivo = {
+            conectados: io.engine.clientsCount,
+            salasJugando: salas.filter(s => ["TURNOS_INTERCAMBIO", "REVELACION", "PREPARANDO_NUEVA_RONDA"].includes(s.estadoActual)).length,
+            salasEsperando: salas.filter(s => s.estadoActual === "LOBBY").length,
+            humanosEnMesa: salas.reduce((n, s) => n + s.jugadores.filter(j => !j.esBot && j.online).length, 0),
+        };
+
+        // Serie de días completa (los días sin partidas en cero), en hora de
+        // la Ciudad de México (UTC-6); la base guarda UTC.
+        const clave = d => (d instanceof Date ? d.toISOString() : String(d)).slice(0, 10);
+        const hoyMx = new Date(Date.now() - 6 * 3600 * 1000);
+        const dias = [];
+        for (let i = DIAS - 1; i >= 0; i--) {
+            const k = new Date(hoyMx.getTime() - i * 86400000).toISOString().slice(0, 10);
+            const fila = porDia.find(r => clave(r.dia) === k) || {};
+            const reg = registros.find(r => clave(r.dia) === k) || {};
+            dias.push({ dia: k, partidas: fila.partidas || 0, jugadores: fila.jugadores || 0, registros: reg.n || 0 });
+        }
+        res.json({
+            generado: new Date().toISOString(), totales, enVivo, dias, modos, caidas,
+            abandonos: { n: abandonos.n, total: abandonos.total },
+            logros: logros.CATALOGO.map(l => ({ id: l.id, titulo: l.titulo, n: (logrosGanados.find(g => g.logro === l.id) || {}).n || 0 })),
+        });
+    } catch (e) {
+        log.error('Panel falló', { error: e.message });
+        res.status(500).json({ error: 'Error al cargar el panel.' });
+    }
+});
+
 app.post('/registro', limitarAuth, async (req, res) => {
     const { username, password } = req.body || {};
     if (!esUsernameRegistro(username)) {
@@ -335,7 +469,10 @@ app.post('/registro', limitarAuth, async (req, res) => {
             () => pool.execute('INSERT INTO usuarios (username, password_hash) VALUES (?, ?)', [username, hashedPassword]),
             { op: 'registro', username }
         );
-        res.status(201).json({ mensaje: '¡Cuenta creada! Ya puedes iniciar sesión.' });
+        // Si falla guardar el código, la cuenta igual queda creada: se genera
+        // después desde el perfil.
+        const codigoRecuperacion = await nuevoCodigoRecuperacion(username).catch(() => null);
+        res.status(201).json({ mensaje: '¡Cuenta creada! Ya puedes iniciar sesión.', codigoRecuperacion });
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY') {
             res.status(400).json({ error: 'Ese nombre de usuario ya está ocupado.' });
@@ -503,9 +640,9 @@ async function registrarHistorialYLogros(sala, ganador, humanos) {
         const caida = (sala.caidas || []).find(c => c.nombre === j.nombre);
         await conRetry(
             () => pool.execute(
-                `INSERT INTO historial (username, lugar, jugadores, rondas, ganador, cayo_ronda, modo)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [j.nombre, lugarDe(j.nombre), sala.jugadores.length, sala.rondaActual,
+                `INSERT INTO historial (username, partida, lugar, jugadores, rondas, ganador, cayo_ronda, modo)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [j.nombre, sala.idPartida || null, lugarDe(j.nombre), sala.jugadores.length, sala.rondaActual,
                  hayGanador ? ganador.nombre : null, caida ? caida.ronda : null, modo]
             ),
             { op: 'insert_historial', nombre: j.nombre }
@@ -807,7 +944,10 @@ function iniciarRonda(sala, io) {
     sala.rondaActual += 1;
     // Contadores de la partida para historial y logros (se reinician en la
     // ronda 1: partida nueva o revancha).
-    if (sala.rondaActual === 1) { sala.caidas = []; sala.vidasPerdidas = {}; }
+    if (sala.rondaActual === 1) {
+        sala.caidas = []; sala.vidasPerdidas = {};
+        sala.idPartida = `${sala.idSala}-${Date.now().toString(36)}`; // agrupa el historial por partida
+    }
     sala.estadoActual = "TURNOS_INTERCAMBIO";
 
     io.to(sala.idSala).emit('accionMesa', {
@@ -1394,6 +1534,30 @@ io.on('connection', (socket) => {
         log.info('Sala creada', { idSala, host: nombreUsuarioLogueado, bots: cfg.numBots });
     });
 
+    // Mesas públicas esperando jugadores (pestaña Unirse del lobby).
+    socket.on('listarSalas', () => {
+        if (!permitir(socket.id, 'listarSalas', 1500)) return;
+        const ahora = Date.now();
+        const salas = Object.values(estadoSalas)
+            .filter(s => s.estadoActual === "LOBBY" && !s.password && !s.config.practica
+                && s.jugadores.length < s.config.maxJugadores
+                && s.jugadores.some(j => !j.esBot && j.online)
+                && !s.jugadores.some(j => j.nombre === nombreUsuarioLogueado))
+            .slice(0, 20)
+            .map(s => ({
+                idSala: s.idSala,
+                anfitrion: (s.jugadores.find(j => !j.esBot) || {}).nombre || '',
+                jugadores: s.jugadores.length,
+                max: s.config.maxJugadores,
+                modoJuego: s.config.modoJuego,
+                modoRey: s.config.modoRey,
+                vidas: s.config.vidas,
+                rapida: !!s.config.rapida,
+                faltanMs: s.config.rapida ? Math.max(0, (s.arrancaEn || ahora) - ahora) : null,
+            }));
+        socket.emit('salasAbiertas', salas);
+    });
+
     socket.on('partidaRapida', () => {
         if (!permitir(socket.id, 'partidaRapida', 2000)) return;
         const username = socket.usuario ? socket.usuario.username : null;
@@ -1669,6 +1833,7 @@ async function agregarColumnasSiNoExisten() {
         { nombre: 'partidas_jugadas', def: 'INT DEFAULT 0' },
         { nombre: 'racha_actual',     def: 'INT DEFAULT 0' },
         { nombre: 'racha_maxima',     def: 'INT DEFAULT 0' },
+        { nombre: 'codigo_recuperacion', def: 'VARCHAR(255) DEFAULT NULL' }, // hash bcrypt
     ];
     for (const col of columnas) {
         if (!REGEX_NOMBRE_COLUMNA.test(col.nombre)) {
@@ -1720,6 +1885,13 @@ async function crearTablasSiNoExisten() {
         fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (username, logro)
     )`), { op: 'crear_logros' });
+    // Columna agregada después de crear la tabla: id de partida para contarlas.
+    const [col] = await pool.execute(`SELECT COUNT(*) AS n FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'historial' AND COLUMN_NAME = 'partida'`);
+    if (col[0].n === 0) {
+        await pool.execute('ALTER TABLE historial ADD COLUMN partida VARCHAR(40) NULL AFTER username');
+        log.info('Columna partida agregada a historial');
+    }
 }
 
 // ==========================================

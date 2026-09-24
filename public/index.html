@@ -74,6 +74,7 @@
             <div style="margin-top:20px;">
                 <button id="btnLogin" class="boton-oro boton-lobby full-width margin-top-10">INICIAR SESIÓN</button>
                 <button id="btnRegistro" class="boton-madera boton-lobby full-width margin-top-10">CREAR CUENTA NUEVA</button>
+                <button id="btnOlvide" class="enlace-suave">¿Olvidaste tu contraseña?</button>
             </div>
         </div>
 
@@ -233,6 +234,8 @@
                     <button id="btnUnirseSala" class="boton-oro boton-lobby full-width">UNIRSE A LA PARTIDA</button>
                     <p style="font-size:11px; color:var(--texto-suave); text-align:center; margin:12px 0 0;">¿Tienes enlace de invitación? Ábrelo y entrarás directo. También puedes apuntar la cámara normal de tu celular al QR.</p>
                 </div>
+                <p class="lobby-section-label" style="margin-top:18px;">Mesas abiertas</p>
+                <ul id="listaSalasAbiertas" class="salas-abiertas" aria-live="polite"><li class="salas-vacio">Buscando mesas…</li></ul>
             </section>
 
             <!-- PANEL JUGADORES (Lobby activo) -->
@@ -443,11 +446,40 @@
             <ul id="pLogros" class="perfil-logros"></ul>
             <h4 class="perfil-seccion">Últimas partidas</h4>
             <ol id="pHistorial" class="perfil-historial"><li class="perfil-vacio">Cargando…</li></ol>
+            <h4 class="perfil-seccion">Recuperación de cuenta</h4>
+            <p class="perfil-nota">Si olvidas tu contraseña, la recuperas con tu código. Si lo perdiste, genera uno nuevo: el anterior deja de servir.</p>
+            <button id="btnNuevoCodigo" class="boton-madera boton-lobby full-width"><svg class="icono" aria-hidden="true"><use href="#i-candado"/></svg> Generar código de recuperación</button>
             <button id="btnCerrarPerfil" class="boton-madera boton-lobby full-width" style="margin-top:16px;font-size:14px;padding:10px;">Cerrar</button>
         </div>
     </div>
 
     <!-- Modal Contraseña (unirse vía link a sala protegida) -->
+    <!-- Código de recuperación (se muestra una sola vez) -->
+    <div id="modalCodigo" class="hidden modal-overlay" role="dialog" aria-labelledby="tituloCodigo">
+        <div class="modal-caja">
+            <h3 id="tituloCodigo" class="medieval-font modal-titulo"><svg class="icono" aria-hidden="true"><use href="#i-candado"/></svg> Tu código de recuperación</h3>
+            <p id="codigoMensaje" class="perfil-nota"></p>
+            <p id="codigoValor" class="codigo-recuperacion"></p>
+            <p class="perfil-nota">Si olvidas tu contraseña, con este código la cambias. <strong>Guárdalo</strong> (una captura de pantalla sirve): no lo volveremos a mostrar.</p>
+            <button id="btnCopiarCodigo" class="boton-madera boton-lobby full-width"><svg class="icono" aria-hidden="true"><use href="#i-enlace"/></svg> Copiar código</button>
+            <button id="btnCodigoGuardado" class="boton-oro boton-lobby full-width margin-top-10">Ya lo guardé</button>
+        </div>
+    </div>
+
+    <!-- Recuperar contraseña con el código -->
+    <div id="modalRecuperar" class="hidden modal-overlay" role="dialog" aria-labelledby="tituloRecuperar">
+        <div class="modal-caja">
+            <h3 id="tituloRecuperar" class="medieval-font modal-titulo">Recuperar contraseña</h3>
+            <p class="perfil-nota">Escribe tu usuario, el código de recuperación que guardaste y una contraseña nueva.</p>
+            <input type="text" id="recUsuario" class="medieval-input" placeholder="Nombre de usuario" autocapitalize="none" autocorrect="off" autocomplete="username" spellcheck="false">
+            <input type="text" id="recCodigo" class="medieval-input" placeholder="Código (XXXX-XXXX-XXXX)" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false">
+            <input type="password" id="recPassword" class="medieval-input" placeholder="Contraseña nueva" autocomplete="new-password">
+            <p id="recError" class="rec-error hidden" role="alert"></p>
+            <button id="btnRecuperar" class="boton-oro boton-lobby full-width margin-top-10">Cambiar contraseña</button>
+            <button id="btnCancelarRecuperar" class="boton-madera boton-lobby full-width margin-top-10">Cancelar</button>
+        </div>
+    </div>
+
     <!-- Escáner de QR en vivo (solo con HTTPS; sin él se usa la foto) -->
     <div id="escanerQR" class="escaner-qr hidden" role="dialog" aria-label="Escanear QR de la sala">
         <video id="videoEscaner" playsinline muted></video>
@@ -569,6 +601,7 @@
                 panelUnir.classList.add('hidden');
             } else {
                 tabUnirse.classList.add('active');
+                setTimeout(() => window.alAbrirUnirse && window.alAbrirUnirse(), 0);
                 tabCrear.classList.remove('active');
                 panelUnir.classList.remove('hidden');
                 panelCrear.classList.add('hidden');
