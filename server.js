@@ -270,8 +270,10 @@ function sanitizarConfig(raw) {
     const maxMesa = equipos ? equipos * 2 : maxJugadores;
     // En parejas los bots no ocupan lugares desde el lobby (dejarían fuera a
     // los amigos): entran al empezar, solo en los lugares que quedaron libres.
+    // En parejas el tiempo es fijo: hay que ver tu carta y la de tu compañero.
+    const TIEMPO_PAREJAS = 20;
     return { vidas, maxJugadores: maxMesa, numBots: equipos ? 0 : Math.min(numBots, maxMesa - 1), modoJuego, modoRey, frecuenciaReyes,
-             dificultadBots, tiempoTurno, eventos: conEventos, poderes: conPoderes, equipos, password };
+             dificultadBots, tiempoTurno: equipos ? TIEMPO_PAREJAS : tiempoTurno, eventos: conEventos, poderes: conPoderes, equipos, password };
 }
 
 // Formato del idSala: 5 caracteres alfanuméricos. El alfabeto real es

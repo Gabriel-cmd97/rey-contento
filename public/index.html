@@ -647,7 +647,7 @@
                 <li><strong>Salto</strong> (en tu turno): cambias con quien está dos lugares a tu derecha.</li>
                 <li><strong>Escudo</strong> (en cualquier momento de la ronda): nadie puede cambiar contigo esa ronda.</li>
             </ul>
-            <p><strong>Parejas</strong> (2 contra 2 o 3 contra 3): los equipos Oro y Plata se sientan alternados, así que tu vecino de la derecha siempre es rival. Las vidas son del equipo: si alguien del equipo tiene la carta mortal, el equipo pierde una vida. <strong>Ves la carta de tu compañero</strong> (los rivales no). Gana el último equipo con vidas. Con poderes, el Salto te deja cambiar con tu compañero.</p>
+            <p><strong>Parejas</strong> (2 contra 2 o 3 contra 3): los equipos Oro y Plata se sientan alternados, así que tu vecino de la derecha siempre es rival. Las vidas son del equipo: si alguien del equipo tiene la carta mortal, el equipo pierde una vida. <strong>Ves la carta de tu compañero</strong> (los rivales no). Gana el último equipo con vidas. Cada turno dura 20 segundos, para que alcances a ver tu carta y la de tu compañero. Con poderes, el Salto te deja cambiar con tu compañero.</p>
             <p><strong>Duelo final:</strong> cuando solo quedan dos jugadores, se enfrentan cara a cara y sus cartas chocan al centro de la mesa.</p>
             <h3 class="medieval-font" style="color:var(--oro-tinta);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> Modo Campana</h3>
             <p style="margin-bottom:4px;"><strong>Regla invertida:</strong> aquí pierde quien tiene la carta <strong>más alta</strong>. ¡Quieres cartas pequeñas!</p>
@@ -712,11 +712,13 @@
             const selDif    = document.getElementById('selectDificultadBots');
             document.getElementById('bloqueDificultadBots')?.classList.toggle('hidden', numBots === 0);
             const bots      = numBots > 0 ? ` · ${ic('bot')} ${selDif.options[selDif.selectedIndex].text}` : '';
-            const tiempo    = document.getElementById('selectTiempoTurno')?.value || '15';
+            // En parejas el tiempo es fijo (20 s): el servidor ignora el selector.
+            const enParejas = parseInt(document.getElementById('selectEquipos')?.value || '0') > 0;
+            const tiempo    = enParejas ? '20' : (document.getElementById('selectTiempoTurno')?.value || '15');
             // Parejas: la mesa es de 4 o 6 y se completa con bots; el número de
             // jugadores y de bots ya no se elige.
             const equipos = parseInt(document.getElementById('selectEquipos')?.value || '0');
-            ['selectJugadores', 'selectBots'].forEach(id => {
+            ['selectJugadores', 'selectBots', 'selectTiempoTurno'].forEach(id => {
                 const el = document.getElementById(id);
                 if (!el) return;
                 el.disabled = equipos > 0;
