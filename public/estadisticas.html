@@ -155,7 +155,7 @@
 <script>
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const NOMBRE_MODO = { CLASICO: 'Clásico', CAMPANA: 'Campana', RAPIDA: 'Partida rápida' };
+    const NOMBRE_MODO = { CLASICO: 'Clásico', CAMPANA: 'Campana', RAPIDA: 'Partida rápida', PAREJAS: 'Parejas' };
     let clave = '';
     try { clave = sessionStorage.getItem('panelClave') || ''; } catch { /* sin storage */ }
 

@@ -107,3 +107,33 @@ test('evento Amnistía: nadie pierde vida y el de la más baja queda castigado',
     assert.deepStrictEqual(r.perdedores, []);
     assert.deepStrictEqual(r.castigados, ['a', 'c']);
 });
+
+// --- Parejas (config.equipos) ---
+const conEquipos = (jugadores, extra = {}) => sala(jugadores, { equipos: 2 }, extra);
+const je = (id, carta, equipo, v = 3) => ({ ...j(id, carta, v), equipo });
+
+test('parejas: el equipo con la carta mortal pierde una vida para todos sus integrantes', () => {
+    const s = conEquipos([je('a1', 2, 0), je('b1', 6, 1), je('a2', 7, 0), je('b2', 5, 1)]);
+    const r = resolverCartas(s);
+    assert.deepStrictEqual(vidas(s), [2, 3, 2, 3]);
+    assert.deepStrictEqual(r.culpables, ['a1']);
+    assert.deepStrictEqual(r.perdedores.sort(), ['a1', 'a2']);
+});
+
+test('parejas: si los dos compañeros tienen la carta mortal, el equipo pierde solo una vida', () => {
+    const s = conEquipos([je('a1', 2, 0), je('b1', 6, 1), je('a2', 2, 0), je('b2', 5, 1)]);
+    resolverCartas(s);
+    assert.deepStrictEqual(vidas(s), [2, 3, 2, 3]);
+});
+
+test('parejas: si ambos equipos tienen la carta mortal, los dos pierden', () => {
+    const s = conEquipos([je('a1', 2, 0), je('b1', 2, 1), je('a2', 7, 0), je('b2', 5, 1)]);
+    resolverCartas(s);
+    assert.deepStrictEqual(vidas(s), [2, 2, 2, 2]);
+});
+
+test('parejas con doble castigo: el equipo pierde 2 vidas', () => {
+    const s = conEquipos([je('a1', 1, 0), je('b1', 6, 1), je('a2', 7, 0), je('b2', 5, 1)], { evento: 'DOBLE_CASTIGO' });
+    resolverCartas(s);
+    assert.deepStrictEqual(vidas(s), [1, 3, 1, 3]);
+});

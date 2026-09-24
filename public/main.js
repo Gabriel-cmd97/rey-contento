@@ -602,6 +602,7 @@ function actualizarGuiaTurno(esMio, esCampana, campanaTocada) {
     const lineas = ['✋ Te quedas con tu carta', textoCambiar];
     if (eventoActual?.id === 'NIEBLA') lineas.push('🌫️ Niebla: decides sin ver tu carta');
     if (misPoderes.length) lineas.push('✨ Tienes poderes: úsalos antes de decidir');
+    if (miEquipo() !== undefined && miEquipo() !== null) lineas.push('🤝 Ves la carta de tu compañero (los rivales no)');
     if (eventoActual?.id === 'MUNDO_AL_REVES') lineas.push('🔄 Mundo al revés: esta ronda pierde la carta más alta');
     if (esCampana && !campanaTocada) lineas.push('🔔 Cierra la ronda: tócala si crees tener la carta más baja');
     lineas.push('👆 También con tu carta: deslízala a la derecha para cambiar, tócala dos veces para mantener');
@@ -660,6 +661,13 @@ function explicacionRonda(datos) {
         return '🤝 Empate total: todos tenían la misma carta, nadie pierde.';
     }
     const toqueCampana = datos.campana && datos.campana.tocadorId === socket.id;
+    if (yo.equipo !== undefined && yo.equipo !== null) {
+        const quien = (datos.culpables || []).map(n => n === miNombreUsuario ? 'tú' : n).join(' y ');
+        const tuEquipo = `Equipo ${NOMBRE_EQUIPO[yo.equipo]}`;
+        return pierdo
+            ? `💔 ${tuEquipo} pierde${eventoActual?.id === 'DOBLE_CASTIGO' ? ' 2 vidas' : ' una vida'}: ${quien} ${quien === 'tú' ? 'tenías' : 'tenía'} la carta ${extremo} (${datos.cartaMortal}).`
+            : `✅ ${tuEquipo} se salvó. La carta ${extremo} fue el ${datos.cartaMortal}${quien ? ` (${quien})` : ''}.`;
+    }
     if (pierdo) {
         let t = `💔 Perdiste${eventoActual?.id === 'DOBLE_CASTIGO' ? ' 2 vidas (doble castigo)' : ''}: tu ${yo.cartaActual} era la carta ${extremo}.`;
         if (toqueCampana && !datos.campana.acertada) t += ' Y tocaste la campana con ella: una vida extra.';
@@ -1130,10 +1138,11 @@ function pintarSalasAbiertas(salas) {
         const detalle = [`${s.vidas} ${s.vidas === 1 ? 'vida' : 'vidas'}`, NOMBRE_MODO_JUEGO[s.modoJuego] || '',
             s.modoRey === 'DECLARADO' ? 'Rey declarado' : 'Rey sorpresa'].filter(Boolean).join(' · ');
         const extra = s.rapida && s.faltanMs != null ? ` · empieza en ${Math.ceil(s.faltanMs / 1000)} s` : '';
+        const parejas = s.equipos ? ` · ${s.equipos} contra ${s.equipos}` : '';
         return `<li class="sala-abierta">
             <span class="sala-abierta-info">
                 <strong>${titulo}</strong>
-                <span>${icono('grupo')} ${s.jugadores}/${s.max} · ${detalle}${extra}</span>
+                <span>${icono('grupo')} ${s.jugadores}/${s.max}${parejas} · ${detalle}${extra}</span>
             </span>
             <button class="boton-oro sala-abierta-entrar" data-sala="${escapeHTML(s.idSala)}">Entrar</button>
         </li>`;
@@ -1489,6 +1498,32 @@ function practicaPoderesEvento(tipo, datos) {
 }
 
 // ==========================================
+// PAREJAS
+// ==========================================
+// El servidor manda 'cartaCompanero' con la carta de cada compañero (solo a
+// su equipo). Se muestra boca arriba en su asiento con el color del equipo.
+const NOMBRE_EQUIPO = ['Oro', 'Plata'];
+let _cartasCompaneros = {}; // id → carta, se vacía cada ronda
+
+function miEquipo() {
+    return listaJugadoresGlobal.find(j => j.id === socket.id)?.equipo;
+}
+
+// Marcador de vidas por equipo sobre la mesa.
+function pintarMarcadorEquipos() {
+    const el = document.getElementById('marcadorEquipos');
+    if (!el) return;
+    const conEquipos = listaJugadoresGlobal.some(j => j.equipo !== undefined && j.equipo !== null);
+    el.classList.toggle('hidden', !conEquipos);
+    if (!conEquipos) return;
+    const mio = miEquipo();
+    el.innerHTML = [0, 1].map(e => {
+        const vidas = Math.max(0, ...listaJugadoresGlobal.filter(j => j.equipo === e).map(j => j.vidas));
+        return `<span class="marcador-equipo equipo-${e}${e === mio ? ' mio' : ''}">${NOMBRE_EQUIPO[e]} ${icono('corazon')} ${vidas}</span>`;
+    }).join('');
+}
+
+// ==========================================
 // PANTALLA DE VICTORIA — tabla final
 // ==========================================
 // El servidor solo manda al ganador, así que el orden de caída se anota aquí
@@ -1507,23 +1542,32 @@ function registrarCaidas(datos) {
 function pintarFinalPartida(ganador) {
     const rondas = parseInt(document.getElementById('numRonda')?.innerText || '0', 10) || 0;
     const hayGanador = !!ganador.id;
-    const gane = hayGanador && ganador.id === socket.id;
+    const gane = ganador.esEquipo ? (ganador.integrantes || []).includes(miNombreUsuario) : (hayGanador && ganador.id === socket.id);
 
     document.getElementById('victoriaResumen').textContent =
         rondas ? `Fin de la partida · ${rondas} ${rondas === 1 ? 'ronda' : 'rondas'}` : 'Fin de la partida';
     document.getElementById('victoriaTitulo').textContent = !hayGanador
         ? 'Nadie se queda con la corona'
+        : ganador.esEquipo ? (gane ? '¡Tu equipo ganó!' : `¡Ganó el ${ganador.nombre}!`)
         : gane ? '¡Eres el Rey Contento!' : '¡Tenemos un Rey!';
     document.getElementById('pantallaVictoria').classList.toggle('victoria-propia', gane);
 
     // Tabla: ganador arriba y luego del último en caer al primero.
     const filas = [];
-    if (hayGanador) {
+    if (ganador.esEquipo) {
+        // Parejas: el equipo ganador arriba, el otro abajo.
+        const ganadores = ganador.integrantes || [];
+        const otros = listaJugadoresGlobal.map(j => j.nombre).filter(n => !ganadores.includes(n));
+        ganadores.forEach(n => filas.push({ lugar: 1, nombre: n, detalle: ganador.nombre, esYo: n === miNombreUsuario }));
+        otros.forEach(n => filas.push({ lugar: 2, nombre: n, detalle: `Equipo ${NOMBRE_EQUIPO[1 - ganador.equipo]}`, esYo: n === miNombreUsuario }));
+        _caidasPartida = [];
+    }
+    if (hayGanador && !ganador.esEquipo) {
         const vidas = ganador.vidas > 0 ? `${ganador.vidas} ${ganador.vidas === 1 ? 'vida' : 'vidas'} en pie` : '';
         filas.push({ lugar: 1, nombre: ganador.nombre, detalle: vidas, esYo: gane });
     }
     // Quienes cayeron en la misma ronda comparten lugar.
-    [..._caidasPartida].reverse().forEach((c, i, caidas) => {
+    if (!ganador.esEquipo) [..._caidasPartida].reverse().forEach((c, i, caidas) => {
         const anterior = filas[filas.length - 1];
         const mismaRonda = i > 0 && caidas[i - 1].ronda === c.ronda;
         const lugar = mismaRonda ? anterior.lugar : filas.length + 1;
@@ -1831,7 +1875,7 @@ function pintarLogrosPerfil(catalogo, ganados) {
     }).join('');
 }
 
-const NOMBRE_MODO = { CLASICO: 'Clásico', CAMPANA: 'Campana', RAPIDA: 'Rápida' };
+const NOMBRE_MODO = { CLASICO: 'Clásico', CAMPANA: 'Campana', RAPIDA: 'Rápida', PAREJAS: 'Parejas' };
 
 function pintarHistorialPerfil(historial) {
     const lista = document.getElementById('pHistorial');
@@ -2403,6 +2447,8 @@ function dibujarMesaCircular() {
     const nombreMesa = document.getElementById('miNombreMesa');
     const vidasMesa = document.getElementById('misVidasMesa');
     document.getElementById('miPerfil')?.classList.toggle('con-escudo', !!miJugador.escudo && miJugador.vidas > 0);
+    ['equipo-0', 'equipo-1'].forEach(c => document.getElementById('miPerfil')?.classList.toggle(c, `equipo-${miJugador.equipo}` === c));
+    pintarMarcadorEquipos();
     if (nombreMesa) nombreMesa.innerHTML = icono(miJugador.dealer ? 'corona' : 'persona') + ' ' + escapeHTML(miJugador.nombre);
     if (vidasMesa) vidasMesa.innerHTML = miJugador.vidas > 0 ? icono('corazon') + ' ' + miJugador.vidas : icono('calavera') + ' 0';
 
@@ -2551,6 +2597,15 @@ function dibujarMesaCircular() {
                         <div style="line-height:1;margin-top:2px;">${figuraIMG(op.cartaActual, 22)}</div>
                         <div style="font-size:11px;text-align:center;line-height:1.1;margin-top:4px;">${nombresCartas[op.cartaActual]}</div>
                     </div>`;
+            } else if (op.vidas > 0 && _cartasCompaneros[op.id] !== undefined) {
+                // Tu compañero: su carta, visible solo para tu equipo.
+                const n = _cartasCompaneros[op.id];
+                cartaHTML = `
+                    <div class="mini-carta-frente carta-companero equipo-${op.equipo} ${n === 9 ? 'mini-carta-9' : n === 0 ? 'mini-carta-0' : ''}">
+                        <div style="font-size:34px;font-weight:bold;line-height:1;">${n}</div>
+                        <div style="line-height:1;margin-top:2px;">${figuraIMG(n, 22)}</div>
+                        <div style="font-size:11px;text-align:center;line-height:1.1;margin-top:4px;">${nombresCartas[n]}</div>
+                    </div>`;
             } else if (op.vidas > 0 && _espiado && _espiado.id === op.id) {
                 // Espiada: solo tú la ves, marcada con el ojo.
                 const n = _espiado.carta;
@@ -2585,7 +2640,7 @@ function dibujarMesaCircular() {
         let claseEstado = estaMuerto ? 'jugador-eliminado' : '';
 
         divSilla.innerHTML = `
-            <div class="perfil-oponente ${claseEstado} ${animReparto} ${claseDanio} ${op.escudo && !estaMuerto ? 'con-escudo' : ''}">
+            <div class="perfil-oponente ${claseEstado} ${animReparto} ${claseDanio} ${op.escudo && !estaMuerto ? 'con-escudo' : ''} ${op.equipo !== undefined && op.equipo !== null ? `equipo-${op.equipo}` : ''}">
                 <div style="font-size:13px;font-weight:bold;line-height:1.2;word-wrap:break-word;">${iconoAsiento} ${escapeHTML(op.nombre)}</div>
                 <span class="vidas-destacadas">${estaMuerto ? icono('calavera') + ' 0' : icono('corazon') + ' ' + op.vidas}${op.numPoderes && !estaMuerto ? `<span class="num-poderes" title="Poderes guardados">${icono('rayo')}${op.numPoderes}</span>` : ''}</span>
             </div>
@@ -2777,6 +2832,7 @@ function conectarSocket() {
                 tiempoTurno: parseInt(document.getElementById('selectTiempoTurno').value),
                 eventos: document.getElementById('selectEventos').value !== 'NO',
                 poderes: document.getElementById('selectPoderes').value === 'SI',
+                equipos: parseInt(document.getElementById('selectEquipos').value || '0'),
                 modoJuego: document.getElementById('selectModoJuego').value,
                 password: document.getElementById('inputPasswordSala').value.trim()
             }
@@ -2786,6 +2842,11 @@ function conectarSocket() {
     socket.on('salasAbiertas', pintarSalasAbiertas);
 
     // --- PODERES ---
+    socket.on('cartaCompanero', ({ id, carta }) => {
+        _cartasCompaneros[id] = carta;
+        dibujarMesaCircular();
+    });
+
     socket.on('misPoderes', (lista) => { misPoderes = Array.isArray(lista) ? lista : []; pintarBarraPoderes(); });
     socket.on('poderGanado', ({ poder, poderes }) => {
         misPoderes = poderes || misPoderes;
@@ -2917,6 +2978,7 @@ function conectarSocket() {
         window._reingresando = false; window._servidorReinicio = false;
         const jugadores = Array.isArray(datos) ? datos : datos.jugadores;
         const maxJug = (datos && datos.maxJugadores) ? datos.maxJugadores : parseInt(document.getElementById('selectJugadores')?.value || 8);
+        const conEquipos = !!(datos && datos.equipos);
         setTimeout(pintarEsperaRapida, 0);
 
         listaJugadoresGlobal = jugadores.map(j =>
@@ -2952,18 +3014,23 @@ function conectarSocket() {
             return `<li>
                 <div class="jugador-avatar-lobby" style="background:${color};">${esBot ? icono('bot') : inicial}</div>
                 <span class="jugador-nombre-lobby">${escapeHTML(j.nombre)}</span>
+                ${conEquipos ? `<span class="etiqueta-equipo equipo-${i % 2}">${NOMBRE_EQUIPO[i % 2]}</span>` : ''}
                 <span class="jugador-badge-lobby" style="${badgeStyle}">${badge}</span>
             </li>`;
         }).join('');
 
         const slotsEl = document.getElementById('slotsVacios');
         if (slotsEl) {
-            const vacios = Math.max(0, Math.min(3, maxJug - jugadores.length));
-            slotsEl.innerHTML = Array(vacios).fill(0).map(() => `
+            const vacios = Math.max(0, Math.min(conEquipos ? 5 : 3, maxJug - jugadores.length));
+            slotsEl.innerHTML = Array(vacios).fill(0).map((_, k) => {
+                const lugar = jugadores.length + k;
+                return `
                 <div class="slot-vacio">
                     <div class="slot-icon">+</div>
-                    <span class="slot-texto">Esperando jugador...</span>
-                </div>`).join('');
+                    <span class="slot-texto">${conEquipos ? 'Lugar libre (si nadie llega, un bot)' : 'Esperando jugador...'}</span>
+                    ${conEquipos ? `<span class="etiqueta-equipo equipo-${lugar % 2}">${NOMBRE_EQUIPO[lugar % 2]}</span>` : ''}
+                </div>`;
+            }).join('');
         }
 
         if (typeof actualizarResumenConfig === 'function') actualizarResumenConfig();
@@ -2982,6 +3049,7 @@ function conectarSocket() {
     socket.on('datosMesa', (datos) => {
         terminarEsperaRapida();
         _espiado = null;
+        _cartasCompaneros = {};
         eventoActual = datos.evento || null;
         ocultarEvento();
         marcarDuelo(datos.duelo);
@@ -3381,6 +3449,7 @@ function conectarSocket() {
         ocultarGuiaTurno();
         registrarCaidas(datos);
         _espiado = null;
+        _cartasCompaneros = {};
         setTimeout(pintarBarraPoderes, 0);
         if (enDuelo) animarChoqueDuelo(datos);
         const gen = ++_renderGen;
@@ -3615,7 +3684,7 @@ function conectarSocket() {
         ocultarVistaQR();
         lanzarCoronasVictoria();
         Sonidos.victoria();
-        if (ganador.id === socket.id) {
+        if (ganador.id === socket.id || (ganador.integrantes || []).includes(miNombreUsuario)) {
             vibrar([100, 50, 100, 50, 250]);
         }
         document.getElementById('mesaDeJuego').classList.add('hidden');

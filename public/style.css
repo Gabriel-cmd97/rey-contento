@@ -3436,3 +3436,55 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
 
 /* Frases: atenuadas durante los turnos (solo se mandan entre rondas) */
 .btn-frases.apagado { opacity: 0.35; box-shadow: none; }
+
+/* =========================================
+   PAREJAS: equipos Oro y Plata
+   ========================================= */
+:root { --equipo-oro: #f1c40f; --equipo-plata: #cfd8e3; }
+.etiqueta-equipo {
+    margin-left: auto;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-family: var(--fuente-medieval);
+    font-size: 11px;
+    border: 1px solid currentColor;
+}
+.etiqueta-equipo.equipo-0 { color: var(--equipo-oro); background: rgba(241,196,15,0.12); }
+.etiqueta-equipo.equipo-1 { color: var(--equipo-plata); background: rgba(207,216,227,0.12); }
+.slot-vacio .etiqueta-equipo { opacity: 0.8; }
+.config-apagado { opacity: 0.4; }
+
+.perfil-oponente.equipo-0, #miPerfil.equipo-0 { border-color: var(--equipo-oro) !important; box-shadow: 0 0 0 1px var(--equipo-oro), 0 0 10px rgba(241,196,15,0.35) !important; }
+.perfil-oponente.equipo-1, #miPerfil.equipo-1 { border-color: var(--equipo-plata) !important; box-shadow: 0 0 0 1px var(--equipo-plata), 0 0 10px rgba(207,216,227,0.35) !important; }
+/* El escudo manda sobre el color de equipo mientras está arriba. */
+.perfil-oponente.con-escudo, #miPerfil.con-escudo { box-shadow: 0 0 0 2px #9ec9ff, 0 0 18px rgba(120,180,255,0.8) !important; border-color: #9ec9ff !important; }
+
+.carta-companero.equipo-0 { box-shadow: 0 0 0 2px var(--equipo-oro), 0 0 14px rgba(241,196,15,0.6) !important; }
+.carta-companero.equipo-1 { box-shadow: 0 0 0 2px var(--equipo-plata), 0 0 14px rgba(207,216,227,0.6) !important; }
+
+.marcador-equipos {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    z-index: 55;
+    display: flex;
+    gap: 6px;
+}
+.marcador-equipo {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: rgba(20,12,8,0.85);
+    font-family: var(--fuente-medieval);
+    font-size: 12px;
+    border: 1px solid currentColor;
+    font-variant-numeric: tabular-nums;
+}
+.marcador-equipo .icono { width: 12px; height: 12px; }
+.marcador-equipo.equipo-0 { color: var(--equipo-oro); }
+.marcador-equipo.equipo-1 { color: var(--equipo-plata); }
+.marcador-equipo.mio { box-shadow: 0 0 8px currentColor; }
+/* Con marcador de equipos, la etiqueta del evento se corre a la derecha. */
+.marcador-equipos:not(.hidden) ~ .chip-evento { left: auto; right: 10px; transform: none; }

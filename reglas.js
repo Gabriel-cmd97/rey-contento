@@ -75,8 +75,20 @@ function resolverCartas(sala) {
     const empateTotal = vivos.every(j => j.cartaActual === valorCritico);
     const perdedores = [];
     const castigados = [];
+    const culpables = []; // quienes tenían la carta mortal (o fallaron la campana)
     const mensajes = [];
-    const pierde = (j, cuantas = 1) => {
+    // Parejas (config.equipos): las vidas son del equipo. El daño se anota y
+    // se aplica al final: la carta mortal cuenta una sola vez por equipo aunque
+    // la tengan dos compañeros, y las penalizaciones extra se suman.
+    const enEquipos = !!sala.config.equipos;
+    const danioEquipo = {}; // equipo → { carta, extra }
+    const pierde = (j, cuantas = 1, esExtra = false) => {
+        if (!culpables.includes(j.id)) culpables.push(j.id);
+        if (enEquipos) {
+            const d = (danioEquipo[j.equipo] ||= { carta: 0, extra: 0 });
+            if (esExtra) d.extra += cuantas; else d.carta = Math.max(d.carta, cuantas);
+            return;
+        }
         j.vidas = Math.max(0, j.vidas - cuantas);
         if (!perdedores.includes(j.id)) perdedores.push(j.id);
     };
@@ -85,7 +97,7 @@ function resolverCartas(sala) {
     // paga una vida extra (además de la normal, si le quedan vidas).
     if (esModoCampana && !sala.campanaTocada && sala.vueltasCampana >= 2 && !empateTotal) {
         const maxVal = Math.max(...vivos.map(j => j.cartaActual));
-        vivos.filter(j => j.cartaActual === maxVal).forEach(j => pierde(j));
+        vivos.filter(j => j.cartaActual === maxVal).forEach(j => pierde(j, 1, true));
         mensajes.push(`⏰ Nadie tocó la campana — el cobarde con la carta más alta paga doble.`);
     }
 
@@ -96,7 +108,7 @@ function resolverCartas(sala) {
             const ringerPierde = !empateTotal && ringer.cartaActual === valorCritico;
             campanaInfo = { tocadorId: ringer.id, acertada: !ringerPierde };
             if (ringerPierde) {
-                pierde(ringer);
+                pierde(ringer, 1, true);
                 mensajes.push(`🔔❌ ${ringer.nombre} tocó la campana pero tenía la carta mortal! -1 vida extra.`);
             } else {
                 mensajes.push(`🔔✅ ¡${ringer.nombre} acertó la campana!`);
@@ -116,7 +128,19 @@ function resolverCartas(sala) {
         mensajes.push(`🤝 ¡Empate total! Todos tienen ${valorCritico} — nadie pierde vida esta ronda.`);
     }
 
-    return { vivos, valorCritico, empateTotal, perdedores, castigados, campanaInfo, mensajes };
+    // Parejas: aplicar el daño a todos los integrantes vivos del equipo.
+    if (enEquipos) {
+        Object.entries(danioEquipo).forEach(([equipo, d]) => {
+            const total = d.carta + d.extra;
+            if (!total) return;
+            vivos.filter(j => String(j.equipo) === equipo).forEach(j => {
+                j.vidas = Math.max(0, j.vidas - total);
+                perdedores.push(j.id);
+            });
+        });
+    }
+
+    return { vivos, valorCritico, empateTotal, perdedores, culpables, castigados, campanaInfo, mensajes };
 }
 
 module.exports = { barajar, crearMazo, siguienteVivo, resolverCartas };

@@ -264,8 +264,12 @@ function sanitizarConfig(raw) {
 
     const conEventos = raw.eventos !== false; // eventos de ronda (solo afectan al modo clásico)
     const conPoderes = raw.poderes === true;  // modo "Con poderes" (opcional)
-    return { vidas, maxJugadores, numBots, modoJuego, modoRey, frecuenciaReyes, dificultadBots, tiempoTurno,
-             eventos: conEventos, poderes: conPoderes, password };
+    // Parejas: 0 = sin equipos, 2 = 2 contra 2, 3 = 3 contra 3. La mesa queda
+    // de 4 o 6 y al empezar se completa con bots.
+    const equipos = enLista(Number.parseInt(raw.equipos, 10), [0, 2, 3], 0);
+    const maxMesa = equipos ? equipos * 2 : maxJugadores;
+    return { vidas, maxJugadores: maxMesa, numBots: Math.min(numBots, maxMesa - 1), modoJuego, modoRey, frecuenciaReyes,
+             dificultadBots, tiempoTurno, eventos: conEventos, poderes: conPoderes, equipos, password };
 }
 
 // Formato del idSala: 5 caracteres alfanuméricos. El alfabeto real es
@@ -354,6 +358,7 @@ function emitirLobby(idSala) {
     if (!sala) return;
     io.to(idSala).emit('actualizarLobby', {
         jugadores: jugadoresPublicos(sala),
+        equipos: sala.config.equipos || 0,
         maxJugadores: sala.config.maxJugadores
     });
 }
@@ -657,20 +662,23 @@ async function registrarFinPartida(sala, ganador) {
 
     // Ganador humano: victoria + racha. (Si gana un bot o nadie, solo se
     // reinicia la racha de los humanos, abajo.)
-    const ganoHumano = !!ganador.id && !ganador.esBot;
-    if (ganoHumano) await conRetry(
+    // Quiénes ganan: el humano ganador o, en parejas, los humanos del equipo.
+    const ganadoresNombres = ganador.esEquipo
+        ? humanos.filter(j => j.equipo === ganador.equipo).map(j => j.nombre)
+        : (!!ganador.id && !ganador.esBot ? [ganador.nombre] : []);
+    for (const nombreGanador of ganadoresNombres) await conRetry(
         () => pool.execute(
             `UPDATE usuarios SET victorias = victorias + 1,
              racha_actual = racha_actual + 1,
              racha_maxima = GREATEST(racha_maxima, racha_actual + 1)
              WHERE username = ?`,
-            [ganador.nombre]
+            [nombreGanador]
         ),
-        { op: 'update_victoria', ganador: ganador.nombre }
-    ).catch(err => log.error('Fallo update victoria', { error: err.message, codigo: err.code, ganador: ganador.nombre }));
+        { op: 'update_victoria', ganador: nombreGanador }
+    ).catch(err => log.error('Fallo update victoria', { error: err.message, codigo: err.code, ganador: nombreGanador }));
 
     // Perdedores humanos: resetear racha
-    const perdedores = humanos.filter(j => j.nombre !== ganador.nombre).map(j => j.nombre);
+    const perdedores = humanos.filter(j => !ganadoresNombres.includes(j.nombre)).map(j => j.nombre);
     if (perdedores.length > 0) {
         const placeholdersPerd = perdedores.map(() => '?').join(',');
         await conRetry(
@@ -688,8 +696,10 @@ async function registrarFinPartida(sala, ganador) {
 // Una fila de historial por humano y los logros de fin de partida.
 async function registrarHistorialYLogros(sala, ganador, humanos) {
     const hayGanador = !!ganador.id;
-    const lugarDe = logros.lugaresFinales(hayGanador ? ganador.nombre : null, sala.caidas || [], sala.jugadores.length);
-    const modo = sala.config.rapida ? 'RAPIDA' : sala.config.modoJuego;
+    const lugarDe = ganador.esEquipo
+        ? (n => ganador.integrantes.includes(n) ? 1 : 2) // parejas: 1.º el equipo ganador, 2.º el otro
+        : logros.lugaresFinales(hayGanador ? ganador.nombre : null, sala.caidas || [], sala.jugadores.length);
+    const modo = sala.config.rapida ? 'RAPIDA' : sala.config.equipos ? 'PAREJAS' : sala.config.modoJuego;
     for (const j of humanos) {
         const caida = (sala.caidas || []).find(c => c.nombre === j.nombre);
         await conRetry(
@@ -708,7 +718,7 @@ async function registrarHistorialYLogros(sala, ganador, humanos) {
             'SELECT username, victorias, partidas_jugadas, racha_actual FROM usuarios WHERE username IN (?)', [nombres]);
         for (const j of humanos) {
             const ids = logros.logrosDeFinDePartida({
-                gano: hayGanador && ganador.nombre === j.nombre,
+                gano: ganador.esEquipo ? ganador.integrantes.includes(j.nombre) : (hayGanador && ganador.nombre === j.nombre),
                 vidasFinales: j.vidas,
                 vidasPerdidas: (sala.vidasPerdidas || {})[j.nombre] || 0,
                 stats: stats.find(s => s.username === j.nombre),
@@ -734,7 +744,7 @@ function resolverRonda(sala, io) {
     let vivos = sala.jugadores.filter(j => j.vidas > 0);
     if (vivos.length === 0) return;
 
-    const { valorCritico, perdedores, castigados, campanaInfo, mensajes } = resolverCartas(sala);
+    const { valorCritico, perdedores, culpables, castigados, campanaInfo, mensajes } = resolverCartas(sala);
     // Amnistía: quien tenía la carta mortal pierde su turno en la ronda siguiente.
     sala.castigadosSiguiente = sala.jugadores.filter(j => castigados.includes(j.id)).map(j => j.nombre);
     mensajes.forEach(m => io.to(sala.idSala).emit('mensajeGlobal', m));
@@ -762,7 +772,10 @@ function resolverRonda(sala, io) {
 
     let sobrevivientes = sala.jugadores.filter(j => j.vidas > 0);
     const humanosVivos = sobrevivientes.filter(j => !j.esBot);
-    let juegoTerminado = sobrevivientes.length <= 1 || humanosVivos.length === 0;
+    const equiposVivos = new Set(sobrevivientes.map(j => j.equipo));
+    let juegoTerminado = sala.config.equipos
+        ? equiposVivos.size <= 1 || humanosVivos.length === 0
+        : sobrevivientes.length <= 1 || humanosVivos.length === 0;
 
     if (juegoTerminado) sala.estadoActual = "FINALIZADO";
 
@@ -799,6 +812,8 @@ function resolverRonda(sala, io) {
         juegoTerminado: juegoTerminado,
         campana: campanaInfo,
         autoSiguienteMs: msAutoSiguiente,
+        // Parejas: quién tenía la carta mortal (el equipo entero pierde la vida).
+        culpables: sala.jugadores.filter(j => culpables.includes(j.id)).map(j => j.nombre),
     });
 
     io.to(sala.idSala).emit('accionMesa', {
@@ -825,7 +840,13 @@ function resolverRonda(sala, io) {
     }
 
     if (juegoTerminado) {
-        const ganador = sobrevivientes[0] || { nombre: "Nadie (Empate total)", vidas: 0 };
+        let ganador = sobrevivientes[0] || { nombre: "Nadie (Empate total)", vidas: 0 };
+        if (sala.config.equipos && sobrevivientes.length) {
+            // Gana el equipo: la victoria es de todos sus integrantes.
+            const e = sobrevivientes[0].equipo;
+            ganador = { esEquipo: true, equipo: e, nombre: `Equipo ${NOMBRE_EQUIPO[e]}`, vidas: sobrevivientes[0].vidas,
+                        id: `equipo-${e}`, integrantes: sala.jugadores.filter(j => j.equipo === e).map(j => j.nombre) };
+        }
         setTimeout(() => {
             // Sala pudo borrarse o saltar a otro estado mientras esperábamos
             if (!estadoSalas[sala.idSala]) return;
@@ -1035,6 +1056,7 @@ function iniciarRonda(sala, io) {
     sala.castigados = sala.castigadosSiguiente || [];
     sala.castigadosSiguiente = [];
     if (sala.rondaActual === 1) {
+        prepararEquipos(sala);
         sala.caidas = []; sala.vidasPerdidas = {};
         sala.dueloAnunciado = false; sala.rondasSinEvento = 0; sala.ultimoEvento = null; sala.castigados = [];
         sala.idPartida = `${sala.idSala}-${Date.now().toString(36)}`; // agrupa el historial por partida
@@ -1136,7 +1158,7 @@ function iniciarRonda(sala, io) {
 
     // Duelo final: quedan 2 en una partida que empezó con más. Se presenta una
     // vez con su pantalla de "versus"; los eventos no aplican en el duelo.
-    sala.enDuelo = vivos.length === 2 && sala.jugadores.length > 2;
+    sala.enDuelo = vivos.length === 2 && sala.jugadores.length > 2 && !sala.config.equipos;
     const anunciarDuelo = sala.enDuelo && !sala.dueloAnunciado;
     if (anunciarDuelo) sala.dueloAnunciado = true;
     // En la práctica el evento lo pone el guion; si no, se sortea.
@@ -1303,6 +1325,31 @@ function usarPoder(sala, idx, poder) {
     return resultado;
 }
 
+// ==========================================
+// PAREJAS (config.equipos)
+// ==========================================
+// Equipos Oro (0) y Plata (1) sentados alternados: el asiento par es Oro y el
+// impar Plata, así tu vecino de la derecha siempre es rival. Las vidas son del
+// equipo (resolverCartas las descuenta a todos sus integrantes) y cada quien
+// ve la carta de sus compañeros (enviarCarta → 'cartaCompanero').
+const NOMBRE_EQUIPO = ['Oro', 'Plata'];
+
+// Completa la mesa con bots y asigna equipos (al empezar partida o revancha).
+function prepararEquipos(sala) {
+    if (!sala.config.equipos) return;
+    const usados = sala.jugadores.map(j => j.nombre);
+    for (let i = 1; sala.jugadores.length < sala.config.maxJugadores; i++) {
+        const nombre = nombreBotAleatorio(usados);
+        usados.push(nombre);
+        sala.jugadores.push({ id: 'bot_eq_' + i, nombre, vidas: sala.config.vidas, yaJugo: false, online: true, esBot: true });
+    }
+    sala.jugadores.forEach((j, i) => { j.equipo = i % 2; });
+}
+
+function companeros(sala, jugador) {
+    return sala.jugadores.filter(t => t !== jugador && t.equipo === jugador.equipo && t.vidas > 0);
+}
+
 // ¿El Rey protege esta ronda? No en campana (ahí el 9 es la peor carta) ni
 // con el evento "Mundo al revés" (pierde la más alta y el Rey queda expuesto).
 function reyProtegido(sala) {
@@ -1314,6 +1361,11 @@ function reyProtegido(sala) {
 function enviarCarta(sala, jugador) {
     if (sala.evento === 'NIEBLA') return;
     io.to(jugador.id).emit('tuCarta', jugador.cartaActual);
+    // Parejas: tus compañeros también la ven (los bots la recuerdan).
+    if (sala.config.equipos) companeros(sala, jugador).forEach(t => {
+        if (t.esBot) (t.memoria ||= {})[jugador.id] = jugador.cartaActual;
+        else io.to(t.id).emit('cartaCompanero', { id: jugador.id, carta: jugador.cartaActual });
+    });
 }
 
 // 3 minutos para volver (margen para el bloqueo de pantalla del celular); si
@@ -1754,6 +1806,7 @@ io.on('connection', (socket) => {
                 modoRey: s.config.modoRey,
                 vidas: s.config.vidas,
                 rapida: !!s.config.rapida,
+                equipos: s.config.equipos || 0,
                 faltanMs: s.config.rapida ? Math.max(0, (s.arrancaEn || ahora) - ahora) : null,
             }));
         socket.emit('salasAbiertas', salas);
@@ -1834,6 +1887,9 @@ io.on('connection', (socket) => {
 
             if (sala.estadoActual !== "LOBBY") {
                 if (sala.config.poderes) socket.emit('misPoderes', jugadorExistente.poderes || []);
+                if (sala.config.equipos && sala.evento !== 'NIEBLA' && sala.estadoActual === "TURNOS_INTERCAMBIO") {
+                    companeros(sala, jugadorExistente).forEach(t => socket.emit('cartaCompanero', { id: t.id, carta: t.cartaActual }));
+                }
                 socket.emit('reconexionExitosa', {
                     idSala: sala.idSala,
                     carta: sala.evento === 'NIEBLA' ? null : jugadorExistente.cartaActual,
