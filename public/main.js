@@ -724,7 +724,22 @@ function actualizarGuiaTurno(esMio, esCampana, campanaTocada, redibujar = false)
 
     const lineas = ['✋ Te quedas con tu carta', textoCambiar];
     if (eventoActual?.id === 'NIEBLA') lineas.push('🌫️ Niebla: decides sin ver tu carta');
-    if (misPoderes.length) lineas.push('✨ Tienes poderes: úsalos antes de decidir');
+    // Qué hace cada poder que tienes, con nombres de la mesa (no si conviene usarlo).
+    if (misPoderes.length) {
+        const dosALaDerecha = (() => {
+            const vivos = listaJugadoresGlobal.filter(j => j.vidas > 0);
+            const i = vivos.findIndex(j => j.id === socket.id);
+            return i === -1 || vivos.length < 3 ? null : vivos[(i + 2) % vivos.length];
+        })();
+        const explica = {
+            ESPIAR: vecino ? `👁️ Espiar: ves la carta de ${vecino.nombre} antes de decidir` : null,
+            ORACULO: '🔮 Oráculo: ves la carta de arriba del mazo antes de decidir',
+            SALTO: dosALaDerecha ? `↪️ Salto: cambias con ${dosALaDerecha.nombre}, dos lugares a tu derecha, en vez de jugar` : null,
+            ESCUDO: '🛡️ Escudo: nadie puede cambiar contigo hasta que acabe la ronda',
+        };
+        [...new Set(misPoderes)].forEach(id => explica[id] && lineas.push(explica[id]));
+        lineas.push('✨ Tus poderes están arriba de los botones; cada uno se usa una vez');
+    }
     const ronda = parseInt(document.getElementById('numRonda')?.innerText || '0', 10);
     if (miEquipo() !== undefined && miEquipo() !== null && ronda <= 1) lineas.push('🤝 Ves la carta de tu compañero (los rivales no)');
     if (eventoActual?.id === 'MUNDO_AL_REVES') lineas.push('🔄 Mundo al revés: esta ronda pierde la carta más alta');
@@ -3033,7 +3048,8 @@ function conectarSocket() {
             <span><small>Ganaste un poder</small><strong>${escapeHTML(poder.titulo)}</strong>${escapeHTML(poder.descripcion)}</span>`;
         document.body.appendChild(aviso);
         Sonidos.pop();
-        setTimeout(() => { aviso.classList.add('saliendo'); setTimeout(() => aviso.remove(), 400); }, 3800);
+        // Con guías se queda más, para alcanzar a leer qué hace.
+        setTimeout(() => { aviso.classList.add('saliendo'); setTimeout(() => aviso.remove(), 400); }, guiasActivas() ? 6500 : 3800);
     });
     socket.on('resultadoPoder', (r) => {
         setTimeout(() => practicaEvento('poder', r), 400);
