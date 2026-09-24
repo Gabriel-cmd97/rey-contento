@@ -2348,6 +2348,7 @@ function restaurarSalas() {
     for (const sala of datos.salas) {
         if (!sala || !esIdSalaValido(sala.idSala) || estadoSalas[sala.idSala]) continue;
         sala.ultimaActividad = Date.now();
+        sala.ultimoHumano = Date.now(); // da tiempo a reconectarse antes de cerrarla por vacía
         sala.jugadores.forEach(j => { if (!j.esBot) j.online = false; });
         estadoSalas[sala.idSala] = sala;
         restauradas++;
@@ -2426,6 +2427,33 @@ function sweepSalasZombi() {
 
 const sweeperInterval = setInterval(sweepSalasZombi, SWEEPER_INTERVAL_MS);
 
+// Salas sin nadie: una partida en juego donde ya no queda ningún humano
+// conectado (todos perdieron y se fueron, o se desconectaron y los bots juegan
+// por ellos en automático) sigue corriendo sola para siempre, porque los bots
+// la mantienen "activa" para el sweeper. Si pasan SALA_SIN_HUMANOS_MS sin un
+// humano conectado en la mesa, se cierra. Cuenta también quien mira sin vidas.
+const SALA_SIN_HUMANOS_MS = 5 * 60 * 1000;
+
+function hayHumanoConectado(sala) {
+    return sala.jugadores.some(j => !j.esBot && j.online !== false);
+}
+
+function cerrarSalasSinHumanos() {
+    const ahora = Date.now();
+    for (const id in estadoSalas) {
+        const sala = estadoSalas[id];
+        if (sala.estadoActual === 'LOBBY' || sala.estadoActual === 'FINALIZADO') continue;
+        if (hayHumanoConectado(sala)) { sala.ultimoHumano = ahora; continue; }
+        sala.ultimoHumano ||= ahora;
+        if (ahora - sala.ultimoHumano > SALA_SIN_HUMANOS_MS) {
+            log.info('Sala cerrada: sin humanos conectados', { idSala: id, estado: sala.estadoActual, ronda: sala.rondaActual });
+            limpiarSala(id);
+        }
+    }
+}
+
+const sinHumanosInterval = setInterval(cerrarSalasSinHumanos, 60 * 1000);
+
 // ==========================================
 // SHUTDOWN GRACEFUL
 // ==========================================
@@ -2460,6 +2488,7 @@ async function shutdownGracefully(signal) {
     // Cancelar TODOS los timers pendientes para no disparar callbacks sobre
     // estado que estamos por destruir.
     clearInterval(sweeperInterval);
+    clearInterval(sinHumanosInterval);
     for (const id of Object.keys(temporizadores)) clearTimeout(temporizadores[id]);
     for (const id of Object.keys(temporizadoresRapida)) clearTimeout(temporizadoresRapida[id]);
     for (const username of Object.keys(temporizadoresDesconexion)) clearTimeout(temporizadoresDesconexion[username]);

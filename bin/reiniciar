@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Reinicia rey-contento sin cortarle la partida a nadie: espera a que no haya
+# humanos conectados jugando (según .estado-salas.json, que el servidor
+# escribe cada 10 s). Las salas de espera (LOBBY) no cuentan.
+#   bin/reiniciar            espera hasta 30 min y reinicia
+#   bin/reiniciar --ya       reinicia sin esperar (las partidas sobreviven,
+#                            pero los jugadores ven la reconexión)
+cd "$(dirname "$0")/.."
+MAX_MIN=${MAX_MIN:-30}
+
+en_juego() {
+  node -e '
+    let d; try { d = require("./.estado-salas.json"); } catch { console.log(""); process.exit(); }
+    const salas = (d.salas || []).filter(s => !["LOBBY", "FINALIZADO"].includes(s.estadoActual));
+    const gente = salas.flatMap(s => s.jugadores.filter(j => !j.esBot && j.online && j.vidas > 0)
+      .map(j => j.nombre + " (" + s.idSala + ", ronda " + s.rondaActual + ")"));
+    console.log(gente.join(", "));'
+}
+
+if [ "$1" != "--ya" ]; then
+  inicio=$(date +%s)
+  while :; do
+    gente=$(en_juego)
+    [ -z "$gente" ] && break
+    if (( $(date +%s) - inicio > MAX_MIN * 60 )); then
+      echo "Siguen jugando tras $MAX_MIN min: $gente. No reinicié (usa --ya para forzar)."; exit 1
+    fi
+    echo "$(date +%H:%M:%S) esperando a que terminen: $gente"
+    sleep 15
+  done
+fi
+pm2 restart rey-contento >/dev/null && pm2 save >/dev/null && echo "rey-contento reiniciado."

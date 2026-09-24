@@ -12,6 +12,10 @@ bash start.sh   # ejecuta PORT=4000 yarn node server.js
 
 # Instalar dependencias
 yarn install
+
+# Reiniciar en producción: SIEMPRE con esto, no con pm2 restart directo.
+# Espera a que no haya humanos jugando (máx. 30 min) y hace pm2 save.
+bin/reiniciar          # --ya para forzar
 ```
 
 Sin linter. Hay un script de tests E2E en `tests/e2e.js` que cubre auth, validación de inputs, sesión reemplazada, password de sala (bcrypt), whitelist de acciones y reacciones. Cómo correrlo:
@@ -56,7 +60,7 @@ Todo el estado vive en memoria dentro de `server.js`:
 - `temporizadoresDesconexion` — timers de gracia por username (3 minutos antes de eliminar al jugador)
 - `_socketRates` — tabla de rate limiting por socket (`socketId:evento → timestamp`)
 
-**Las partidas sobreviven a un reinicio** (sección PERSISTENCIA DE SALAS en `server.js`): `guardarSalas()` escribe las salas activas con humanos (LOBBY, TURNOS_INTERCAMBIO, REVELACION, PREPARANDO_NUEVA_RONDA) en `.estado-salas.json` al apagar (`shutdownGracefully`) y cada 10 s (por si hay una caída), escribiendo a `.tmp` y renombrando. Al arrancar, `restaurarSalas()` las carga si tienen menos de 10 min: humanos en `online = false` con `programarGraciaDesconexion()` (3 min), y a los `MS_REANUDAR` (6 s) sigue el turno pendiente o arranca la siguiente ronda; las salas rápidas en espera reprograman su arranque. El cliente se reconecta solo y `unirseSala` lo devuelve a su lugar (`reconexionExitosa`). Las salas FINALIZADAS no se guardan. Si agregas a la sala un campo que no sea JSON (Set, Map, timers), exclúyelo en `guardarSalas()`.
+**Las partidas sobreviven a un reinicio** (sección PERSISTENCIA DE SALAS en `server.js`): `guardarSalas()` escribe las salas activas con humanos (LOBBY, TURNOS_INTERCAMBIO, REVELACION, PREPARANDO_NUEVA_RONDA) en `.estado-salas.json` al apagar (`shutdownGracefully`) y cada 10 s (por si hay una caída), escribiendo a `.tmp` y renombrando. Al arrancar, `restaurarSalas()` las carga si tienen menos de 10 min: humanos en `online = false` con `programarGraciaDesconexion()` (3 min), y a los `MS_REANUDAR` (6 s) sigue el turno pendiente o arranca la siguiente ronda; las salas rápidas en espera reprograman su arranque. El cliente se reconecta solo y `unirseSala` lo devuelve a su lugar (`reconexionExitosa`). Las salas FINALIZADAS no se guardan. Aunque sobreviven, el reinicio se nota (reconexión en plena ronda): usa `bin/reiniciar`, que espera a que nadie esté jugando. Si agregas a la sala un campo que no sea JSON (Set, Map, timers), exclúyelo en `guardarSalas()`.
 
 ### Flujo de juego
 
@@ -102,6 +106,10 @@ Al crear una sala se puede enviar `configuracion.password`. El servidor la guard
 ### Inactividad (modo automático)
 
 Si se acaba el tiempo de un jugador, `iniciarReloj` juega por él con `decisionPorAusente()` (cálculo de bot NORMAL, no solo mantener) y suma `turnosSinJugar`. Con `TURNOS_PARA_AUTOMATICO` (2) seguidos, `activarAutomatico()` lo pone en modo automático: `gestionarTurnos` lo trata como bot (ritmo de bot, puede usar poderes) y la mesa ve "Auto" en su asiento. Desconectarse más de 3 minutos también lo pone en automático (antes lo eliminaba). Recupera el control con `volverAJugar` (botón del aviso `#avisoAutomatico`), con cualquier jugada o poder, o al reconectarse (`desactivarAutomatico`). En la práctica no aplica.
+
+### Salas sin humanos
+
+`cerrarSalasSinHumanos()` (cada minuto) cierra una partida en juego si lleva `SALA_SIN_HUMANOS_MS` (5 min) sin ningún humano conectado en la mesa (vivo o mirando). Sin esto, los bots —y los humanos en automático— la seguían jugando para siempre y el sweeper no la veía inactiva. `sala.ultimoHumano` se reinicia al restaurar tras un reinicio para dar tiempo a reconectarse.
 
 ### Rate limiting de sockets
 
