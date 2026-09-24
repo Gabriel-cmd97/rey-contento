@@ -459,6 +459,12 @@
             </section>
         </main>
 
+        <!-- Modo automático: un bot juega por ti tras 2 turnos sin jugar -->
+        <div id="avisoAutomatico" class="aviso-automatico hidden" role="alert">
+            <span>🤖 Estás en <strong>modo automático</strong>: un bot juega por ti.</span>
+            <button id="btnVolverAJugar" class="boton-oro">Volver a jugar</button>
+        </div>
+
         <!-- Mesa limpia: menú y bitácora en las esquinas (solo durante la partida) -->
         <button id="btnBitacoraMesa" class="boton-esquina esquina-izq" title="Bitácora de la ronda" aria-label="Bitácora de la ronda"><svg class="icono" aria-hidden="true"><use href="#i-pergamino"/></svg><span id="contadorBitacoraMesa" class="contador-esquina hidden"></span></button>
         <button id="btnMenuMesa" class="boton-esquina esquina-der" title="Menú" aria-label="Menú" aria-expanded="false" aria-controls="panelMenuMesa"><svg class="icono" aria-hidden="true"><use href="#i-menu"/></svg></button>

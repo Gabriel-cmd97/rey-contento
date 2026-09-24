@@ -346,7 +346,7 @@ function jugadoresPublicos(sala) {
     const reyDeclarado = sala.config.modoRey === "DECLARADO" && sala.config.modoJuego !== 'CAMPANA';
     const sinCampana = sala.config.modoJuego !== 'CAMPANA';
     const escudos = sala.escudos || [];
-    return sala.jugadores.map(({ memoria, cartaActual, cartaRevelada, reyDescubierto, poderes: susPoderes, ...publico }) => {
+    return sala.jugadores.map(({ memoria, cartaActual, cartaRevelada, reyDescubierto, poderes: susPoderes, turnosSinJugar, ...publico }) => {
         publico.numPoderes = (susPoderes || []).length; // la mesa ve cuántos, no cuáles
         publico.escudo = escudos.includes(publico.nombre);
         const esReyVisible = cartaActual === 9 && (reyDeclarado || (sinCampana && reyDescubierto));
@@ -991,9 +991,10 @@ function gestionarTurnos(sala, io, esInicio = false) {
             return;
         }
 
-        if (jugadorActual.esBot) {
+        if (jugadorActual.esBot || jugadorActual.automatico) {
             const esDealer = indiceActual === sala.dealerIndex;
-            const decidir = () => sala.config.practica
+            const decidir = () => jugadorActual.automatico ? decisionPorAusente(sala, jugadorActual)
+                : sala.config.practica
                 ? practica.decisionBot(sala, indiceActual)
                 : bots.decidirBot(sala, jugadorActual, {
                 esDealer,
@@ -1028,23 +1029,62 @@ function gestionarTurnos(sala, io, esInicio = false) {
     }
 }
 
+// ==========================================
+// INACTIVIDAD (AFK)
+// ==========================================
+// Si se te acaba el tiempo, el juego decide por ti con el cálculo de un bot.
+// TURNOS_PARA_AUTOMATICO turnos seguidos sin jugar (o no volver tras
+// desconectarte) te dejan en modo automático: un bot juega por ti hasta que
+// vuelves (botón "Volver a jugar", cualquier jugada o reconectarte).
+const TURNOS_PARA_AUTOMATICO = 2;
+
+function activarAutomatico(sala, j) {
+    if (!j || j.esBot || j.automatico || j.vidas <= 0) return;
+    j.automatico = true;
+    io.to(sala.idSala).emit('mensajeGlobal', `🤖 ${j.nombre} está ausente: un bot jugará por él.`);
+    io.to(sala.idSala).emit('accionMesa', { tipo: 'AUTOMATICO', icono: '🤖', jugador: j.nombre, texto: `${j.nombre} pasó a modo automático` });
+    io.to(j.id).emit('modoAutomatico', { activo: true });
+}
+
+function desactivarAutomatico(sala, j, avisar = true) {
+    if (!j) return;
+    j.turnosSinJugar = 0;
+    if (!j.automatico) return;
+    j.automatico = false;
+    if (avisar) io.to(sala.idSala).emit('mensajeGlobal', `👋 ${j.nombre} volvió a jugar.`);
+    io.to(j.id).emit('modoAutomatico', { activo: false });
+}
+
+// Lo que haría un bot en el lugar de `j` (para jugar por quien no alcanzó).
+function decisionPorAusente(sala, j) {
+    const idx = sala.jugadores.indexOf(j);
+    const derecha = sala.jugadores[siguienteVivo(sala.jugadores, idx)];
+    const esCampana = sala.config.modoJuego === 'CAMPANA';
+    const decision = bots.decidirBot({ ...sala, config: { ...sala.config, dificultadBots: 'NORMAL' } }, j, {
+        esDealer: idx === sala.dealerIndex, derecha,
+        derechaEsRinger: esCampana && sala.campanaTocada && derecha.id === sala.campanaTocadorId,
+    });
+    return decision === 'CAMPANA' && (!esCampana || sala.campanaTocada) ? 'MANTENER' : decision;
+}
+
 function iniciarReloj(idSala, io, tiempoSegundos) {
     if (temporizadores[idSala]) clearTimeout(temporizadores[idSala]);
     temporizadores[idSala] = setTimeout(() => {
         const sala = estadoSalas[idSala];
         if (!sala || sala.estadoActual !== "TURNOS_INTERCAMBIO") return;
         const jugadorActual = sala.jugadores[sala.turnoActualIndex];
-        const razonTimeout = jugadorActual.online
-            ? `⏰ Tiempo agotado para ${jugadorActual.nombre}. Se mantiene su carta.`
-            : `📵 ${jugadorActual.nombre} está desconectado. Se mantiene su carta automáticamente.`;
-        io.to(idSala).emit('mensajeGlobal', razonTimeout);
+        // Se acabó su tiempo: se juega por él y se cuenta la inactividad.
+        const decision = sala.config.practica ? 'MANTENER' : decisionPorAusente(sala, jugadorActual);
+        jugadorActual.turnosSinJugar = (jugadorActual.turnosSinJugar || 0) + 1;
+        io.to(idSala).emit('mensajeGlobal', jugadorActual.online
+            ? `⏰ Se acabó el tiempo de ${jugadorActual.nombre}: el juego jugó por él.`
+            : `📵 ${jugadorActual.nombre} está desconectado: el juego jugó por él.`);
         io.to(idSala).emit('accionMesa', {
-            tipo: 'TIMEOUT',
-            icono: '⏰',
-            jugador: jugadorActual.nombre,
-            texto: `Tiempo agotado: ${jugadorActual.nombre} mantiene`
+            tipo: 'TIMEOUT', icono: '⏰', jugador: jugadorActual.nombre,
+            texto: `Tiempo agotado: se jugó por ${jugadorActual.nombre}`
         });
-        ejecutarAccion(idSala, 'MANTENER', io, jugadorActual.id, true);
+        if (jugadorActual.turnosSinJugar >= TURNOS_PARA_AUTOMATICO && !sala.config.practica) activarAutomatico(sala, jugadorActual);
+        ejecutarAccion(idSala, decision, io, jugadorActual.id, true);
     }, (tiempoSegundos || 10) * 1000);
 }
 
@@ -1373,6 +1413,7 @@ function enviarCarta(sala, jugador) {
 }
 
 // 3 minutos para volver (margen para el bloqueo de pantalla del celular); si
+// no regresa, un bot juega por él (modo automático). Nota: antes lo eliminaba.
 // no regresa, queda eliminado. Se usa al desconectarse y al restaurar salas
 // tras un reinicio del servidor.
 function programarGraciaDesconexion(idSala, nombre) {
@@ -1382,11 +1423,8 @@ function programarGraciaDesconexion(idSala, nombre) {
         const salaActual = estadoSalas[idSala];
         if (!salaActual) return;
         const jPerdido = salaActual.jugadores.find(x => x.nombre === nombre);
-        if (jPerdido && !jPerdido.online && jPerdido.vidas > 0) {
-            jPerdido.vidas = 0;
-            io.to(idSala).emit('mensajeGlobal', `☠️ ${jPerdido.nombre} no regresó a tiempo y fue eliminado.`);
-            io.to(idSala).emit('nuevaRondaIniciada', { jugadoresActualizados: jugadoresPublicos(salaActual) });
-        }
+        // No regresó: en lugar de eliminarlo, un bot termina la partida por él.
+        if (jPerdido && !jPerdido.online && jPerdido.vidas > 0) activarAutomatico(salaActual, jPerdido);
     }, 180000);
 }
 
@@ -1881,6 +1919,7 @@ io.on('connection', (socket) => {
             if (sala.hostId === jugadorExistente.id) sala.hostId = socket.id;
             jugadorExistente.id = socket.id;
             jugadorExistente.online = true;
+            desactivarAutomatico(sala, jugadorExistente); // volvió: recupera el control
             socket.join(sala.idSala);
 
             if (reemplazandoSesion) {
@@ -1978,6 +2017,7 @@ io.on('connection', (socket) => {
         const jugadorEnTurno = sala.jugadores[sala.turnoActualIndex];
         if (!jugadorEnTurno || jugadorEnTurno.nombre !== nombreUsuarioLogueado) return;
 
+        desactivarAutomatico(sala, jugadorEnTurno); // jugó él: está presente
         ejecutarAccion(idSala, accion, io, socket.id);
     });
 
@@ -2023,6 +2063,14 @@ io.on('connection', (socket) => {
         socket.to(idSala).emit('reaccionJugador', { jugadorId: socket.id, emoji });
     });
 
+    socket.on('volverAJugar', (idSala) => {
+        if (!permitir(socket.id, 'volverAJugar', 800)) return;
+        if (!esIdSalaValido(idSala)) return;
+        const sala = estadoSalas[idSala];
+        const j = sala && sala.jugadores.find(x => x.nombre === nombreUsuarioLogueado);
+        if (j) desactivarAutomatico(sala, j);
+    });
+
     socket.on('usarPoder', (payload) => {
         if (!permitir(socket.id, 'usarPoder', 800)) return;
         if (!payload || typeof payload !== 'object') return;
@@ -2032,6 +2080,7 @@ io.on('connection', (socket) => {
         if (!sala) return;
         const idx = sala.jugadores.findIndex(j => j.nombre === nombreUsuarioLogueado);
         if (idx === -1) return;
+        desactivarAutomatico(sala, sala.jugadores[idx]);
         const r = usarPoder(sala, idx, poder);
         if (r.error) socket.emit('errorPoder', r.error);
     });
@@ -2073,7 +2122,7 @@ io.on('connection', (socket) => {
                     if (sala.jugadores.every(j => j.esBot || !j.online)) limpiarSala(id);
                 } else {
                     jugador.online = false;
-                    io.to(id).emit('mensajeGlobal', `⚠️ ${jugador.nombre} perdió la conexión. Tiene 3 minutos para volver.`);
+                    io.to(id).emit('mensajeGlobal', `⚠️ ${jugador.nombre} perdió la conexión. Si no vuelve en 3 minutos, un bot jugará por él.`);
 
                     // Si era su turno, cancelar el timer actual y acelerar a 8s para no bloquear el juego
                     if (sala.estadoActual === "TURNOS_INTERCAMBIO" && sala.turnoActualIndex === idx) {

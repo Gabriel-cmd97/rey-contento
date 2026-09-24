@@ -1910,6 +1910,7 @@ function mostrarLobbyLimpio() {
     document.querySelectorAll('.corona-victoria').forEach(el => el.remove());
     cerrarEscaner();
     eventoActual = null; ocultarEvento(); marcarDuelo(false);
+    document.getElementById('avisoAutomatico')?.classList.add('hidden');
     misPoderes = []; _espiado = null; pintarBarraPoderes();
     document.getElementById('presentacionDuelo')?.classList.add('hidden');
 }
@@ -2765,12 +2766,13 @@ function dibujarMesaCircular() {
             }
         }
 
-        const iconoAsiento = op.dealer ? icono('corona') : (esSuTurno ? icono('espadas') : (op.esBot ? icono('bot') : icono('persona')));
+        const iconoAsiento = op.dealer ? icono('corona') : (esSuTurno ? icono('espadas') : (op.esBot || op.automatico ? icono('bot') : icono('persona')));
         let claseEstado = estaMuerto ? 'jugador-eliminado' : '';
 
         divSilla.innerHTML = `
             <div class="perfil-oponente ${claseEstado} ${animReparto} ${claseDanio} ${op.escudo && !estaMuerto ? 'con-escudo' : ''} ${op.equipo !== undefined && op.equipo !== null ? `equipo-${op.equipo}` : ''}">
                 <div style="font-size:13px;font-weight:bold;line-height:1.2;word-wrap:break-word;">${iconoAsiento} ${escapeHTML(op.nombre)}</div>
+                ${op.automatico && !estaMuerto ? '<span class="marca-auto" title="Ausente: un bot juega por él">Auto</span>' : ''}
                 ${op.equipo !== undefined && op.equipo !== null && miJugador.equipo !== undefined
                     ? `<span class="rol-equipo equipo-${op.equipo}">${op.equipo === miJugador.equipo ? 'Compañero' : 'Rival'} · ${NOMBRE_EQUIPO[op.equipo]}</span>` : ''}
                 <span class="vidas-destacadas">${estaMuerto ? icono('calavera') + ' 0' : icono('corazon') + ' ' + op.vidas}${op.numPoderes && !estaMuerto ? `<span class="num-poderes" title="Poderes guardados">${icono('rayo')}${op.numPoderes}</span>` : ''}</span>
@@ -2972,6 +2974,16 @@ function conectarSocket() {
     socket.on('salasAbiertas', pintarSalasAbiertas);
 
     // --- PODERES ---
+    // --- MODO AUTOMÁTICO (inactividad) ---
+    socket.on('modoAutomatico', ({ activo }) => {
+        document.getElementById('avisoAutomatico')?.classList.toggle('hidden', !activo);
+        if (activo) vibrar([200, 100, 200]);
+    });
+    document.getElementById('btnVolverAJugar').onclick = () => {
+        socket.emit('volverAJugar', miSalaActual);
+        document.getElementById('avisoAutomatico').classList.add('hidden');
+    };
+
     socket.on('cartaCompanero', ({ id, carta }) => {
         _cartasCompaneros[id] = carta;
         dibujarMesaCircular();

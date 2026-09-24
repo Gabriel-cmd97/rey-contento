@@ -98,6 +98,10 @@ Al crear una sala se puede enviar `configuracion.password`. El servidor la guard
 - Al desconectarse **en su turno**: el timer de turno se cancela y se reinicia en 8 segundos para no bloquear el juego
 - Al reconectar: Socket.io está configurado con `reconnectionAttempts: Infinity`. El evento `visibilitychange` del navegador fuerza `socket.connect()` al desbloquear el teléfono. Al reconectar, el cliente emite `unirseSala` si tenía sala activa. El servidor responde con `reconexionExitosa` que incluye `turnoNombre` (username del jugador en turno, más estable que el socket ID)
 
+### Inactividad (modo automático)
+
+Si se acaba el tiempo de un jugador, `iniciarReloj` juega por él con `decisionPorAusente()` (cálculo de bot NORMAL, no solo mantener) y suma `turnosSinJugar`. Con `TURNOS_PARA_AUTOMATICO` (2) seguidos, `activarAutomatico()` lo pone en modo automático: `gestionarTurnos` lo trata como bot (ritmo de bot, puede usar poderes) y la mesa ve "Auto" en su asiento. Desconectarse más de 3 minutos también lo pone en automático (antes lo eliminaba). Recupera el control con `volverAJugar` (botón del aviso `#avisoAutomatico`), con cualquier jugada o poder, o al reconectarse (`desactivarAutomatico`). En la práctica no aplica.
+
 ### Rate limiting de sockets
 
 La función `permitir(socketId, evento, limitMs)` en `server.js` bloquea eventos si se emiten antes de que expire el intervalo. Aplicado a `crearSala` (3s) y `accionJugador` (400ms). Las entradas se limpian en el evento `disconnect`.

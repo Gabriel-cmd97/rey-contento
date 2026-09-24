@@ -3683,3 +3683,38 @@ body.en-mesa .boton-esquina { display: flex; }
 /* Con la mesa hasta arriba, los asientos de las esquinas superiores bajan un
    poco para no quedar bajo los botones de menú y bitácora. */
 body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 13%; }
+
+/* Modo automático (inactividad) */
+.aviso-automatico {
+    position: fixed;
+    left: 50%;
+    bottom: calc(var(--alto-pie, 180px) + 10px);
+    transform: translateX(-50%);
+    z-index: 400;
+    width: min(92vw, 380px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: rgba(28,18,12,0.97);
+    border: 2px solid #d4a514;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+    color: var(--pergamino);
+    font-family: Georgia, serif;
+    font-size: 14px;
+    text-align: center;
+}
+.aviso-automatico strong { color: #ffe27a; }
+.aviso-automatico .boton-oro { width: 100%; padding: 12px; font-size: 15px; }
+.marca-auto {
+    display: inline-block;
+    margin-top: 2px;
+    padding: 0 6px;
+    border-radius: 6px;
+    background: rgba(155,89,182,0.3);
+    color: #e2cdf0;
+    font-family: var(--fuente-medieval);
+    font-size: 10px;
+}
