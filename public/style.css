@@ -3765,3 +3765,69 @@ body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 13%; }
 .foco-turno-medieval .marcador-equipos { position: static !important; transform: none !important; justify-content: center; margin-top: 5px; }
 .foco-turno-medieval .marcador-equipo { font-size: 11px; padding: 1px 7px; }
 #toastContainer, body.con-guia #toastContainer { top: 21% !important; }
+
+/* =========================================
+   GRAN REVELACIÓN DEL REY
+   ========================================= */
+.gran-rey {
+    position: absolute;
+    inset: 0;
+    z-index: 300;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: radial-gradient(circle at 50% 45%, rgba(60,40,5,0.55) 0%, rgba(10,6,2,0.75) 70%);
+    border-radius: inherit;
+    pointer-events: none;
+    overflow: hidden;
+    animation: gran-rey-entra 0.35s ease-out;
+}
+.gran-rey-rayos {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    width: 520px;
+    height: 520px;
+    margin: -260px 0 0 -260px;
+    background: repeating-conic-gradient(rgba(255,226,122,0.28) 0deg 10deg, transparent 10deg 24deg);
+    border-radius: 50%;
+    -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%);
+            mask: radial-gradient(circle, #000 20%, transparent 68%);
+    animation: gran-rey-gira 6s linear infinite;
+}
+.gran-rey-carta {
+    position: relative;
+    width: 118px;
+    height: 170px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: linear-gradient(145deg, #fff9c4 0%, #fff3a0 60%, #f5d76e 100%);
+    color: #5a3e05;
+    border: 3px solid #d4a514;
+    border-radius: 12px;
+    box-shadow: 0 0 40px rgba(241,196,15,0.9), 0 14px 30px rgba(0,0,0,0.6);
+    font-family: var(--fuente-medieval);
+    animation: gran-rey-carta 0.6s cubic-bezier(.2,.9,.3,1.3);
+    transition: transform 0.6s cubic-bezier(.5,0,.3,1), opacity 0.6s;
+}
+.gran-rey-carta b { font-size: 52px; line-height: 1; }
+.gran-rey-carta img { width: 54px; height: auto; }
+.gran-rey-carta small { font-size: 12px; }
+.gran-rey strong { position: relative; font-family: var(--fuente-medieval); font-size: 28px; color: #ffe27a; text-shadow: 0 2px 10px rgba(0,0,0,0.9); margin-top: 8px; text-wrap: balance; text-align: center; }
+.gran-rey > span:last-child { position: relative; font-family: Georgia, serif; font-size: 16px; color: var(--pergamino); text-shadow: 0 1px 6px rgba(0,0,0,0.9); text-align: center; padding: 0 12px; }
+/* Vuelo hacia el asiento de quien lo tiene */
+.gran-rey.volando { background: transparent; transition: background 0.5s; }
+.gran-rey.volando .gran-rey-rayos, .gran-rey.volando strong, .gran-rey.volando > span:last-child { opacity: 0; transition: opacity 0.25s; }
+.gran-rey.volando .gran-rey-carta { transform: translate(var(--vuelo-x, 0), var(--vuelo-y, 0)) scale(0.35); opacity: 0.2; }
+@keyframes gran-rey-entra { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gran-rey-gira { to { transform: rotate(360deg); } }
+@keyframes gran-rey-carta {
+    0% { transform: rotateY(90deg) scale(0.4); }
+    60% { transform: rotateY(0) scale(1.12); }
+    100% { transform: scale(1); }
+}

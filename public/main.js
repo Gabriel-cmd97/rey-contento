@@ -921,18 +921,48 @@ let _reyOcultoHasta = 0;
 function programarRevelacionRey(jugadores, introMs = 0) {
     const reyes = (jugadores || []).filter(j => j.cartaRevelada && j.cartaActual === 9);
     if (!reyes.length) { _reyOcultoHasta = 0; return; }
-    _reyOcultoHasta = performance.now() + introMs + MS_REVELAR_REY;
+    // Boca abajo hasta que la carta grande llegue volando a su asiento (~2.3 s más).
+    _reyOcultoHasta = performance.now() + introMs + MS_REVELAR_REY + 2300;
     setTimeout(() => {
-        _reyOcultoHasta = 0;
-        dibujarMesaCircular();
-        if (menosMovimiento()) return;
-        reyes.forEach(rey => {
-            const carta = rey.id === socket.id ? document.getElementById('miCarta') : cartaEnMesa(rey.nombre);
-            const r = carta?.getBoundingClientRect();
-            if (r && r.width) destelloRey(r);
+        const nombres = reyes.map(r => r.id === socket.id ? 'tú' : r.nombre);
+        mostrarGranRey('¡El Rey aparece!', nombres.length > 1
+            ? `Hay ${nombres.length} Reyes: ${nombres.join(' y ')}`
+            : (nombres[0] === 'tú' ? '¡Lo tienes tú!' : `Lo tiene ${nombres[0]}`), reyes[0], 1600, () => {
+            _reyOcultoHasta = 0;
+            dibujarMesaCircular();
+            reyes.forEach(rey => {
+                const carta = rey.id === socket.id ? document.getElementById('miCarta') : cartaEnMesa(rey.nombre);
+                const r = carta?.getBoundingClientRect();
+                if (r && r.width) destelloRey(r);
+            });
         });
-        Sonidos.carta();
     }, introMs + MS_REVELAR_REY);
+}
+
+// Gran revelación del Rey: carta grande al centro con rayos dorados; luego
+// vuela y se encoge hasta el asiento de quien lo tiene. `alTerminar` corre al
+// llegar (ahí se voltea su carta en la mesa). Dura `ms` + ~700 ms del vuelo.
+function mostrarGranRey(titulo, texto, jugador, ms, alTerminar) {
+    const capa = document.getElementById('granRey');
+    if (!capa) { alTerminar?.(); return; }
+    document.getElementById('granReyTitulo').textContent = titulo;
+    document.getElementById('granReyTexto').textContent = texto;
+    capa.classList.remove('hidden', 'volando');
+    capa.style.removeProperty('--vuelo-x'); capa.style.removeProperty('--vuelo-y');
+    Sonidos.victoria();
+    vibrar([60, 40, 60, 40, 160]);
+    const reducir = menosMovimiento();
+    setTimeout(() => {
+        // Vuela hacia la carta de quien lo tiene
+        const destino = jugador && (jugador.id === socket.id ? document.getElementById('miCarta') : cartaEnMesa(jugador.nombre));
+        const rd = destino?.getBoundingClientRect(), rc = capa.querySelector('.gran-rey-carta').getBoundingClientRect();
+        if (!reducir && rd && rd.width && rc.width) {
+            capa.style.setProperty('--vuelo-x', `${(rd.left + rd.width / 2) - (rc.left + rc.width / 2)}px`);
+            capa.style.setProperty('--vuelo-y', `${(rd.top + rd.height / 2) - (rc.top + rc.height / 2)}px`);
+            capa.classList.add('volando');
+        }
+        setTimeout(() => { capa.classList.add('hidden'); capa.classList.remove('volando'); alTerminar?.(); }, reducir ? 0 : 650);
+    }, ms);
 }
 
 // Campana: se balancea sobre quien la tocó y una onda dorada cruza el tapete.
@@ -3525,6 +3555,11 @@ function conectarSocket() {
             animarBloqueoRey(datos.jugador, datos.objetivo);
         } else if (datos.tipo === 'MAZO' && datos.jugador) {
             animarRoboMazo(datos.jugador);
+        } else if (datos.tipo === 'BLOQUEO' && datos.jugador && datos.objetivo && modoReyActual !== 'DECLARADO') {
+            // Rey sorpresa descubierto al chocar: revelación grande y breve.
+            const rey = listaJugadoresGlobal.find(j => j.nombre === datos.objetivo);
+            setTimeout(() => mostrarGranRey('¡Bloqueo real!',
+                `${datos.objetivo === miNombreUsuario ? 'Tú tenías' : datos.objetivo + ' tenía'} al Rey`, rey, 1100), 500);
         } else if (datos.tipo === 'BLOQUEO_ESCUDO' && datos.jugador && datos.objetivo) {
             animarBloqueoRey(datos.jugador, datos.objetivo, 'escudo');
         } else if (datos.tipo === 'ESCUDO' && datos.jugador) {
@@ -3549,7 +3584,8 @@ function conectarSocket() {
         // Mesa limpia: las jugadas comunes (mantener, cambiar, robar del mazo,
         // consultar un poder) ya se ven con su animación y quedan en la
         // bitácora; como aviso solo sale lo que cambia la partida.
-        const jugadaComun = /^(✋|🔄|🃏|🏹|👁️|🔮)/u.test(m) || m.includes('decidió mantener');
+        const jugadaComun = /^(✋|🔄|🃏|🏹|👁️|🔮)/u.test(m) || m.includes('decidió mantener')
+            || /^👑 (El Rey está en manos|Hay \d+ Reyes)/u.test(m) || m.includes('BLOQUEO REAL'); // lo dice la gran revelación
         if (!jugadaComun) mostrarToast(m, tipo, 2500);
 
         // Si es un evento del sistema de la partida, registrarlo en la bitácora

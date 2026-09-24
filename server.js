@@ -1261,7 +1261,9 @@ function iniciarRonda(sala, io) {
     }
 
     const esperaGuion = sala.config.practica ? practica.esperaInicio(sala) : 0; // tiempo para leer en la práctica
-    setTimeout(() => { gestionarTurnos(sala, io, true); }, introMs + esperaGuion + (hayReyDeclarado ? MS_REVELAR_REY + 600 : 500));
+    // Con Rey declarado, el cliente hace la gran revelación (~2.6 s) antes del primer turno.
+    const MS_GRAN_REY = 2800;
+    setTimeout(() => { gestionarTurnos(sala, io, true); }, introMs + esperaGuion + (hayReyDeclarado ? MS_REVELAR_REY + MS_GRAN_REY : 500));
 }
 
 // Arranca la partida de una sala en LOBBY (la llaman "Empezar juego" y el
