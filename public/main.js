@@ -525,17 +525,32 @@ function pintarInfoMesa() {
         : `Ronda ${escapeHTML(ronda)} · ${objetivo ? `<span class="info-objetivo">${objetivo}</span>` : modo}`;
 }
 
+function menuMesaAbierto() {
+    return !document.getElementById('panelMenuMesa')?.classList.contains('hidden');
+}
+
 function cerrarMenuMesa() {
     document.getElementById('panelMenuMesa')?.classList.add('hidden');
     document.getElementById('btnMenuMesa')?.setAttribute('aria-expanded', 'false');
 }
 
+// Guías y sonido son interruptores (prendido / apagado) dentro del menú.
+function pintarInterruptoresMenu() {
+    const panel = document.getElementById('panelMenuMesa');
+    if (!panel) return;
+    const estados = { guias: guiasActivas(), sonido: Sonidos.estaHabilitado() };
+    for (const [accion, on] of Object.entries(estados)) {
+        const b = panel.querySelector(`[data-accion="${accion}"]`);
+        if (!b) continue;
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+        b.classList.toggle('encendido', on);
+    }
+    panel.querySelector('[data-accion="sonido"] use')?.setAttribute('href', estados.sonido ? '#i-altavoz' : '#i-silencio');
+}
+
 function abrirMenuMesa() {
     const panel = document.getElementById('panelMenuMesa');
-    // Estado actual de guías y sonido en sus etiquetas
-    panel.querySelector('[data-accion="guias"] span').textContent = guiasActivas() ? 'Guías: activadas' : 'Guías: apagadas';
-    panel.querySelector('[data-accion="sonido"] span').textContent = Sonidos.estaHabilitado() ? 'Sonido: activado' : 'Sonido: silenciado';
-    panel.querySelector('[data-accion="sonido"] use').setAttribute('href', Sonidos.estaHabilitado() ? '#i-altavoz' : '#i-silencio');
+    pintarInterruptoresMenu();
     panel.classList.remove('hidden');
     document.getElementById('btnMenuMesa').setAttribute('aria-expanded', 'true');
 }
@@ -548,8 +563,12 @@ document.getElementById('panelMenuMesa')?.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-accion]');
     if (!b) return;
     const accion = b.dataset.accion;
-    if (accion === 'guias') document.getElementById('btnToggleGuias')?.click();
-    if (accion === 'sonido') document.getElementById('btnToggleSonido')?.click();
+    if (accion === 'guias' || accion === 'sonido') {
+        // Interruptor: cambia y el menú sigue abierto para ver el nuevo estado.
+        document.getElementById(accion === 'guias' ? 'btnToggleGuias' : 'btnToggleSonido')?.click();
+        pintarInterruptoresMenu();
+        return;
+    }
     if (accion === 'bitacora') abrirModalBitacora();
     if (accion === 'reglas') document.getElementById('modalReglas')?.classList.remove('hidden');
     if (accion === 'perfil') document.getElementById('btnMiPerfil')?.click();
@@ -557,6 +576,9 @@ document.getElementById('panelMenuMesa')?.addEventListener('click', (e) => {
     cerrarMenuMesa();
 });
 document.addEventListener('click', (e) => {
+    // Los interruptores simulan el clic en los botones ocultos de la barra:
+    // ese clic sintético no debe cerrar el menú.
+    if (!e.isTrusted) return;
     if (!e.target.closest('#panelMenuMesa, #btnMenuMesa')) cerrarMenuMesa();
 });
 document.getElementById('btnBitacoraMesa')?.addEventListener('click', () => {
@@ -2232,7 +2254,7 @@ if (btnSonido) {
     btnSonido.onclick = () => {
         const activo = Sonidos.toggle();
         btnSonido.innerHTML = icono(activo ? 'altavoz' : 'silencio');
-        mostrarToast(activo ? '🔊 Sonido activado' : '🔇 Sonido silenciado', 'rey', 1500);
+        if (!menuMesaAbierto()) mostrarToast(activo ? '🔊 Sonido activado' : '🔇 Sonido silenciado', 'rey', 1500); // en el menú lo dice el interruptor
         if (activo) Sonidos.pop();
     };
 }
@@ -2256,7 +2278,9 @@ if (btnGuias) {
         const prender = !guiasActivas();
         escribirLS('reyGuias', prender ? 'on' : 'off');
         pintarBotonGuias();
-        mostrarToast(prender ? '💡 Guías activadas' : '💡 Guías apagadas', 'rey', 1500);
+        if (!menuMesaAbierto()) mostrarToast(prender ? '💡 Guías activadas' : '💡 Guías apagadas', 'rey', 1500);
+        // Prendidas en tu turno: la guía sale ya, sin esperar al siguiente.
+        if (prender && _ultimaGuia && turnoActualId === socket?.id) actualizarGuiaTurno(..._ultimaGuia, true);
         if (!prender) {
             ocultarGuiaTurno();
             document.getElementById('bannerObjetivo')?.classList.add('hidden');
