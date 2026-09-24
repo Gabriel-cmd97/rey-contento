@@ -84,7 +84,7 @@ quieroJugarOtraVez → iniciarRevancha()
 
 **`dificultadBots`** (`bots.js`): `FACIL` (umbral fijo, se equivoca 1 de cada 4), `NORMAL` (calcula la probabilidad de perder si mantiene vs. si cambia) y `DIFICIL` (además cuenta el descarte y recuerda los cambios de la ronda en `bot.memoria`). Los bots solo usan información que un humano atento también tiene. En una simulación de 60 000 rondas pierden ~26, ~19 y ~16 vidas cada 100 rondas.
 
-**`tiempoTurno`**: segundos por turno, uno de `TIEMPOS_TURNO` (7, 10, 15, 20; default 10). Un jugador desconectado recibe al menos 30s. El cliente toma la duración del campo `tiempo` de `juegoIniciado`/`cambioDeTurno`, nunca de un valor fijo.
+**`tiempoTurno`**: segundos por turno, uno de `TIEMPOS_TURNO` (7, 10, 15, 20; default 15, también en la partida rápida). Un jugador desconectado recibe al menos 30s. El cliente toma la duración del campo `tiempo` de `juegoIniciado`/`cambioDeTurno`, nunca de un valor fijo.
 
 **`frecuenciaReyes`**: controla qué tan seguido aparecen los 9s — `NORMAL` (aleatorio), `ALTA`, `LOCURA` (sesgados hacia las primeras rondas)
 
@@ -183,6 +183,10 @@ DEBUG_LOG=1
 **Práctica de eventos y poderes** ("Aprende eventos y poderes"): segundo guion (`GUIONES.poderes` en `practica.js`, config `practica: 'poderes'` con `poderes: true`). Cada ronda del guion puede fijar `evento`, `poderes` que se regalan al empezar (en la práctica no se ganan al azar) y `esperaInicio` (ms extra antes del primer turno: la ronda 3 da 8 s para levantar el Escudo). Los textos están en `practicaPoderesEvento()`; `practicaEvento` recibe también `'poder'` (resultadoPoder) y `'accion'` (accionMesa). El Escudo se puede usar desde el reparto: `pintarBarraPoderes` considera la ronda en juego desde `datosMesa`, no desde el primer turno.
 
 **Práctica guiada** ("Aprender a jugar" en el lobby): `crearSala` con `{ practica: true }` → `sanitizarConfig` fija la mesa (3 vidas, 2 bots, declarado, 60 s por turno). `practica.js` tiene el guion: cartas por asiento, carta de arriba del mazo y jugada de cada bot por ronda; el dealer arranca en el asiento 2 para que juegues primero. El servidor no cuenta estadísticas, no avanza después de `ULTIMA_RONDA` y borra la sala al abandonarla. En `main.js` (sección PRÁCTICA GUIADA) `practicaEvento()` muestra el globo `#coachPractica` según ronda y turno; **los textos suponen las cartas del guion**, si cambias uno revisa el otro. Al terminar se guarda `localStorage.reyPracticaHecha` y el botón pasa de oro a madera.
+
+**La mesa no se tapa con el panel de abajo**: el panel de acciones (`#panelAccionesPartida`) cambia de alto con guías, poderes y frases; un `ResizeObserver` (`vigilarAltoDelPie`) lo publica en `--alto-pie` y el tapete mide `100dvh - barra - --alto-pie`. Si la flecha guía estaba a la vista, se recoloca con `actualizarGuiaTurno(..., redibujar = true)`. Para que el panel no crezca de más, la línea de gestos solo sale en los primeros 3 turnos (`_turnosConGuiaGestos`) y la de "ves la carta de tu compañero" solo en la ronda 1.
+
+**Parejas en la mesa**: cada asiento dice "Compañero · Oro" o "Rival · Plata" (`.rol-equipo`), tu perfil "Tú · Oro", y al repartir la ronda 1 `mostrarAvisoEquipo()` muestra 5 s "Tu equipo: Oro · compañero: …". El marcador de vidas por equipo va al centro del tapete.
 
 **Gestos sobre tu carta** (`inicializarGestosCarta`): deslizar a la derecha ≥ 70 px = CAMBIAR; doble toque (< 350 ms, sin arrastrar) o deslizar hacia abajo = MANTENER. `.carta-naipe` lleva `touch-action: manipulation` para que el doble toque no haga zoom. Con guías activas, `amagarCarta()` mueve la carta hacia la derecha como invitación y `#guiaAcciones` explica los gestos.
 
@@ -288,7 +292,7 @@ Estas convenciones se aplicaron al pulir el aspecto y la confiabilidad de carga 
 - `volarFantasma(desde, hacia, { arco, duracion, rebote })` es el vuelo común de carta boca abajo; úsalo para cualquier animación nueva de cartas.
 - *Pérdida de vida*: `animarPerdidaVida()` parte un corazón sobre las vidas y, si quedó eliminado, pone el sello de calavera.
 - *Cuenta regresiva del resumen*: `rondaTerminada` trae `autoSiguienteMs` (cuánto falta para que la siguiente ronda empiece sola; `null` si termina la partida o la práctica). `iniciarCuentaResumen()` lo descuenta desde que llegó el evento (`datos._recibido`), no desde que aparece el resumen, así llega a cero junto con el servidor. Si cambias las pausas del servidor, la cuenta se ajusta sola.
-- Todo se salta con `menosMovimiento()` (prefers-reduced-motion). El servidor da tiempo a verlo: `MS_PAUSA_BOT` (5 s) antes de que un dealer bot avance y `MS_PAUSA_VICTORIA` (4.5 s) antes de `finDelJuego`; si se alarga la revelación, ajustar esas pausas.
+- Todo se salta con `menosMovimiento()` (prefers-reduced-motion). El servidor da tiempo a verlo: `MS_PAUSA_BOT` (8 s, para alcanzar a ver quién tenía qué) antes de que un dealer bot avance y `MS_PAUSA_VICTORIA` (4.5 s) antes de `finDelJuego`; si se alarga la revelación, ajustar esas pausas.
 
 **Idioma**: todo el texto visible en **español de México (tuteo)** — "tú"/"tienes"/"escanea", nunca voseo ("vos"/"tenés"/"escaneá"). Vocabulario: **"celular"** (no "móvil"), **"enlace"** (no "link"). Los identificadores de código preexistentes (`btnCopiarLink`, `linkDeSala`, clase `btn-copiar-link`) se mantienen.
 

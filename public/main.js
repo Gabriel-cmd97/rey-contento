@@ -483,6 +483,24 @@ function icono(nombre) {
 }
 
 // ==========================================
+// ALTO DEL PANEL DE ABAJO
+// ==========================================
+// El panel de acciones (botones, guías, poderes, frases) cambia de alto. Se
+// mide y se publica en --alto-pie para que el tapete termine justo encima y
+// nunca tape tu carta. Si la flecha guía estaba a la vista, se recoloca.
+window.addEventListener('DOMContentLoaded', function vigilarAltoDelPie() {
+    const pie = document.getElementById('panelAccionesPartida');
+    if (!pie || typeof ResizeObserver === 'undefined') return;
+    new ResizeObserver(() => {
+        const alto = pie.classList.contains('hidden') ? 0 : Math.ceil(pie.getBoundingClientRect().height);
+        document.documentElement.style.setProperty('--alto-pie', alto + 'px');
+        if (_ultimaGuia && !document.getElementById('flechaGuia')?.classList.contains('hidden')) {
+            requestAnimationFrame(() => actualizarGuiaTurno(..._ultimaGuia, true));
+        }
+    }).observe(pie);
+});
+
+// ==========================================
 // GUÍAS PARA QUIEN EMPIEZA
 // ==========================================
 // Ayudas dentro de la ronda: flecha hacia con quién cambias (o al mazo si
@@ -572,7 +590,10 @@ function dibujarFlechaGuia(origenEl, destinoEl) {
 }
 
 // Texto bajo los botones + flecha, solo en mi turno y con las guías prendidas.
-function actualizarGuiaTurno(esMio, esCampana, campanaTocada) {
+// `redibujar`: solo recolocar la flecha (el panel cambió de alto), sin contar turno.
+let _turnosConGuiaGestos = 0;
+let _ultimaGuia = null;
+function actualizarGuiaTurno(esMio, esCampana, campanaTocada, redibujar = false) {
     ocultarGuiaTurno();
     if (!esMio || mostrandoRevelacion || !guiasActivas()) return;
 
@@ -602,11 +623,17 @@ function actualizarGuiaTurno(esMio, esCampana, campanaTocada) {
     const lineas = ['✋ Te quedas con tu carta', textoCambiar];
     if (eventoActual?.id === 'NIEBLA') lineas.push('🌫️ Niebla: decides sin ver tu carta');
     if (misPoderes.length) lineas.push('✨ Tienes poderes: úsalos antes de decidir');
-    if (miEquipo() !== undefined && miEquipo() !== null) lineas.push('🤝 Ves la carta de tu compañero (los rivales no)');
+    const ronda = parseInt(document.getElementById('numRonda')?.innerText || '0', 10);
+    if (miEquipo() !== undefined && miEquipo() !== null && ronda <= 1) lineas.push('🤝 Ves la carta de tu compañero (los rivales no)');
     if (eventoActual?.id === 'MUNDO_AL_REVES') lineas.push('🔄 Mundo al revés: esta ronda pierde la carta más alta');
     if (esCampana && !campanaTocada) lineas.push('🔔 Cierra la ronda: tócala si crees tener la carta más baja');
-    lineas.push('👆 También con tu carta: deslízala a la derecha para cambiar, tócala dos veces para mantener');
-    amagarCarta();
+    // Los gestos se explican solo en tus primeros turnos: el panel ocupa menos.
+    if (_turnosConGuiaGestos < 3) {
+        lineas.push('👆 También con tu carta: deslízala a la derecha para cambiar, tócala dos veces para mantener');
+        if (!redibujar) _turnosConGuiaGestos++;
+    }
+    if (!redibujar) amagarCarta();
+    _ultimaGuia = [esMio, esCampana, campanaTocada];
 
     const guia = document.getElementById('guiaAcciones');
     if (guia) {
@@ -1504,6 +1531,18 @@ function practicaPoderesEvento(tipo, datos) {
 // su equipo). Se muestra boca arriba en su asiento con el color del equipo.
 const NOMBRE_EQUIPO = ['Oro', 'Plata'];
 let _cartasCompaneros = {}; // id → carta, se vacía cada ronda
+
+// Al empezar la partida: "Tu equipo: Oro · compañero: Fulano".
+function mostrarAvisoEquipo(jugadores) {
+    const yo = jugadores.find(j => j.id === socket.id);
+    const banner = document.getElementById('bannerEquipo');
+    if (!yo || yo.equipo === undefined || yo.equipo === null || !banner) return;
+    const comp = jugadores.filter(j => j.equipo === yo.equipo && j.id !== socket.id).map(j => j.nombre);
+    banner.className = `banner-equipo equipo-${yo.equipo}`;
+    banner.innerHTML = `${icono('grupo')} Tu equipo: <strong>${NOMBRE_EQUIPO[yo.equipo]}</strong> · ${comp.length > 1 ? 'compañeros' : 'compañero'}: <strong>${comp.map(escapeHTML).join(' y ')}</strong>`;
+    clearTimeout(mostrarAvisoEquipo._t);
+    mostrarAvisoEquipo._t = setTimeout(() => banner.classList.add('hidden'), 5000);
+}
 
 function miEquipo() {
     return listaJugadoresGlobal.find(j => j.id === socket.id)?.equipo;
@@ -2449,7 +2488,8 @@ function dibujarMesaCircular() {
     document.getElementById('miPerfil')?.classList.toggle('con-escudo', !!miJugador.escudo && miJugador.vidas > 0);
     ['equipo-0', 'equipo-1'].forEach(c => document.getElementById('miPerfil')?.classList.toggle(c, `equipo-${miJugador.equipo}` === c));
     pintarMarcadorEquipos();
-    if (nombreMesa) nombreMesa.innerHTML = icono(miJugador.dealer ? 'corona' : 'persona') + ' ' + escapeHTML(miJugador.nombre);
+    if (nombreMesa) nombreMesa.innerHTML = icono(miJugador.dealer ? 'corona' : 'persona') + ' ' + escapeHTML(miJugador.nombre)
+        + (miJugador.equipo !== undefined && miJugador.equipo !== null ? ` <span class="rol-equipo equipo-${miJugador.equipo}">Tú · ${NOMBRE_EQUIPO[miJugador.equipo]}</span>` : '');
     if (vidasMesa) vidasMesa.innerHTML = miJugador.vidas > 0 ? icono('corazon') + ' ' + miJugador.vidas : icono('calavera') + ' 0';
 
     if (miJugador.vidas <= 0) {
@@ -2642,6 +2682,8 @@ function dibujarMesaCircular() {
         divSilla.innerHTML = `
             <div class="perfil-oponente ${claseEstado} ${animReparto} ${claseDanio} ${op.escudo && !estaMuerto ? 'con-escudo' : ''} ${op.equipo !== undefined && op.equipo !== null ? `equipo-${op.equipo}` : ''}">
                 <div style="font-size:13px;font-weight:bold;line-height:1.2;word-wrap:break-word;">${iconoAsiento} ${escapeHTML(op.nombre)}</div>
+                ${op.equipo !== undefined && op.equipo !== null && miJugador.equipo !== undefined
+                    ? `<span class="rol-equipo equipo-${op.equipo}">${op.equipo === miJugador.equipo ? 'Compañero' : 'Rival'} · ${NOMBRE_EQUIPO[op.equipo]}</span>` : ''}
                 <span class="vidas-destacadas">${estaMuerto ? icono('calavera') + ' 0' : icono('corazon') + ' ' + op.vidas}${op.numPoderes && !estaMuerto ? `<span class="num-poderes" title="Poderes guardados">${icono('rayo')}${op.numPoderes}</span>` : ''}</span>
             </div>
             ${cartaHTML}
@@ -3050,6 +3092,7 @@ function conectarSocket() {
         terminarEsperaRapida();
         _espiado = null;
         _cartasCompaneros = {};
+        if (datos.ronda === 1) { _turnosConGuiaGestos = 0; mostrarAvisoEquipo(datos.jugadores || []); }
         eventoActual = datos.evento || null;
         ocultarEvento();
         marcarDuelo(datos.duelo);

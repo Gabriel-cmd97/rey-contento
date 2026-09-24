@@ -241,7 +241,7 @@ function sanitizarConfig(raw) {
     const modoRey       = enLista(raw.modoRey, ['SORPRESA', 'DECLARADO'], 'SORPRESA');
     const frecuenciaReyes = enLista(raw.frecuenciaReyes, ['NORMAL', 'ALTA', 'LOCURA'], 'NORMAL');
     const dificultadBots = enLista(raw.dificultadBots, bots.DIFICULTADES, 'NORMAL');
-    const tiempoTurno   = enLista(Number.parseInt(raw.tiempoTurno, 10), TIEMPOS_TURNO, 10);
+    const tiempoTurno   = enLista(Number.parseInt(raw.tiempoTurno, 10), TIEMPOS_TURNO, 15); // 15 s por defecto: da tiempo de pensar
 
     // Partida de práctica guiada: mesa fija contra 2 bots con guion
     // (practica.js). Todo lo demás de la config se ignora.
@@ -786,7 +786,7 @@ function resolverRonda(sala, io) {
 
     // Pausas tras revelar: el cliente voltea las cartas una por una (~180 ms
     // por jugador) y después muestra el resumen, así que hay que dejarle ver.
-    const MS_PAUSA_BOT = 5000;       // dealer bot: pasa a la siguiente ronda
+    const MS_PAUSA_BOT = 8000;       // dealer bot: pasa a la siguiente ronda (tiempo para ver quién tenía qué)
     const MS_PAUSA_VICTORIA = 4500;  // fin de partida: muestra la victoria
     // Con dealer humano, la ronda sigue sola a los 15 s por si no presiona
     // "siguiente ronda" (antes la sala quedaba atorada en REVELACION).
@@ -953,7 +953,7 @@ function gestionarTurnos(sala, io, esInicio = false) {
         let idJugadorEnTurno = jugadorActual.id;
         // Tiempo elegido en la sala; si el jugador está desconectado se le dan
         // al menos 30s de gracia para que alcance a volver.
-        const tiempoSala = sala.config.tiempoTurno || 10;
+        const tiempoSala = sala.config.tiempoTurno || 15;
         let tiempoTurno = jugadorActual.online ? tiempoSala : Math.max(30, tiempoSala);
 
         // Primer turno de la ronda: el cliente arranca el reloj visual recién tras
@@ -1245,7 +1245,7 @@ const temporizadoresRapida = {}; // idSala → timeout de arranque
 
 function configRapida() {
     return { vidas: 3, maxJugadores: 4, numBots: 0, modoJuego: 'CLASICO', modoRey: 'SORPRESA',
-             frecuenciaReyes: 'NORMAL', dificultadBots: 'NORMAL', tiempoTurno: 10, eventos: true, rapida: true };
+             frecuenciaReyes: 'NORMAL', dificultadBots: 'NORMAL', tiempoTurno: 15, eventos: true, rapida: true };
 }
 
 function nuevoIdSala() {

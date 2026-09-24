@@ -3488,3 +3488,59 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
 .marcador-equipo.mio { box-shadow: 0 0 8px currentColor; }
 /* Con marcador de equipos, la etiqueta del evento se corre a la derecha. */
 .marcador-equipos:not(.hidden) ~ .chip-evento { left: auto; right: 10px; transform: none; }
+
+/* =========================================
+   LA MESA TERMINA DONDE EMPIEZA EL PANEL DE ABAJO
+   --alto-pie lo mide main.js (ResizeObserver del panel de acciones).
+   ========================================= */
+#mesaDeJuego { padding-bottom: calc(var(--alto-pie, 180px) + 6px); }
+@media (max-width: 767px) {
+    .tapete-virtual {
+        height: calc(100dvh - 44px - var(--alto-pie, 180px) - 10px) !important;
+        min-height: 320px !important;
+    }
+}
+@media (min-width: 768px) {
+    .tapete-virtual { height: min(760px, calc(100dvh - 60px - var(--alto-pie, 180px))) !important; min-height: 380px !important; }
+}
+
+/* Compañero / Rival en cada asiento (parejas) */
+.rol-equipo {
+    display: inline-block;
+    margin-top: 2px;
+    padding: 0 6px;
+    border-radius: 6px;
+    font-family: var(--fuente-medieval);
+    font-size: 10px;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+.rol-equipo.equipo-0 { background: rgba(241,196,15,0.2); color: #ffe27a; }
+.rol-equipo.equipo-1 { background: rgba(207,216,227,0.18); color: #e8eef5; }
+#miNombreMesa .rol-equipo { font-size: 9px; }
+
+.banner-equipo {
+    position: absolute;
+    top: 42px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 61;
+    width: max-content;
+    max-width: 94%;
+    padding: 7px 14px;
+    border-radius: 18px;
+    background: rgba(20,12,8,0.92);
+    border: 2px solid currentColor;
+    font-family: var(--fuente-medieval);
+    font-size: 13px;
+    text-align: center;
+    pointer-events: none;
+    animation: banner-objetivo-entra 0.4s ease-out;
+}
+.banner-equipo.equipo-0 { color: #ffe27a; }
+.banner-equipo.equipo-1 { color: #e8eef5; }
+.banner-equipo .icono { width: 15px; height: 15px; }
+/* Marcador de equipos al centro, en el hueco entre el asiento de arriba y el
+   aviso de turno (arriba a la izquierda tapaba un asiento en mesas de 6). */
+.marcador-equipos { top: 23%; left: 50%; transform: translateX(-50%); }
+.marcador-equipos:not(.hidden) ~ .chip-evento { left: 50%; right: auto; transform: translateX(-50%); }

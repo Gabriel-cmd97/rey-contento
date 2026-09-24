@@ -241,8 +241,8 @@
                             <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-reloj"/></svg> Tiempo por turno</span>
                             <select id="selectTiempoTurno" class="selector-medieval selector-compacto">
                             <option value="7">7 s · Rápido</option>
-                            <option value="10" selected>10 s · Normal</option>
-                            <option value="15">15 s · Tranquilo</option>
+                            <option value="10">10 s · Ágil</option>
+                            <option value="15" selected>15 s · Normal</option>
                             <option value="20">20 s · Relajado</option>
                         </select>
                         </div>
@@ -380,6 +380,7 @@
 
                     <div id="bannerUltimaVuelta" class="hidden banner-ultima-vuelta"><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> ¡ÚLTIMA VUELTA!</div>
                     <div id="bannerObjetivo" class="hidden banner-objetivo"></div>
+                    <div id="bannerEquipo" class="hidden banner-equipo" role="status" aria-live="polite"></div>
 
                     <!-- Evento de ronda: carta grande al centro y luego etiqueta arriba -->
                     <div id="cartaEvento" class="carta-evento hidden" role="status" aria-live="polite">
@@ -608,7 +609,7 @@
             </div>
 
             <h3 class="medieval-font" style="color:var(--oro-tinta);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> Tu Turno</h3>
-            <p>Tienes un tiempo límite por turno (10 segundos por defecto; quien crea la sala puede elegir entre 7 y 20) para elegir:</p>
+            <p>Tienes un tiempo límite por turno (15 segundos por defecto; quien crea la sala puede elegir entre 7 y 20) para elegir:</p>
             <ul style="margin:8px 0 0 20px;line-height:1.8;">
                 <li><strong><svg class="icono" aria-hidden="true"><use href="#i-mano"/></svg> MANTENER</strong> — Te quedas con tu carta.</li>
                 <li><strong><svg class="icono" aria-hidden="true"><use href="#i-cambio"/></svg> CAMBIAR</strong> — Fuerzas al jugador de tu derecha a intercambiar.</li>
@@ -711,7 +712,7 @@
             const selDif    = document.getElementById('selectDificultadBots');
             document.getElementById('bloqueDificultadBots')?.classList.toggle('hidden', numBots === 0);
             const bots      = numBots > 0 ? ` · ${ic('bot')} ${selDif.options[selDif.selectedIndex].text}` : '';
-            const tiempo    = document.getElementById('selectTiempoTurno')?.value || '10';
+            const tiempo    = document.getElementById('selectTiempoTurno')?.value || '15';
             // Parejas: la mesa es de 4 o 6 y se completa con bots; el número de
             // jugadores y de bots ya no se elige.
             const equipos = parseInt(document.getElementById('selectEquipos')?.value || '0');
