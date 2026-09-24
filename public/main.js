@@ -228,7 +228,8 @@ function mostrarToast(mensaje, tipo = '', duracion = 2500) {
     // del server incluye un username con HTML inyectado.
     toast.textContent = mensaje;
     container.appendChild(toast);
-    while (container.children.length > 2) container.removeChild(container.firstChild);
+    // Uno a la vez: el nuevo reemplaza al anterior (lo mismo queda en la bitácora).
+    while (container.children.length > 1) container.removeChild(container.firstChild);
     setTimeout(() => {
         toast.style.animation = 'toastSalir 0.3s ease forwards';
         setTimeout(() => toast.remove(), 300);

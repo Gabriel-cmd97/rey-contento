@@ -186,6 +186,8 @@ DEBUG_LOG=1
 
 **La mesa no se tapa con el panel de abajo**: el panel de acciones (`#panelAccionesPartida`) cambia de alto con guías, poderes y frases; un `ResizeObserver` (`vigilarAltoDelPie`) lo publica en `--alto-pie` y el tapete mide `100dvh - barra - --alto-pie`. Si la flecha guía estaba a la vista, se recoloca con `actualizarGuiaTurno(..., redibujar = true)`. Para que el panel no crezca de más, la línea de gestos solo sale en los primeros 3 turnos (`_turnosConGuiaGestos`) y la de "ves la carta de tu compañero" solo en la ronda 1.
 
+**Reacciones y avisos**: las reacciones y el botón de frases son solo el emoji o el ícono, sin círculo ni borde; cada botón reparte el ancho de la fila para que se toque fácil. Los avisos (`#toastContainer`) van justo encima del panel (`--alto-pie`) y se muestra uno a la vez (lo mismo queda en la bitácora).
+
 **Parejas en la mesa**: cada asiento dice "Compañero · Oro" o "Rival · Plata" (`.rol-equipo`), tu perfil "Tú · Oro", y al repartir la ronda 1 `mostrarAvisoEquipo()` muestra 5 s "Tu equipo: Oro · compañero: …". El marcador de vidas por equipo va al centro del tapete.
 
 **Gestos sobre tu carta** (`inicializarGestosCarta`): deslizar a la derecha ≥ 70 px = CAMBIAR; doble toque (< 350 ms, sin arrastrar) o deslizar hacia abajo = MANTENER. `.carta-naipe` lleva `touch-action: manipulation` para que el doble toque no haga zoom. Con guías activas, `amagarCarta()` mueve la carta hacia la derecha como invitación y `#guiaAcciones` explica los gestos.

@@ -3544,3 +3544,36 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
    aviso de turno (arriba a la izquierda tapaba un asiento en mesas de 6). */
 .marcador-equipos { top: 23%; left: 50%; transform: translateX(-50%); }
 .marcador-equipos:not(.hidden) ~ .chip-evento { left: 50%; right: auto; transform: translateX(-50%); }
+
+/* =========================================
+   REACCIONES SIN CÍRCULO (solo el emoji / el ícono)
+   Cada botón reparte el ancho de la fila: se ve pequeño pero se toca fácil.
+   ========================================= */
+.barra-reacciones {
+    gap: 0;
+    padding: 0;
+    border-bottom: none;
+    justify-content: space-between;
+}
+.btn-reaccion, .btn-frases {
+    flex: 1;
+    max-width: 52px;
+    height: 32px;
+    background: none !important;
+    border: none !important;
+    border-radius: 8px;
+    box-shadow: none !important;
+    font-size: 22px;
+    line-height: 1;
+    padding: 0;
+}
+.btn-reaccion:hover:not(:disabled) { background: none; transform: scale(1.2); }
+.btn-reaccion:active:not(:disabled) { transform: scale(0.9); }
+.btn-frases .icono { width: 22px; height: 22px; }
+.btn-frases[aria-expanded="true"] { color: #fff3b0; filter: drop-shadow(0 0 6px rgba(241,196,15,0.8)); }
+/* Panel de abajo más compacto */
+.panel-acciones-fijo { gap: 4px !important; padding-top: 6px !important; }
+/* Los avisos van justo encima del panel de abajo (su alto real, --alto-pie),
+   para no tapar las reacciones ni los botones. */
+#toastContainer, body.con-guia #toastContainer { bottom: calc(var(--alto-pie, 180px) + 8px) !important; }
+#toastContainer .toast-mensaje { font-size: 12px; padding: 5px 12px; }
