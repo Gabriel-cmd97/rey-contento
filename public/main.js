@@ -1630,6 +1630,31 @@ function pintarBarraPoderes() {
     });
 }
 
+// Sala de espera: "Cómo será la partida", con la config real que manda el
+// servidor (la ven igual el host y quien entra con el código). Los Reyes los
+// sortea el servidor al crear la sala: aquí es donde se enteran.
+function pintarComoSeraPartida(c, maxJugadores) {
+    const caja = document.getElementById('comoSeraPartida');
+    if (!caja || !c) return;
+    const campana = c.modoJuego === 'CAMPANA';
+    const reyes = { NORMAL: ['Normales', 'el 9 sale como cualquier carta'],
+                    ALTA: ['Muchos', 'el 9 sale seguido en las primeras rondas'],
+                    LOCURA: ['Locura', 'lluvia de 9 al principio de la partida'] }[c.frecuenciaReyes] || ['Normales', ''];
+    const filas = [
+        ['espadas', 'Modo', campana ? 'Campana' : 'Clásico', campana ? 'pierde la carta más alta' : 'pierde la carta más baja'],
+        ['mascara', 'Rey', c.modoRey === 'DECLARADO' ? 'Declarado' : 'Sorpresa', c.modoRey === 'DECLARADO' ? 'se ve quién tiene el 9' : 'el 9 va oculto hasta que bloquea'],
+        ['llama', 'Reyes', reyes[0], reyes[1]],
+        ['corazon', 'Vidas', String(c.vidas), c.equipos ? 'por equipo' : 'cada quien'],
+        ['grupo', 'Mesa', c.equipos ? `${c.equipos} contra ${c.equipos}` : `${maxJugadores || c.maxJugadores} jugadores`, 'los lugares libres se llenan con bots'],
+        ['rayo', 'Eventos', campana ? 'No' : 'Sí', campana ? 'no hay en Campana' : 'reglas sorpresa en algunas rondas'],
+        ['ojo', 'Poderes', c.poderes ? 'Sí' : 'No', c.poderes ? 'al perder una vida ganas uno' : ''],
+        ['reloj', 'Turno', `${c.tiempoTurno || 20} s`, ''],
+    ];
+    caja.innerHTML = `<p class="lobby-section-label">Cómo será la partida</p><dl>` + filas.map(([ic, k, v, nota]) =>
+        `<div><dt>${icono(ic)} ${escapeHTML(k)}</dt><dd><b>${escapeHTML(v)}</b>${nota ? `<small>${escapeHTML(nota)}</small>` : ''}</dd></div>`).join('') + `</dl>`;
+    caja.classList.remove('hidden');
+}
+
 // Oráculo: la carta de arriba aparece unos segundos sobre el mazo.
 function mostrarCartaSobreMazo(carta) {
     const mazo = document.getElementById('mazoFlotante');
@@ -3029,7 +3054,6 @@ function conectarSocket() {
         socket.emit('crearSala', {
             configuracion: {
                 modoRey: document.getElementById('selectModo').value,
-                frecuenciaReyes: document.getElementById('selectReyes').value,
                 vidas: parseInt(document.getElementById('selectVidas').value),
                 maxJugadores: parseInt(document.getElementById('selectJugadores').value),
                 poderes: document.getElementById('selectPoderes').value === 'SI',
@@ -3200,6 +3224,7 @@ function conectarSocket() {
 
     socket.on('actualizarLobby', (datos) => {
         window._reingresando = false; window._servidorReinicio = false;
+        if (datos && datos.config) pintarComoSeraPartida(datos.config, datos.maxJugadores);
         const jugadores = Array.isArray(datos) ? datos : datos.jugadores;
         const maxJug = (datos && datos.maxJugadores) ? datos.maxJugadores : parseInt(document.getElementById('selectJugadores')?.value || 8);
         const conEquipos = !!(datos && datos.equipos);

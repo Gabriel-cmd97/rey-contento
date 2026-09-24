@@ -3884,3 +3884,13 @@ body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 13%; }
 
 /* Ayuda bajo "Jugadores en la mesa": los bots entran solos al empezar */
 .config-ayuda { margin: -2px 2px 2px; font-size: 12.5px; line-height: 1.4; color: var(--texto-suave); font-style: italic; }
+
+/* Sala de espera: cómo será la partida */
+.como-sera { margin-top: 10px; }
+.como-sera dl { margin: 6px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.como-sera dl > div { padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.28); border: 1px solid rgba(241,196,15,.18); min-width: 0; }
+.como-sera dt { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--texto-suave); display: flex; align-items: center; gap: 5px; }
+.como-sera dt .icono { width: 14px; height: 14px; color: #ffe27a; }
+.como-sera dd { margin: 3px 0 0; }
+.como-sera dd b { display: block; color: var(--pergamino); font-size: 15px; }
+.como-sera dd small { display: block; font-size: 11.5px; line-height: 1.3; color: var(--texto-suave); }

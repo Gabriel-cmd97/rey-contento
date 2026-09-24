@@ -93,7 +93,7 @@ quieroJugarOtraVez → iniciarRevancha()
 
 **`tiempoTurno`**: fijo en `TIEMPO_TURNO` (20 s) para todos los modos; ya no se elige al crear sala (con eventos, poderes y parejas hace falta tiempo para ver la mesa). La práctica usa 60 s y un jugador desconectado al menos 30 s. El cliente toma la duración del campo `tiempo` de `juegoIniciado`/`cambioDeTurno`, nunca de un valor fijo.
 
-**`frecuenciaReyes`**: controla qué tan seguido aparecen los 9s — `NORMAL` (aleatorio), `ALTA`, `LOCURA` (sesgados hacia las primeras rondas)
+**`frecuenciaReyes`**: se **sortea** al crear la sala (y en la rápida) desde el 24/09/2026, ya no se elige; la sala de espera lo muestra en "Cómo será la partida" (`pintarComoSeraPartida()`, con la `config` que ahora trae `actualizarLobby`, sin contraseña). Controla qué tan seguido aparecen los 9s — `NORMAL` (aleatorio), `ALTA`, `LOCURA` (sesgados hacia las primeras rondas)
 
 ### Sala con contraseña
 

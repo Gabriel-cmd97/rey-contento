@@ -202,19 +202,11 @@
                             <span id="resumenMasOpciones" class="resumen-mas-opciones"></span>
                         </summary>
                         <div class="config-grid-nuevo">
-                            <div class="config-item-nuevo">
+                            <div class="config-item-nuevo config-full">
                             <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-mascara"/></svg> Modo Rey</span>
                             <select id="selectModo" class="selector-medieval selector-compacto">
                             <option value="SORPRESA">Sorpresa</option>
                             <option value="DECLARADO">Declarado</option>
-                        </select>
-                        </div>
-                            <div class="config-item-nuevo">
-                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-llama"/></svg> Reyes</span>
-                            <select id="selectReyes" class="selector-medieval selector-compacto">
-                            <option value="NORMAL">Normal</option>
-                            <option value="ALTA">Alta</option>
-                            <option value="LOCURA">Locura</option>
                         </select>
                         </div>
                             <div class="config-item-nuevo config-full">
@@ -277,7 +269,7 @@
                 </div>
 
                 <!-- Resumen config -->
-                <div id="resumenConfig" class="config-resumen-pill"><svg class="icono" aria-hidden="true"><use href="#i-ajustes"/></svg> Cargando...</div>
+                <div id="resumenConfig" class="config-resumen-pill hidden"></div>
 
                 <!-- Lista de jugadores -->
                 <p class="lobby-section-label" style="margin-top:12px;">Jugadores en sala</p>
@@ -285,6 +277,9 @@
 
                 <!-- Slots vacíos decorativos -->
                 <div id="slotsVacios" class="slots-vacios"></div>
+
+                <!-- Cómo será la partida: lo arma pintarComoSeraPartida() con la config real de la sala -->
+                <div id="comoSeraPartida" class="como-sera hidden" aria-live="polite"></div>
                 <p id="rapidaEspera" class="rapida-espera hidden" role="status" aria-live="polite"></p>
                 <button id="btnRapidaMasTiempo" class="boton-madera boton-lobby full-width hidden"><svg class="icono" aria-hidden="true"><use href="#i-reloj"/></svg> Esperar 30 s más (para compartir)</button>
 
@@ -718,7 +713,6 @@
             });
             // Resumen de "Más opciones" para verlo sin desplegar
             const extras = [modo];
-            if (document.getElementById('selectReyes')?.value !== 'NORMAL') extras.push('Reyes ' + document.getElementById('selectReyes').selectedOptions[0].text);
             if (document.getElementById('selectPoderes')?.value === 'SI') extras.push('con poderes');
             if (document.getElementById('inputPasswordSala')?.value.trim()) extras.push('con contraseña');
             const resMas = document.getElementById('resumenMasOpciones');
@@ -731,7 +725,7 @@
 
         // Escuchar cambios en selects para actualizar resumen
         document.addEventListener('DOMContentLoaded', () => {
-            ['selectModo','selectReyes','selectVidas','selectJugadores','selectModoJuego','selectPoderes','selectEquipos'].forEach(id => {
+            ['selectModo','selectVidas','selectJugadores','selectModoJuego','selectPoderes','selectEquipos'].forEach(id => {
                 document.getElementById(id)?.addEventListener('change', actualizarResumenConfig);
             });
             document.getElementById('inputPasswordSala')?.addEventListener('input', actualizarResumenConfig);

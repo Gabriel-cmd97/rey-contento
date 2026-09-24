@@ -241,7 +241,8 @@ function sanitizarConfig(raw) {
     const maxJugadores  = enteroEnRango(raw.maxJugadores, 2, 8, 6);
     const modoJuego     = enLista(raw.modoJuego, ['CLASICO', 'CAMPANA'], 'CLASICO');
     const modoRey       = enLista(raw.modoRey, ['SORPRESA', 'DECLARADO'], 'SORPRESA');
-    const frecuenciaReyes = enLista(raw.frecuenciaReyes, ['NORMAL', 'ALTA', 'LOCURA'], 'NORMAL');
+    // Reyes: se sortea al crear la sala (ya no se elige); la sala de espera lo muestra.
+    const frecuenciaReyes = ['NORMAL', 'ALTA', 'LOCURA'][Math.floor(Math.random() * 3)];
     // Dificultad fija: ya no se elige al crear sala (demasiadas opciones).
     // FACIL y DIFICIL siguen en bots.js por si se vuelven a ofrecer.
     const dificultadBots = 'NORMAL';
@@ -362,8 +363,11 @@ function jugadoresPublicos(sala) {
 function emitirLobby(idSala) {
     const sala = estadoSalas[idSala];
     if (!sala) return;
+    // Config pública para "Cómo será la partida" (sin contraseña).
+    const { password, ...configPublica } = sala.config;
     io.to(idSala).emit('actualizarLobby', {
         jugadores: jugadoresPublicos(sala),
+        config: configPublica,
         equipos: sala.config.equipos || 0,
         maxJugadores: sala.config.maxJugadores
     });
@@ -1352,7 +1356,7 @@ const temporizadoresRapida = {}; // idSala → timeout de arranque
 
 function configRapida() {
     return { vidas: 3, maxJugadores: 4, numBots: 0, modoJuego: 'CLASICO', modoRey: 'SORPRESA',
-             frecuenciaReyes: 'NORMAL', dificultadBots: 'NORMAL', tiempoTurno: TIEMPO_TURNO, eventos: true, rapida: true };
+             frecuenciaReyes: ['NORMAL', 'ALTA', 'LOCURA'][Math.floor(Math.random() * 3)], dificultadBots: 'NORMAL', tiempoTurno: TIEMPO_TURNO, eventos: true, rapida: true };
 }
 
 function nuevoIdSala() {
