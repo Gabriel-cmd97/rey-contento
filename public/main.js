@@ -960,6 +960,23 @@ function mostrarFrase(jugadorId, indice) {
     }, 3000);
 }
 
+// Las frases solo se mandan cuando hay tiempo: entre rondas (cartas
+// reveladas y resumen) o si ya quedaste fuera y estás mirando. Durante los
+// turnos quedan las reacciones con emoji, que son un solo toque.
+function frasesDisponibles() {
+    return mostrandoRevelacion || modoEspectador;
+}
+
+function actualizarBotonFrases() {
+    const btn = document.getElementById('btnFrases');
+    if (!btn) return;
+    const libre = frasesDisponibles();
+    btn.classList.toggle('apagado', !libre);
+    btn.setAttribute('aria-disabled', String(!libre));
+    btn.title = libre ? 'Frases rápidas' : 'Las frases se mandan entre rondas';
+    if (!libre) cerrarPanelFrases();
+}
+
 function cerrarPanelFrases() {
     document.getElementById('panelFrases')?.classList.add('hidden');
     document.getElementById('btnFrases')?.setAttribute('aria-expanded', 'false');
@@ -1383,6 +1400,7 @@ let misPoderes = [];
 let _espiado = null; // { id, carta } visible solo para ti hasta que termina la ronda
 
 function pintarBarraPoderes() {
+    actualizarBotonFrases(); // mismos momentos: cada turno, reparto y fin de ronda
     const barra = document.getElementById('barraPoderes');
     if (!barra) return;
     barra.classList.toggle('hidden', misPoderes.length === 0);
@@ -1665,6 +1683,7 @@ function activarModoEspectador() {
     document.getElementById('btnSiguienteRonda').style.display = "none";
     document.getElementById('mesaDeJuego').classList.add('mesa-espectador');
     document.getElementById('mensajeTurno').style.color = 'var(--texto-suave)';
+    actualizarBotonFrases();
 }
 
 function desactivarModoEspectador() {
@@ -1672,6 +1691,7 @@ function desactivarModoEspectador() {
     document.getElementById('bannerEspectador').classList.add('hidden');
     document.getElementById('mesaDeJuego').classList.remove('mesa-espectador');
     document.getElementById('mensajeTurno').style.color = "var(--verde)";
+    actualizarBotonFrases();
 }
 
 // Resetea TODO el estado relacionado con una sala/partida. Llamar al salir de
@@ -3478,6 +3498,10 @@ function conectarSocket() {
         .map((f, i) => `<button class="chip-frase" role="menuitem" data-frase="${i}">${escapeHTML(f)}</button>`).join('');
     let _cooldownFrase = false;
     document.getElementById('btnFrases').onclick = () => {
+        if (!frasesDisponibles()) {
+            mostrarToast('Las frases se mandan entre rondas, cuando se revelan las cartas.', '', 2500);
+            return;
+        }
         const abrir = panelFrases.classList.contains('hidden');
         panelFrases.classList.toggle('hidden', !abrir);
         document.getElementById('btnFrases').setAttribute('aria-expanded', String(abrir));

@@ -3433,3 +3433,6 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
 
 /* Resumen de la sala (pill) no se estira */
 #seccion-lobby .config-resumen-pill { align-self: flex-start; }
+
+/* Frases: atenuadas durante los turnos (solo se mandan entre rondas) */
+.btn-frases.apagado { opacity: 0.35; box-shadow: none; }
