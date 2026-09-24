@@ -756,17 +756,44 @@ function animarBloqueoRey(nombreActor, nombreRey) {
     const ra = a.getBoundingClientRect(), rr = r.getBoundingClientRect();
     if (!ra.width || !rr.width) return;
     volarFantasma(ra, rr, { rebote: 0.55, duracion: 760 });
+    destelloRey(rr, 280);
+}
+
+// Corona dorada que destella sobre un rectángulo de pantalla (la carta del Rey).
+function destelloRey(rect, retraso = 0) {
     const destello = document.createElement('div');
     destello.className = 'destello-rey';
-    destello.style.left = (rr.left + rr.width / 2) + 'px';
-    destello.style.top = (rr.top + rr.height / 2) + 'px';
+    destello.style.left = (rect.left + rect.width / 2) + 'px';
+    destello.style.top = (rect.top + rect.height / 2) + 'px';
     destello.innerHTML = icono('corona');
     document.body.appendChild(destello);
     destello.animate([
         { transform: 'translate(-50%,-50%) scale(0.3)', opacity: 0 },
         { transform: 'translate(-50%,-50%) scale(1.15)', opacity: 1, offset: 0.35 },
         { transform: 'translate(-50%,-50%) scale(1.5)', opacity: 0 },
-    ], { duration: 900, delay: 280, easing: 'ease-out', fill: 'both' }).onfinish = () => destello.remove();
+    ], { duration: 900, delay: retraso, easing: 'ease-out', fill: 'both' }).onfinish = () => destello.remove();
+}
+
+// DECLARADO: el Rey llega boca abajo con el reparto y se voltea a los
+// MS_REVELAR_REY (mismo tiempo que el aviso del servidor).
+const MS_REVELAR_REY = 2000;
+let _reyOcultoHasta = 0;
+
+function programarRevelacionRey(jugadores) {
+    const reyes = (jugadores || []).filter(j => j.cartaRevelada && j.cartaActual === 9);
+    if (!reyes.length) { _reyOcultoHasta = 0; return; }
+    _reyOcultoHasta = performance.now() + MS_REVELAR_REY;
+    setTimeout(() => {
+        _reyOcultoHasta = 0;
+        dibujarMesaCircular();
+        if (menosMovimiento()) return;
+        reyes.forEach(rey => {
+            const carta = rey.id === socket.id ? document.getElementById('miCarta') : cartaEnMesa(rey.nombre);
+            const r = carta?.getBoundingClientRect();
+            if (r && r.width) destelloRey(r);
+        });
+        Sonidos.carta();
+    }, MS_REVELAR_REY);
 }
 
 // Campana: se balancea sobre quien la tocó y una onda dorada cruza el tapete.
@@ -1123,7 +1150,7 @@ function practicaEvento(tipo, datos) {
         if (js[2]) _practica.nombreB = js[2].nombre;
         const A2 = `<strong>${escapeHTML(_practica.nombreA)}</strong>`;
         if (datos.ronda === 2) decirUnaVez('r2', `Ronda 2. Ahora <b>tú eres el dealer</b> (la corona está en tu asiento): juegas al final.`);
-        if (datos.ronda === 3) decirUnaVez('r3', `Última ronda, en <b>modo declarado</b>: cuando alguien tiene al <b>Rey (el 9)</b>, todos lo ven. Esta vez lo tiene ${A2}.`);
+        if (datos.ronda === 3) decirUnaVez('r3', `Última ronda, en <b>modo declarado</b>: a los pocos segundos del reparto, la carta del <b>Rey (el 9)</b> se voltea y todos saben quién lo tiene. Fíjate en la carta de ${A2}…`);
         return;
     }
     if (tipo === 'turno') {
@@ -2147,7 +2174,8 @@ function dibujarMesaCircular() {
                         <div style="font-size:11px;text-align:center;line-height:1.1;margin-top:4px;">${nombresCartas[op.cartaActual]}</div>
                     </div>`;
             } else if (op.vidas > 0) {
-                const debeRevelar = (op.cartaRevelada === true) || (modoReyActual === 'DECLARADO' && op.cartaActual === 9);
+                const debeRevelar = ((op.cartaRevelada === true) || (modoReyActual === 'DECLARADO' && op.cartaActual === 9))
+                    && performance.now() >= _reyOcultoHasta; // en DECLARADO se voltea a los 2 s del reparto
                 if (debeRevelar && op.cartaActual !== undefined) {
                     let extra = op.cartaActual === 9 ? 'mini-carta-9' : op.cartaActual === 0 ? 'mini-carta-0' : '';
                     cartaHTML = `
@@ -2533,6 +2561,7 @@ function conectarSocket() {
 
     socket.on('datosMesa', (datos) => {
         terminarEsperaRapida();
+        programarRevelacionRey(datos.jugadores);
         setTimeout(() => practicaEvento('ronda', datos), 0);
         // Revelar la mesa ANTES de dibujar/repartir. En la ronda 1, datosMesa
         // llega antes que tuCarta (que es quien normalmente saca el lobby), así

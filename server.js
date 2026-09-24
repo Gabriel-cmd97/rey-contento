@@ -284,8 +284,9 @@ function limpiarSala(idSala) {
 function jugadoresPublicos(sala) {
     const rondaRevelada = sala.estadoActual === "REVELACION" || sala.estadoActual === "FINALIZADO";
     const reyDeclarado = sala.config.modoRey === "DECLARADO" && sala.config.modoJuego !== 'CAMPANA';
-    return sala.jugadores.map(({ memoria, cartaActual, cartaRevelada, ...publico }) => {
-        const esReyVisible = reyDeclarado && cartaActual === 9;
+    const sinCampana = sala.config.modoJuego !== 'CAMPANA';
+    return sala.jugadores.map(({ memoria, cartaActual, cartaRevelada, reyDescubierto, ...publico }) => {
+        const esReyVisible = cartaActual === 9 && (reyDeclarado || (sinCampana && reyDescubierto));
         if (rondaRevelada || esReyVisible) publico.cartaActual = cartaActual;
         publico.cartaRevelada = esReyVisible;
         return publico;
@@ -681,7 +682,11 @@ function gestionarTurnos(sala, io, esInicio = false) {
     let razon = "";
     const esCampana = sala.config.modoJuego === 'CAMPANA';
 
-    if (!esCampana && jugadorActual.cartaActual === 9) {
+    // Quien tiene al Rey siempre se queda con él. En DECLARADO todos lo saben,
+    // así que su turno se salta a la vista; en SORPRESA su turno debe verse
+    // como cualquier otro (pausa y "decidió mantener") para no delatarlo.
+    const reyOculto = !esCampana && jugadorActual.cartaActual === 9 && sala.config.modoRey !== "DECLARADO";
+    if (!esCampana && jugadorActual.cartaActual === 9 && !reyOculto) {
         debeSaltar = true;
         razon = `👑 ${jugadorActual.nombre} tiene al Rey. Turno auto-completado.`;
     } else if (!esCampana && sala.config.modoRey === "DECLARADO" && jugadorDerecha.cartaActual === 9 && indiceActual !== sala.dealerIndex) {
@@ -741,6 +746,17 @@ function gestionarTurnos(sala, io, esInicio = false) {
             io.to(sala.idSala).emit('juegoIniciado', payloadTurno);
         } else {
             io.to(sala.idSala).emit('cambioDeTurno', payloadTurno);
+        }
+
+        if (reyOculto) {
+            // Mantiene tras una pausa como la de cualquier jugador que piensa.
+            setTimeout(() => {
+                const salaActual = estadoSalas[sala.idSala];
+                if (!salaActual || salaActual.estadoActual !== "TURNOS_INTERCAMBIO") return;
+                if (salaActual.jugadores[salaActual.turnoActualIndex]?.id !== jugadorActual.id) return;
+                ejecutarAccion(sala.idSala, 'MANTENER', io, jugadorActual.id);
+            }, bots.retrasoBot());
+            return;
         }
 
         if (jugadorActual.esBot) {
@@ -832,6 +848,7 @@ function iniciarRonda(sala, io) {
     });
 
     vivos.forEach(j => { j.cartaActual = sala.mazo.pop(); });
+    sala.jugadores.forEach(j => { j.reyDescubierto = false; });
     bots.olvidarRonda(sala.jugadores);
     // En la práctica las cartas vienen del guion (y no se reparte el Rey al azar).
     const conGuion = sala.config.practica && practica.repartirGuion(sala);
@@ -899,15 +916,23 @@ function iniciarRonda(sala, io) {
         if (j.vidas > 0 && j.online) io.to(j.id).emit('tuCarta', j.cartaActual);
     });
 
-    if (sala.config.modoRey === "DECLARADO") {
-        sala.jugadores.forEach(j => {
-            if (j.vidas > 0 && j.cartaActual === 9) {
-                io.to(sala.idSala).emit('mensajeGlobal', `🔔 El Rey está a la vista en manos de ${j.nombre}.`);
-            }
-        });
+    // DECLARADO: el Rey se reparte boca abajo y se revela a MS_REVELAR_REY
+    // (el cliente espera lo mismo para voltearlo); el primer turno arranca
+    // después, para que nadie juegue antes de saber dónde está.
+    const MS_REVELAR_REY = 2000;
+    const hayReyDeclarado = sala.config.modoRey === "DECLARADO" && sala.config.modoJuego !== 'CAMPANA'
+        && sala.jugadores.some(j => j.vidas > 0 && j.cartaActual === 9);
+    if (hayReyDeclarado) {
+        const ronda = sala.rondaActual;
+        setTimeout(() => {
+            if (!estadoSalas[sala.idSala] || sala.rondaActual !== ronda) return;
+            const reyes = sala.jugadores.filter(j => j.vidas > 0 && j.cartaActual === 9).map(j => j.nombre);
+            if (reyes.length === 1) io.to(sala.idSala).emit('mensajeGlobal', `👑 El Rey está en manos de ${reyes[0]}.`);
+            else if (reyes.length > 1) io.to(sala.idSala).emit('mensajeGlobal', `👑 Hay ${reyes.length} Reyes: los tienen ${reyes.slice(0, -1).join(', ')} y ${reyes[reyes.length - 1]}.`);
+        }, MS_REVELAR_REY);
     }
 
-    setTimeout(() => { gestionarTurnos(sala, io, true); }, 500);
+    setTimeout(() => { gestionarTurnos(sala, io, true); }, hayReyDeclarado ? MS_REVELAR_REY + 600 : 500);
 }
 
 // Arranca la partida de una sala en LOBBY (la llaman "Empezar juego" y el
@@ -997,6 +1022,8 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
 
     if (jugadorActual.id !== socketId) return;
     if (jugadorActual.vidas <= 0) return;
+    // Quien tiene al Rey no puede soltarlo (ni cambiando ni robando del mazo).
+    if (accion === 'CAMBIAR' && sala.config.modoJuego !== 'CAMPANA' && jugadorActual.cartaActual === 9) accion = 'MANTENER';
 
     if (accion === 'CAMPANA') {
         if (sala.config.modoJuego !== 'CAMPANA' || sala.campanaTocada) return;
@@ -1039,6 +1066,7 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
             const derechaEsRinger = sala.config.modoJuego === 'CAMPANA' && sala.campanaTocada && jugadorDerecha.id === sala.campanaTocadorId;
 
             if (bloqueRey) {
+                jugadorDerecha.reyDescubierto = true; // ya todos lo saben: se ve en la mesa
                 if (!sala.config.practica) otorgarLogro(sala, jugadorDerecha.nombre, 'muro_del_rey');
                 const msgBloqueo = sala.config.modoRey === "DECLARADO"
                     ? `🛡️ ${jugadorActual.nombre} no puede cambiar — el Rey ya está a la vista.`

@@ -77,9 +77,10 @@ quieroJugarOtraVez → iniciarRevancha()
 - `CLASICO` — pierde la carta más baja al final de la ronda
 - `CAMPANA` — pierde la carta más alta; cualquier jugador puede tocar la campana en su turno para iniciar la última vuelta. El jugador adyacente derecho al ringer no puede intercambiar con él — roba del mazo en su lugar (`derechaEsRinger` en `ejecutarAccion`)
 
-**`modoRey`**:
-- `SORPRESA` — el 9 está oculto
-- `DECLARADO` — cuando alguien recibe el 9, se revela públicamente de inmediato
+**`modoRey`** (no aplica en CAMPANA):
+- `SORPRESA` — el 9 está oculto y **nada debe delatarlo**: el turno de quien lo tiene se ve como cualquier otro (`reyOculto` en `gestionarTurnos`: pausa de bot y `MANTENER`, sin `turnoSaltadoVisual` ni mensaje). Solo se descubre al chocar (`BLOQUEO`): ahí `jugador.reyDescubierto = true` y `jugadoresPublicos` muestra su 9 el resto de la ronda.
+- `DECLARADO` — el 9 se reparte boca abajo y se revela a `MS_REVELAR_REY` (2 s): el servidor avisa quién lo tiene (o quiénes, si hay varios) y el cliente lo voltea con destello (`programarRevelacionRey`). El primer turno espera a después de la revelación. Quien tiene al Rey salta su turno a la vista y su vecino de la izquierda queda "atrapado".
+- En ambos, quien tiene el 9 nunca lo suelta: `ejecutarAccion` convierte su `CAMBIAR` en `MANTENER`.
 
 **`dificultadBots`** (`bots.js`): `FACIL` (umbral fijo, se equivoca 1 de cada 4), `NORMAL` (calcula la probabilidad de perder si mantiene vs. si cambia) y `DIFICIL` (además cuenta el descarte y recuerda los cambios de la ronda en `bot.memoria`). Los bots solo usan información que un humano atento también tiene. En una simulación de 60 000 rondas pierden ~26, ~19 y ~16 vidas cada 100 rondas.
 
