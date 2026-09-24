@@ -3894,3 +3894,28 @@ body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 13%; }
 .como-sera dd { margin: 3px 0 0; }
 .como-sera dd b { display: block; color: var(--pergamino); font-size: 15px; }
 .como-sera dd small { display: block; font-size: 11.5px; line-height: 1.3; color: var(--texto-suave); }
+
+/* Sala de espera: la lista de jugadores se desplaza sola y deja fijo
+   "Cómo será la partida" debajo. ~3 filas a la vista en celular. */
+.contenedor-jugadores {
+    max-height: min(34dvh, 230px); overflow-y: auto; overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch; padding-right: 2px;
+    scrollbar-width: thin; scrollbar-color: rgba(241,196,15,.45) transparent;
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent);
+}
+/* Versión compacta: una línea por regla, para que la tarjeta completa quepa
+   sobre los botones fijos (Empezar / Salir) en celulares de 740 px. */
+.contenedor-jugadores { max-height: min(24dvh, 170px); }
+.como-sera dl { grid-template-columns: 1fr; gap: 0; padding: 4px 10px; border-radius: 10px;
+    background: rgba(0,0,0,.28); border: 1px solid rgba(241,196,15,.18); }
+.como-sera dl > div { display: flex; align-items: baseline; gap: 8px; padding: 4px 0; background: none; border: 0;
+    border-bottom: 1px solid rgba(241,196,15,.10); border-radius: 0; }
+.como-sera dl > div:last-child { border-bottom: 0; }
+.como-sera dt { flex: 0 0 74px; font-size: 10.5px; }
+.como-sera dd { margin: 0; min-width: 0; font-size: 12.5px; line-height: 1.3; }
+.como-sera dd b { display: inline; font-size: 13.5px; }
+.como-sera dd small { display: inline; font-size: 12px; }
+.como-sera dd small::before { content: ' · '; }
+/* En la sala de espera el escudo del juego sobra (ya se vio al entrar) y
+   quita el espacio que necesita "Cómo será la partida". */
+#seccion-lobby:has(#panelJugadores:not(.hidden)) .lobby-blason { display: none; }

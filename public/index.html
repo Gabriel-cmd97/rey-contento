@@ -273,10 +273,13 @@
 
                 <!-- Lista de jugadores -->
                 <p class="lobby-section-label" style="margin-top:12px;">Jugadores en sala</p>
-                <ul id="listaJugadores" class="lista-jugadores-nuevo medieval-font"></ul>
+                <!-- Con scroll propio: así "Cómo será la partida" queda siempre a la vista -->
+                <div id="contenedorJugadores" class="contenedor-jugadores">
+                    <ul id="listaJugadores" class="lista-jugadores-nuevo medieval-font"></ul>
 
-                <!-- Slots vacíos decorativos -->
-                <div id="slotsVacios" class="slots-vacios"></div>
+                    <!-- Slots vacíos decorativos -->
+                    <div id="slotsVacios" class="slots-vacios"></div>
+                </div>
 
                 <!-- Cómo será la partida: lo arma pintarComoSeraPartida() con la config real de la sala -->
                 <div id="comoSeraPartida" class="como-sera hidden" aria-live="polite"></div>

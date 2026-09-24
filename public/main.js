@@ -1638,16 +1638,16 @@ function pintarComoSeraPartida(c, maxJugadores) {
     if (!caja || !c) return;
     const campana = c.modoJuego === 'CAMPANA';
     const reyes = { NORMAL: ['Normales', 'el 9 sale como cualquier carta'],
-                    ALTA: ['Muchos', 'el 9 sale seguido en las primeras rondas'],
-                    LOCURA: ['Locura', 'lluvia de 9 al principio de la partida'] }[c.frecuenciaReyes] || ['Normales', ''];
+                    ALTA: ['Muchos', 'más 9 al inicio'],
+                    LOCURA: ['Locura', 'lluvia de 9 al inicio'] }[c.frecuenciaReyes] || ['Normales', ''];
     const filas = [
         ['espadas', 'Modo', campana ? 'Campana' : 'Clásico', campana ? 'pierde la carta más alta' : 'pierde la carta más baja'],
-        ['mascara', 'Rey', c.modoRey === 'DECLARADO' ? 'Declarado' : 'Sorpresa', c.modoRey === 'DECLARADO' ? 'se ve quién tiene el 9' : 'el 9 va oculto hasta que bloquea'],
+        ['mascara', 'Rey', c.modoRey === 'DECLARADO' ? 'Declarado' : 'Sorpresa', c.modoRey === 'DECLARADO' ? 'se ve quién tiene el 9' : 'el 9 va oculto'],
         ['llama', 'Reyes', reyes[0], reyes[1]],
         ['corazon', 'Vidas', String(c.vidas), c.equipos ? 'por equipo' : 'cada quien'],
-        ['grupo', 'Mesa', c.equipos ? `${c.equipos} contra ${c.equipos}` : `${maxJugadores || c.maxJugadores} jugadores`, 'los lugares libres se llenan con bots'],
-        ['rayo', 'Eventos', campana ? 'No' : 'Sí', campana ? 'no hay en Campana' : 'reglas sorpresa en algunas rondas'],
-        ['ojo', 'Poderes', c.poderes ? 'Sí' : 'No', c.poderes ? 'al perder una vida ganas uno' : ''],
+        ['grupo', 'Mesa', c.equipos ? `${c.equipos} contra ${c.equipos}` : `${maxJugadores || c.maxJugadores} jugadores`, 'si falta gente, bots'],
+        ['rayo', 'Eventos', campana ? 'No' : 'Sí', campana ? 'no hay en Campana' : 'reglas sorpresa'],
+        ['ojo', 'Poderes', c.poderes ? 'Sí' : 'No', c.poderes ? 'ganas uno al perder vida' : ''],
         ['reloj', 'Turno', `${c.tiempoTurno || 20} s`, ''],
     ];
     caja.innerHTML = `<p class="lobby-section-label">Cómo será la partida</p><dl>` + filas.map(([ic, k, v, nota]) =>
