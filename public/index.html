@@ -351,19 +351,6 @@
                     <div id="silla-right"       class="silla right hidden"></div>
                     <div id="silla-bottom-right"class="silla bottom-right hidden"></div>
 
-                    <div id="mazoFlotante" class="hidden">
-                        <!-- Sin width/height inline: hereda el tamaño responsive de
-                             .perfil-carta-reverso (30×45 → 22×34 en celular) para que el
-                             mazo coincida con las cartas de los asientos y con la carta del reparto. -->
-                        <div class="perfil-carta-reverso" style="box-shadow:-1px -1px 0 #fff,-2px -2px 0 #2c3e50,-3px -3px 0 #fff,-4px -4px 0 #2c3e50,0 6px 14px rgba(0,0,0,0.8);border-color:var(--oro);display:flex;align-items:center;justify-content:center;">
-                            <!-- Emblema heráldico dorado en el dorso de la baraja.
-                                 height:auto mantiene la proporción (no se achata en carta vertical);
-                                 drop-shadow lo despega del rayado del dorso. -->
-                            <img src="/iconos/mazo.svg" alt="" draggable="false" style="width:74%;height:auto;opacity:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.7));">
-                        </div>
-                        <span style="font-size:7px;color:var(--oro);margin-top:2px;font-family:'MedievalSharp';letter-spacing:1px;">MAZO</span>
-                        <span id="mazoConteo" class="mazo-conteo">–</span>
-                    </div>
 
                     <div id="miPerfil" class="mi-perfil-esquina">
                         <div class="mi-nombre-chico"><span id="miNombreMesa">Tú</span></div>
@@ -381,7 +368,6 @@
                         <strong id="cartaEventoTitulo"></strong>
                         <p id="cartaEventoTexto"></p>
                     </div>
-                    <div id="marcadorEquipos" class="marcador-equipos hidden" aria-live="polite"></div>
                     <div id="chipEvento" class="chip-evento hidden"></div>
 
                     <!-- Presentación del duelo final -->
@@ -420,6 +406,7 @@
                         <div class="foco-turno-medieval" id="focoTurno">
                             <h3 id="mensajeTurno" style="color:var(--verde); margin:0; font-size:16px;">Esperando...</h3>
                            <p id="infoMesa" class="info-mesa"></p>
+                           <div id="marcadorEquipos" class="marcador-equipos hidden" aria-live="polite"></div>
                            <div id="contenedorReloj" style="display:none; margin-top:6px; width:130px;">
     <div style="position:relative; background:rgba(255,255,255,0.1); border-radius:10px; height:8px; overflow:visible;">
         <div id="barraReloj" style="height:100%; width:100%; background:#e67e22; border-radius:10px; transition:width 1s linear, background .3s;"></div>
@@ -436,9 +423,26 @@
 
                         <button id="btnSiguienteRonda" class="boton-medieval btn-latido hidden" style="display:none;">SIGUIENTE <svg class="icono" aria-hidden="true"><use href="#i-flecha"/></svg> </button>
 
-                        <div id="pilaCentro" class="hidden">
-                            <div id="cartasPila" class="pila-cartas-stack"></div>
-                            <span id="contadorPila" class="pila-contador"></span>
+                        <!-- Mazo y pila fijos al centro: junto al dealer chocaban con los asientos.
+                             Quién reparte se ve con la corona en su asiento. -->
+                        <div class="centro-cartas">
+                        <div id="mazoFlotante" class="hidden">
+                            <!-- Sin width/height inline: hereda el tamaño responsive de
+                                 .perfil-carta-reverso (30×45 → 22×34 en celular) para que el
+                                 mazo coincida con las cartas de los asientos y con la carta del reparto. -->
+                            <div class="perfil-carta-reverso" style="box-shadow:-1px -1px 0 #fff,-2px -2px 0 #2c3e50,-3px -3px 0 #fff,-4px -4px 0 #2c3e50,0 6px 14px rgba(0,0,0,0.8);border-color:var(--oro);display:flex;align-items:center;justify-content:center;">
+                                <!-- Emblema heráldico dorado en el dorso de la baraja.
+                                     height:auto mantiene la proporción (no se achata en carta vertical);
+                                     drop-shadow lo despega del rayado del dorso. -->
+                                <img src="/iconos/mazo.svg" alt="" draggable="false" style="width:74%;height:auto;opacity:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.7));">
+                            </div>
+                            <span class="mazo-etiqueta">MAZO</span>
+                            <span id="mazoConteo" class="mazo-conteo">–</span>
+                        </div>
+                            <div id="pilaCentro" class="hidden">
+                                <div id="cartasPila" class="pila-cartas-stack"></div>
+                                <span id="contadorPila" class="pila-contador"></span>
+                            </div>
                         </div>
                     </div>
 

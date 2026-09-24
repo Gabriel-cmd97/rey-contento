@@ -3718,3 +3718,50 @@ body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 13%; }
     font-family: var(--fuente-medieval);
     font-size: 10px;
 }
+
+/* =========================================
+   SIN ENCIMADOS (auditoría del 24/09/2026)
+   ========================================= */
+/* Avisos: al centro de la mesa bajo el reloj, angostos y en varias líneas
+   (abajo tapaban tu carta; con una sola línea se cortaban). */
+#toastContainer, body.con-guia #toastContainer {
+    position: absolute !important;
+    top: 47% !important;
+    bottom: auto !important;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 62% !important;
+    max-width: 260px;
+}
+#toastContainer .toast-mensaje { white-space: normal !important; text-overflow: clip !important; overflow: visible !important; text-align: center; line-height: 1.3; }
+/* El evento vive en la línea bajo el reloj; la etiqueta de arriba tapaba el asiento de arriba. */
+#chipEvento { display: none !important; }
+.info-evento { color: #ffe27a; white-space: nowrap; }
+.info-evento .icono { width: 12px; height: 12px; }
+/* Banners en el hueco entre los asientos de arriba y el reloj. */
+.banner-objetivo, .banner-equipo, .banner-ultima-vuelta { top: 31% !important; }
+
+#toastContainer, body.con-guia #toastContainer { width: min(52%, 220px) !important; }
+.info-objetivo { color: #ffe27a; }
+
+/* Mazo y pila al centro de la mesa, uno junto al otro */
+.centro-cartas { display: flex; align-items: flex-end; justify-content: center; gap: 22px; margin-top: 8px; }
+.centro-cartas #mazoFlotante { position: static !important; transform: none !important; display: flex; flex-direction: column; align-items: center; }
+.centro-cartas #mazoFlotante.hidden { display: none !important; }
+.centro-cartas #pilaCentro { margin-top: 0; }
+/* El bloque central (reloj + mazo + pila) baja un poco: con el mazo al centro
+   creció y el reloj rozaba la carta del asiento de arriba en pantallas chicas. */
+.centro-mesa-wrapper { top: 46% !important; }
+/* Avisos en el hueco entre los asientos de arriba y el reloj (donde iban los
+   banners): así no pasan sobre el mazo ni la pila del centro. */
+#toastContainer, body.con-guia #toastContainer { top: 27% !important; }
+/* Mazo compacto al centro: sin la palabra "MAZO" y con el contador sobre la carta. */
+.centro-cartas #mazoFlotante { position: relative !important; }
+.centro-cartas .mazo-etiqueta { display: none; }
+.centro-cartas #mazoConteo { position: absolute; bottom: -6px; right: -10px; margin: 0; font-size: 10px; }
+.centro-cartas { margin-top: 6px; }
+/* Marcador de equipos dentro del cuadro del reloj (antes flotaba sobre la mesa
+   y chocaba con los avisos en celulares chicos). */
+.foco-turno-medieval .marcador-equipos { position: static !important; transform: none !important; justify-content: center; margin-top: 5px; }
+.foco-turno-medieval .marcador-equipo { font-size: 11px; padding: 1px 7px; }
+#toastContainer, body.con-guia #toastContainer { top: 21% !important; }

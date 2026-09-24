@@ -513,7 +513,13 @@ function pintarInfoMesa() {
     if (!info) return;
     const ronda = document.getElementById('numRonda')?.innerText || '1';
     const rey = modoReyActual === 'DECLARADO' ? 'Rey declarado' : 'Rey sorpresa';
-    info.textContent = `Ronda ${ronda} · ${modoJuegoActual === 'CAMPANA' ? 'Campana' : rey}`;
+    const modo = modoJuegoActual === 'CAMPANA' ? 'Campana' : rey;
+    // Con guías, la línea recuerda el objetivo (antes era un banner que chocaba con el reloj).
+    const objetivo = guiasActivas() && !_practica
+        ? (modoJuegoActual === 'CAMPANA' ? 'pierde la carta más alta' : 'pierde la carta más baja') : null;
+    info.innerHTML = eventoActual
+        ? `Ronda ${escapeHTML(ronda)} · <span class="info-evento" title="${escapeHTML(eventoActual.descripcion)}">${icono(eventoActual.icono)} ${escapeHTML(eventoActual.titulo)}</span>`
+        : `Ronda ${escapeHTML(ronda)} · ${objetivo ? `<span class="info-objetivo">${objetivo}</span>` : modo}`;
 }
 
 function cerrarMenuMesa() {
@@ -746,16 +752,10 @@ function amagarCarta() {
     ], { duration: 1100, delay: 500, easing: 'ease-in-out', composite: 'add' });
 }
 
-// Recordatorio del objetivo al empezar cada ronda.
+// Recordatorio del objetivo al empezar cada ronda: ahora vive en la línea bajo
+// el reloj (pintarInfoMesa). Antes era un banner que chocaba con el reloj.
 function mostrarObjetivoRonda() {
-    const banner = document.getElementById('bannerObjetivo');
-    if (!banner || !guiasActivas() || _practica || eventoActual) return;
-    banner.textContent = modoJuegoActual === 'CAMPANA'
-        ? '🔔 Pierde la carta MÁS ALTA — quieres cartas bajas'
-        : '⚔️ Pierde la carta MÁS BAJA — quieres cartas altas';
-    banner.classList.remove('hidden');
-    clearTimeout(mostrarObjetivoRonda._t);
-    mostrarObjetivoRonda._t = setTimeout(() => banner.classList.add('hidden'), 4500);
+    pintarInfoMesa();
 }
 
 // Por qué perdiste o te salvaste, para el resumen de la ronda.
@@ -1401,6 +1401,7 @@ let eventoActual = null; // { id, titulo, descripcion, icono } o null
 let enDuelo = false;
 
 function pintarChipEvento() {
+    pintarInfoMesa(); // el evento se muestra bajo el reloj
     const chip = document.getElementById('chipEvento');
     if (!chip) return;
     chip.innerHTML = eventoActual ? `${icono(eventoActual.icono)} ${escapeHTML(eventoActual.titulo)}` : '';
@@ -1626,10 +1627,8 @@ function mostrarAvisoEquipo(jugadores) {
     const banner = document.getElementById('bannerEquipo');
     if (!yo || yo.equipo === undefined || yo.equipo === null || !banner) return;
     const comp = jugadores.filter(j => j.equipo === yo.equipo && j.id !== socket.id).map(j => j.nombre);
-    banner.className = `banner-equipo equipo-${yo.equipo}`;
-    banner.innerHTML = `${icono('grupo')} Tu equipo: <strong>${NOMBRE_EQUIPO[yo.equipo]}</strong> · ${comp.length > 1 ? 'compañeros' : 'compañero'}: <strong>${comp.map(escapeHTML).join(' y ')}</strong>`;
-    clearTimeout(mostrarAvisoEquipo._t);
-    mostrarAvisoEquipo._t = setTimeout(() => banner.classList.add('hidden'), 5000);
+    // Como aviso normal (en el centro, bajo el reloj): el banner chocaba con el reloj.
+    mostrarToast(`🤝 Tu equipo: ${NOMBRE_EQUIPO[yo.equipo]} · ${comp.length > 1 ? 'compañeros' : 'compañero'}: ${comp.join(' y ')}`, 'rey', 5000);
 }
 
 function miEquipo() {
@@ -2789,17 +2788,8 @@ function dibujarMesaCircular() {
         const juegoActivo = mesaDeJuego && !mesaDeJuego.classList.contains('hidden');
         if (dealer && juegoActivo) {
             // Quitar clases de posición anteriores
-            mazoFlotante.className = mazoFlotante.className.replace(/pos-\S+/g, '').replace('objetivo-mazo', '').trim();
-            if (dealer.id === socket.id) {
-                mazoFlotante.classList.add('pos-bottom');
-                if (esMiTurno) mazoFlotante.classList.add('objetivo-mazo');
-            } else {
-                const idx = oponentes.findIndex(o => o.id === dealer.id);
-                if (idx !== -1 && idsSillas[idx]) {
-                    const pos = idsSillas[idx].replace('silla-', '');
-                    mazoFlotante.classList.add(`pos-${pos}`);
-                }
-            }
+            // El mazo está fijo al centro de la mesa; solo brilla si te toca robar.
+            mazoFlotante.classList.toggle('objetivo-mazo', dealer.id === socket.id && esMiTurno);
             mazoFlotante.classList.remove('hidden');
         } else {
             mazoFlotante.classList.add('hidden');
@@ -3556,7 +3546,11 @@ function conectarSocket() {
         if (m.includes('BLOQUEO REAL')) tipo = 'bloqueo';
         else if (m.includes('Rey')) tipo = 'rey';
         else if (m.includes('eliminado')) tipo = 'danio';
-        mostrarToast(m, tipo, 2500);
+        // Mesa limpia: las jugadas comunes (mantener, cambiar, robar del mazo,
+        // consultar un poder) ya se ven con su animación y quedan en la
+        // bitácora; como aviso solo sale lo que cambia la partida.
+        const jugadaComun = /^(✋|🔄|🃏|🏹|👁️|🔮)/u.test(m) || m.includes('decidió mantener');
+        if (!jugadaComun) mostrarToast(m, tipo, 2500);
 
         // Si es un evento del sistema de la partida, registrarlo en la bitácora
         if (m.includes('ha sido eliminado') || m.includes('mezclada de nuevo') || m.includes('Empate total')) {
