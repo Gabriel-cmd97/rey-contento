@@ -581,7 +581,10 @@ function actualizarGuiaTurno(esMio, esCampana, campanaTocada) {
     let destino = null;
     let textoCambiar = '🔄 Cambias tu carta';
 
-    if (yo?.dealer) {
+    if (eventoActual?.id === 'MERCADO') {
+        destino = mazo;
+        textoCambiar = '🃏 Mercado: si cambias, robas del mazo';
+    } else if (yo?.dealer) {
         destino = mazo;
         textoCambiar = '🔄 Eres el dealer: cambias tu carta por una del mazo';
     } else if (vecino && esCampana && campanaTocada && vecino.id === campanaRingerId) {
@@ -589,13 +592,15 @@ function actualizarGuiaTurno(esMio, esCampana, campanaTocada) {
         textoCambiar = '🃏 Robas del mazo (no puedes cambiar con quien tocó la campana)';
     } else if (vecino) {
         destino = document.querySelector(`.silla:not(.hidden)[data-jugador-id="${CSS.escape(vecino.id)}"]`);
-        const reyALaVista = !esCampana && vecino.cartaRevelada && vecino.cartaActual === 9;
+        const reyALaVista = !esCampana && eventoActual?.id !== 'MUNDO_AL_REVES' && vecino.cartaRevelada && vecino.cartaActual === 9;
         textoCambiar = reyALaVista
             ? `👑 ${vecino.nombre} tiene al Rey: si cambias, se bloquea`
             : `🔄 Cambias tu carta con ${vecino.nombre}`;
     }
 
     const lineas = ['✋ Te quedas con tu carta', textoCambiar];
+    if (eventoActual?.id === 'NIEBLA') lineas.push('🌫️ Niebla: decides sin ver tu carta');
+    if (eventoActual?.id === 'MUNDO_AL_REVES') lineas.push('🔄 Mundo al revés: esta ronda pierde la carta más alta');
     if (esCampana && !campanaTocada) lineas.push('🔔 Cierra la ronda: tócala si crees tener la carta más baja');
     lineas.push('👆 También con tu carta: deslízala a la derecha para cambiar, tócala dos veces para mantener');
     amagarCarta();
@@ -626,7 +631,7 @@ function amagarCarta() {
 // Recordatorio del objetivo al empezar cada ronda.
 function mostrarObjetivoRonda() {
     const banner = document.getElementById('bannerObjetivo');
-    if (!banner || !guiasActivas() || _practica) return;
+    if (!banner || !guiasActivas() || _practica || eventoActual) return;
     banner.textContent = modoJuegoActual === 'CAMPANA'
         ? '🔔 Pierde la carta MÁS ALTA — quieres cartas bajas'
         : '⚔️ Pierde la carta MÁS BAJA — quieres cartas altas';
@@ -641,7 +646,12 @@ function explicacionRonda(datos) {
     const pierdo = datos.perdedores.includes(socket.id);
     if (!yo || yo.cartaActual === undefined || (yo.vidas <= 0 && !pierdo)) return '';
 
-    const extremo = modoJuegoActual === 'CAMPANA' ? 'más alta' : 'más baja';
+    const extremo = (modoJuegoActual === 'CAMPANA' || eventoActual?.id === 'MUNDO_AL_REVES') ? 'más alta' : 'más baja';
+    if (eventoActual?.id === 'AMNISTIA') {
+        const tenia = yo.cartaActual === datos.cartaMortal;
+        return tenia ? `🕊️ Amnistía: no pierdes vida, pero tu ${yo.cartaActual} era la más baja y pierdes tu próximo turno.`
+                     : `🕊️ Amnistía: nadie pierde vida esta ronda. La más baja fue el ${datos.cartaMortal}.`;
+    }
     const enJuego = datos.jugadores.filter(j =>
         j.cartaActual !== undefined && (j.vidas > 0 || datos.perdedores.includes(j.id)));
     if (enJuego.length > 1 && enJuego.every(j => j.cartaActual === datos.cartaMortal)) {
@@ -649,7 +659,7 @@ function explicacionRonda(datos) {
     }
     const toqueCampana = datos.campana && datos.campana.tocadorId === socket.id;
     if (pierdo) {
-        let t = `💔 Perdiste: tu ${yo.cartaActual} era la carta ${extremo}.`;
+        let t = `💔 Perdiste${eventoActual?.id === 'DOBLE_CASTIGO' ? ' 2 vidas (doble castigo)' : ''}: tu ${yo.cartaActual} era la carta ${extremo}.`;
         if (toqueCampana && !datos.campana.acertada) t += ' Y tocaste la campana con ella: una vida extra.';
         return t;
     }
@@ -779,10 +789,10 @@ function destelloRey(rect, retraso = 0) {
 const MS_REVELAR_REY = 2000;
 let _reyOcultoHasta = 0;
 
-function programarRevelacionRey(jugadores) {
+function programarRevelacionRey(jugadores, introMs = 0) {
     const reyes = (jugadores || []).filter(j => j.cartaRevelada && j.cartaActual === 9);
     if (!reyes.length) { _reyOcultoHasta = 0; return; }
-    _reyOcultoHasta = performance.now() + MS_REVELAR_REY;
+    _reyOcultoHasta = performance.now() + introMs + MS_REVELAR_REY;
     setTimeout(() => {
         _reyOcultoHasta = 0;
         dibujarMesaCircular();
@@ -793,7 +803,7 @@ function programarRevelacionRey(jugadores) {
             if (r && r.width) destelloRey(r);
         });
         Sonidos.carta();
-    }, MS_REVELAR_REY);
+    }, introMs + MS_REVELAR_REY);
 }
 
 // Campana: se balancea sobre quien la tocó y una onda dorada cruza el tapete.
@@ -1233,6 +1243,119 @@ function practicaEvento(tipo, datos) {
 }
 
 // ==========================================
+// EVENTOS DE RONDA Y DUELO FINAL
+// ==========================================
+// El servidor decide (eventos.js) y lo manda en datosMesa: evento, duelo,
+// anunciarDuelo, duelistas e introMs (lo que duran las presentaciones antes
+// del primer turno). Aquí solo se muestran.
+let eventoActual = null; // { id, titulo, descripcion, icono } o null
+let enDuelo = false;
+
+function pintarChipEvento() {
+    const chip = document.getElementById('chipEvento');
+    if (!chip) return;
+    chip.innerHTML = eventoActual ? `${icono(eventoActual.icono)} ${escapeHTML(eventoActual.titulo)}` : '';
+    chip.title = eventoActual ? eventoActual.descripcion : '';
+    chip.classList.toggle('hidden', !eventoActual);
+}
+
+// Carta grande al centro; al terminar se encoge a la etiqueta de arriba.
+function mostrarCartaEvento(evento, retraso = 0) {
+    const carta = document.getElementById('cartaEvento');
+    if (!carta) return;
+    setTimeout(() => {
+        if (eventoActual !== evento) return;
+        document.getElementById('cartaEventoIcono').innerHTML = icono(evento.icono);
+        document.getElementById('cartaEventoTitulo').textContent = evento.titulo;
+        document.getElementById('cartaEventoTexto').textContent = evento.descripcion;
+        carta.classList.remove('hidden', 'saliendo');
+        Sonidos.campana();
+        vibrar([40, 30, 40]);
+        setTimeout(() => {
+            carta.classList.add('saliendo');
+            setTimeout(() => { carta.classList.add('hidden'); pintarChipEvento(); }, 350);
+        }, 2200);
+    }, retraso);
+}
+
+function ocultarEvento() {
+    document.getElementById('cartaEvento')?.classList.add('hidden');
+    document.getElementById('chipEvento')?.classList.add('hidden');
+}
+
+function mostrarPresentacionDuelo(duelistas) {
+    const capa = document.getElementById('presentacionDuelo');
+    if (!capa || !duelistas || duelistas.length < 2) return;
+    document.getElementById('duelistaIzq').textContent = duelistas[0];
+    document.getElementById('duelistaDer').textContent = duelistas[1];
+    capa.classList.remove('hidden', 'saliendo');
+    Sonidos.turno();
+    vibrar([120, 80, 120, 80, 200]);
+    setTimeout(() => {
+        capa.classList.add('saliendo');
+        setTimeout(() => capa.classList.add('hidden'), 400);
+    }, 2400);
+}
+
+function marcarDuelo(activo) {
+    enDuelo = !!activo;
+    document.getElementById('tapeteVistas')?.classList.toggle('modo-duelo', enDuelo);
+}
+
+// Duelo: las dos cartas salen de sus asientos, chocan al centro con chispas
+// y la perdedora tiembla en rojo.
+function animarChoqueDuelo(datos) {
+    if (menosMovimiento()) return;
+    const tapete = document.getElementById('tapeteVistas');
+    const duelistas = datos.jugadores.filter(j => j.cartaActual !== undefined && (j.vidas > 0 || datos.perdedores.includes(j.id)));
+    if (!tapete || duelistas.length !== 2) return;
+    const rt = tapete.getBoundingClientRect();
+    const cx = rt.left + rt.width / 2, cy = rt.top + rt.height * 0.45;
+    duelistas.forEach((j, i) => {
+        const origen = j.id === socket.id ? document.getElementById('miCarta') : cartaEnMesa(j.nombre);
+        const ro = origen?.getBoundingClientRect();
+        if (!ro || !ro.width) return;
+        const c = document.createElement('div');
+        const extra = j.cartaActual === 9 ? ' carta-9' : j.cartaActual === 0 ? ' carta-0' : '';
+        c.className = 'carta-duelo' + extra;
+        c.innerHTML = `<b>${j.cartaActual}</b>${figuraIMG(j.cartaActual, 30)}<small>${escapeHTML(nombresCartas[j.cartaActual] || '')}</small>`;
+        c.style.left = (ro.left + ro.width / 2) + 'px';
+        c.style.top = (ro.top + ro.height / 2) + 'px';
+        document.body.appendChild(c);
+        const lado = i === 0 ? -1 : 1;
+        const dx = cx - (ro.left + ro.width / 2), dy = cy - (ro.top + ro.height / 2);
+        const pierde = datos.perdedores.includes(j.id);
+        c.animate([
+            { transform: 'translate(-50%,-50%) scale(0.6)', opacity: 0 },
+            { transform: `translate(calc(-50% + ${dx + lado * 70}px), calc(-50% + ${dy}px)) scale(1)`, opacity: 1, offset: 0.35 },
+            { transform: `translate(calc(-50% + ${dx + lado * 22}px), calc(-50% + ${dy}px)) rotate(${lado * -8}deg) scale(1.05)`, offset: 0.5 },
+            { transform: `translate(calc(-50% + ${dx + lado * 60}px), calc(-50% + ${dy}px)) rotate(${lado * 6}deg) scale(1)`, offset: 0.62 },
+            pierde
+                ? { transform: `translate(calc(-50% + ${dx + lado * 60}px), calc(-50% + ${dy + 18}px)) rotate(${lado * 14}deg) scale(0.9)`, opacity: 1, offset: 0.9 }
+                : { transform: `translate(calc(-50% + ${dx + lado * 60}px), calc(-50% + ${dy - 8}px)) scale(1.12)`, opacity: 1, offset: 0.9 },
+            { transform: `translate(calc(-50% + ${dx + lado * 60}px), calc(-50% + ${dy}px)) scale(1)`, opacity: 0 },
+        ], { duration: 2000, easing: 'cubic-bezier(.4,.1,.3,1)', fill: 'forwards' }).onfinish = () => c.remove();
+        if (pierde) setTimeout(() => c.classList.add('pierde'), 1250);
+    });
+    // Chispas en el choque
+    setTimeout(() => {
+        Sonidos.danio();
+        vibrar(60);
+        for (let k = 0; k < 16; k++) {
+            const ch = document.createElement('span');
+            ch.className = 'chispa-duelo';
+            ch.style.left = cx + 'px'; ch.style.top = cy + 'px';
+            document.body.appendChild(ch);
+            const ang = Math.random() * Math.PI * 2, dist = 40 + Math.random() * 70;
+            ch.animate([
+                { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
+                { transform: `translate(calc(-50% + ${Math.cos(ang) * dist}px), calc(-50% + ${Math.sin(ang) * dist}px)) scale(0.3)`, opacity: 0 },
+            ], { duration: 500 + Math.random() * 300, easing: 'ease-out' }).onfinish = () => ch.remove();
+        }
+    }, 1000);
+}
+
+// ==========================================
 // PANTALLA DE VICTORIA — tabla final
 // ==========================================
 // El servidor solo manda al ganador, así que el orden de caída se anota aquí
@@ -1480,6 +1603,8 @@ function mostrarLobbyLimpio() {
     lanzarCoronasVictoria._timers = [];
     document.querySelectorAll('.corona-victoria').forEach(el => el.remove());
     cerrarEscaner();
+    eventoActual = null; ocultarEvento(); marcarDuelo(false);
+    document.getElementById('presentacionDuelo')?.classList.add('hidden');
 }
 
 function resetEstadoSala() {
@@ -2501,6 +2626,7 @@ function conectarSocket() {
                 numBots: parseInt(document.getElementById('selectBots').value),
                 dificultadBots: document.getElementById('selectDificultadBots').value,
                 tiempoTurno: parseInt(document.getElementById('selectTiempoTurno').value),
+                eventos: document.getElementById('selectEventos').value !== 'NO',
                 modoJuego: document.getElementById('selectModoJuego').value,
                 password: document.getElementById('inputPasswordSala').value.trim()
             }
@@ -2678,7 +2804,17 @@ function conectarSocket() {
 
     socket.on('datosMesa', (datos) => {
         terminarEsperaRapida();
-        programarRevelacionRey(datos.jugadores);
+        eventoActual = datos.evento || null;
+        ocultarEvento();
+        marcarDuelo(datos.duelo);
+        if (datos.anunciarDuelo) mostrarPresentacionDuelo(datos.duelistas);
+        if (eventoActual) mostrarCartaEvento(eventoActual, datos.anunciarDuelo ? 2800 : 0);
+        if (eventoActual?.id === 'NIEBLA') {
+            // Tu carta se queda boca abajo hasta la revelación.
+            _cartaPendiente = null;
+            document.getElementById('miCarta')?.classList.remove('flipped');
+        }
+        programarRevelacionRey(datos.jugadores, datos.introMs || 0);
         setTimeout(() => practicaEvento('ronda', datos), 0);
         // Revelar la mesa ANTES de dibujar/repartir. En la ronda 1, datosMesa
         // llega antes que tuCarta (que es quien normalmente saca el lobby), así
@@ -2753,6 +2889,9 @@ function conectarSocket() {
 
     // --- RECONEXIÓN ---
     socket.on('reconexionExitosa', (datos) => {
+        eventoActual = datos.evento || null;
+        pintarChipEvento();
+        marcarDuelo(datos.duelo);
         if (window._servidorReinicio) mostrarToast('✅ Listo: el servidor volvió y tu partida sigue.', 'rey', 3500);
         window._reingresando = false; window._servidorReinicio = false;
         ++_renderGen;
@@ -3049,7 +3188,13 @@ function conectarSocket() {
         setTimeout(() => practicaEvento('fin', datos), 1600);
         ocultarGuiaTurno();
         registrarCaidas(datos);
+        if (enDuelo) animarChoqueDuelo(datos);
         const gen = ++_renderGen;
+        // Niebla: tu carta se descubre recién ahora.
+        if (eventoActual?.id === 'NIEBLA' && _cartaPendiente === null) {
+            const yo = datos.jugadores.find(j => j.id === socket.id);
+            if (yo && yo.cartaActual !== undefined) _cartaPendiente = yo.cartaActual;
+        }
         // Si el dealer acaba de cambiar su carta, actualizar el display antes de revelar
         if (_cartaPendiente !== null) {
             const carta = _cartaPendiente;
@@ -3123,7 +3268,7 @@ function conectarSocket() {
             if (datos.juegoTerminado) {
                 mostrarToast('EL JUEGO HA TERMINADO!', 'rey', 5000);
             }
-        }, Math.max(1400, fin + 1100));
+        }, Math.max(1400, fin + 1100) + (enDuelo && !menosMovimiento() ? 1800 : 0));
     });
 
     document.getElementById('btnSiguienteRonda').onclick = () => {

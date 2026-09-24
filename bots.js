@@ -86,7 +86,13 @@ function decidirBot(sala, bot, ctx, azar = Math.random) {
         return d;
     }
 
-    const esCampana = sala.config.modoJuego === 'CAMPANA';
+    // Niebla: nadie ve su carta, así que no hay nada que calcular.
+    if (sala.evento === 'NIEBLA') return azar() < 0.5 ? 'CAMBIAR' : 'MANTENER';
+
+    const modoCampana = sala.config.modoJuego === 'CAMPANA';
+    // Para el cálculo, "Mundo al revés" es como la campana: pierde la más alta.
+    const esCampana = modoCampana || sala.evento === 'MUNDO_AL_REVES';
+    const reyProtege = !esCampana; // el Rey solo bloquea cuando pierde la más baja
     const c = bot.cartaActual;
     const nOtros = sala.jugadores.filter(j => j !== bot && j.vidas > 0).length;
     const dist = distribucionDesconocida(sala, bot, dificultad);
@@ -95,20 +101,20 @@ function decidirBot(sala, bot, ctx, azar = Math.random) {
 
     // Campana: tocarla si el riesgo de tener la carta más alta es bajo.
     // Quien la toca y pierde paga una vida extra, así que hay que estar seguro.
-    if (esCampana && !sala.campanaTocada) {
+    if (modoCampana && !sala.campanaTocada) {
         const umbral = dificultad === 'DIFICIL' ? 0.15 : 0.10;
         if (pMantener <= umbral) return 'CAMPANA';
     }
 
     // ¿Qué carta recibiría al cambiar?
     let pCambiar;
-    const robaDelMazo = ctx.esDealer || ctx.derechaEsRinger;
+    const robaDelMazo = ctx.esDealer || ctx.derechaEsRinger || sala.evento === 'MERCADO';
     if (robaDelMazo) {
         pCambiar = probPerderSiCambia(dist, nOtros, esCampana);
     } else {
         const conocida = dificultad === 'DIFICIL' || ctx.derecha.cartaRevelada
             ? cartaConocida(sala, bot, ctx.derecha) : null;
-        if (!esCampana && conocida === 9) return 'MANTENER'; // el Rey bloquea el cambio
+        if (reyProtege && conocida === 9) return 'MANTENER'; // el Rey bloquea el cambio
         pCambiar = conocida !== null
             ? probPerder(conocida, dist, nOtros, esCampana)
             : probPerderSiCambia(dist, nOtros, esCampana);

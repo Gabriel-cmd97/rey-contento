@@ -8,6 +8,7 @@ const pool = require('./db');
 const bots = require('./bots');
 const practica = require('./practica');
 const logros = require('./logros');
+const eventos = require('./eventos');
 const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
@@ -204,7 +205,7 @@ function sanitizarConfig(raw) {
     if (raw.practica === true) {
         return { vidas: 3, maxJugadores: 3, numBots: 2, modoJuego: 'CLASICO', modoRey: 'DECLARADO',
                  frecuenciaReyes: 'NORMAL', dificultadBots: 'NORMAL', tiempoTurno: 60,
-                 practica: true, password: null };
+                 practica: true, eventos: false, password: null };
     }
 
     let password = null;
@@ -214,7 +215,8 @@ function sanitizarConfig(raw) {
         else if (trimmed.length > 50) return null; // rechazar passwords absurdamente largos
     }
 
-    return { vidas, maxJugadores, numBots, modoJuego, modoRey, frecuenciaReyes, dificultadBots, tiempoTurno, password };
+    const conEventos = raw.eventos !== false; // eventos de ronda (solo afectan al modo clásico)
+    return { vidas, maxJugadores, numBots, modoJuego, modoRey, frecuenciaReyes, dificultadBots, tiempoTurno, eventos: conEventos, password };
 }
 
 // Formato del idSala: 5 caracteres alfanuméricos. El alfabeto real es
@@ -680,13 +682,15 @@ function resolverRonda(sala, io) {
     let vivos = sala.jugadores.filter(j => j.vidas > 0);
     if (vivos.length === 0) return;
 
-    const { valorCritico, perdedores, campanaInfo, mensajes } = resolverCartas(sala);
+    const { valorCritico, perdedores, castigados, campanaInfo, mensajes } = resolverCartas(sala);
+    // Amnistía: quien tenía la carta mortal pierde su turno en la ronda siguiente.
+    sala.castigadosSiguiente = sala.jugadores.filter(j => castigados.includes(j.id)).map(j => j.nombre);
     mensajes.forEach(m => io.to(sala.idSala).emit('mensajeGlobal', m));
 
     // Historial y logros: quién perdió vidas y quién quedó fuera en esta ronda.
     sala.caidas ||= []; sala.vidasPerdidas ||= {};
     sala.jugadores.filter(j => perdedores.includes(j.id)).forEach(j => {
-        sala.vidasPerdidas[j.nombre] = (sala.vidasPerdidas[j.nombre] || 0) + 1;
+        sala.vidasPerdidas[j.nombre] = (sala.vidasPerdidas[j.nombre] || 0) + (sala.evento === 'DOBLE_CASTIGO' ? 2 : 1);
         if (j.vidas <= 0 && !sala.caidas.some(c => c.nombre === j.nombre)) {
             sala.caidas.push({ nombre: j.nombre, ronda: sala.rondaActual });
         }
@@ -722,8 +726,10 @@ function resolverRonda(sala, io) {
     const pausaHumano = sala.config.practica ? 60 : SEG_AUTO_SIGUIENTE_RONDA;
     // Milisegundos hasta que la siguiente ronda empiece sola (null: no hay).
     // Se manda al cliente para que muestre la cuenta regresiva en el resumen.
+    // En el duelo final el choque de cartas dura más: se le da tiempo.
+    const extraDuelo = sala.enDuelo ? 2000 : 0;
     const msAutoSiguiente = (juegoTerminado || finDePractica) ? null
-        : (dealerEsBot ? pausaBot : pausaHumano * 1000);
+        : (dealerEsBot ? pausaBot : pausaHumano * 1000) + extraDuelo;
 
     io.to(sala.idSala).emit('rondaTerminada', {
         jugadores: jugadoresPublicos(sala),
@@ -775,7 +781,7 @@ function resolverRonda(sala, io) {
                     iniciarRevancha(sala, io);
                 }
             }, 60000);
-        }, MS_PAUSA_VICTORIA);
+        }, MS_PAUSA_VICTORIA + extraDuelo);
     }
 }
 
@@ -822,11 +828,15 @@ function gestionarTurnos(sala, io, esInicio = false) {
     // Quien tiene al Rey siempre se queda con él. En DECLARADO todos lo saben,
     // así que su turno se salta a la vista; en SORPRESA su turno debe verse
     // como cualquier otro (pausa y "decidió mantener") para no delatarlo.
-    const reyOculto = !esCampana && jugadorActual.cartaActual === 9 && sala.config.modoRey !== "DECLARADO";
-    if (!esCampana && jugadorActual.cartaActual === 9 && !reyOculto) {
+    const protege = reyProtegido(sala);
+    const reyOculto = protege && jugadorActual.cartaActual === 9 && sala.config.modoRey !== "DECLARADO";
+    if ((sala.castigados || []).includes(jugadorActual.nombre)) {
+        debeSaltar = true;
+        razon = `⛓️ ${jugadorActual.nombre} pierde su turno por la Amnistía.`;
+    } else if (protege && jugadorActual.cartaActual === 9 && !reyOculto) {
         debeSaltar = true;
         razon = `👑 ${jugadorActual.nombre} tiene al Rey. Turno auto-completado.`;
-    } else if (!esCampana && sala.config.modoRey === "DECLARADO" && jugadorDerecha.cartaActual === 9 && indiceActual !== sala.dealerIndex) {
+    } else if (protege && sala.evento !== 'MERCADO' && sala.config.modoRey === "DECLARADO" && jugadorDerecha.cartaActual === 9 && indiceActual !== sala.dealerIndex) {
         debeSaltar = true;
         razon = `🛡️ ${jugadorActual.nombre} está atrapado por el Rey Declarado. Turno saltado.`;
     }
@@ -944,8 +954,13 @@ function iniciarRonda(sala, io) {
     sala.rondaActual += 1;
     // Contadores de la partida para historial y logros (se reinician en la
     // ronda 1: partida nueva o revancha).
+    // Lo de la ronda anterior deja de valer: evento y castigos de la Amnistía.
+    sala.evento = null;
+    sala.castigados = sala.castigadosSiguiente || [];
+    sala.castigadosSiguiente = [];
     if (sala.rondaActual === 1) {
         sala.caidas = []; sala.vidasPerdidas = {};
+        sala.dueloAnunciado = false; sala.rondasSinEvento = 0; sala.ultimoEvento = null; sala.castigados = [];
         sala.idPartida = `${sala.idSala}-${Date.now().toString(36)}`; // agrupa el historial por partida
     }
     sala.estadoActual = "TURNOS_INTERCAMBIO";
@@ -1043,7 +1058,26 @@ function iniciarRonda(sala, io) {
 
     sala.jugadores.forEach((j, i) => { j.dealer = (i === sala.dealerIndex); });
 
+    // Duelo final: quedan 2 en una partida que empezó con más. Se presenta una
+    // vez con su pantalla de "versus"; los eventos no aplican en el duelo.
+    sala.enDuelo = vivos.length === 2 && sala.jugadores.length > 2;
+    const anunciarDuelo = sala.enDuelo && !sala.dueloAnunciado;
+    if (anunciarDuelo) sala.dueloAnunciado = true;
+    sala.evento = eventos.elegirEvento(sala, vivos.length);
+    // Presentaciones antes de jugar (el cliente las muestra con estos tiempos).
+    const MS_INTRO_DUELO = 2800, MS_INTRO_EVENTO = 2600;
+    const introMs = (anunciarDuelo ? MS_INTRO_DUELO : 0) + (sala.evento ? MS_INTRO_EVENTO : 0);
+    if (sala.evento) {
+        const ev = eventos.CATALOGO[sala.evento];
+        io.to(sala.idSala).emit('accionMesa', { tipo: 'EVENTO', icono: '✨', texto: `Evento: ${ev.titulo}` });
+    }
+
     io.to(sala.idSala).emit('datosMesa', {
+        evento: sala.evento ? eventos.CATALOGO[sala.evento] : null,
+        duelo: sala.enDuelo,
+        anunciarDuelo,
+        duelistas: sala.enDuelo ? vivos.map(j => j.nombre) : null,
+        introMs,
         ronda: sala.rondaActual,
         dealer: sala.jugadores[sala.dealerIndex].nombre,
         modoRey: sala.config.modoRey,
@@ -1053,26 +1087,27 @@ function iniciarRonda(sala, io) {
     });
 
     sala.jugadores.forEach(j => {
-        if (j.vidas > 0 && j.online) io.to(j.id).emit('tuCarta', j.cartaActual);
+        if (j.vidas > 0 && j.online) enviarCarta(sala, j);
     });
 
     // DECLARADO: el Rey se reparte boca abajo y se revela a MS_REVELAR_REY
     // (el cliente espera lo mismo para voltearlo); el primer turno arranca
     // después, para que nadie juegue antes de saber dónde está.
     const MS_REVELAR_REY = 2000;
-    const hayReyDeclarado = sala.config.modoRey === "DECLARADO" && sala.config.modoJuego !== 'CAMPANA'
+    const hayReyDeclarado = sala.config.modoRey === "DECLARADO" && sala.config.modoJuego !== 'CAMPANA' && sala.evento !== 'NIEBLA'
         && sala.jugadores.some(j => j.vidas > 0 && j.cartaActual === 9);
     if (hayReyDeclarado) {
         const ronda = sala.rondaActual;
         setTimeout(() => {
             if (!estadoSalas[sala.idSala] || sala.rondaActual !== ronda) return;
+            if (sala.evento === 'NIEBLA') return; // en la niebla no se anuncia nada
             const reyes = sala.jugadores.filter(j => j.vidas > 0 && j.cartaActual === 9).map(j => j.nombre);
             if (reyes.length === 1) io.to(sala.idSala).emit('mensajeGlobal', `👑 El Rey está en manos de ${reyes[0]}.`);
             else if (reyes.length > 1) io.to(sala.idSala).emit('mensajeGlobal', `👑 Hay ${reyes.length} Reyes: los tienen ${reyes.slice(0, -1).join(', ')} y ${reyes[reyes.length - 1]}.`);
-        }, MS_REVELAR_REY);
+        }, introMs + MS_REVELAR_REY);
     }
 
-    setTimeout(() => { gestionarTurnos(sala, io, true); }, hayReyDeclarado ? MS_REVELAR_REY + 600 : 500);
+    setTimeout(() => { gestionarTurnos(sala, io, true); }, introMs + (hayReyDeclarado ? MS_REVELAR_REY + 600 : 500));
 }
 
 // Arranca la partida de una sala en LOBBY (la llaman "Empezar juego" y el
@@ -1098,7 +1133,7 @@ const temporizadoresRapida = {}; // idSala → timeout de arranque
 
 function configRapida() {
     return { vidas: 3, maxJugadores: 4, numBots: 0, modoJuego: 'CLASICO', modoRey: 'SORPRESA',
-             frecuenciaReyes: 'NORMAL', dificultadBots: 'NORMAL', tiempoTurno: 10, rapida: true };
+             frecuenciaReyes: 'NORMAL', dificultadBots: 'NORMAL', tiempoTurno: 10, eventos: true, rapida: true };
 }
 
 function nuevoIdSala() {
@@ -1127,6 +1162,19 @@ function arrancarRapida(idSala) {
     }
     emitirLobby(idSala);
     empezarPartida(sala);
+}
+
+// ¿El Rey protege esta ronda? No en campana (ahí el 9 es la peor carta) ni
+// con el evento "Mundo al revés" (pierde la más alta y el Rey queda expuesto).
+function reyProtegido(sala) {
+    return sala.config.modoJuego !== 'CAMPANA' && sala.evento !== 'MUNDO_AL_REVES';
+}
+
+// Manda a un jugador su carta. Con el evento "Niebla" nadie la ve hasta la
+// revelación (rondaTerminada trae todas).
+function enviarCarta(sala, jugador) {
+    if (sala.evento === 'NIEBLA') return;
+    io.to(jugador.id).emit('tuCarta', jugador.cartaActual);
 }
 
 // 3 minutos para volver (margen para el bloqueo de pantalla del celular); si
@@ -1163,7 +1211,7 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
     if (jugadorActual.id !== socketId) return;
     if (jugadorActual.vidas <= 0) return;
     // Quien tiene al Rey no puede soltarlo (ni cambiando ni robando del mazo).
-    if (accion === 'CAMBIAR' && sala.config.modoJuego !== 'CAMPANA' && jugadorActual.cartaActual === 9) accion = 'MANTENER';
+    if (accion === 'CAMBIAR' && reyProtegido(sala) && jugadorActual.cartaActual === 9) accion = 'MANTENER';
 
     if (accion === 'CAMPANA') {
         if (sala.config.modoJuego !== 'CAMPANA' || sala.campanaTocada) return;
@@ -1200,9 +1248,10 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
     }
 
     if (accion === 'CAMBIAR') {
-        if (indiceActual !== sala.dealerIndex) {
+        // Con el evento "Mercado" todos roban del mazo, como el dealer.
+        if (indiceActual !== sala.dealerIndex && sala.evento !== 'MERCADO') {
             let jugadorDerecha = sala.jugadores[siguienteVivo(sala.jugadores, indiceActual)];
-            const bloqueRey = sala.config.modoJuego !== 'CAMPANA' && jugadorDerecha.cartaActual === 9;
+            const bloqueRey = reyProtegido(sala) && jugadorDerecha.cartaActual === 9;
             const derechaEsRinger = sala.config.modoJuego === 'CAMPANA' && sala.campanaTocada && jugadorDerecha.id === sala.campanaTocadorId;
 
             if (bloqueRey) {
@@ -1232,7 +1281,7 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
                     sala.descarte.push(cartaVieja);
                     jugadorActual.cartaActual = nuevaCarta;
                     bots.olvidarCarta(sala.jugadores, jugadorActual);
-                    io.to(jugadorActual.id).emit('tuCarta', jugadorActual.cartaActual);
+                    enviarCarta(sala, jugadorActual);
                     io.to(idSala).emit('mensajeGlobal', `🃏 ${jugadorActual.nombre} robó del mazo (no puede cambiar con quien tocó la campana).`);
                     io.to(idSala).emit('actualizarMazo', { cartasRestantes: sala.mazo.length });
                     io.to(idSala).emit('accionMesa', {
@@ -1255,8 +1304,8 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
                 bots.recordarCambio(sala.jugadores, jugadorActual, jugadorDerecha, temp, jugadorDerecha.cartaActual);
                 jugadorActual.cartaActual = jugadorDerecha.cartaActual;
                 jugadorDerecha.cartaActual = temp;
-                io.to(jugadorActual.id).emit('tuCarta', jugadorActual.cartaActual);
-                io.to(jugadorDerecha.id).emit('tuCarta', jugadorDerecha.cartaActual);
+                enviarCarta(sala, jugadorActual);
+                enviarCarta(sala, jugadorDerecha);
                 io.to(idSala).emit('mensajeGlobal', `🔄 ${jugadorActual.nombre} cambió con ${jugadorDerecha.nombre}.`);
                 io.to(idSala).emit('accionMesa', {
                     tipo: 'CAMBIO',
@@ -1289,8 +1338,10 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
                 sala.descarte.push(cartaVieja);
                 jugadorActual.cartaActual = nuevaCarta;
                 bots.olvidarCarta(sala.jugadores, jugadorActual);
-                io.to(jugadorActual.id).emit('tuCarta', jugadorActual.cartaActual);
-                io.to(idSala).emit('mensajeGlobal', `🃏 El Dealer (${jugadorActual.nombre}) cambió su carta con el mazo.`);
+                enviarCarta(sala, jugadorActual);
+                io.to(idSala).emit('mensajeGlobal', indiceActual === sala.dealerIndex
+                    ? `🃏 El Dealer (${jugadorActual.nombre}) cambió su carta con el mazo.`
+                    : `🃏 ${jugadorActual.nombre} robó del mazo (Mercado).`);
                 io.to(idSala).emit('actualizarMazo', { cartasRestantes: sala.mazo.length });
                 io.to(idSala).emit('accionMesa', {
                     tipo: 'MAZO',
@@ -1634,7 +1685,9 @@ io.on('connection', (socket) => {
             if (sala.estadoActual !== "LOBBY") {
                 socket.emit('reconexionExitosa', {
                     idSala: sala.idSala,
-                    carta: jugadorExistente.cartaActual,
+                    carta: sala.evento === 'NIEBLA' ? null : jugadorExistente.cartaActual,
+                    evento: sala.evento ? eventos.CATALOGO[sala.evento] : null,
+                    duelo: !!sala.enDuelo,
                     ronda: sala.rondaActual,
                     dealer: sala.jugadores[sala.dealerIndex].nombre,
                     jugadores: jugadoresPublicos(sala),

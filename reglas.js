@@ -58,19 +58,26 @@ function siguienteVivo(jugadores, indice) {
 //  - si alguien la tocó y tenía la carta mortal, paga una extra.
 // Empate total (todos con la misma carta): nadie pierde vida, tampoco por
 // la penalización de la campana.
+// Eventos de ronda (sala.evento, ver eventos.js): MUNDO_AL_REVES hace perder
+// a la más alta, DOBLE_CASTIGO quita 2 vidas y AMNISTIA no quita ninguna
+// pero devuelve en `castigados` a quienes tenían la carta mortal.
 // `mensajes` va en el orden en que se deben anunciar a la mesa.
 function resolverCartas(sala) {
     const vivos = sala.jugadores.filter(j => j.vidas > 0);
     const esModoCampana = sala.config.modoJuego === 'CAMPANA';
+    const pierdeLaMasAlta = esModoCampana || sala.evento === 'MUNDO_AL_REVES';
+    const vidasPorPerder = sala.evento === 'DOBLE_CASTIGO' ? 2 : 1;
+    const amnistia = sala.evento === 'AMNISTIA';
 
-    const valorCritico = esModoCampana
+    const valorCritico = pierdeLaMasAlta
         ? Math.max(...vivos.map(j => j.cartaActual))
         : Math.min(...vivos.map(j => j.cartaActual));
     const empateTotal = vivos.every(j => j.cartaActual === valorCritico);
     const perdedores = [];
+    const castigados = [];
     const mensajes = [];
-    const pierde = (j) => {
-        j.vidas -= 1;
+    const pierde = (j, cuantas = 1) => {
+        j.vidas = Math.max(0, j.vidas - cuantas);
         if (!perdedores.includes(j.id)) perdedores.push(j.id);
     };
 
@@ -78,7 +85,7 @@ function resolverCartas(sala) {
     // paga una vida extra (además de la normal, si le quedan vidas).
     if (esModoCampana && !sala.campanaTocada && sala.vueltasCampana >= 2 && !empateTotal) {
         const maxVal = Math.max(...vivos.map(j => j.cartaActual));
-        vivos.filter(j => j.cartaActual === maxVal).forEach(pierde);
+        vivos.filter(j => j.cartaActual === maxVal).forEach(j => pierde(j));
         mensajes.push(`⏰ Nadie tocó la campana — el cobarde con la carta más alta paga doble.`);
     }
 
@@ -97,15 +104,19 @@ function resolverCartas(sala) {
         }
     }
 
-    if (!empateTotal) {
+    if (!empateTotal && amnistia) {
+        sala.jugadores.forEach(j => { if (j.vidas > 0 && j.cartaActual === valorCritico) castigados.push(j.id); });
+        mensajes.push(`🕊️ Amnistía: nadie pierde vida, pero quien tenía el ${valorCritico} pierde su próximo turno.`);
+    } else if (!empateTotal) {
         sala.jugadores.forEach(j => {
-            if (j.vidas > 0 && j.cartaActual === valorCritico) pierde(j);
+            if (j.vidas > 0 && j.cartaActual === valorCritico) pierde(j, vidasPorPerder);
         });
+        if (vidasPorPerder > 1) mensajes.push(`⚔️ Doble castigo: quien tenía el ${valorCritico} pierde ${vidasPorPerder} vidas.`);
     } else {
         mensajes.push(`🤝 ¡Empate total! Todos tienen ${valorCritico} — nadie pierde vida esta ronda.`);
     }
 
-    return { vivos, valorCritico, empateTotal, perdedores, campanaInfo, mensajes };
+    return { vivos, valorCritico, empateTotal, perdedores, castigados, campanaInfo, mensajes };
 }
 
 module.exports = { barajar, crearMazo, siguienteVivo, resolverCartas };

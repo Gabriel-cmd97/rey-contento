@@ -83,3 +83,27 @@ test('campana: el empate total también perdona la penalización de no tocarla',
     assert.strictEqual(r.mensajes.length, 1);
     assert.match(r.mensajes[0], /Empate total/);
 });
+
+test('evento Mundo al revés: pierde la carta más alta en clásico', () => {
+    const s = sala([j('a', 2), j('b', 8), j('c', 5)], {}, { evento: 'MUNDO_AL_REVES' });
+    const r = resolverCartas(s);
+    assert.strictEqual(r.valorCritico, 8);
+    assert.deepStrictEqual(vidas(s), [3, 2, 3]);
+});
+
+test('evento Doble castigo: el perdedor pierde 2 vidas (sin bajar de 0)', () => {
+    const s = sala([j('a', 1), j('b', 6, 1)], {}, { evento: 'DOBLE_CASTIGO' });
+    resolverCartas(s);
+    assert.deepStrictEqual(vidas(s), [1, 1]);
+    const s2 = sala([j('a', 1, 1), j('b', 6)], {}, { evento: 'DOBLE_CASTIGO' });
+    resolverCartas(s2);
+    assert.deepStrictEqual(vidas(s2), [0, 3]);
+});
+
+test('evento Amnistía: nadie pierde vida y el de la más baja queda castigado', () => {
+    const s = sala([j('a', 1), j('b', 6), j('c', 1)], {}, { evento: 'AMNISTIA' });
+    const r = resolverCartas(s);
+    assert.deepStrictEqual(vidas(s), [3, 3, 3]);
+    assert.deepStrictEqual(r.perdedores, []);
+    assert.deepStrictEqual(r.castigados, ['a', 'c']);
+});

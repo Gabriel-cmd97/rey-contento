@@ -3095,3 +3095,137 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
 }
 #modalRecuperar .medieval-input { width: 100%; margin-bottom: 8px; }
 .rec-error { color: #ff8a7a; font-family: Georgia, serif; font-size: 13px; margin: 4px 0 0; }
+
+/* =========================================
+   EVENTOS DE RONDA
+   ========================================= */
+.carta-evento {
+    position: absolute;
+    top: 42%;
+    left: 50%;
+    width: min(76%, 280px);
+    transform: translate(-50%, -50%);
+    z-index: 280;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 18px 16px 16px;
+    text-align: center;
+    background: linear-gradient(180deg, #f8efd9 0%, #e9d7ab 100%);
+    color: var(--texto);
+    border: 3px double var(--oro-oscuro);
+    border-radius: 14px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.7), 0 0 30px rgba(241,196,15,0.35);
+    pointer-events: none;
+    animation: evento-entra 0.6s cubic-bezier(.2,.9,.3,1.2);
+}
+.carta-evento small { font-family: Georgia, serif; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--oro-tinta); }
+.carta-evento strong { font-family: var(--fuente-medieval); font-size: 24px; color: #5a3e05; line-height: 1.1; }
+.carta-evento p { margin: 4px 0 0; font-family: Georgia, serif; font-size: 14px; line-height: 1.35; }
+.carta-evento-icono { line-height: 0; color: var(--oro-tinta); }
+.carta-evento-icono .icono { width: 40px; height: 40px; stroke-width: 2; }
+.carta-evento.saliendo { opacity: 0; transform: translate(-50%, -160%) scale(0.4); transition: all 0.35s ease-in; }
+@keyframes evento-entra {
+    0%   { opacity: 0; transform: translate(-50%, -120%) rotateY(90deg) scale(0.6); }
+    60%  { opacity: 1; transform: translate(-50%, -48%) rotateY(0deg) scale(1.05); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+}
+.chip-evento {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 55;
+    padding: 4px 12px;
+    border-radius: 14px;
+    background: rgba(40,26,14,0.9);
+    border: 1px solid #d4a514;
+    color: #ffe27a;
+    font-family: var(--fuente-medieval);
+    font-size: 12px;
+    white-space: nowrap;
+    box-shadow: 0 0 12px rgba(241,196,15,0.3);
+}
+.chip-evento .icono { width: 14px; height: 14px; }
+
+/* =========================================
+   DUELO FINAL
+   ========================================= */
+.presentacion-duelo {
+    position: absolute;
+    inset: 0;
+    z-index: 290;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px;
+    background: radial-gradient(ellipse at center, rgba(120,20,20,0.9) 0%, rgba(20,6,6,0.95) 70%);
+    border-radius: inherit;
+    pointer-events: none;
+    animation: fadeSlideUp 0.3s ease both;
+}
+.presentacion-duelo.saliendo { opacity: 0; transition: opacity 0.4s; }
+.duelista {
+    font-family: var(--fuente-medieval);
+    font-size: clamp(18px, 6vw, 28px);
+    color: #ffe27a;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    overflow-wrap: anywhere;
+}
+.duelista.izq { text-align: right; animation: duelista-izq 0.6s cubic-bezier(.2,.9,.3,1.2) both; }
+.duelista.der { text-align: left; animation: duelista-der 0.6s cubic-bezier(.2,.9,.3,1.2) both; }
+@keyframes duelista-izq { from { opacity: 0; transform: translateX(-60px); } to { opacity: 1; transform: none; } }
+@keyframes duelista-der { from { opacity: 0; transform: translateX(60px); } to { opacity: 1; transform: none; } }
+.duelo-centro { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #f3e6c8; animation: duelo-choque 0.5s 0.45s both; }
+.duelo-centro .icono { width: 48px; height: 48px; stroke-width: 2; color: #ffe27a; filter: drop-shadow(0 0 10px rgba(241,196,15,0.8)); }
+.duelo-centro b { font-family: var(--fuente-medieval); font-size: 14px; letter-spacing: 3px; text-transform: uppercase; }
+@keyframes duelo-choque { 0% { opacity: 0; transform: scale(2.2); } 60% { opacity: 1; transform: scale(0.9); } 100% { transform: scale(1); } }
+
+/* Mientras dura el duelo, el tapete late en rojo. */
+#tapeteVistas.modo-duelo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: inset 0 0 90px rgba(192,57,43,0.8), inset 0 0 0 3px rgba(231,76,60,0.7);
+    animation: latido-duelo 1.6s ease-in-out infinite;
+    z-index: 2;
+}
+@keyframes latido-duelo { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+
+.carta-duelo {
+    position: fixed;
+    z-index: 330;
+    width: 70px;
+    height: 104px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: linear-gradient(150deg, #f8efd6 0%, #efdfba 55%, #e6d2a6 100%);
+    color: #2e2113;
+    border: 2px solid var(--oro-oscuro);
+    border-radius: 8px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.6);
+    font-family: var(--fuente-medieval);
+    pointer-events: none;
+}
+.carta-duelo b { font-size: 30px; line-height: 1; }
+.carta-duelo small { font-size: 9px; }
+.carta-duelo.carta-9 { background: linear-gradient(145deg, #fff9c4, #fff3a0); }
+.carta-duelo.carta-0 { background: linear-gradient(145deg, #ecf0f1, #dde4e8); }
+.carta-duelo.pierde { border-color: var(--rojo-rey); box-shadow: 0 0 26px var(--rojo-rey); }
+.chispa-duelo {
+    position: fixed;
+    z-index: 331;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ffe27a;
+    box-shadow: 0 0 8px #ffb300;
+    pointer-events: none;
+}
