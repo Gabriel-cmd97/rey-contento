@@ -176,28 +176,15 @@
                         </select>
                         </div>
                         <div class="config-item-nuevo">
-                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-grupo"/></svg> Jugadores</span>
+                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-grupo"/></svg> Jugadores en la mesa</span>
                             <select id="selectJugadores" class="selector-medieval selector-compacto">
-                            <option value="2">2 máx</option>
-                            <option value="3">3 máx</option>
-                            <option value="4">4 máx</option>
-                            <option value="5">5 máx</option>
-                            <option value="6">6 máx</option>
-                            <option value="7">7 máx</option>
-                            <option value="8" selected>8 máx</option>
-                        </select>
-                        </div>
-                        <div class="config-item-nuevo">
-                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-bot"/></svg> Bots de relleno</span>
-                            <select id="selectBots" class="selector-medieval selector-compacto">
-                            <option value="0" selected>Sin bots</option>
-                            <option value="1">1 Bot</option>
-                            <option value="2">2 Bots</option>
-                            <option value="3">3 Bots</option>
-                            <option value="4">4 Bots</option>
-                            <option value="5">5 Bots</option>
-                            <option value="6">6 Bots</option>
-                            <option value="7">7 Bots</option>
+                            <option value="2">2 jugadores</option>
+                            <option value="3">3 jugadores</option>
+                            <option value="4">4 jugadores</option>
+                            <option value="5">5 jugadores</option>
+                            <option value="6">6 jugadores</option>
+                            <option value="7">7 jugadores</option>
+                            <option value="8" selected>8 jugadores</option>
                         </select>
                         </div>
                         <div class="config-item-nuevo config-full">
@@ -228,13 +215,6 @@
                             <option value="NORMAL">Normal</option>
                             <option value="ALTA">Alta</option>
                             <option value="LOCURA">Locura</option>
-                        </select>
-                        </div>
-                            <div class="config-item-nuevo config-full">
-                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Eventos de ronda (modo clásico)</span>
-                            <select id="selectEventos" class="selector-medieval selector-compacto">
-                            <option value="SI" selected>Activados</option>
-                            <option value="NO">Desactivados</option>
                         </select>
                         </div>
                             <div class="config-item-nuevo config-full">
@@ -725,13 +705,12 @@
             const modoJuego = document.getElementById('selectModoJuego')?.value === 'CAMPANA' ? `${ic('campana')} Campana` : `${ic('espadas')} Clásico`;
             const vidas     = document.getElementById('selectVidas')?.value;
             const jugadores = document.getElementById('selectJugadores')?.value;
-            const numBots   = parseInt(document.getElementById('selectBots')?.value || '0');
-            const bots      = numBots > 0 ? ` · ${ic('bot')} ${numBots}` : ''; // dificultad fija: NORMAL
+            const bots      = ''; // los bots se ponen al empezar, en los lugares libres
             const tiempo    = '20'; // fijo en todos los modos (TIEMPO_TURNO en server.js)
             // Parejas: la mesa es de 4 o 6 y se completa con bots; el número de
             // jugadores y de bots ya no se elige.
             const equipos = parseInt(document.getElementById('selectEquipos')?.value || '0');
-            ['selectJugadores', 'selectBots'].forEach(id => {
+            ['selectJugadores'].forEach(id => {
                 const el = document.getElementById(id);
                 if (!el) return;
                 el.disabled = equipos > 0;
@@ -740,7 +719,6 @@
             // Resumen de "Más opciones" para verlo sin desplegar
             const extras = [modo];
             if (document.getElementById('selectReyes')?.value !== 'NORMAL') extras.push('Reyes ' + document.getElementById('selectReyes').selectedOptions[0].text);
-            if (document.getElementById('selectEventos')?.value === 'NO') extras.push('sin eventos');
             if (document.getElementById('selectPoderes')?.value === 'SI') extras.push('con poderes');
             if (document.getElementById('inputPasswordSala')?.value.trim()) extras.push('con contraseña');
             const resMas = document.getElementById('resumenMasOpciones');
@@ -753,7 +731,7 @@
 
         // Escuchar cambios en selects para actualizar resumen
         document.addEventListener('DOMContentLoaded', () => {
-            ['selectModo','selectReyes','selectVidas','selectJugadores','selectBots','selectModoJuego','selectEventos','selectPoderes','selectEquipos'].forEach(id => {
+            ['selectModo','selectReyes','selectVidas','selectJugadores','selectModoJuego','selectPoderes','selectEquipos'].forEach(id => {
                 document.getElementById(id)?.addEventListener('change', actualizarResumenConfig);
             });
             document.getElementById('inputPasswordSala')?.addEventListener('input', actualizarResumenConfig);

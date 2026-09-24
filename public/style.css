@@ -3881,3 +3881,6 @@ body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 13%; }
 .panel-menu-mesa button.encendido .interruptor { background: #2f8f4e; border-color: #7be09b; }
 .panel-menu-mesa button.encendido .interruptor::after { transform: translateX(18px); background: #fff; }
 @media (prefers-reduced-motion: reduce) { .interruptor, .interruptor::after { transition: none; } }
+
+/* Ayuda bajo "Jugadores en la mesa": los bots entran solos al empezar */
+.config-ayuda { margin: -2px 2px 2px; font-size: 12.5px; line-height: 1.4; color: var(--texto-suave); font-style: italic; }

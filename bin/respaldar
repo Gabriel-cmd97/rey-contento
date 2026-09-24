@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Respaldo diario del código en GitHub (github.com/Gabriel-cmd97/rey-contento,
+# privado). Sube los commits pendientes y, si hay cambios sin guardar en el
+# servidor, los guarda antes como "Respaldo automático". Usa la llave de
+# despliegue ~/.ssh/rey_contento_deploy (Host github-rey en ~/.ssh/config).
+# Nunca sube .env ni partidas guardadas (.gitignore). Lo corre cron a las 03:30.
+cd "$(dirname "$0")/.." || exit 1
+if [ -n "$(git status --porcelain)" ]; then
+  git add -A && git commit -qm "Respaldo automático $(date +%F)"
+fi
+git push -q origin master 2>&1 && echo "$(date '+%F %T') respaldo ok" || { echo "$(date '+%F %T') FALLO el respaldo"; exit 1; }

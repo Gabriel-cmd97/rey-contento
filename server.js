@@ -239,7 +239,6 @@ function sanitizarConfig(raw) {
 
     const vidas         = enteroEnRango(raw.vidas, 1, 10, 3);
     const maxJugadores  = enteroEnRango(raw.maxJugadores, 2, 8, 6);
-    const numBots       = enteroEnRango(raw.numBots, 0, maxJugadores - 1, 0); // siempre al menos 1 humano
     const modoJuego     = enLista(raw.modoJuego, ['CLASICO', 'CAMPANA'], 'CLASICO');
     const modoRey       = enLista(raw.modoRey, ['SORPRESA', 'DECLARADO'], 'SORPRESA');
     const frecuenciaReyes = enLista(raw.frecuenciaReyes, ['NORMAL', 'ALTA', 'LOCURA'], 'NORMAL');
@@ -266,7 +265,7 @@ function sanitizarConfig(raw) {
         else if (trimmed.length > 50) return null; // rechazar passwords absurdamente largos
     }
 
-    const conEventos = raw.eventos !== false; // eventos de ronda (solo afectan al modo clásico)
+    const conEventos = true; // eventos de ronda siempre (solo afectan al modo clásico); ya no se apagan al crear sala
     const conPoderes = raw.poderes === true;  // modo "Con poderes" (opcional)
     // Parejas: 0 = sin equipos, 2 = 2 contra 2, 3 = 3 contra 3. La mesa queda
     // de 4 o 6 y al empezar se completa con bots.
@@ -274,7 +273,8 @@ function sanitizarConfig(raw) {
     const maxMesa = equipos ? equipos * 2 : maxJugadores;
     // En parejas los bots no ocupan lugares desde el lobby (dejarían fuera a
     // los amigos): entran al empezar, solo en los lugares que quedaron libres.
-    return { vidas, maxJugadores: maxMesa, numBots: equipos ? 0 : Math.min(numBots, maxMesa - 1), modoJuego, modoRey, frecuenciaReyes,
+    // Los bots ya no se eligen: al empezar, completarConBots() llena los lugares libres.
+    return { vidas, maxJugadores: maxMesa, numBots: 0, modoJuego, modoRey, frecuenciaReyes,
              dificultadBots, tiempoTurno: TIEMPO_TURNO, eventos: conEventos, poderes: conPoderes, equipos, password };
 }
 
@@ -1323,6 +1323,11 @@ function iniciarRonda(sala, io) {
 // arranque automático de la partida rápida).
 function empezarPartida(sala) {
     if (!estadoSalas[sala.idSala] || sala.estadoActual !== "LOBBY") return;
+    if (!sala.config.practica && !sala.config.equipos) {
+        sala.jugadores = sala.jugadores.filter(j => j.esBot || j.online); // quien se fue del lobby no ocupa lugar
+        completarConBots(sala);
+        emitirLobby(sala.idSala);
+    }
     sala.rondaActual = 0;
     sala.dealerIndex = sala.config.practica ? practica.DEALER_INICIAL : 0;
     sala.mazo = crearMazo(sala.config);
@@ -1360,6 +1365,18 @@ function nuevoIdSala() {
     return id;
 }
 
+// Llena con bots los lugares libres de la mesa (hasta maxJugadores). Lo usan
+// la partida rápida y cualquier mesa normal al empezar: si eligieron 6 y
+// entraron 4 personas, juegan 4 + 2 bots. Parejas lo hace en prepararEquipos.
+function completarConBots(sala) {
+    const usados = sala.jugadores.map(j => j.nombre);
+    for (let i = 1; sala.jugadores.length < sala.config.maxJugadores; i++) {
+        const nombre = nombreBotAleatorio(usados);
+        usados.push(nombre);
+        sala.jugadores.push({ id: 'bot_' + i, nombre, vidas: sala.config.vidas, yaJugo: false, online: true, esBot: true });
+    }
+}
+
 function arrancarRapida(idSala) {
     clearTimeout(temporizadoresRapida[idSala]);
     delete temporizadoresRapida[idSala];
@@ -1368,12 +1385,7 @@ function arrancarRapida(idSala) {
     // Solo juegan los humanos conectados; si no queda ninguno, la sala sobra.
     sala.jugadores = sala.jugadores.filter(j => j.esBot || j.online);
     if (!sala.jugadores.some(j => !j.esBot)) return limpiarSala(idSala);
-    const usados = sala.jugadores.map(j => j.nombre);
-    for (let i = 1; sala.jugadores.length < sala.config.maxJugadores; i++) {
-        const nombre = nombreBotAleatorio(usados);
-        usados.push(nombre);
-        sala.jugadores.push({ id: 'bot_' + i, nombre, vidas: sala.config.vidas, yaJugo: false, online: true, esBot: true });
-    }
+    completarConBots(sala);
     emitirLobby(idSala);
     empezarPartida(sala);
 }

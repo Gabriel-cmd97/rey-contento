@@ -21,3 +21,6 @@ node_modules
 # Partidas guardadas para sobrevivir a reinicios
 .estado-salas.json
 .estado-salas.json.tmp
+
+# Registro del respaldo diario
+.respaldo.log
