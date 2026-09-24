@@ -441,7 +441,7 @@ function lanzarCoronasVictoria() {
     const simbolos = ['👑','⚔️','🏆','✨','👑','🌟','👑'];
     const total = 28;
     for (let i = 0; i < total; i++) {
-        setTimeout(() => {
+        (lanzarCoronasVictoria._timers ||= []).push(setTimeout(() => {
             const el = document.createElement('div');
             el.className = 'corona-victoria';
             el.textContent = simbolos[Math.floor(Math.random() * simbolos.length)];
@@ -457,7 +457,7 @@ function lanzarCoronasVictoria() {
             `;
             document.body.appendChild(el);
             setTimeout(() => el.remove(), duracion + 100);
-        }, i * 120);
+        }, i * 120));
     }
 }
 
@@ -1284,6 +1284,10 @@ function mostrarLobbyLimpio() {
     document.getElementById('coachPractica')?.classList.add('hidden');
     terminarEsperaRapida();
     cerrarPanelFrases();
+    // Las coronas de la victoria no deben seguir cayendo sobre el lobby.
+    (lanzarCoronasVictoria._timers || []).forEach(clearTimeout);
+    lanzarCoronasVictoria._timers = [];
+    document.querySelectorAll('.corona-victoria').forEach(el => el.remove());
 }
 
 function resetEstadoSala() {
@@ -1350,6 +1354,50 @@ cargarLeaderboard();
 // ==========================================
 // PERFIL PERSONAL
 // ==========================================
+// "hace 5 min", "hace 3 h", "ayer", "12 sep"
+function haceCuanto(fecha) {
+    const d = new Date(fecha);
+    const seg = (Date.now() - d.getTime()) / 1000;
+    if (seg < 60) return 'hace un momento';
+    if (seg < 3600) return `hace ${Math.floor(seg / 60)} min`;
+    if (seg < 86400) return `hace ${Math.floor(seg / 3600)} h`;
+    if (seg < 172800) return 'ayer';
+    return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+}
+
+function pintarLogrosPerfil(catalogo, ganados) {
+    const conseguidos = new Map(ganados.map(g => [g.logro, g.fecha]));
+    document.getElementById('pLogrosCuenta').textContent = `${conseguidos.size} de ${catalogo.length}`;
+    document.getElementById('pLogros').innerHTML = catalogo.map(l => {
+        const fecha = conseguidos.get(l.id);
+        return `<li class="logro${fecha ? ' ganado' : ''}" title="${escapeHTML(l.descripcion)}">
+            <span class="logro-icono">${icono(fecha ? l.icono : 'candado')}</span>
+            <span class="logro-titulo">${escapeHTML(l.titulo)}</span>
+            <span class="logro-desc">${escapeHTML(l.descripcion)}</span>
+        </li>`;
+    }).join('');
+}
+
+const NOMBRE_MODO = { CLASICO: 'Clásico', CAMPANA: 'Campana', RAPIDA: 'Rápida' };
+
+function pintarHistorialPerfil(historial) {
+    const lista = document.getElementById('pHistorial');
+    if (!historial.length) {
+        lista.innerHTML = '<li class="perfil-vacio">Todavía no terminas ninguna partida.</li>';
+        return;
+    }
+    lista.innerHTML = historial.map(h => {
+        const gano = h.lugar === 1;
+        const detalle = gano ? `${h.rondas} ${h.rondas === 1 ? 'ronda' : 'rondas'}`
+            : h.cayo_ronda ? `caíste en la ronda ${h.cayo_ronda}` : 'saliste antes del final';
+        return `<li class="${gano ? 'gano' : ''}">
+            <span class="hist-lugar">${gano ? icono('corona') : ''}${h.lugar}.º<small> de ${h.jugadores}</small></span>
+            <span class="hist-detalle">${escapeHTML(detalle)} · ${NOMBRE_MODO[h.modo] || escapeHTML(h.modo)}</span>
+            <span class="hist-fecha">${haceCuanto(h.fecha)}</span>
+        </li>`;
+    }).join('');
+}
+
 async function cargarMiPerfil() {
     const modal = document.getElementById('modalPerfil');
     modal.classList.remove('hidden');
@@ -1361,6 +1409,8 @@ async function cargarMiPerfil() {
         document.getElementById('pWinrate').textContent     = data.winrate != null ? data.winrate + '%' : '—';
         document.getElementById('pRachaActual').textContent = data.racha_actual ?? '—';
         document.getElementById('pRachaMax').textContent    = data.racha_maxima ?? '—';
+        pintarLogrosPerfil(data.catalogoLogros || [], data.logros || []);
+        pintarHistorialPerfil(data.historial || []);
     } catch { /* sin conexión, los valores quedan en — */ }
 }
 document.getElementById('btnMiPerfil').addEventListener('click', cargarMiPerfil);
@@ -2870,6 +2920,19 @@ function conectarSocket() {
     });
     socket.on('fraseJugador', (datos) => {
         if (datos.jugadorId !== socket.id) mostrarFrase(datos.jugadorId, datos.frase);
+    });
+
+    // --- LOGROS ---
+    socket.on('logroDesbloqueado', (logro) => {
+        const aviso = document.createElement('div');
+        aviso.className = 'aviso-logro';
+        aviso.setAttribute('role', 'status');
+        aviso.innerHTML = `<span class="aviso-logro-icono">${icono(logro.icono || 'trofeo')}</span>
+            <span><small>Logro desbloqueado</small><strong>${escapeHTML(logro.titulo)}</strong>${escapeHTML(logro.descripcion)}</span>`;
+        document.body.appendChild(aviso);
+        Sonidos.victoria();
+        vibrar([60, 40, 120]);
+        setTimeout(() => { aviso.classList.add('saliendo'); setTimeout(() => aviso.remove(), 400); }, 4500);
     });
 
     socket.on('reaccionJugador', (datos) => {

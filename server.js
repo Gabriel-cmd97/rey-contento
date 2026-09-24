@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const pool = require('./db');
 const bots = require('./bots');
 const practica = require('./practica');
+const logros = require('./logros');
 const { barajar, crearMazo, siguienteVivo, resolverCartas } = require('./reglas');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
@@ -402,7 +403,15 @@ app.get('/mis-stats/:username', limitarLectura, async (req, res) => {
         if (rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
         const u = rows[0];
         const winrate = u.partidas_jugadas > 0 ? Math.round((u.victorias / u.partidas_jugadas) * 100) : 0;
-        res.json({ ...u, winrate });
+        const [ganados] = await conRetry(
+            () => pool.execute('SELECT logro, fecha FROM logros WHERE username = ? ORDER BY fecha', [username]),
+            { op: 'mis-logros', username });
+        const [historial] = await conRetry(
+            () => pool.execute(
+                'SELECT fecha, lugar, jugadores, rondas, ganador, cayo_ronda, modo FROM historial WHERE username = ? ORDER BY fecha DESC, id DESC LIMIT 10',
+                [username]),
+            { op: 'mi-historial', username });
+        res.json({ ...u, winrate, catalogoLogros: logros.CATALOGO, logros: ganados, historial });
     } catch (error) {
         log.error('mis-stats falló', { error: error.message, codigo: error.code, username });
         res.status(500).json({ error: 'Error al cargar stats' });
@@ -416,6 +425,25 @@ app.get('/sala/:id', (req, res) => {
 // ==========================================
 // HELPERS DE STATS
 // ==========================================
+// Otorga un logro una sola vez (PRIMARY KEY username+logro) y avisa al
+// jugador en la sala si es nuevo. Nunca a bots.
+async function otorgarLogro(sala, nombre, idLogro) {
+    const jugador = sala.jugadores.find(j => j.nombre === nombre);
+    if (!jugador || jugador.esBot || !logros.POR_ID[idLogro]) return;
+    try {
+        const [r] = await conRetry(
+            () => pool.execute('INSERT IGNORE INTO logros (username, logro) VALUES (?, ?)', [nombre, idLogro]),
+            { op: 'otorgar_logro', nombre, idLogro }
+        );
+        if (r.affectedRows === 1) {
+            io.to(jugador.id).emit('logroDesbloqueado', logros.POR_ID[idLogro]);
+            log.info('Logro desbloqueado', { nombre, logro: idLogro });
+        }
+    } catch (err) {
+        log.error('Fallo otorgar logro', { error: err.message, nombre, idLogro });
+    }
+}
+
 async function registrarFinPartida(sala, ganador) {
     if (sala.config.practica) return; // la práctica no cuenta en las estadísticas
     const humanos = sala.jugadores.filter(j => !j.esBot);
@@ -433,10 +461,10 @@ async function registrarFinPartida(sala, ganador) {
         { op: 'update_partidas_jugadas' }
     ).catch(err => log.error('Fallo update partidas_jugadas', { error: err.message, codigo: err.code, usernames }));
 
-    if (!ganador.id || ganador.esBot) return;
-
-    // Ganador: victoria + racha
-    await conRetry(
+    // Ganador humano: victoria + racha. (Si gana un bot o nadie, solo se
+    // reinicia la racha de los humanos, abajo.)
+    const ganoHumano = !!ganador.id && !ganador.esBot;
+    if (ganoHumano) await conRetry(
         () => pool.execute(
             `UPDATE usuarios SET victorias = victorias + 1,
              racha_actual = racha_actual + 1,
@@ -459,6 +487,43 @@ async function registrarFinPartida(sala, ganador) {
             { op: 'reset_racha' }
         ).catch(err => log.error('Fallo reset racha', { error: err.message, codigo: err.code, perdedores }));
     }
+
+    await registrarHistorialYLogros(sala, ganador, humanos);
+}
+
+// Una fila de historial por humano y los logros de fin de partida.
+async function registrarHistorialYLogros(sala, ganador, humanos) {
+    const hayGanador = !!ganador.id;
+    const lugarDe = logros.lugaresFinales(hayGanador ? ganador.nombre : null, sala.caidas || [], sala.jugadores.length);
+    const modo = sala.config.rapida ? 'RAPIDA' : sala.config.modoJuego;
+    for (const j of humanos) {
+        const caida = (sala.caidas || []).find(c => c.nombre === j.nombre);
+        await conRetry(
+            () => pool.execute(
+                `INSERT INTO historial (username, lugar, jugadores, rondas, ganador, cayo_ronda, modo)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [j.nombre, lugarDe(j.nombre), sala.jugadores.length, sala.rondaActual,
+                 hayGanador ? ganador.nombre : null, caida ? caida.ronda : null, modo]
+            ),
+            { op: 'insert_historial', nombre: j.nombre }
+        ).catch(err => log.error('Fallo insert historial', { error: err.message, nombre: j.nombre }));
+    }
+    try {
+        const nombres = humanos.map(j => j.nombre);
+        const [stats] = await pool.query(
+            'SELECT username, victorias, partidas_jugadas, racha_actual FROM usuarios WHERE username IN (?)', [nombres]);
+        for (const j of humanos) {
+            const ids = logros.logrosDeFinDePartida({
+                gano: hayGanador && ganador.nombre === j.nombre,
+                vidasFinales: j.vidas,
+                vidasPerdidas: (sala.vidasPerdidas || {})[j.nombre] || 0,
+                stats: stats.find(s => s.username === j.nombre),
+            });
+            for (const id of ids) await otorgarLogro(sala, j.nombre, id);
+        }
+    } catch (err) {
+        log.error('Fallo logros de fin de partida', { error: err.message });
+    }
 }
 
 // ==========================================
@@ -477,6 +542,19 @@ function resolverRonda(sala, io) {
 
     const { valorCritico, perdedores, campanaInfo, mensajes } = resolverCartas(sala);
     mensajes.forEach(m => io.to(sala.idSala).emit('mensajeGlobal', m));
+
+    // Historial y logros: quién perdió vidas y quién quedó fuera en esta ronda.
+    sala.caidas ||= []; sala.vidasPerdidas ||= {};
+    sala.jugadores.filter(j => perdedores.includes(j.id)).forEach(j => {
+        sala.vidasPerdidas[j.nombre] = (sala.vidasPerdidas[j.nombre] || 0) + 1;
+        if (j.vidas <= 0 && !sala.caidas.some(c => c.nombre === j.nombre)) {
+            sala.caidas.push({ nombre: j.nombre, ronda: sala.rondaActual });
+        }
+    });
+    if (campanaInfo && campanaInfo.acertada && !sala.config.practica) {
+        const ringer = sala.jugadores.find(j => j.id === campanaInfo.tocadorId);
+        if (ringer) otorgarLogro(sala, ringer.nombre, 'oido_fino');
+    }
 
     let sobrevivientes = sala.jugadores.filter(j => j.vidas > 0);
     const humanosVivos = sobrevivientes.filter(j => !j.esBot);
@@ -497,6 +575,7 @@ function resolverRonda(sala, io) {
     // La práctica termina al revelar la última ronda del guion: el cliente
     // muestra el cierre y el jugador sale de la sala.
     const finDePractica = sala.config.practica && sala.rondaActual >= practica.ULTIMA_RONDA;
+    if (finDePractica) sala.jugadores.filter(j => !j.esBot).forEach(j => otorgarLogro(sala, j.nombre, 'aprendiz'));
     const dealerEsBot = sala.jugadores[sala.dealerIndex].esBot;
     // En la práctica hay que dar tiempo a leer las explicaciones.
     const pausaBot = sala.config.practica ? 9000 : MS_PAUSA_BOT;
@@ -708,6 +787,9 @@ function iniciarRonda(sala, io) {
     // Guardia: se llama desde varios setTimeout (revancha, fin de turno)
     if (!estadoSalas[sala.idSala]) return;
     sala.rondaActual += 1;
+    // Contadores de la partida para historial y logros (se reinician en la
+    // ronda 1: partida nueva o revancha).
+    if (sala.rondaActual === 1) { sala.caidas = []; sala.vidasPerdidas = {}; }
     sala.estadoActual = "TURNOS_INTERCAMBIO";
 
     io.to(sala.idSala).emit('accionMesa', {
@@ -937,6 +1019,7 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
             const derechaEsRinger = sala.config.modoJuego === 'CAMPANA' && sala.campanaTocada && jugadorDerecha.id === sala.campanaTocadorId;
 
             if (bloqueRey) {
+                if (!sala.config.practica) otorgarLogro(sala, jugadorDerecha.nombre, 'muro_del_rey');
                 const msgBloqueo = sala.config.modoRey === "DECLARADO"
                     ? `🛡️ ${jugadorActual.nombre} no puede cambiar — el Rey ya está a la vista.`
                     : `🛡️ ¡BLOQUEO REAL! ${jugadorActual.nombre} chocó con el Rey de ${jugadorDerecha.nombre}.`;
@@ -1577,11 +1660,34 @@ async function agregarColumnasSiNoExisten() {
     }
 }
 
+// Tablas de historial y logros (se crean solas si no existen).
+async function crearTablasSiNoExisten() {
+    await conRetry(() => pool.execute(`CREATE TABLE IF NOT EXISTS historial (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) NOT NULL,
+        fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+        lugar INT NOT NULL,
+        jugadores INT NOT NULL,
+        rondas INT NOT NULL,
+        ganador VARCHAR(50) NULL,
+        cayo_ronda INT NULL,
+        modo VARCHAR(20) NOT NULL,
+        INDEX idx_historial_usuario (username, fecha)
+    )`), { op: 'crear_historial' });
+    await conRetry(() => pool.execute(`CREATE TABLE IF NOT EXISTS logros (
+        username VARCHAR(50) NOT NULL,
+        logro VARCHAR(40) NOT NULL,
+        fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (username, logro)
+    )`), { op: 'crear_logros' });
+}
+
 const PUERTO = process.env.PORT || 4000;
 server.listen(PUERTO, async () => {
     log.info('Servidor iniciado', { puerto: PUERTO });
     try {
         await agregarColumnasSiNoExisten();
+        await crearTablasSiNoExisten();
         log.info('Migración de stats verificada');
     } catch (err) {
         log.error('Migración de stats falló', { error: err.message });

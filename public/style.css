@@ -2919,3 +2919,96 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
 }
 .resumen-cuenta.urgente strong { color: #ff8a7a; }
 .resumen-cuenta.urgente .resumen-cuenta-barra span { background: linear-gradient(90deg, #c0392b, #ff8a7a); }
+
+/* =========================================
+   PERFIL: LOGROS E HISTORIAL
+   ========================================= */
+#modalPerfil .modal-caja { max-height: 88vh; overflow-y: auto; max-width: 380px; }
+.perfil-seccion {
+    margin: 18px 0 8px;
+    font-family: var(--fuente-medieval);
+    font-size: 14px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--oro);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+.perfil-seccion span { font-family: Georgia, serif; font-size: 12px; text-transform: none; letter-spacing: 0; color: var(--texto-suave); }
+
+.perfil-logros { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.logro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 4px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(243,230,200,0.12);
+    text-align: center;
+    color: var(--texto-suave);
+}
+.logro-icono { line-height: 0; }
+.logro-icono .icono { width: 22px; height: 22px; }
+.logro-titulo { font-family: var(--fuente-medieval); font-size: 11px; line-height: 1.15; }
+.logro-desc { font-family: Georgia, serif; font-size: 10px; line-height: 1.2; opacity: 0.85; }
+.logro.ganado {
+    background: linear-gradient(180deg, rgba(241,196,15,0.2), rgba(241,196,15,0.06));
+    border-color: rgba(241,196,15,0.55);
+    color: var(--pergamino);
+}
+.logro.ganado .logro-icono { color: #ffe27a; filter: drop-shadow(0 0 6px rgba(241,196,15,0.6)); }
+.logro.ganado .logro-titulo { color: #ffe27a; }
+
+.perfil-historial { list-style: none; margin: 0; padding: 0; }
+.perfil-historial li {
+    display: grid;
+    grid-template-columns: 4.6em 1fr auto;
+    gap: 8px;
+    align-items: baseline;
+    padding: 7px 2px;
+    border-bottom: 1px dashed rgba(243,230,200,0.15);
+    font-size: 13px;
+    color: var(--pergamino);
+}
+.perfil-historial li.gano .hist-lugar { color: #ffe27a; }
+.hist-lugar { font-family: var(--fuente-medieval); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hist-lugar .icono { width: 14px; height: 14px; margin-right: 2px; }
+.hist-lugar small { font-size: 10px; color: var(--texto-suave); }
+.hist-detalle { font-family: Georgia, serif; font-size: 12px; color: var(--texto-suave); }
+.hist-fecha { font-family: Georgia, serif; font-size: 11px; color: var(--texto-suave); white-space: nowrap; }
+.perfil-historial .perfil-vacio { display: block; text-align: center; font-style: italic; color: var(--texto-suave); border: none; }
+
+/* Aviso de logro: medalla que baja desde arriba. */
+.aviso-logro {
+    position: fixed;
+    top: calc(12px + env(safe-area-inset-top, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10001;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    width: min(92vw, 360px);
+    padding: 12px 16px;
+    background: linear-gradient(180deg, #2a1c0e, #1a1109);
+    border: 2px solid #d4a514;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.7), 0 0 24px rgba(241,196,15,0.35);
+    color: var(--pergamino);
+    font-family: Georgia, serif;
+    font-size: 13px;
+    line-height: 1.3;
+    animation: aviso-logro-entra 0.5s cubic-bezier(.2,.9,.3,1.3);
+}
+.aviso-logro small { display: block; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: #ffe27a; }
+.aviso-logro strong { display: block; font-family: var(--fuente-medieval); font-size: 17px; color: #ffe27a; margin-bottom: 2px; }
+.aviso-logro-icono { line-height: 0; color: #ffe27a; filter: drop-shadow(0 0 8px rgba(241,196,15,0.8)); }
+.aviso-logro-icono .icono { width: 36px; height: 36px; }
+.aviso-logro.saliendo { opacity: 0; transform: translate(-50%, -20px); transition: all 0.4s; }
+@keyframes aviso-logro-entra {
+    from { opacity: 0; transform: translate(-50%, -30px) scale(0.9); }
+    to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
