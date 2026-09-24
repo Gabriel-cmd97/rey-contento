@@ -121,6 +121,21 @@
             <span><strong id="vEsperando">–</strong> esperando jugadores</span>
         </div>
 
+        <section class="tarjeta ancha ritmo">
+            <h2>Ritmo del juego</h2>
+            <div class="cifras">
+                <div class="cifra"><b id="rPartida">–</b><span>duración promedio de una partida</span></div>
+                <div class="cifra"><b id="rRonda">–</b><span>duración promedio de una ronda</span></div>
+                <div class="cifra"><b id="rDecision">–</b><span>tardan en decidir (promedio)</span></div>
+                <div class="cifra"><b id="rP90">–</b><span>el 90 % decide en menos de</span></div>
+                <div class="cifra"><b id="rAgotado">–</b><span>turnos con tiempo agotado</span></div>
+                <div class="cifra"><b id="rAuto">–</b><span>pasaron a modo automático</span></div>
+            </div>
+            <h2 style="margin-top:6px">¿En cuántos segundos deciden? <small id="rTurno" class="nota" style="font-size:12px"></small></h2>
+            <div id="graficaDecision" class="filas"></div>
+            <p id="notaRitmo" class="nota"></p>
+        </section>
+
         <div class="rejilla">
             <section class="tarjeta ancha">
                 <h2>Últimos 14 días</h2>
@@ -209,6 +224,21 @@
             : '';
         barrasHorizontales($('graficaModos'), d.modos.map(m => ({ etiqueta: NOMBRE_MODO[m.modo] || m.modo, n: m.n })),
             'Todavía no hay partidas terminadas.');
+        // Ritmo del juego
+        const r = d.ritmo || {};
+        const mmss = s => s == null ? '–' : (s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} min` : `${s} s`);
+        $('rPartida').textContent = mmss(r.partidaSeg);
+        $('rRonda').textContent = mmss(r.rondaSeg);
+        $('rDecision').textContent = r.decisionPromedioSeg == null ? '–' : `${r.decisionPromedioSeg} s`;
+        $('rP90').textContent = r.decisionP90Seg == null ? '–' : `${r.decisionP90Seg} s`;
+        $('rAgotado').textContent = r.tiempoAgotadoPct == null ? '–' : `${r.tiempoAgotadoPct} %`;
+        $('rAuto').textContent = r.automaticos ?? '–';
+        $('rTurno').textContent = `(el turno dura ${r.tiempoTurno || 20} s · últimos 30 días)`;
+        barrasHorizontales($('graficaDecision'), (r.tramos || []).map(t => ({ etiqueta: t.etiqueta, n: t.n })), 'Todavía no hay turnos de personas medidos.');
+        $('notaRitmo').textContent = r.decisionesMedidas
+            ? `Medido sobre ${r.decisionesMedidas} ${r.decisionesMedidas === 1 ? 'turno' : 'turnos'} de personas y ${r.partidasMedidas} ${r.partidasMedidas === 1 ? 'partida terminada' : 'partidas terminadas'} (sin bots ni práctica). Si casi nadie llega al último tramo, el turno podría ser más corto; si muchos agotan el tiempo, hace falta más.`
+            : 'Las medidas empiezan a juntarse con las partidas de hoy en adelante.';
+
         barrasHorizontales($('graficaLogros'), d.logros.map(l => ({ etiqueta: l.titulo, n: l.n })), '');
     }
 

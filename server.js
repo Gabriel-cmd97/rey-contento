@@ -487,6 +487,33 @@ app.get('/api/panel', limitarLectura, async (req, res) => {
         const [abandonos] = await q(`SELECT COUNT(*) AS n, (SELECT COUNT(*) FROM historial) AS total FROM historial WHERE cayo_ronda IS NULL AND lugar <> 1`);
         const logrosGanados = await q(`SELECT logro, COUNT(*) AS n FROM logros GROUP BY logro`);
 
+        // Ritmo del juego: duración de partidas y cuánto tardan en decidir.
+        const [dur] = await q(`SELECT AVG(d) AS partida, AVG(d / r) AS ronda, COUNT(*) AS n FROM (
+            SELECT partida, MAX(duracion_seg) AS d, MAX(rondas) AS r FROM historial
+            WHERE duracion_seg IS NOT NULL AND rondas > 0 GROUP BY partida) t`);
+        const ms = (await q(`SELECT ms FROM decisiones WHERE tipo = 'jugada' AND ms IS NOT NULL
+            AND fecha >= NOW() - INTERVAL 30 DAY ORDER BY id DESC LIMIT 5000`)).map(r => r.ms).sort((a, b) => a - b);
+        const [conteo] = await q(`SELECT SUM(tipo = 'jugada') AS jugadas, SUM(tipo = 'tiempo') AS agotados, SUM(tipo = 'auto') AS automaticos
+            FROM decisiones WHERE fecha >= NOW() - INTERVAL 30 DAY`);
+        const percentil = (p) => ms.length ? ms[Math.min(ms.length - 1, Math.floor(p * ms.length))] : null;
+        const tramos = [5, 10, 15, 20].map((hasta, i, arr) => ({
+            etiqueta: `${i ? arr[i - 1] : 0}–${hasta} s`,
+            n: ms.filter(v => v >= (i ? arr[i - 1] : 0) * 1000 && (i === arr.length - 1 ? true : v < hasta * 1000)).length,
+        }));
+        const jugadas = Number(conteo.jugadas || 0), agotados = Number(conteo.agotados || 0);
+        const ritmo = {
+            partidasMedidas: dur.n,
+            partidaSeg: dur.partida ? Math.round(dur.partida) : null,
+            rondaSeg: dur.ronda ? Math.round(dur.ronda) : null,
+            decisionesMedidas: ms.length,
+            decisionPromedioSeg: ms.length ? +(ms.reduce((a, b) => a + b, 0) / ms.length / 1000).toFixed(1) : null,
+            decisionP90Seg: ms.length ? +(percentil(0.9) / 1000).toFixed(1) : null,
+            tiempoAgotadoPct: jugadas + agotados ? Math.round(agotados / (jugadas + agotados) * 100) : null,
+            automaticos: Number(conteo.automaticos || 0),
+            tramos,
+            tiempoTurno: TIEMPO_TURNO,
+        };
+
         // En vivo, desde la memoria del servidor.
         const salas = Object.values(estadoSalas);
         const enVivo = {
@@ -510,6 +537,7 @@ app.get('/api/panel', limitarLectura, async (req, res) => {
         res.json({
             generado: new Date().toISOString(), totales, enVivo, dias, modos, caidas,
             abandonos: { n: abandonos.n, total: abandonos.total },
+            ritmo,
             logros: logros.CATALOGO.map(l => ({ id: l.id, titulo: l.titulo, n: (logrosGanados.find(g => g.logro === l.id) || {}).n || 0 })),
         });
     } catch (e) {
@@ -708,10 +736,11 @@ async function registrarHistorialYLogros(sala, ganador, humanos) {
         const caida = (sala.caidas || []).find(c => c.nombre === j.nombre);
         await conRetry(
             () => pool.execute(
-                `INSERT INTO historial (username, partida, lugar, jugadores, rondas, ganador, cayo_ronda, modo)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO historial (username, partida, lugar, jugadores, rondas, ganador, cayo_ronda, modo, duracion_seg)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [j.nombre, sala.idPartida || null, lugarDe(j.nombre), sala.jugadores.length, sala.rondaActual,
-                 hayGanador ? ganador.nombre : null, caida ? caida.ronda : null, modo]
+                 hayGanador ? ganador.nombre : null, caida ? caida.ronda : null, modo,
+                 sala.inicioPartida ? Math.round((Date.now() - sala.inicioPartida) / 1000) : null]
             ),
             { op: 'insert_historial', nombre: j.nombre }
         ).catch(err => log.error('Fallo insert historial', { error: err.message, nombre: j.nombre }));
@@ -1027,8 +1056,23 @@ function gestionarTurnos(sala, io, esInicio = false) {
             return;
         }
 
+        sala.inicioTurno = Date.now(); // para medir cuánto tarda en decidir
         iniciarReloj(sala.idSala, io, tiempoReloj);
     }
+}
+
+// ==========================================
+// MÉTRICAS DE RITMO (panel de uso)
+// ==========================================
+// Cuánto tarda una persona en decidir en su turno (tipo 'jugada'), cuándo se
+// le acaba el tiempo ('tiempo') y cuándo pasa a modo automático ('auto').
+// Sin bots ni práctica. Se guarda sin esperar: nunca frena el juego.
+function registrarDecision(sala, jugador, tipo, ms = null) {
+    if (!jugador || jugador.esBot || sala.config.practica) return;
+    const modo = sala.config.rapida ? 'RAPIDA' : sala.config.equipos ? 'PAREJAS' : sala.config.modoJuego;
+    pool.execute('INSERT INTO decisiones (username, partida, tipo, ms, modo) VALUES (?, ?, ?, ?, ?)',
+        [jugador.nombre, sala.idPartida || null, tipo, ms, modo])
+        .catch(err => log.error('Fallo registrar decisión', { error: err.message }));
 }
 
 // ==========================================
@@ -1043,6 +1087,7 @@ const TURNOS_PARA_AUTOMATICO = 2;
 function activarAutomatico(sala, j) {
     if (!j || j.esBot || j.automatico || j.vidas <= 0) return;
     j.automatico = true;
+    registrarDecision(sala, j, 'auto');
     io.to(sala.idSala).emit('mensajeGlobal', `🤖 ${j.nombre} está ausente: un bot jugará por él.`);
     io.to(sala.idSala).emit('accionMesa', { tipo: 'AUTOMATICO', icono: '🤖', jugador: j.nombre, texto: `${j.nombre} pasó a modo automático` });
     io.to(j.id).emit('modoAutomatico', { activo: true });
@@ -1078,6 +1123,8 @@ function iniciarReloj(idSala, io, tiempoSegundos) {
         // Se acabó su tiempo: se juega por él y se cuenta la inactividad.
         const decision = sala.config.practica ? 'MANTENER' : decisionPorAusente(sala, jugadorActual);
         jugadorActual.turnosSinJugar = (jugadorActual.turnosSinJugar || 0) + 1;
+        if (jugadorActual.online) registrarDecision(sala, jugadorActual, 'tiempo', (tiempoSegundos || 20) * 1000);
+        sala.inicioTurno = null;
         io.to(idSala).emit('mensajeGlobal', jugadorActual.online
             ? `⏰ Se acabó el tiempo de ${jugadorActual.nombre}: el juego jugó por él.`
             : `📵 ${jugadorActual.nombre} está desconectado: el juego jugó por él.`);
@@ -1106,6 +1153,7 @@ function iniciarRonda(sala, io) {
         sala.caidas = []; sala.vidasPerdidas = {};
         sala.dueloAnunciado = false; sala.rondasSinEvento = 0; sala.ultimoEvento = null; sala.castigados = [];
         sala.idPartida = `${sala.idSala}-${Date.now().toString(36)}`; // agrupa el historial por partida
+        sala.inicioPartida = Date.now();
     }
     sala.estadoActual = "TURNOS_INTERCAMBIO";
 
@@ -2022,6 +2070,8 @@ io.on('connection', (socket) => {
         if (!jugadorEnTurno || jugadorEnTurno.nombre !== nombreUsuarioLogueado) return;
 
         desactivarAutomatico(sala, jugadorEnTurno); // jugó él: está presente
+        if (sala.inicioTurno) registrarDecision(sala, jugadorEnTurno, 'jugada', Date.now() - sala.inicioTurno);
+        sala.inicioTurno = null;
         ejecutarAccion(idSala, accion, io, socket.id);
     });
 
@@ -2222,6 +2272,22 @@ async function crearTablasSiNoExisten() {
         await pool.execute('ALTER TABLE historial ADD COLUMN partida VARCHAR(40) NULL AFTER username');
         log.info('Columna partida agregada a historial');
     }
+    const [colDur] = await pool.execute(`SELECT COUNT(*) AS n FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'historial' AND COLUMN_NAME = 'duracion_seg'`);
+    if (colDur[0].n === 0) {
+        await pool.execute('ALTER TABLE historial ADD COLUMN duracion_seg INT NULL');
+        log.info('Columna duracion_seg agregada a historial');
+    }
+    await conRetry(() => pool.execute(`CREATE TABLE IF NOT EXISTS decisiones (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) NOT NULL,
+        partida VARCHAR(40) NULL,
+        tipo VARCHAR(10) NOT NULL,
+        ms INT NULL,
+        modo VARCHAR(20) NULL,
+        fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_decisiones_fecha (fecha)
+    )`), { op: 'crear_decisiones' });
 }
 
 // ==========================================

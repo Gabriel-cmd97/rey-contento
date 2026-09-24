@@ -23,7 +23,7 @@ const PATRON = /^t_[a-z0-9]+_[a-z]+$/;
                 'DELETE FROM usuarios WHERE victorias = 0 AND username IN (?)', [nombres]);
             console.log(`Borrados: ${r.affectedRows}`);
             // Sus partidas y logros también (tablas historial y logros).
-            for (const tabla of ['historial', 'logros']) {
+            for (const tabla of ['historial', 'logros', 'decisiones']) {
                 await pool.query(`DELETE FROM ${tabla} WHERE username IN (?)`, [nombres]).catch(() => {});
             }
         }
