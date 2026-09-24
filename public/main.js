@@ -923,6 +923,115 @@ function cerrarPanelFrases() {
 }
 
 // ==========================================
+// ESCANEAR QR PARA UNIRSE
+// ==========================================
+// El QR de la sala lleva linkDeSala() (…/sala/CÓDIGO). Con HTTPS se usa la
+// cámara en vivo; sin él (hoy el juego va por HTTP y el navegador bloquea la
+// cámara) se toma una foto y se lee de la imagen. jsQR se carga al usarlo.
+const JSQR_URL = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+
+function cargarJsQR() {
+    if (window.jsQR) return Promise.resolve();
+    return new Promise((ok, mal) => {
+        const s = document.createElement('script');
+        s.src = JSQR_URL;
+        s.onload = ok;
+        s.onerror = () => mal(new Error('No se pudo cargar el lector de QR. Revisa tu conexión e inténtalo de nuevo.'));
+        document.head.appendChild(s);
+    });
+}
+
+// Código de sala dentro del texto del QR: enlace …/sala/ABCDE, ?sala=ABCDE o solo el código.
+function codigoDesdeQR(texto) {
+    const m = String(texto).match(/\/sala\/([A-Z0-9]{5})(?![A-Z0-9])/i)
+        || String(texto).match(/[?&]sala=([A-Z0-9]{5})(?![A-Z0-9])/i)
+        || String(texto).trim().match(/^([A-Z0-9]{5})$/i);
+    return m ? m[1].toUpperCase() : null;
+}
+
+function unirseConCodigoQR(texto) {
+    const codigo = codigoDesdeQR(texto);
+    if (!codigo) {
+        mostrarToast('Ese QR no es de una sala de Rey Contento.', 'danio', 3500);
+        return false;
+    }
+    document.getElementById('inputCodigo').value = codigo;
+    mostrarToast(`Sala ${codigo} encontrada`, 'rey', 2000);
+    document.getElementById('btnUnirseSala').click();
+    return true;
+}
+
+// Lee un QR de una foto. Reduce la imagen a ~1200 px para que sea rápido.
+async function leerQRDeFoto(archivo) {
+    await cargarJsQR();
+    const img = await createImageBitmap(archivo);
+    const escala = Math.min(1, 1200 / Math.max(img.width, img.height));
+    const w = Math.round(img.width * escala), h = Math.round(img.height * escala);
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, w, h);
+    const r = window.jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'attemptBoth' });
+    return r ? r.data : null;
+}
+
+let _escaner = null; // { stream, raf }
+
+async function abrirEscanerEnVivo() {
+    await cargarJsQR();
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const video = document.getElementById('videoEscaner');
+    video.srcObject = stream;
+    await video.play();
+    document.getElementById('escanerQR').classList.remove('hidden');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    _escaner = { stream, raf: 0, ultimo: 0 };
+    const leer = (t) => {
+        if (!_escaner) return;
+        _escaner.raf = requestAnimationFrame(leer);
+        if (t - _escaner.ultimo < 200 || video.readyState < 2) return; // ~5 lecturas por segundo
+        _escaner.ultimo = t;
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        const r = window.jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
+        if (r && codigoDesdeQR(r.data)) { cerrarEscaner(); unirseConCodigoQR(r.data); }
+    };
+    _escaner.raf = requestAnimationFrame(leer);
+}
+
+function cerrarEscaner() {
+    if (_escaner) {
+        cancelAnimationFrame(_escaner.raf);
+        _escaner.stream.getTracks().forEach(t => t.stop());
+        _escaner = null;
+    }
+    document.getElementById('escanerQR')?.classList.add('hidden');
+}
+
+document.getElementById('btnEscanearQR')?.addEventListener('click', async () => {
+    const enVivo = window.isSecureContext && navigator.mediaDevices?.getUserMedia;
+    if (enVivo) {
+        try { await abrirEscanerEnVivo(); return; }
+        catch (e) { cerrarEscaner(); /* sin permiso de cámara: seguir con la foto */ }
+    }
+    document.getElementById('inputFotoQR').click();
+});
+document.getElementById('inputFotoQR')?.addEventListener('change', async (e) => {
+    const archivo = e.target.files && e.target.files[0];
+    e.target.value = ''; // permitir elegir la misma foto otra vez
+    if (!archivo) return;
+    try {
+        const texto = await leerQRDeFoto(archivo);
+        if (texto) unirseConCodigoQR(texto);
+        else mostrarToast('No encontré un QR en la foto. Acércate un poco más y que se vea completo.', 'danio', 4000);
+    } catch (err) {
+        mostrarToast(err.message || 'No se pudo leer la foto.', 'danio', 4000);
+    }
+});
+document.getElementById('btnCerrarEscaner')?.addEventListener('click', cerrarEscaner);
+
+// ==========================================
 // PARTIDA RÁPIDA
 // ==========================================
 // El servidor te sienta en una mesa pública de 4 y la arranca sola: al llenarse
@@ -1288,6 +1397,7 @@ function mostrarLobbyLimpio() {
     (lanzarCoronasVictoria._timers || []).forEach(clearTimeout);
     lanzarCoronasVictoria._timers = [];
     document.querySelectorAll('.corona-victoria').forEach(el => el.remove());
+    cerrarEscaner();
 }
 
 function resetEstadoSala() {

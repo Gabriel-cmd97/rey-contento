@@ -3012,3 +3012,30 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
     from { opacity: 0; transform: translate(-50%, -30px) scale(0.9); }
     to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
 }
+
+/* =========================================
+   ESCÁNER DE QR (cámara en vivo, requiere HTTPS)
+   ========================================= */
+.escaner-qr {
+    position: fixed;
+    inset: 0;
+    z-index: 10002;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    transform: translateZ(0);
+}
+.escaner-qr video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.escaner-marco {
+    position: relative;
+    width: min(68vw, 280px);
+    aspect-ratio: 1;
+    border: 3px solid #ffe27a;
+    border-radius: 18px;
+    box-shadow: 0 0 0 100vmax rgba(0,0,0,0.55);
+}
+.escaner-ayuda { position: relative; margin: 0; color: var(--pergamino); font-family: Georgia, serif; font-size: 15px; }
+.escaner-qr .boton-madera { position: relative; min-width: 160px; }
