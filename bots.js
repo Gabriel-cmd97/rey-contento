@@ -130,10 +130,10 @@ function decidirBot(sala, bot, ctx, azar = Math.random) {
 }
 
 // Milisegundos que "piensa" el bot: variable, para que no se sienta mecánico.
-// Entre 3 y 7 s, variado: parece alguien pensando y da tiempo de ver la jugada
-// anterior y quién sigue (con 1.2–2.5 s los turnos de bots pasaban de golpe).
+// Entre 3 y 4 s: parece alguien pensando y da tiempo de ver la jugada
+// anterior (con 1.2–2.5 s pasaban de golpe; con hasta 7 s se sentía lento).
 function retrasoBot(azar = Math.random) {
-    return 3000 + Math.floor(azar() * 4000);
+    return 3000 + Math.floor(azar() * 1000);
 }
 
 // Registrar lo que los bots aprenden de un cambio (los cambios se anuncian a

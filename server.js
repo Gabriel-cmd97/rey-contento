@@ -1116,6 +1116,7 @@ function decisionPorAusente(sala, j) {
 
 function iniciarReloj(idSala, io, tiempoSegundos) {
     if (temporizadores[idSala]) clearTimeout(temporizadores[idSala]);
+    if (estadoSalas[idSala]) estadoSalas[idSala].finTurno = Date.now() + tiempoSegundos * 1000; // para quien vuelve a media jugada
     temporizadores[idSala] = setTimeout(() => {
         const sala = estadoSalas[idSala];
         if (!sala || sala.estadoActual !== "TURNOS_INTERCAMBIO") return;
@@ -1324,6 +1325,7 @@ function empezarPartida(sala) {
     sala.dealerIndex = sala.config.practica ? practica.DEALER_INICIAL : 0;
     sala.mazo = crearMazo(sala.config);
     sala.descarte = [];
+    sala.jugadoresAlEmpezar = sala.jugadores.length; // la revancha rellena hasta aquí, no hasta maxJugadores
     iniciarRonda(sala, io);
     log.info('Partida iniciada', { idSala: sala.idSala, jugadores: sala.jugadores.length, rapida: !!sala.config.rapida });
 }
@@ -1741,8 +1743,10 @@ function iniciarRevancha(sala, io) {
             j.cartaRevelada = false;
         });
 
-        // Rellenar con bots si no completaron el número de jugadores
-        const botsNecesarios = sala.config.maxJugadores - sala.jugadores.length;
+        // Rellenar con bots hasta los que había en la partida anterior (no hasta
+        // maxJugadores: una mesa de 6 con cupo de 8 volvía con 8).
+        const objetivo = Math.min(sala.config.maxJugadores, sala.jugadoresAlEmpezar || sala.config.maxJugadores);
+        const botsNecesarios = Math.max(objetivo, 2) - sala.jugadores.length;
         const nombresUsadosRev = sala.jugadores.map(j => j.nombre);
         for (let i = 1; i <= botsNecesarios; i++) {
             const nombre = nombreBotAleatorio(nombresUsadosRev);
@@ -2019,8 +2023,19 @@ io.on('connection', (socket) => {
                     modoRey: sala.config.modoRey
                 });
                 let jActual = sala.jugadores[sala.turnoActualIndex];
-                if (sala.estadoActual === "TURNOS_INTERCAMBIO" && jActual.nombre === username) {
-                    socket.emit('cambioDeTurno', { id: socket.id, nombre: username });
+                if (sala.estadoActual === "TURNOS_INTERCAMBIO" && jActual.nombre === username && !jActual.automatico) {
+                    // Vuelve en su turno: el mismo aviso completo que manda
+                    // gestionarTurnos (sin `tiempo` ni `modoJuego` el cliente no
+                    // pintaba bien el reloj ni los botones), con lo que le queda
+                    // de reloj y al menos MIN_SEG_AL_VOLVER para que alcance a jugar.
+                    const MIN_SEG_AL_VOLVER = 8;
+                    let quedan = Math.ceil(((sala.finTurno || 0) - Date.now()) / 1000);
+                    if (quedan < MIN_SEG_AL_VOLVER) { quedan = MIN_SEG_AL_VOLVER; iniciarReloj(sala.idSala, io, quedan); }
+                    socket.emit('cambioDeTurno', {
+                        id: socket.id, nombre: username, tiempo: quedan,
+                        jugadores: jugadoresPublicos(sala), modoRey: sala.config.modoRey,
+                        modoJuego: sala.config.modoJuego || 'CLASICO', campanaTocada: sala.campanaTocada
+                    });
                 }
             } else {
                 emitirLobby(sala.idSala); // ← USA HELPER

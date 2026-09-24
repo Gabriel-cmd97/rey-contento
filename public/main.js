@@ -197,9 +197,12 @@ function figuraIMG(n, px) {
 // clase de color (carta-0 / carta-9). Centraliza lo que antes se repetía en cada
 // evento de revelado (juegoIniciado, cambioDeTurno, rondaTerminada, reconexión).
 function pintarCartaPrincipal(carta) {
-    document.getElementById('numeroCarta').innerText = carta;
-    document.getElementById('figuraCarta').innerHTML = figuraIMG(carta, 34);
-    document.getElementById('nombrePersonaje').innerText = nombresCartas[carta];
+    // Sin carta (niebla, eliminado o volviendo entre rondas): nunca pintar
+    // "undefined"; la carta queda en blanco y boca abajo.
+    const hay = carta !== undefined && carta !== null;
+    document.getElementById('numeroCarta').innerText = hay ? carta : '';
+    document.getElementById('figuraCarta').innerHTML = hay ? figuraIMG(carta, 34) : '';
+    document.getElementById('nombrePersonaje').innerText = hay ? (nombresCartas[carta] || '') : '';
     document.getElementById('cartaFrente').className = "face front-character " +
         (carta === 0 ? "carta-0" : carta === 9 ? "carta-9" : "");
 }
@@ -709,9 +712,13 @@ function actualizarGuiaTurno(esMio, esCampana, campanaTocada, redibujar = false)
     } else if (vecino) {
         destino = document.querySelector(`.silla:not(.hidden)[data-jugador-id="${CSS.escape(vecino.id)}"]`);
         const reyALaVista = !esCampana && eventoActual?.id !== 'MUNDO_AL_REVES' && vecino.cartaRevelada && vecino.cartaActual === 9;
-        textoCambiar = reyALaVista
+        // En parejas tu vecino de la derecha siempre es rival.
+        const rival = (miEquipo() !== undefined && miEquipo() !== null) ? ' (rival)' : '';
+        textoCambiar = vecino.escudo
+            ? `🛡️ ${vecino.nombre} tiene escudo: si cambias, rebota y te quedas con tu carta`
+            : reyALaVista
             ? `👑 ${vecino.nombre} tiene al Rey: si cambias, se bloquea`
-            : `🔄 Cambias tu carta con ${vecino.nombre}`;
+            : `🔄 Cambias tu carta con ${vecino.nombre}${rival}`;
     }
 
     const lineas = ['✋ Te quedas con tu carta', textoCambiar];
@@ -720,7 +727,10 @@ function actualizarGuiaTurno(esMio, esCampana, campanaTocada, redibujar = false)
     const ronda = parseInt(document.getElementById('numRonda')?.innerText || '0', 10);
     if (miEquipo() !== undefined && miEquipo() !== null && ronda <= 1) lineas.push('🤝 Ves la carta de tu compañero (los rivales no)');
     if (eventoActual?.id === 'MUNDO_AL_REVES') lineas.push('🔄 Mundo al revés: esta ronda pierde la carta más alta');
-    if (esCampana && !campanaTocada) lineas.push('🔔 Cierra la ronda: tócala si crees tener la carta más baja');
+    if (eventoActual?.id === 'DOBLE_CASTIGO') lineas.push('⚔️ Doble castigo: quien tenga la carta más baja pierde 2 vidas');
+    if (eventoActual?.id === 'AMNISTIA') lineas.push('🕊️ Amnistía: nadie pierde vida; la más baja pierde su próximo turno');
+    // En campana pierde la MÁS ALTA: la campana hace que esta sea la última vuelta.
+    if (esCampana && !campanaTocada) lineas.push('🔔 Campana: tócala para que sea la última vuelta. Si al final tienes la más alta, pierdes una vida extra');
     // Los gestos se explican solo en tus primeros turnos: el panel ocupa menos.
     if (_turnosConGuiaGestos < 3) {
         lineas.push('👆 También con tu carta: deslízala a la derecha para cambiar, tócala dos veces para mantener');
@@ -1037,7 +1047,8 @@ function animarPerdidaVida(jugador) {
     const capa = document.createElement('div');
     capa.className = 'corazon-roto-capa';
     capa.style.left = cx + 'px'; capa.style.top = cy + 'px';
-    capa.innerHTML = `<span class="mitad izq">${icono('corazon')}</span><span class="mitad der">${icono('corazon')}</span>`;
+    capa.innerHTML = `<span class="mitad izq">${icono('corazon')}</span><span class="mitad der">${icono('corazon')}</span>`
+        + (jugador._perdio > 1 ? `<b class="vidas-menos">−${jugador._perdio}</b>` : '');
     document.body.appendChild(capa);
     capa.animate([{ transform: 'translate(-50%,-50%) scale(0.4)', opacity: 0 },
                   { transform: 'translate(-50%,-90%) scale(1.25)', opacity: 1, offset: 0.35 },
@@ -3352,7 +3363,8 @@ function conectarSocket() {
         dibujarMesaCircular();
 
         pintarCartaPrincipal(datos.carta);
-        setTimeout(() => { document.getElementById('miCarta').classList.add('flipped'); }, 700);
+        if (datos.carta === undefined || datos.carta === null) document.getElementById('miCarta').classList.remove('flipped');
+        else setTimeout(() => { document.getElementById('miCarta').classList.add('flipped'); }, 700);
 
         if (datos.estado === "REVELACION") {
             document.getElementById('mensajeTurno').innerText = "LA RONDA HA TERMINADO!";
@@ -3407,6 +3419,7 @@ function conectarSocket() {
             return;
         }
 
+        document.getElementById('panelAccionesPartida').classList.remove('hidden'); // ver cambioDeTurno
         const esMio = socket.id === datosTurno.id;
         const esCampana = datosTurno.modoJuego === 'CAMPANA';
         if (esMio) {
@@ -3479,6 +3492,9 @@ function conectarSocket() {
         }
 
         dibujarMesaCircular();
+        // Si el panel quedó oculto (volviste durante el resumen, o en niebla no
+        // llegó tuCarta, que era quien lo mostraba), los botones no salían.
+        document.getElementById('panelAccionesPartida').classList.remove('hidden');
         const esMio = socket.id === datosTurno.id;
         const esCampana = datosTurno.modoJuego === 'CAMPANA';
         if (esMio) {
@@ -3626,6 +3642,13 @@ function conectarSocket() {
         dibujarMesaCircular();
         document.getElementById('btnMantener').style.display = "none";
         document.getElementById('btnCambiar').style.display = "none";
+        // Con guías: explicar por qué te saltaron (si no, parece que se trabó).
+        if (idJugador === socket.id && guiasActivas() && !_practica) {
+            const miNum = parseInt(document.getElementById('numeroCarta')?.innerText, 10);
+            mostrarToast(miNum === 9
+                ? '👑 Tienes al Rey: no juegas este turno y nadie te lo puede quitar.'
+                : '🕊️ Pierdes este turno por la amnistía de la ronda pasada.', 'rey', 4000);
+        }
     });
 
     // --- FIN DE RONDA ---
@@ -3655,6 +3678,9 @@ function conectarSocket() {
         mostrandoRevelacion = true;
         perdedoresActuales = datos.perdedores;
         turnoActualId = "";
+        // Cuántas vidas perdió cada quien (doble castigo, campana): el corazón roto lo dice.
+        const vidasAntes = Object.fromEntries(listaJugadoresGlobal.map(j => [j.id, j.vidas]));
+        datos.jugadores.forEach(j => { j._perdio = Math.max(1, (vidasAntes[j.id] ?? j.vidas + 1) - j.vidas); });
         listaJugadoresGlobal = datos.jugadores;
         _inicioRevelacion = performance.now();
         const fin = menosMovimiento() ? 0 : duracionRevelacion();

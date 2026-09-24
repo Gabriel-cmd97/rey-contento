@@ -3831,3 +3831,11 @@ body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 13%; }
     60% { transform: rotateY(0) scale(1.12); }
     100% { transform: scale(1); }
 }
+
+/* Doble castigo / campana: el corazón roto dice cuántas vidas se fueron */
+.corazon-roto-capa .vidas-menos {
+    position: absolute; left: 50%; top: -1.1em; transform: translateX(-50%);
+    font: 800 1.35rem/1 system-ui, sans-serif; color: #ffd9d4;
+    background: #8b1a12; padding: 2px 8px; border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.45); white-space: nowrap;
+}

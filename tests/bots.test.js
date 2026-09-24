@@ -64,5 +64,5 @@ test('dificultad desconocida cae en NORMAL y el retraso es humano', () => {
     const a = jug('a', 8), b = jug('b', 5);
     const d = bots.decidirBot(sala([a, b], { dificultadBots: 'XYZ' }), a, { esDealer: false, derecha: b }, fijo(0.9));
     assert.strictEqual(d, 'MANTENER');
-    assert.ok(bots.retrasoBot(fijo(0)) >= 3000 && bots.retrasoBot(fijo(0.999)) <= 7000);
+    assert.ok(bots.retrasoBot(fijo(0)) >= 3000 && bots.retrasoBot(fijo(0.999)) <= 4000);
 });
