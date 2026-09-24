@@ -2607,6 +2607,7 @@ function conectarSocket() {
 
     // --- RECONEXIÓN ---
     socket.on('reconexionExitosa', (datos) => {
+        if (window._servidorReinicio) mostrarToast('✅ Listo: el servidor volvió y tu partida sigue.', 'rey', 3500);
         window._reingresando = false; window._servidorReinicio = false;
         ++_renderGen;
         miSalaActual = datos.idSala;

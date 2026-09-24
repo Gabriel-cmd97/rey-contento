@@ -56,7 +56,7 @@ Todo el estado vive en memoria dentro de `server.js`:
 - `temporizadoresDesconexion` — timers de gracia por username (3 minutos antes de eliminar al jugador)
 - `_socketRates` — tabla de rate limiting por socket (`socketId:evento → timestamp`)
 
-**No hay persistencia de partidas** — un reinicio del servidor elimina todas las salas activas.
+**Las partidas sobreviven a un reinicio** (sección PERSISTENCIA DE SALAS en `server.js`): `guardarSalas()` escribe las salas activas con humanos (LOBBY, TURNOS_INTERCAMBIO, REVELACION, PREPARANDO_NUEVA_RONDA) en `.estado-salas.json` al apagar (`shutdownGracefully`) y cada 10 s (por si hay una caída), escribiendo a `.tmp` y renombrando. Al arrancar, `restaurarSalas()` las carga si tienen menos de 10 min: humanos en `online = false` con `programarGraciaDesconexion()` (3 min), y a los `MS_REANUDAR` (6 s) sigue el turno pendiente o arranca la siguiente ronda; las salas rápidas en espera reprograman su arranque. El cliente se reconecta solo y `unirseSala` lo devuelve a su lugar (`reconexionExitosa`). Las salas FINALIZADAS no se guardan. Si agregas a la sala un campo que no sea JSON (Set, Map, timers), exclúyelo en `guardarSalas()`.
 
 ### Flujo de juego
 
@@ -278,6 +278,7 @@ Estas convenciones se aplicaron tras un hardening pass. Si trabajás en código 
 - **`sanitizarConfig()`**: toda config que viene del cliente en `crearSala` pasa por este helper en `server.js`. Hace clamp de rangos (vidas 1-10, maxJugadores 2-8, numBots 0..max-1) y valida enums. Agregar nuevos campos de config significa actualizar este helper también.
 - **Passwords de sala**: se hashean con `bcrypt.hashSync` al crear y se comparan con `bcrypt.compareSync` al unirse. **Nunca** guardar `sala.password` en plaintext.
 - **Shuffle**: usar siempre el helper `barajar()` (Fisher-Yates). **Nunca** `arr.sort(() => Math.random() - 0.5)` — no produce distribución uniforme. Esto aplica a TODOS los reshuffles, incluidos los de `ejecutarAccion` cuando el mazo se agota (robo del dealer y robo del vecino del ringer) — todos pasan por `barajar([...sala.descarte])`.
+- **Ids que siguen al jugador**: al reconectarse cambia su socket id; `unirseSala` actualiza también `campanaTocadorId` y `hostId` si apuntaban al id viejo. Cualquier campo nuevo de la sala que guarde un socket id debe actualizarse ahí.
 - **Guards de existencia de sala en timers**: `resolverRonda`, `iniciarRonda` e `iniciarRevancha` empiezan con `if (!estadoSalas[sala.idSala]) return;`. Cualquier nueva función que se invoque desde un `setTimeout` debería hacer lo mismo, o el callback puede ejecutarse sobre una sala ya borrada.
 - **Sesión duplicada**: al hacer `unirseSala` con un username que ya tiene socket vivo, el servidor reasigna el id ANTES de desconectar al socket anterior (orden importante — invertido, el `disconnect` handler limpia al jugador legítimo) y emite `sesionReemplazada` con un delay de 150ms para que el paquete viaje antes del close. El cliente desactiva `socket.io.opts.reconnection` al recibirlo.
 - **DOM listeners dentro de `conectarSocket()`**: usar asignación `.onclick = fn` (o `.oninput`, etc.), **nunca** `.addEventListener`. La asignación es idempotente — si `conectarSocket()` corre dos veces, no duplica handlers.

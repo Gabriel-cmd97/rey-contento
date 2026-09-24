@@ -8,6 +8,8 @@ const pool = require('./db');
 const bots = require('./bots');
 const practica = require('./practica');
 const logros = require('./logros');
+const fs = require('fs');
+const path = require('path');
 const { barajar, crearMazo, siguienteVivo, resolverCartas } = require('./reglas');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
@@ -962,6 +964,24 @@ function arrancarRapida(idSala) {
     empezarPartida(sala);
 }
 
+// 3 minutos para volver (margen para el bloqueo de pantalla del celular); si
+// no regresa, queda eliminado. Se usa al desconectarse y al restaurar salas
+// tras un reinicio del servidor.
+function programarGraciaDesconexion(idSala, nombre) {
+    clearTimeout(temporizadoresDesconexion[nombre]);
+    temporizadoresDesconexion[nombre] = setTimeout(() => {
+        delete temporizadoresDesconexion[nombre]; // limpiar la propia entry
+        const salaActual = estadoSalas[idSala];
+        if (!salaActual) return;
+        const jPerdido = salaActual.jugadores.find(x => x.nombre === nombre);
+        if (jPerdido && !jPerdido.online && jPerdido.vidas > 0) {
+            jPerdido.vidas = 0;
+            io.to(idSala).emit('mensajeGlobal', `☠️ ${jPerdido.nombre} no regresó a tiempo y fue eliminado.`);
+            io.to(idSala).emit('nuevaRondaIniciada', { jugadoresActualizados: jugadoresPublicos(salaActual) });
+        }
+    }, 180000);
+}
+
 function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false) {
     let sala = estadoSalas[idSala];
     if (!sala) return;
@@ -1406,6 +1426,9 @@ io.on('connection', (socket) => {
                 delete temporizadoresDesconexion[username];
                 io.to(sala.idSala).emit('mensajeGlobal', `🔌 ${username} regresó a la batalla a tiempo.`);
             }
+            // Su socket cambió: lo que apuntaba al id viejo debe seguirlo.
+            if (sala.campanaTocadorId === jugadorExistente.id) sala.campanaTocadorId = socket.id;
+            if (sala.hostId === jugadorExistente.id) sala.hostId = socket.id;
             jugadorExistente.id = socket.id;
             jugadorExistente.online = true;
             socket.join(sala.idSala);
@@ -1593,18 +1616,7 @@ io.on('connection', (socket) => {
                         iniciarReloj(id, io, 8);
                     }
 
-                    temporizadoresDesconexion[jugador.nombre] = setTimeout(() => {
-                        delete temporizadoresDesconexion[jugador.nombre]; // limpiar la propia entry
-                        let salaActual = estadoSalas[id];
-                        if (salaActual) {
-                            let jPerdido = salaActual.jugadores.find(x => x.nombre === jugador.nombre);
-                            if (jPerdido && !jPerdido.online && jPerdido.vidas > 0) {
-                                jPerdido.vidas = 0;
-                                io.to(id).emit('mensajeGlobal', `☠️ ${jPerdido.nombre} no regresó a tiempo y fue eliminado.`);
-                                io.to(id).emit('nuevaRondaIniciada', { jugadoresActualizados: jugadoresPublicos(salaActual) });
-                            }
-                        }
-                    }, 180000); // 3 minutos — margen para bloqueo de pantalla en celular
+                    programarGraciaDesconexion(id, jugador.nombre);
                 }
                 break;
             }
@@ -1682,6 +1694,79 @@ async function crearTablasSiNoExisten() {
     )`), { op: 'crear_logros' });
 }
 
+// ==========================================
+// PERSISTENCIA DE SALAS (sobrevivir a un reinicio)
+// ==========================================
+// El estado vive en memoria; para que un reinicio (pm2 restart, deploy o una
+// caída) no borre las partidas, se guarda en ARCHIVO_SALAS al apagar y cada
+// GUARDADO_CADA_MS. Al arrancar se restaura si es reciente: los humanos quedan
+// desconectados con la gracia de siempre y la partida sigue a los
+// MS_REANUDAR, cuando sus celulares ya se reconectaron solos.
+const ARCHIVO_SALAS = path.join(__dirname, '.estado-salas.json');
+const GUARDADO_CADA_MS = 10000;
+const MAX_ANTIGUEDAD_MS = 10 * 60 * 1000;
+const MS_REANUDAR = 6000;
+const ESTADOS_GUARDABLES = new Set(["LOBBY", "TURNOS_INTERCAMBIO", "REVELACION", "PREPARANDO_NUEVA_RONDA"]);
+
+function guardarSalas() {
+    const salas = Object.values(estadoSalas)
+        .filter(s => ESTADOS_GUARDABLES.has(s.estadoActual) && s.jugadores.some(j => !j.esBot))
+        .map(({ votosRevancha, ...s }) => s); // el Set no se serializa y solo sirve al final
+    const tmp = ARCHIVO_SALAS + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify({ guardado: Date.now(), salas }));
+    fs.renameSync(tmp, ARCHIVO_SALAS); // nunca queda un archivo a medias
+    return salas.length;
+}
+
+function restaurarSalas() {
+    let datos;
+    try {
+        if (!fs.existsSync(ARCHIVO_SALAS)) return;
+        datos = JSON.parse(fs.readFileSync(ARCHIVO_SALAS, 'utf8'));
+    } catch (err) {
+        return log.error('No se pudo leer el estado guardado de las salas', { error: err.message });
+    }
+    if (!datos || !Array.isArray(datos.salas) || Date.now() - datos.guardado > MAX_ANTIGUEDAD_MS) return;
+
+    let restauradas = 0;
+    for (const sala of datos.salas) {
+        if (!sala || !esIdSalaValido(sala.idSala) || estadoSalas[sala.idSala]) continue;
+        sala.ultimaActividad = Date.now();
+        sala.jugadores.forEach(j => { if (!j.esBot) j.online = false; });
+        estadoSalas[sala.idSala] = sala;
+        restauradas++;
+
+        if (sala.estadoActual === "LOBBY") {
+            // Sala rápida: su arranque se reprograma con margen para reconectar.
+            if (sala.config.rapida) {
+                sala.arrancaEn = Date.now() + Math.max(15000, (sala.arrancaEn || 0) - datos.guardado);
+                temporizadoresRapida[sala.idSala] = setTimeout(() => arrancarRapida(sala.idSala), sala.arrancaEn - Date.now());
+            }
+            continue;
+        }
+        sala.jugadores.filter(j => !j.esBot && j.vidas > 0).forEach(j => programarGraciaDesconexion(sala.idSala, j.nombre));
+        setTimeout(() => {
+            if (!estadoSalas[sala.idSala]) return;
+            if (sala.estadoActual === "TURNOS_INTERCAMBIO") {
+                // Reanudar el turno pendiente (si el jugador sigue fuera, tiene 30 s).
+                gestionarTurnos(sala, io, false);
+            } else if (sala.estadoActual === "REVELACION" || sala.estadoActual === "PREPARANDO_NUEVA_RONDA") {
+                if (sala.jugadores.filter(j => j.vidas > 0).length <= 1) return;
+                sala.estadoActual = "PREPARANDO_NUEVA_RONDA";
+                io.to(sala.idSala).emit('nuevaRondaIniciada', { jugadoresActualizados: jugadoresPublicos(sala) });
+                iniciarRonda(sala, io);
+            }
+        }, MS_REANUDAR);
+    }
+    if (restauradas) log.info('Salas restauradas tras el reinicio', { salas: restauradas });
+}
+
+const guardadoInterval = setInterval(() => {
+    try { guardarSalas(); } catch (err) { log.error('Fallo guardado periódico de salas', { error: err.message }); }
+}, GUARDADO_CADA_MS);
+
+restaurarSalas();
+
 const PUERTO = process.env.PORT || 4000;
 server.listen(PUERTO, async () => {
     log.info('Servidor iniciado', { puerto: PUERTO });
@@ -1746,6 +1831,15 @@ async function shutdownGracefully(signal) {
 
     // Dar tiempo a que el paquete viaje antes de cerrar las conexiones.
     await new Promise(r => setTimeout(r, 500));
+
+    // Guardar las partidas en curso para restaurarlas al volver a arrancar.
+    clearInterval(guardadoInterval);
+    try {
+        const n = guardarSalas();
+        log.info('Salas guardadas para el reinicio', { salas: n });
+    } catch (err) {
+        log.error('No se pudieron guardar las salas', { error: err.message });
+    }
 
     // Cancelar TODOS los timers pendientes para no disparar callbacks sobre
     // estado que estamos por destruir.
