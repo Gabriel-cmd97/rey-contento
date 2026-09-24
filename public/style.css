@@ -3854,3 +3854,15 @@ body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 13%; }
 #modalSalirPartida p { margin: 0 0 18px; line-height: 1.45; }
 #modalSalirPartida .acciones-salir { display: flex; flex-direction: column; gap: 10px; }
 #panelMenuMesa .menu-salir, #panelMenuMesa .menu-salir .icono { color: #ffb4a8; }
+
+/* Cartas reveladas de los oponentes: número, figura y nombre escalan con la
+   carta (--mini-w). Con 5 o más rivales la carta mide 44–48 px y el nombre en
+   dos líneas se salía por abajo (medido el 24/09/2026). */
+.mini-carta-frente { padding: 3px !important; overflow: hidden; }
+.mini-carta-frente > div:first-child { font-size: calc(var(--mini-w, 56px) * 0.36) !important; }
+.mini-carta-frente > div:nth-child(2) img { width: calc(var(--mini-w, 56px) * 0.34) !important; height: auto !important; }
+.mini-carta-frente > div:last-child {
+    font-size: max(6.5px, calc(var(--mini-w, 56px) * 0.145)) !important;
+    line-height: 1.05 !important; margin-top: 2px !important;
+    max-width: 100%; overflow-wrap: anywhere;
+}
