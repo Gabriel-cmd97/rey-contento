@@ -238,15 +238,6 @@
                         </select>
                         </div>
                             <div class="config-item-nuevo config-full">
-                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-reloj"/></svg> Tiempo por turno</span>
-                            <select id="selectTiempoTurno" class="selector-medieval selector-compacto">
-                            <option value="7">7 s · Rápido</option>
-                            <option value="10">10 s · Ágil</option>
-                            <option value="15" selected>15 s · Normal</option>
-                            <option value="20">20 s · Relajado</option>
-                        </select>
-                        </div>
-                            <div class="config-item-nuevo config-full">
                             <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Eventos de ronda (modo clásico)</span>
                             <select id="selectEventos" class="selector-medieval selector-compacto">
                             <option value="SI" selected>Activados</option>
@@ -609,7 +600,7 @@
             </div>
 
             <h3 class="medieval-font" style="color:var(--oro-tinta);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> Tu Turno</h3>
-            <p>Tienes un tiempo límite por turno (15 segundos por defecto; quien crea la sala puede elegir entre 7 y 20) para elegir:</p>
+            <p>Tienes <strong>20 segundos</strong> en cada turno para elegir:</p>
             <ul style="margin:8px 0 0 20px;line-height:1.8;">
                 <li><strong><svg class="icono" aria-hidden="true"><use href="#i-mano"/></svg> MANTENER</strong> — Te quedas con tu carta.</li>
                 <li><strong><svg class="icono" aria-hidden="true"><use href="#i-cambio"/></svg> CAMBIAR</strong> — Fuerzas al jugador de tu derecha a intercambiar.</li>
@@ -647,7 +638,7 @@
                 <li><strong>Salto</strong> (en tu turno): cambias con quien está dos lugares a tu derecha.</li>
                 <li><strong>Escudo</strong> (en cualquier momento de la ronda): nadie puede cambiar contigo esa ronda.</li>
             </ul>
-            <p><strong>Parejas</strong> (2 contra 2 o 3 contra 3): los equipos Oro y Plata se sientan alternados, así que tu vecino de la derecha siempre es rival. Las vidas son del equipo: si alguien del equipo tiene la carta mortal, el equipo pierde una vida. <strong>Ves la carta de tu compañero</strong> (los rivales no). Gana el último equipo con vidas. Cada turno dura 20 segundos, para que alcances a ver tu carta y la de tu compañero. Con poderes, el Salto te deja cambiar con tu compañero.</p>
+            <p><strong>Parejas</strong> (2 contra 2 o 3 contra 3): los equipos Oro y Plata se sientan alternados, así que tu vecino de la derecha siempre es rival. Las vidas son del equipo: si alguien del equipo tiene la carta mortal, el equipo pierde una vida. <strong>Ves la carta de tu compañero</strong> (los rivales no). Gana el último equipo con vidas. Con poderes, el Salto te deja cambiar con tu compañero.</p>
             <p><strong>Duelo final:</strong> cuando solo quedan dos jugadores, se enfrentan cara a cara y sus cartas chocan al centro de la mesa.</p>
             <h3 class="medieval-font" style="color:var(--oro-tinta);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> Modo Campana</h3>
             <p style="margin-bottom:4px;"><strong>Regla invertida:</strong> aquí pierde quien tiene la carta <strong>más alta</strong>. ¡Quieres cartas pequeñas!</p>
@@ -712,20 +703,18 @@
             const selDif    = document.getElementById('selectDificultadBots');
             document.getElementById('bloqueDificultadBots')?.classList.toggle('hidden', numBots === 0);
             const bots      = numBots > 0 ? ` · ${ic('bot')} ${selDif.options[selDif.selectedIndex].text}` : '';
-            // En parejas el tiempo es fijo (20 s): el servidor ignora el selector.
-            const enParejas = parseInt(document.getElementById('selectEquipos')?.value || '0') > 0;
-            const tiempo    = enParejas ? '20' : (document.getElementById('selectTiempoTurno')?.value || '15');
+            const tiempo    = '20'; // fijo en todos los modos (TIEMPO_TURNO en server.js)
             // Parejas: la mesa es de 4 o 6 y se completa con bots; el número de
             // jugadores y de bots ya no se elige.
             const equipos = parseInt(document.getElementById('selectEquipos')?.value || '0');
-            ['selectJugadores', 'selectBots', 'selectTiempoTurno'].forEach(id => {
+            ['selectJugadores', 'selectBots'].forEach(id => {
                 const el = document.getElementById(id);
                 if (!el) return;
                 el.disabled = equipos > 0;
                 el.closest('.config-item-nuevo')?.classList.toggle('config-apagado', equipos > 0);
             });
             // Resumen de "Más opciones" para verlo sin desplegar
-            const extras = [modo, `${tiempo} s`];
+            const extras = [modo];
             if (document.getElementById('selectReyes')?.value !== 'NORMAL') extras.push('Reyes ' + document.getElementById('selectReyes').selectedOptions[0].text);
             if (document.getElementById('selectEventos')?.value === 'NO') extras.push('sin eventos');
             if (document.getElementById('selectPoderes')?.value === 'SI') extras.push('con poderes');
@@ -740,7 +729,7 @@
 
         // Escuchar cambios en selects para actualizar resumen
         document.addEventListener('DOMContentLoaded', () => {
-            ['selectModo','selectReyes','selectVidas','selectJugadores','selectBots','selectDificultadBots','selectTiempoTurno','selectModoJuego','selectEventos','selectPoderes','selectEquipos'].forEach(id => {
+            ['selectModo','selectReyes','selectVidas','selectJugadores','selectBots','selectDificultadBots','selectModoJuego','selectEventos','selectPoderes','selectEquipos'].forEach(id => {
                 document.getElementById(id)?.addEventListener('change', actualizarResumenConfig);
             });
             document.getElementById('inputPasswordSala')?.addEventListener('input', actualizarResumenConfig);

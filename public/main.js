@@ -2872,7 +2872,6 @@ function conectarSocket() {
                 maxJugadores: parseInt(document.getElementById('selectJugadores').value),
                 numBots: parseInt(document.getElementById('selectBots').value),
                 dificultadBots: document.getElementById('selectDificultadBots').value,
-                tiempoTurno: parseInt(document.getElementById('selectTiempoTurno').value),
                 eventos: document.getElementById('selectEventos').value !== 'NO',
                 poderes: document.getElementById('selectPoderes').value === 'SI',
                 equipos: parseInt(document.getElementById('selectEquipos').value || '0'),

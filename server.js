@@ -220,7 +220,10 @@ function nombreBotAleatorio(usados = []) {
 }
 
 // Segundos por turno que se pueden elegir al crear la sala.
-const TIEMPOS_TURNO = [7, 10, 15, 20];
+// Tiempo por turno fijo para todos los modos (ya no se elige al crear sala):
+// con eventos, poderes y parejas hace falta tiempo para ver la mesa. La
+// práctica guiada usa 60 s y un jugador desconectado tiene al menos 30 s.
+const TIEMPO_TURNO = 20;
 
 // Valida y acota la configuración que viene del cliente.
 // Devuelve un nuevo objeto sanitizado, o null si algo es inválido.
@@ -241,7 +244,6 @@ function sanitizarConfig(raw) {
     const modoRey       = enLista(raw.modoRey, ['SORPRESA', 'DECLARADO'], 'SORPRESA');
     const frecuenciaReyes = enLista(raw.frecuenciaReyes, ['NORMAL', 'ALTA', 'LOCURA'], 'NORMAL');
     const dificultadBots = enLista(raw.dificultadBots, bots.DIFICULTADES, 'NORMAL');
-    const tiempoTurno   = enLista(Number.parseInt(raw.tiempoTurno, 10), TIEMPOS_TURNO, 15); // 15 s por defecto: da tiempo de pensar
 
     // Partida de práctica guiada: mesa fija contra 2 bots con guion
     // (practica.js). Todo lo demás de la config se ignora.
@@ -270,10 +272,8 @@ function sanitizarConfig(raw) {
     const maxMesa = equipos ? equipos * 2 : maxJugadores;
     // En parejas los bots no ocupan lugares desde el lobby (dejarían fuera a
     // los amigos): entran al empezar, solo en los lugares que quedaron libres.
-    // En parejas el tiempo es fijo: hay que ver tu carta y la de tu compañero.
-    const TIEMPO_PAREJAS = 20;
     return { vidas, maxJugadores: maxMesa, numBots: equipos ? 0 : Math.min(numBots, maxMesa - 1), modoJuego, modoRey, frecuenciaReyes,
-             dificultadBots, tiempoTurno: equipos ? TIEMPO_PAREJAS : tiempoTurno, eventos: conEventos, poderes: conPoderes, equipos, password };
+             dificultadBots, tiempoTurno: TIEMPO_TURNO, eventos: conEventos, poderes: conPoderes, equipos, password };
 }
 
 // Formato del idSala: 5 caracteres alfanuméricos. El alfabeto real es
@@ -955,7 +955,7 @@ function gestionarTurnos(sala, io, esInicio = false) {
         let idJugadorEnTurno = jugadorActual.id;
         // Tiempo elegido en la sala; si el jugador está desconectado se le dan
         // al menos 30s de gracia para que alcance a volver.
-        const tiempoSala = sala.config.tiempoTurno || 15;
+        const tiempoSala = sala.config.tiempoTurno || TIEMPO_TURNO;
         let tiempoTurno = jugadorActual.online ? tiempoSala : Math.max(30, tiempoSala);
 
         // Primer turno de la ronda: el cliente arranca el reloj visual recién tras
@@ -1247,7 +1247,7 @@ const temporizadoresRapida = {}; // idSala → timeout de arranque
 
 function configRapida() {
     return { vidas: 3, maxJugadores: 4, numBots: 0, modoJuego: 'CLASICO', modoRey: 'SORPRESA',
-             frecuenciaReyes: 'NORMAL', dificultadBots: 'NORMAL', tiempoTurno: 15, eventos: true, rapida: true };
+             frecuenciaReyes: 'NORMAL', dificultadBots: 'NORMAL', tiempoTurno: TIEMPO_TURNO, eventos: true, rapida: true };
 }
 
 function nuevoIdSala() {
