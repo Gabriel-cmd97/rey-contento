@@ -53,19 +53,16 @@ function siguienteVivo(jugadores, indice) {
 }
 
 // Aplica el final de la ronda: resta las vidas y devuelve qué pasó.
-// Clásico: pierde la carta más baja. Campana: pierde la más alta, y además
-//  - si nadie tocó la campana en 2 vueltas, la carta más alta paga una extra;
-//  - si alguien la tocó y tenía la carta mortal, paga una extra.
-// Empate total (todos con la misma carta): nadie pierde vida, tampoco por
-// la penalización de la campana.
+// Pierde la carta más baja. Empate total (todos con la misma carta): nadie
+// pierde vida.
 // Eventos de ronda (sala.evento, ver eventos.js): MUNDO_AL_REVES hace perder
 // a la más alta, DOBLE_CASTIGO quita 2 vidas y AMNISTIA no quita ninguna
-// pero devuelve en `castigados` a quienes tenían la carta mortal.
+// pero devuelve en `castigados` a quienes tenían la carta mortal. PREMIO da
+// una vida (sin pasar de config.vidas) a la carta más alta: `premiados`.
 // `mensajes` va en el orden en que se deben anunciar a la mesa.
 function resolverCartas(sala) {
     const vivos = sala.jugadores.filter(j => j.vidas > 0);
-    const esModoCampana = sala.config.modoJuego === 'CAMPANA';
-    const pierdeLaMasAlta = esModoCampana || sala.evento === 'MUNDO_AL_REVES';
+    const pierdeLaMasAlta = sala.evento === 'MUNDO_AL_REVES';
     const vidasPorPerder = sala.evento === 'DOBLE_CASTIGO' ? 2 : 1;
     const amnistia = sala.evento === 'AMNISTIA';
 
@@ -75,7 +72,7 @@ function resolverCartas(sala) {
     const empateTotal = vivos.every(j => j.cartaActual === valorCritico);
     const perdedores = [];
     const castigados = [];
-    const culpables = []; // quienes tenían la carta mortal (o fallaron la campana)
+    const culpables = []; // quienes tenían la carta mortal
     const mensajes = [];
     // Parejas (config.equipos): las vidas son del equipo. El daño se anota y
     // se aplica al final: la carta mortal cuenta una sola vez por equipo aunque
@@ -93,29 +90,6 @@ function resolverCartas(sala) {
         if (!perdedores.includes(j.id)) perdedores.push(j.id);
     };
 
-    // Nadie tocó la campana en 2 vueltas: el "cobarde" con la carta más alta
-    // paga una vida extra (además de la normal, si le quedan vidas).
-    if (esModoCampana && !sala.campanaTocada && sala.vueltasCampana >= 2 && !empateTotal) {
-        const maxVal = Math.max(...vivos.map(j => j.cartaActual));
-        vivos.filter(j => j.cartaActual === maxVal).forEach(j => pierde(j, 1, true));
-        mensajes.push(`⏰ Nadie tocó la campana — el cobarde con la carta más alta paga doble.`);
-    }
-
-    let campanaInfo = null;
-    if (sala.campanaTocada && sala.campanaTocadorId) {
-        const ringer = sala.jugadores.find(j => j.id === sala.campanaTocadorId);
-        if (ringer && ringer.vidas > 0) {
-            const ringerPierde = !empateTotal && ringer.cartaActual === valorCritico;
-            campanaInfo = { tocadorId: ringer.id, acertada: !ringerPierde };
-            if (ringerPierde) {
-                pierde(ringer, 1, true);
-                mensajes.push(`🔔❌ ${ringer.nombre} tocó la campana pero tenía la carta mortal! -1 vida extra.`);
-            } else {
-                mensajes.push(`🔔✅ ¡${ringer.nombre} acertó la campana!`);
-            }
-        }
-    }
-
     if (!empateTotal && amnistia) {
         sala.jugadores.forEach(j => { if (j.vidas > 0 && j.cartaActual === valorCritico) castigados.push(j.id); });
         mensajes.push(`🕊️ Amnistía: nadie pierde vida, pero quien tenía el ${valorCritico} pierde su próximo turno.`);
@@ -126,6 +100,19 @@ function resolverCartas(sala) {
         if (vidasPorPerder > 1) mensajes.push(`⚔️ Doble castigo: quien tenía el ${valorCritico} pierde ${vidasPorPerder} vidas.`);
     } else {
         mensajes.push(`🤝 ¡Empate total! Todos tienen ${valorCritico} — nadie pierde vida esta ronda.`);
+    }
+
+    const premiados = [];
+    if (sala.evento === 'PREMIO' && !empateTotal && !enEquipos) {
+        const maxVal = Math.max(...vivos.map(j => j.cartaActual));
+        const tope = sala.config.vidas || 3;
+        vivos.filter(j => j.cartaActual === maxVal && j.vidas > 0).forEach(j => {
+            if (j.vidas < tope) { j.vidas += 1; premiados.push(j.id); }
+        });
+        const nombres = vivos.filter(j => premiados.includes(j.id)).map(j => j.nombre);
+        mensajes.push(nombres.length
+            ? `👑 Premio real: ${nombres.join(' y ')} ${nombres.length > 1 ? 'ganan' : 'gana'} una vida con su ${maxVal}.`
+            : `👑 Premio real: la más alta fue el ${maxVal}, pero ya tenía todas las vidas.`);
     }
 
     // Parejas: aplicar el daño a todos los integrantes vivos del equipo.
@@ -140,7 +127,24 @@ function resolverCartas(sala) {
         });
     }
 
-    return { vivos, valorCritico, empateTotal, perdedores, culpables, castigados, campanaInfo, mensajes };
+    return { vivos, valorCritico, empateTotal, perdedores, culpables, castigados, premiados, mensajes };
 }
 
-module.exports = { barajar, crearMazo, siguienteVivo, resolverCartas };
+// Evento Carrusel: cada jugador vivo pasa su carta al siguiente vivo de su
+// derecha, todos a la vez. Quien cumple `retiene(j)` (el Rey protegido) no
+// entra en la vuelta: conserva su carta y los demás se la saltan.
+// Devuelve [{ de, a }] con los jugadores que dieron y recibieron.
+function rotarCartas(jugadores, retiene = () => false) {
+    const ronda = jugadores.filter(j => j.vidas > 0 && !retiene(j));
+    if (ronda.length < 2) return [];
+    const cartas = ronda.map(j => j.cartaActual);
+    const pases = [];
+    ronda.forEach((j, i) => {
+        const receptor = ronda[(i + 1) % ronda.length];
+        receptor.cartaActual = cartas[i];
+        pases.push({ de: j, a: receptor });
+    });
+    return pases;
+}
+
+module.exports = { barajar, crearMazo, siguienteVivo, resolverCartas, rotarCartas };

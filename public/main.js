@@ -29,7 +29,6 @@ let _renderGen = 0;
 let modoReyActual = "SORPRESA";
 let cartasDescartadas = [];
 let pilaRenderizadaCount = 0;
-let campanaRingerId = null;
 let _tweenCarta = null; // POC TWEEN.js: tween de vuelo de carta en curso (para cancelarlo)
 
 // ==========================================
@@ -299,8 +298,6 @@ function renderizarMiniFeedHUD() {
             textoHtml = `<strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong> se plantó`;
         } else if (ev.tipo === 'BLOQUEO' && ev.jugador) {
             textoHtml = `¡Rey frenó a <strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong>!`;
-        } else if (ev.tipo === 'CAMPANA' && ev.jugador) {
-            textoHtml = `¡<strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong> tocó campana!`;
         } else if (ev.tipo === 'MAZO' && ev.jugador) {
             textoHtml = `<strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong> cambió con mazo`;
         } else if (ev.tipo === 'TIMEOUT' && ev.jugador) {
@@ -340,8 +337,6 @@ function renderizarModalBitacora() {
             textoHtml = `<strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong> decidió mantener (se plantó)`;
         } else if (ev.tipo === 'BLOQUEO' && ev.jugador) {
             textoHtml = `🛡️ ¡Rey ${ev.objetivo ? 'de ' + escapeHTML(ev.objetivo) + ' ' : ''}bloqueó a <strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong>!`;
-        } else if (ev.tipo === 'CAMPANA' && ev.jugador) {
-            textoHtml = `🔔 ¡<strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong> tocó la campana! Última vuelta`;
         } else if (ev.tipo === 'MAZO' && ev.jugador) {
             textoHtml = `🃏 <strong class="feed-nombre">${escapeHTML(ev.jugador)}</strong> cambió carta con el mazo`;
         } else if (ev.tipo === 'TIMEOUT' && ev.jugador) {
@@ -472,19 +467,117 @@ function lanzarCoronasVictoria() {
     }
 }
 
-function actualizarBotonesTurno(esMio, esCampana, campanaTocada) {
-    const btnCambiar = document.getElementById('btnCambiar');
-    btnCambiar.innerText = 'CAMBIAR';
+// ==========================================
+// JUGAR CON GESTOS (como el UNO)
+// ==========================================
+// Por defecto no hay botones grandes: en tu turno salen dos indicadores junto
+// a tu carta (#chipMantener, #chipCambiar) que explican el gesto y también se
+// tocan. body.con-botones (menú → "Botones de jugada", localStorage
+// reyBotones=on) regresa MANTENER/CAMBIAR abajo. body.puedo-jugar = es tu
+// turno y aún no juegas.
+const conBotones = () => leerLS('reyBotones') === 'on';
+function aplicarModoBotones() { document.body.classList.toggle('con-botones', conBotones()); }
+aplicarModoBotones();
+document.getElementById('chipMantener')?.addEventListener('click', () => document.getElementById('btnMantener')?.click());
+document.getElementById('chipCambiar')?.addEventListener('click', () => document.getElementById('btnCambiar')?.click());
+
+function actualizarBotonesTurno(esMio) {
+    document.body.classList.toggle('puedo-jugar', !!esMio);
+    document.getElementById('btnCambiar').innerText = 'CAMBIAR';
     pintarBarraPoderes();
-    actualizarGuiaTurno(esMio, esCampana, campanaTocada);
+    actualizarGuiaTurno(esMio);
+    // Venganza: los asientos se pueden tocar para cambiar con esa persona.
+    const vengo = esMio && puedoVengarme();
+    if (!vengo) quitarVenganza();
+    document.body.classList.toggle('venganza-activa', vengo);
+    if (vengo) mostrarToast('😈 Venganza: toca el asiento de quien quieras para cambiar con él. CAMBIAR sigue siendo con tu vecino.', 'rey', 4500);
+}
 
-    if (!esMio || !esCampana || !campanaTocada || !campanaRingerId) return;
-
-    // Verificar si mi vecino derecho es quien tocó la campana
-    if (vecinoDerechoLocal()?.id === campanaRingerId) {
-        btnCambiar.innerText = '🃏 ROBAR';
-        mostrarToast('🔔 No puedes cambiar con quien tocó la campana — si cambias, robarás del mazo.', 'rey', 4000);
+// ==========================================
+// MESA HORIZONTAL
+// ==========================================
+// El diseño horizontal (mesa a la izquierda, botones en columna a la derecha)
+// lo pone el CSS solo, con el celular acostado (bloque MESA HORIZONTAL de
+// style.css). Esta opción del menú gira la pantalla: pantalla completa +
+// bloqueo de orientación, que Android permite; en iPhone no se puede desde
+// una página, así que se pide girar el celular.
+const esHorizontal = () => matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+async function alternarHorizontal() {
+    const quiereHorizontal = !esHorizontal();
+    try {
+        if (quiereHorizontal) {
+            if (!document.fullscreenElement) await document.documentElement.requestFullscreen?.({ navigationUI: 'hide' });
+            await screen.orientation.lock('landscape');
+        } else {
+            screen.orientation.unlock?.();
+            if (document.fullscreenElement) await document.exitFullscreen();
+        }
+    } catch {
+        mostrarToast(quiereHorizontal ? '📱 Gira tu celular de lado para jugar en horizontal.' : '📱 Gira tu celular para volver a vertical.', 'rey', 3500);
     }
+    setTimeout(pintarOpcionHorizontal, 400);
+}
+function pintarOpcionHorizontal() {
+    const t = document.querySelector('#menuHorizontal span');
+    if (t) t.textContent = esHorizontal() ? 'Jugar en vertical' : 'Jugar en horizontal';
+}
+matchMedia('(orientation: landscape)').addEventListener?.('change', () => setTimeout(pintarOpcionHorizontal, 200));
+
+// ==========================================
+// EVENTOS DE AMIGOS Y MODO FIESTA
+// ==========================================
+let vengadoresRonda = []; // nombres que pueden vengarse esta ronda (datosMesa)
+
+function puedoVengarme() {
+    return eventoActual?.id === 'VENGANZA' && vengadoresRonda.includes(miNombreUsuario);
+}
+
+// Se apaga al jugar (mantener, cambiar o tocar un asiento) y al terminar la
+// ronda; NO en ocultarGuiaTurno, que se llama también al redibujar la guía
+// cuando el panel cambia de alto (así se apagaba sola en la práctica).
+// Ya jugaste (o terminó la ronda): fuera indicadores de gesto y Venganza.
+function terminarMiJugada() {
+    document.body.classList.remove('puedo-jugar');
+    quitarVenganza();
+}
+
+function quitarVenganza() {
+    document.body.classList.remove('venganza-activa');
+    marcarAsientoSugerido(null);
+}
+
+// Práctica: resalta el asiento que conviene tocar (el guion lo sabe).
+function marcarAsientoSugerido(nombre) {
+    let st = document.getElementById('estiloAsientoSugerido');
+    if (!nombre) { st?.remove(); return; }
+    const j = listaJugadoresGlobal.find(x => x.nombre === nombre);
+    if (!j) return;
+    if (!st) { st = document.createElement('style'); st.id = 'estiloAsientoSugerido'; document.head.appendChild(st); }
+    const sel = `body.venganza-activa .silla[data-jugador-id="${CSS.escape(j.id)}"] .perfil-oponente`;
+    st.textContent = `${sel} { outline: 3px solid #ffe27a !important; outline-offset: 4px; box-shadow: 0 0 22px rgba(255,226,122,.8); }
+        ${sel}::after { content: '¡Tócalo!'; position: absolute; left: 50%; top: -26px; transform: translateX(-50%); white-space: nowrap;
+            background: #ffe27a; color: #3e2723; font: bold 12px Georgia, serif; padding: 3px 8px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,.5); }`;
+}
+
+// Votación del evento siguiente (Fiesta), dentro del resumen de la ronda.
+let _votacion = null; // { opciones, conteo, votos }
+function pintarVotacion(v) {
+    _votacion = v || null;
+    const caja = document.getElementById('resumenVotacion');
+    const cont = document.getElementById('resumenVotacionOpciones');
+    if (!caja || !cont) return;
+    caja.classList.toggle('hidden', !_votacion);
+    if (!_votacion) { cont.innerHTML = ''; return; }
+    const miVoto = _votacion.votos?.[miNombreUsuario];
+    cont.innerHTML = _votacion.opciones.map(ev => {
+        const n = _votacion.conteo?.[ev.id] || 0;
+        return `<button type="button" class="opcion-voto${miVoto === ev.id ? ' elegida' : ''}" data-evento="${escapeHTML(ev.id)}" title="${escapeHTML(ev.descripcion)}">
+            <span class="opcion-voto-icono">${icono(ev.icono)}</span>
+            <span class="opcion-voto-titulo">${escapeHTML(ev.titulo)}</span>
+            <span class="opcion-voto-desc">${escapeHTML(ev.descripcion)}</span>
+            <span class="opcion-voto-cuenta">${n} ${n === 1 ? 'voto' : 'votos'}</span>
+        </button>`;
+    }).join('');
 }
 
 // Ícono del set propio (sprite SVG en index.html, símbolos "i-<nombre>").
@@ -516,10 +609,10 @@ function pintarInfoMesa() {
     if (!info) return;
     const ronda = document.getElementById('numRonda')?.innerText || '1';
     const rey = modoReyActual === 'DECLARADO' ? 'Rey declarado' : 'Rey sorpresa';
-    const modo = modoJuegoActual === 'CAMPANA' ? 'Campana' : rey;
+    const modo = rey;
     // Con guías, la línea recuerda el objetivo (antes era un banner que chocaba con el reloj).
     const objetivo = guiasActivas() && !_practica
-        ? (modoJuegoActual === 'CAMPANA' ? 'pierde la carta más alta' : 'pierde la carta más baja') : null;
+        ? 'pierde la carta más baja' : null;
     info.innerHTML = eventoActual
         ? `Ronda ${escapeHTML(ronda)} · <span class="info-evento" title="${escapeHTML(eventoActual.descripcion)}">${icono(eventoActual.icono)} ${escapeHTML(eventoActual.titulo)}</span>`
         : `Ronda ${escapeHTML(ronda)} · ${objetivo ? `<span class="info-objetivo">${objetivo}</span>` : modo}`;
@@ -538,7 +631,7 @@ function cerrarMenuMesa() {
 function pintarInterruptoresMenu() {
     const panel = document.getElementById('panelMenuMesa');
     if (!panel) return;
-    const estados = { guias: guiasActivas(), sonido: Sonidos.estaHabilitado() };
+    const estados = { guias: guiasActivas(), sonido: Sonidos.estaHabilitado(), botones: conBotones() };
     for (const [accion, on] of Object.entries(estados)) {
         const b = panel.querySelector(`[data-accion="${accion}"]`);
         if (!b) continue;
@@ -563,12 +656,19 @@ document.getElementById('panelMenuMesa')?.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-accion]');
     if (!b) return;
     const accion = b.dataset.accion;
+    if (accion === 'botones') {
+        escribirLS('reyBotones', conBotones() ? 'off' : 'on');
+        aplicarModoBotones();
+        pintarInterruptoresMenu();
+        return;
+    }
     if (accion === 'guias' || accion === 'sonido') {
         // Interruptor: cambia y el menú sigue abierto para ver el nuevo estado.
         document.getElementById(accion === 'guias' ? 'btnToggleGuias' : 'btnToggleSonido')?.click();
         pintarInterruptoresMenu();
         return;
     }
+    if (accion === 'horizontal') alternarHorizontal();
     if (accion === 'bitacora') abrirModalBitacora();
     if (accion === 'reglas') document.getElementById('modalReglas')?.classList.remove('hidden');
     if (accion === 'perfil') document.getElementById('btnMiPerfil')?.click();
@@ -713,7 +813,7 @@ function dibujarFlechaGuia(origenEl, destinoEl) {
 // `redibujar`: solo recolocar la flecha (el panel cambió de alto), sin contar turno.
 let _turnosConGuiaGestos = 0;
 let _ultimaGuia = null;
-function actualizarGuiaTurno(esMio, esCampana, campanaTocada, redibujar = false) {
+function actualizarGuiaTurno(esMio, redibujar = false) {
     ocultarGuiaTurno();
     if (!esMio || mostrandoRevelacion || !guiasActivas()) return;
 
@@ -729,12 +829,9 @@ function actualizarGuiaTurno(esMio, esCampana, campanaTocada, redibujar = false)
     } else if (yo?.dealer) {
         destino = mazo;
         textoCambiar = '🔄 Eres el dealer: cambias tu carta por una del mazo';
-    } else if (vecino && esCampana && campanaTocada && vecino.id === campanaRingerId) {
-        destino = mazo;
-        textoCambiar = '🃏 Robas del mazo (no puedes cambiar con quien tocó la campana)';
     } else if (vecino) {
         destino = document.querySelector(`.silla:not(.hidden)[data-jugador-id="${CSS.escape(vecino.id)}"]`);
-        const reyALaVista = !esCampana && eventoActual?.id !== 'MUNDO_AL_REVES' && vecino.cartaRevelada && vecino.cartaActual === 9;
+        const reyALaVista = eventoActual?.id !== 'MUNDO_AL_REVES' && vecino.cartaRevelada && vecino.cartaActual === 9;
         // En parejas tu vecino de la derecha siempre es rival.
         const rival = (miEquipo() !== undefined && miEquipo() !== null) ? ' (rival)' : '';
         textoCambiar = vecino.escudo
@@ -767,15 +864,16 @@ function actualizarGuiaTurno(esMio, esCampana, campanaTocada, redibujar = false)
     if (eventoActual?.id === 'MUNDO_AL_REVES') lineas.push('🔄 Mundo al revés: esta ronda pierde la carta más alta');
     if (eventoActual?.id === 'DOBLE_CASTIGO') lineas.push('⚔️ Doble castigo: quien tenga la carta más baja pierde 2 vidas');
     if (eventoActual?.id === 'AMNISTIA') lineas.push('🕊️ Amnistía: nadie pierde vida; la más baja pierde su próximo turno');
-    // En campana pierde la MÁS ALTA: la campana hace que esta sea la última vuelta.
-    if (esCampana && !campanaTocada) lineas.push('🔔 Campana: tócala para que sea la última vuelta. Si al final tienes la más alta, pierdes una vida extra');
+    if (eventoActual?.id === 'CARRUSEL') lineas.push('🎠 Carrusel: al final le pasas tu carta al de tu derecha y recibes la del de tu izquierda');
+    if (eventoActual?.id === 'PREMIO') lineas.push('👑 Premio real: quien termine con la carta más alta gana una vida');
+    if (puedoVengarme()) lineas.push('😈 Venganza: toca el asiento de cualquier jugador para cambiar con él');
     // Los gestos se explican solo en tus primeros turnos: el panel ocupa menos.
     if (_turnosConGuiaGestos < 3) {
         lineas.push('👆 También con tu carta: deslízala a la derecha para cambiar, tócala dos veces para mantener');
         if (!redibujar) _turnosConGuiaGestos++;
     }
     if (!redibujar) amagarCarta();
-    _ultimaGuia = [esMio, esCampana, campanaTocada];
+    _ultimaGuia = [esMio];
 
     const guia = document.getElementById('guiaAcciones');
     if (guia) {
@@ -812,7 +910,7 @@ function explicacionRonda(datos) {
     const pierdo = datos.perdedores.includes(socket.id);
     if (!yo || yo.cartaActual === undefined || (yo.vidas <= 0 && !pierdo)) return '';
 
-    const extremo = (modoJuegoActual === 'CAMPANA' || eventoActual?.id === 'MUNDO_AL_REVES') ? 'más alta' : 'más baja';
+    const extremo = eventoActual?.id === 'MUNDO_AL_REVES' ? 'más alta' : 'más baja';
     if (eventoActual?.id === 'AMNISTIA') {
         const tenia = yo.cartaActual === datos.cartaMortal;
         return tenia ? `🕊️ Amnistía: no pierdes vida, pero tu ${yo.cartaActual} era la más baja y pierdes tu próximo turno.`
@@ -823,7 +921,6 @@ function explicacionRonda(datos) {
     if (enJuego.length > 1 && enJuego.every(j => j.cartaActual === datos.cartaMortal)) {
         return '🤝 Empate total: todos tenían la misma carta, nadie pierde.';
     }
-    const toqueCampana = datos.campana && datos.campana.tocadorId === socket.id;
     if (yo.equipo !== undefined && yo.equipo !== null) {
         const quien = (datos.culpables || []).map(n => n === miNombreUsuario ? 'tú' : n).join(' y ');
         const tuEquipo = `Equipo ${NOMBRE_EQUIPO[yo.equipo]}`;
@@ -832,13 +929,9 @@ function explicacionRonda(datos) {
             : `✅ ${tuEquipo} se salvó. La carta ${extremo} fue el ${datos.cartaMortal}${quien ? ` (${quien})` : ''}.`;
     }
     if (pierdo) {
-        let t = `💔 Perdiste${eventoActual?.id === 'DOBLE_CASTIGO' ? ' 2 vidas (doble castigo)' : ''}: tu ${yo.cartaActual} era la carta ${extremo}.`;
-        if (toqueCampana && !datos.campana.acertada) t += ' Y tocaste la campana con ella: una vida extra.';
-        return t;
+        return `💔 Perdiste${eventoActual?.id === 'DOBLE_CASTIGO' ? ' 2 vidas (doble castigo)' : ''}: tu ${yo.cartaActual} era la carta ${extremo}.`;
     }
-    let t = `✅ Te salvaste: la carta ${extremo} fue el ${datos.cartaMortal} y tú tenías ${yo.cartaActual}.`;
-    if (toqueCampana) t += ' ¡Y acertaste la campana!';
-    return t;
+    return `✅ Te salvaste: la carta ${extremo} fue el ${datos.cartaMortal} y tú tenías ${yo.cartaActual}.`;
 }
 
 // ==========================================
@@ -1011,46 +1104,6 @@ function mostrarGranRey(titulo, texto, jugador, ms, alTerminar) {
         }
         setTimeout(() => { capa.classList.add('hidden'); capa.classList.remove('volando'); alTerminar?.(); }, reducir ? 0 : 650);
     }, ms);
-}
-
-// Campana: se balancea sobre quien la tocó y una onda dorada cruza el tapete.
-function animarCampana(jugadorId) {
-    if (menosMovimiento()) return;
-    const origen = jugadorId === socket.id
-        ? document.getElementById('miCarta')
-        : document.querySelector(`.silla:not(.hidden)[data-jugador-id="${CSS.escape(jugadorId)}"]`);
-    const tapete = document.getElementById('tapeteVistas');
-    if (!origen || !tapete) return;
-    const ro = origen.getBoundingClientRect(), rt = tapete.getBoundingClientRect();
-    const cx = ro.left + ro.width / 2, cy = ro.top + ro.height / 2;
-
-    const campana = document.createElement('div');
-    campana.className = 'campana-balanceo';
-    campana.innerHTML = icono('campana');
-    campana.style.left = cx + 'px'; campana.style.top = (ro.top - 6) + 'px';
-    document.body.appendChild(campana);
-    campana.animate([
-        { transform: 'translate(-50%,-100%) rotate(0deg) scale(0.6)', opacity: 0 },
-        { transform: 'translate(-50%,-100%) rotate(-24deg) scale(1.1)', opacity: 1, offset: 0.15 },
-        { transform: 'translate(-50%,-100%) rotate(20deg)', offset: 0.35 },
-        { transform: 'translate(-50%,-100%) rotate(-14deg)', offset: 0.55 },
-        { transform: 'translate(-50%,-100%) rotate(8deg)', offset: 0.75 },
-        { transform: 'translate(-50%,-100%) rotate(0deg)', opacity: 1, offset: 0.9 },
-        { transform: 'translate(-50%,-100%) rotate(0deg)', opacity: 0 },
-    ], { duration: 1500, easing: 'ease-in-out' }).onfinish = () => campana.remove();
-
-    // Onda: un anillo que crece hasta cubrir el tapete desde el asiento.
-    const alcance = Math.hypot(Math.max(cx - rt.left, rt.right - cx), Math.max(cy - rt.top, rt.bottom - cy)) * 2;
-    [0, 260].forEach(retraso => {
-        const onda = document.createElement('div');
-        onda.className = 'onda-campana';
-        onda.style.left = cx + 'px'; onda.style.top = cy + 'px';
-        document.body.appendChild(onda);
-        onda.animate([
-            { width: '20px', height: '20px', opacity: 0.9 },
-            { width: alcance + 'px', height: alcance + 'px', opacity: 0 },
-        ], { duration: 1300, delay: retraso, easing: 'cubic-bezier(.2,.6,.4,1)', fill: 'both' }).onfinish = () => onda.remove();
-    });
 }
 
 // Robo del mazo: una carta vuela del mazo al jugador y la vieja cae a la pila.
@@ -1318,7 +1371,7 @@ window.alAbrirUnirse = () => {
     _sondeoSalas = setInterval(pedirSalasAbiertas, 4000);
 };
 
-const NOMBRE_MODO_JUEGO = { CLASICO: 'Clásico', CAMPANA: 'Campana' };
+const NOMBRE_MODO_JUEGO = { CLASICO: 'Clásico', FIESTA: 'Fiesta', CAMPANA: 'Campana' };
 
 function pintarSalasAbiertas(salas) {
     const lista = document.getElementById('listaSalasAbiertas');
@@ -1387,7 +1440,7 @@ function terminarEsperaRapida() {
 // ese guion: si cambias las cartas allá, revisa los textos aquí.
 let _practica = null; // { tipo, nombreA, nombreB, dichos: Set } mientras dura
 
-// tipo: 'basica' (Aprender a jugar) o 'poderes' (Aprende eventos y poderes).
+// tipo: 'basica' (Aprender a jugar), 'poderes' (Eventos y poderes) o 'fiesta' (Modo Fiesta).
 function empezarPractica(tipo = 'basica') {
     _practica = { tipo, nombreA: 'A', nombreB: 'B', dichos: new Set() };
     socket.emit('crearSala', { configuracion: { practica: tipo } });
@@ -1400,6 +1453,8 @@ function mostrarCoach(html, { boton = null, alPulsar = null } = {}) {
     const b = document.getElementById('coachBoton');
     b.classList.toggle('hidden', !boton);
     if (boton) { b.textContent = boton; b.onclick = alPulsar; }
+    // Al final (botón "Terminar práctica") sobra "Salir de la práctica".
+    document.getElementById('coachSalir')?.classList.toggle('hidden', !!boton);
     coach.classList.remove('hidden');
     coach.animate?.([{ opacity: 0, transform: 'translate(-50%, -6px)' }, { opacity: 1, transform: 'translate(-50%, 0)' }],
         { duration: menosMovimiento() ? 0 : 280, easing: 'ease-out' });
@@ -1407,7 +1462,7 @@ function mostrarCoach(html, { boton = null, alPulsar = null } = {}) {
 
 function terminarPractica() {
     if (miSalaActual) socket.emit('abandonarSala', miSalaActual);
-    escribirLS(_practica?.tipo === 'poderes' ? 'reyPracticaPoderesHecha' : 'reyPracticaHecha', '1');
+    escribirLS({ poderes: 'reyPracticaPoderesHecha', fiesta: 'reyPracticaFiestaHecha' }[_practica?.tipo] || 'reyPracticaHecha', '1');
     _practica = null;
     document.getElementById('coachPractica')?.classList.add('hidden');
     mostrarLobbyLimpio();
@@ -1421,6 +1476,7 @@ function pintarBotonPractica() {
     // en madera y avisa si todavía no la haces.
     b.classList.toggle('practica-nueva', !leerLS('reyPracticaHecha'));
     document.getElementById('btnPracticaPoderes')?.classList.toggle('practica-nueva', !leerLS('reyPracticaPoderesHecha'));
+    document.getElementById('btnPracticaFiesta')?.classList.toggle('practica-nueva', !leerLS('reyPracticaFiestaHecha'));
 }
 
 // Un paso del guion solo se dice una vez.
@@ -1433,6 +1489,7 @@ function decirUnaVez(clave, html, opciones) {
 function practicaEvento(tipo, datos) {
     if (!_practica) return;
     if (_practica.tipo === 'poderes') return practicaPoderesEvento(tipo, datos);
+    if (_practica.tipo === 'fiesta') return practicaFiestaEvento(tipo, datos);
     const A = `<strong>${escapeHTML(_practica.nombreA)}</strong>`;
     const B = `<strong>${escapeHTML(_practica.nombreB)}</strong>`;
     const ronda = parseInt(document.getElementById('numRonda')?.innerText || '0', 10);
@@ -1466,7 +1523,7 @@ function practicaEvento(tipo, datos) {
         if (ronda === 1) decirUnaVez('f1', `Se voltean todas las cartas. La más baja fue el <b>${datos.cartaMortal}</b>: ${perdedores} pierde una vida. ¿Viste? Tu 1 pasó de mano en mano. La siguiente ronda empieza sola.`);
         if (ronda === 2) decirUnaVez('f2', (miCarta === '7' ? `Robaste un <b>7</b> del mazo y te salvaste. ` : `La más baja fue el <b>${datos.cartaMortal}</b>. `)
             + `Como eres el dealer, <b>tú decides cuándo seguir</b>: toca <b>SIGUIENTE RONDA</b>.`);
-        if (ronda >= 3) decirUnaVez('f3', `<b>¡Ya sabes jugar!</b> Pierde la carta más baja · cambias con quien está a tu derecha · el dealer roba del mazo · al Rey no se le quita la carta. Para mantener tu carta, tócala dos veces. El modo campana está explicado en <b>¿Cómo se juega?</b>`,
+        if (ronda >= 3) decirUnaVez('f3', `<b>¡Ya sabes jugar!</b> Pierde la carta más baja · cambias con quien está a tu derecha · el dealer roba del mazo · al Rey no se le quita la carta. Para mantener tu carta, tócala dos veces.`,
             { boton: 'Terminar práctica', alPulsar: terminarPractica });
     }
 }
@@ -1636,22 +1693,40 @@ function pintarBarraPoderes() {
 function pintarComoSeraPartida(c, maxJugadores) {
     const caja = document.getElementById('comoSeraPartida');
     if (!caja || !c) return;
-    const campana = c.modoJuego === 'CAMPANA';
-    const reyes = { NORMAL: ['Normales', 'el 9 sale como cualquier carta'],
-                    ALTA: ['Muchos', 'más 9 al inicio'],
-                    LOCURA: ['Locura', 'lluvia de 9 al inicio'] }[c.frecuenciaReyes] || ['Normales', ''];
+    // Compacto: dos columnas de "ícono + dato" con su explicación corta abajo.
+    const fiesta = c.modoJuego === 'FIESTA';
+    const publica = !!(c.rapida || c.publica);
+    const invitar = document.getElementById('textoInvitar');
+    if (invitar) invitar.textContent = publica
+        ? 'Sale en «Unirse» para cualquiera que esté en línea'
+        : 'Solo entra quien tenga el enlace, el QR o el código';
+    const chip = document.getElementById('chipVisibilidad');
+    if (chip) {
+        // El anfitrión la puede abrir o cerrar mientras esperan (no la rápida,
+        // que siempre es pública, ni una con contraseña).
+        const puedeCambiar = soyElHost && !c.rapida && !c.conContrasena;
+        chip.innerHTML = (publica ? `${icono('globo')} Pública` : `${icono('candado')} Privada`)
+            + (puedeCambiar ? ` <span class="chip-cambiar">${publica ? 'cerrar' : 'abrir'}</span>` : '');
+        chip.classList.toggle('publica', publica);
+        chip.disabled = !puedeCambiar;
+        chip.title = puedeCambiar ? (publica ? 'Toca para cerrarla: solo con enlace o código' : 'Toca para abrirla: saldrá en «Unirse» para cualquiera') : '';
+        chip.onclick = puedeCambiar ? () => socket.emit('cambiarVisibilidad', { idSala: miSalaActual, publica: !publica }) : null;
+    }
+    const reyes = { NORMAL: ['Reyes normales', 'el 9 sale como cualquier carta'],
+                    ALTA: ['Muchos reyes', 'más 9 al inicio'],
+                    LOCURA: ['Lluvia de reyes', 'muchísimos 9 al inicio'] }[c.frecuenciaReyes] || ['Reyes normales', ''];
     const filas = [
-        ['espadas', 'Modo', campana ? 'Campana' : 'Clásico', campana ? 'pierde la carta más alta' : 'pierde la carta más baja'],
-        ['mascara', 'Rey', c.modoRey === 'DECLARADO' ? 'Declarado' : 'Sorpresa', c.modoRey === 'DECLARADO' ? 'se ve quién tiene el 9' : 'el 9 va oculto'],
-        ['llama', 'Reyes', reyes[0], reyes[1]],
-        ['corazon', 'Vidas', String(c.vidas), c.equipos ? 'por equipo' : 'cada quien'],
-        ['grupo', 'Mesa', c.equipos ? `${c.equipos} contra ${c.equipos}` : `${maxJugadores || c.maxJugadores} jugadores`, 'si falta gente, bots'],
-        ['rayo', 'Eventos', campana ? 'No' : 'Sí', campana ? 'no hay en Campana' : 'reglas sorpresa'],
-        ['ojo', 'Poderes', c.poderes ? 'Sí' : 'No', c.poderes ? 'ganas uno al perder vida' : ''],
-        ['reloj', 'Turno', `${c.tiempoTurno || 20} s`, ''],
+        ['espadas', fiesta ? 'Modo Fiesta' : 'Modo clásico', 'pierde la carta más baja'],
+        ['mascara', c.modoRey === 'DECLARADO' ? 'Rey declarado' : 'Rey sorpresa', c.modoRey === 'DECLARADO' ? 'se ve quién tiene el 9' : 'el 9 va oculto'],
+        ['llama', reyes[0], reyes[1]],
+        ['corazon', `${c.vidas} ${c.vidas === 1 ? 'vida' : 'vidas'}`, c.equipos ? 'las comparte el equipo' : 'cada quien'],
+        ['grupo', c.equipos ? `${c.equipos} contra ${c.equipos}` : `${maxJugadores || c.maxJugadores} jugadores`, 'si falta gente, entran bots'],
+        ['rayo', fiesta ? 'Evento cada ronda' : 'Eventos a veces', fiesta ? 'la mesa vota el siguiente' : 'reglas sorpresa'],
+        ['ojo', c.poderes ? 'Con poderes' : 'Sin poderes', c.poderes ? 'ganas uno al perder vida' : 'solo tus cartas'],
+        ['reloj', `Turnos de ${c.tiempoTurno || 20} s`, 'para decidir'],
     ];
-    caja.innerHTML = `<p class="lobby-section-label">Cómo será la partida</p><dl>` + filas.map(([ic, k, v, nota]) =>
-        `<div><dt>${icono(ic)} ${escapeHTML(k)}</dt><dd><b>${escapeHTML(v)}</b>${nota ? `<small>${escapeHTML(nota)}</small>` : ''}</dd></div>`).join('') + `</dl>`;
+    caja.innerHTML = `<p class="lobby-section-label">Cómo será la partida</p><ul class="como-sera-chips">` + filas.map(([ic, v, nota]) =>
+        `<li>${icono(ic)}<span><b>${escapeHTML(v)}</b>${nota ? `<small>${escapeHTML(nota)}</small>` : ''}</span></li>`).join('') + `</ul>`;
     caja.classList.remove('hidden');
 }
 
@@ -1710,10 +1785,43 @@ function practicaPoderesEvento(tipo, datos) {
     if (tipo === 'fin') {
         const miCarta = document.getElementById('numeroCarta')?.innerText;
         if (ronda === 1) decirUnaVez('p-f1', miCarta === '2'
-            ? `¡Eso! Con el mundo al revés, ${nombre(1)} se quedó con tu 8 y perdió. Hay 5 eventos distintos; salen solos en modo clásico y la etiqueta de arriba te recuerda cuál está activo.`
-            : `Con el mundo al revés, tu 8 era la carta más alta y perdiste. Hay 5 eventos distintos; la etiqueta de arriba te recuerda cuál está activo.`);
+            ? `¡Eso! Con el mundo al revés, ${nombre(1)} se quedó con tu 8 y perdió. Hay 9 eventos distintos; en modo clásico salen de vez en cuando y la etiqueta de arriba te recuerda cuál está activo.`
+            : `Con el mundo al revés, tu 8 era la carta más alta y perdiste. Hay 9 eventos distintos; la etiqueta de arriba te recuerda cuál está activo.`);
         if (ronda === 2) decirUnaVez('p-f2', (miCarta === '8' ? `Robaste el 8 y te salvaste. ` : ``) + `Así se usan los poderes: primero el poder, luego tu jugada. Toca <b>SIGUIENTE RONDA</b>.`);
         if (ronda >= 3) decirUnaVez('p-f3', `<b>¡Listo!</b> Ya conoces los eventos y los poderes. Hay dos poderes más: <b>Espiar</b> (ves la carta de tu vecino) y <b>Salto</b> (cambias con quien está dos lugares a tu derecha). Para jugar con poderes, actívalos al crear una sala.`,
+            { boton: 'Terminar práctica', alPulsar: terminarPractica });
+    }
+}
+
+// Guion 'fiesta' (practica.js): Confesión, Venganza y Carrusel.
+function practicaFiestaEvento(tipo, datos) {
+    const ronda = parseInt(document.getElementById('numRonda')?.innerText || '0', 10);
+    const nombre = (i) => `<strong>${escapeHTML(i === 1 ? _practica.nombreA : _practica.nombreB)}</strong>`;
+    const miCarta = document.getElementById('numeroCarta')?.innerText;
+    if (tipo === 'ronda') {
+        const js = datos.jugadores || [];
+        if (js[1]) _practica.nombreA = js[1].nombre;
+        if (js[2]) _practica.nombreB = js[2].nombre;
+        if (datos.ronda === 2) decirUnaVez('fi-r2', `Ronda 2: <b>Venganza</b>. Como perdiste una vida, esta ronda puedes cambiar con <b>cualquier jugador</b>, no solo con tu vecino. Eres el dealer: juegas al final.`);
+        if (datos.ronda === 3) decirUnaVez('fi-r3', `Última ronda: <b>Carrusel</b>. Al final todos pasan su carta a la derecha: <b>te llega la de ${nombre(2)}</b> (tu izquierda) y la tuya se va con ${nombre(1)}.`);
+        return;
+    }
+    if (tipo === 'turno' && datos.id === socket.id) {
+        if (ronda === 1) decirUnaVez('fi-r1-tu', `<b>Evento: Confesión.</b> Al empezar se reveló una carta a toda la mesa: ${nombre(1)} tiene el <b>9, el Rey</b>. Tú tienes un <b>0</b> y al Rey no se le puede quitar la carta, así que esta ronda pierdes. Toca <b>MANTENER</b>: en la siguiente viene tu desquite.`);
+        if (ronda === 2) {
+            marcarAsientoSugerido(_practica.nombreB);
+            decirUnaVez('fi-r2-tu', `${nombre(2)} no quiso cambiar su carta: seguro es alta. <b>Toca el asiento de ${nombre(2)}</b> (el que brilla) para cambiar con él. En una partida real puedes tocar el de cualquiera. (Con CAMBIAR robarías del mazo, porque eres el dealer.)`);
+        }
+        if (ronda === 3) decirUnaVez('fi-r3-tu', `Tienes un <b>${escapeHTML(miCarta || '')}</b>, pero no es la carta con la que vas a terminar: te va a llegar la que tenga ${nombre(2)} al final. ${nombre(2)} se quedó con la suya… Decide y mira qué te llega al revelar.`);
+        return;
+    }
+    if (tipo === 'fin') {
+        if (ronda === 1) decirUnaVez('fi-f1', `Perdiste una vida con tu 0. Pero en Fiesta perder tiene su lado bueno: <b>quien pierde vida puede vengarse</b> si sale el evento Venganza. La siguiente ronda empieza sola.`);
+        if (ronda === 2) decirUnaVez('fi-f2', (miCarta === '7'
+            ? `¡Venganza cumplida! Le quitaste el <b>7</b> a ${nombre(2)} y le dejaste tu 1. `
+            : `La más baja fue el <b>${datos.cartaMortal}</b>. La próxima vez toca el asiento de quien quieras. `)
+            + `Toca <b>SIGUIENTE RONDA</b>.`);
+        if (ronda >= 3) decirUnaVez('fi-f3', `<b>¡Listo para la Fiesta!</b> Con el Carrusel te llegó el ${escapeHTML(miCarta || '')} de ${nombre(2)}. En <b>modo Fiesta</b> hay evento en <b>todas</b> las rondas y, mientras ven el resumen, <b>la mesa vota</b> el de la siguiente. También está el <b>Premio real</b>: la carta más alta gana una vida. Para jugarlo con tus amigos, al crear mesa elige <b>Modo de juego: Fiesta</b>.`,
             { boton: 'Terminar práctica', alPulsar: terminarPractica });
     }
 }
@@ -1797,8 +1905,20 @@ function pintarFinalPartida(ganador) {
         const vidas = ganador.vidas > 0 ? `${ganador.vidas} ${ganador.vidas === 1 ? 'vida' : 'vidas'} en pie` : '';
         filas.push({ lugar: 1, nombre: ganador.nombre, detalle: vidas, esYo: gane });
     }
-    // Quienes cayeron en la misma ronda comparten lugar.
-    if (!ganador.esEquipo) [..._caidasPartida].reverse().forEach((c, i, caidas) => {
+    // Tabla completa del servidor (clasificacion): no depende de las rondas que
+    // este celular alcanzó a ver. Quienes cayeron en la misma ronda comparten lugar.
+    if (!ganador.esEquipo && ganador.clasificacion) {
+        filas.length = 0;
+        ganador.clasificacion.forEach((c, i, tabla) => {
+            const anterior = filas[filas.length - 1];
+            const empata = anterior && c.estado === 'cayo' && tabla[i - 1].estado === 'cayo' && tabla[i - 1].ronda === c.ronda;
+            const detalle = c.estado === 'gano' ? (c.vidas > 0 ? `${c.vidas} ${c.vidas === 1 ? 'vida' : 'vidas'} en pie` : '')
+                : c.estado === 'vivo' ? `seguía con ${c.vidas} ${c.vidas === 1 ? 'vida' : 'vidas'}`
+                : c.estado === 'cayo' ? `cayó en la ronda ${c.ronda}` : 'salió de la partida';
+            filas.push({ lugar: empata ? anterior.lugar : filas.length + 1, nombre: c.nombre + (c.esBot ? ' (bot)' : ''), detalle,
+                         esYo: c.nombre === miNombreUsuario });
+        });
+    } else if (!ganador.esEquipo) [..._caidasPartida].reverse().forEach((c, i, caidas) => {
         const anterior = filas[filas.length - 1];
         const mismaRonda = i > 0 && caidas[i - 1].ronda === c.ronda;
         const lugar = mismaRonda ? anterior.lugar : filas.length + 1;
@@ -2030,7 +2150,6 @@ function resetEstadoSala() {
     cartasRepartidas = false;
     cartasDescartadas = [];
     pilaRenderizadaCount = 0;
-    campanaRingerId = null;
     historialJugadasRonda = [];
     const feed = document.getElementById('miniFeedJugadas');
     if (feed) feed.classList.add('hidden');
@@ -2096,8 +2215,11 @@ function haceCuanto(fecha) {
 
 function pintarLogrosPerfil(catalogo, ganados) {
     const conseguidos = new Map(ganados.map(g => [g.logro, g.fecha]));
-    document.getElementById('pLogrosCuenta').textContent = `${conseguidos.size} de ${catalogo.length}`;
-    document.getElementById('pLogros').innerHTML = catalogo.map(l => {
+    // Los retirados (p. ej. el de la campana) solo se ven si ya los tenías.
+    const visibles = catalogo.filter(l => !l.retirado || conseguidos.has(l.id));
+    const disponibles = catalogo.filter(l => !l.retirado).length;
+    document.getElementById('pLogrosCuenta').textContent = `${visibles.filter(l => conseguidos.has(l.id)).length} de ${Math.max(disponibles, visibles.length)}`;
+    document.getElementById('pLogros').innerHTML = visibles.map(l => {
         const fecha = conseguidos.get(l.id);
         return `<li class="logro${fecha ? ' ganado' : ''}" title="${escapeHTML(l.descripcion)}">
             <span class="logro-icono">${icono(fecha ? l.icono : 'candado')}</span>
@@ -2107,7 +2229,7 @@ function pintarLogrosPerfil(catalogo, ganados) {
     }).join('');
 }
 
-const NOMBRE_MODO = { CLASICO: 'Clásico', CAMPANA: 'Campana', RAPIDA: 'Rápida', PAREJAS: 'Parejas' };
+const NOMBRE_MODO = { CLASICO: 'Clásico', FIESTA: 'Fiesta', CAMPANA: 'Campana', RAPIDA: 'Rápida', PAREJAS: 'Parejas' };
 
 function pintarHistorialPerfil(historial) {
     const lista = document.getElementById('pHistorial');
@@ -2139,10 +2261,95 @@ async function cargarMiPerfil() {
         document.getElementById('pRachaActual').textContent = data.racha_actual ?? '—';
         document.getElementById('pRachaMax').textContent    = data.racha_maxima ?? '—';
         pintarLogrosPerfil(data.catalogoLogros || [], data.logros || []);
+        pintarCosmeticosPerfil(data.cosmeticos, data.logros || [], data.catalogoLogros || []);
         pintarHistorialPerfil(data.historial || []);
     } catch { /* sin conexión, los valores quedan en — */ }
 }
 document.getElementById('btnMiPerfil').addEventListener('click', cargarMiPerfil);
+
+// ==========================================
+// COSMÉTICOS (cosmeticos.js en el servidor)
+// ==========================================
+// look = { avatar, marco, dorso }. Los demás lo reciben en jugadoresPublicos
+// (j.look); el tuyo viene de /mis-stats. Solo cambian cómo se ve.
+let miLook = null;
+let _catalogoCosm = [];
+
+// Contenido del círculo del avatar: el ícono elegido o la inicial.
+function contenidoAvatar(look, nombre) {
+    const c = look && _catalogoCosm.find(x => x.tipo === 'avatar' && x.id === look.avatar);
+    const ic = c?.icono || (look && look.avatar !== 'inicial' ? look.avatar : null);
+    return ic ? icono(ic) : escapeHTML((nombre || '?').charAt(0).toUpperCase());
+}
+const claseMarco = (look) => look && look.marco && look.marco !== 'ninguno' ? ` marco-${look.marco}` : '';
+const claseDorso = (look) => look && look.dorso && look.dorso !== 'clasico' ? ` dorso-${look.dorso}` : '';
+
+function pintarMiLook() {
+    const av = document.querySelector('#btnMiPerfil .avatar-top');
+    if (av) {
+        av.className = 'avatar-top' + claseMarco(miLook);
+        document.getElementById('inicialUsuario').innerHTML = contenidoAvatar(miLook, miNombreUsuario);
+    }
+    const reverso = document.querySelector('#miCarta .back-pattern');
+    if (reverso) reverso.className = 'face back-pattern' + claseDorso(miLook);
+}
+
+function pintarCosmeticosPerfil(datos, ganados, catalogoLogros) {
+    const caja = document.getElementById('pCosmeticos');
+    if (!caja || !datos) return;
+    _catalogoCosm = datos.catalogo;
+    miLook = datos.elegidos;
+    pintarMiLook();
+    const tengo = new Set(ganados.map(g => g.logro));
+    const nombreLogro = (id) => catalogoLogros.find(l => l.id === id)?.titulo || id;
+    const muestra = (c) => c.tipo === 'avatar' ? `<span class="avatar-cosm">${c.icono ? icono(c.icono) : escapeHTML(miNombreUsuario.charAt(0).toUpperCase())}</span>`
+        : c.tipo === 'marco' ? `<span class="avatar-cosm${c.id !== 'ninguno' ? ' marco-' + c.id : ''}">${contenidoAvatar(miLook, miNombreUsuario)}</span>`
+        : `<span class="muestra-dorso${c.id !== 'clasico' ? ' dorso-' + c.id : ''}"></span>`;
+    const titulos = { avatar: 'Avatar', marco: 'Marco', dorso: 'Dorso de tus cartas' };
+    caja.innerHTML = ['avatar', 'marco', 'dorso'].map(tipo => `
+        <p class="perfil-cosm-tipo">${titulos[tipo]}</p>
+        <div class="perfil-cosm-fila">${datos.catalogo.filter(c => c.tipo === tipo).map(c => {
+            const libre = !c.logro || tengo.has(c.logro);
+            const elegido = datos.elegidos[tipo] === c.id;
+            return `<button type="button" class="cosm-opcion${elegido ? ' elegido' : ''}${libre ? '' : ' bloqueado'}"
+                data-tipo="${tipo}" data-id="${escapeHTML(c.id)}" ${libre ? '' : 'disabled'}
+                title="${escapeHTML(libre ? c.titulo : `${c.titulo}: se gana con el logro «${nombreLogro(c.logro)}»`)}">
+                ${muestra(c)}<span class="cosm-nombre">${libre ? escapeHTML(c.titulo) : icono('candado') + ' ' + escapeHTML(nombreLogro(c.logro))}</span>
+            </button>`;
+        }).join('')}</div>`).join('');
+    caja.onclick = async (e) => {
+        const b = e.target.closest('.cosm-opcion:not(.bloqueado)');
+        if (!b || b.classList.contains('elegido')) return;
+        try {
+            const res = await fetch(`${URL_SERVIDOR}/cosmeticos`, { method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${miToken}` },
+                body: JSON.stringify({ tipo: b.dataset.tipo, id: b.dataset.id }) });
+            const r = await res.json();
+            if (!res.ok) return mostrarToast(r.error || 'No se pudo cambiar.', 'danio', 2500);
+            datos.elegidos = r.elegidos;
+            pintarCosmeticosPerfil(datos, ganados, catalogoLogros);
+            Sonidos.boton();
+        } catch { mostrarToast('Sin conexión: intenta de nuevo.', 'danio', 2500); }
+    };
+}
+
+// Barra de arriba: inicial en el avatar (con el punto de "en línea"), nombre
+// y victorias. Las victorias se piden al entrar y al terminar cada partida.
+function pintarUsuarioBarra() {
+    document.getElementById('displayUsername').innerText = miNombreUsuario;
+    document.getElementById('inicialUsuario').innerText = (miNombreUsuario || '?').charAt(0).toUpperCase();
+    actualizarVictoriasBarra();
+}
+async function actualizarVictoriasBarra() {
+    if (!miNombreUsuario) return;
+    try {
+        const data = await (await fetch(`${URL_SERVIDOR}/mis-stats/${encodeURIComponent(miNombreUsuario)}`)).json();
+        const n = data.victorias ?? 0;
+        document.getElementById('numVictoriasTop').textContent = n;
+        if (data.cosmeticos) { _catalogoCosm = data.cosmeticos.catalogo; miLook = data.cosmeticos.elegidos; pintarMiLook(); }
+        document.getElementById('victoriasTop').classList.toggle('hidden', data.victorias === undefined);
+    } catch { /* sin conexión: se queda como estaba */ }
+}
 document.getElementById('btnCerrarPerfil').addEventListener('click', () => {
     document.getElementById('modalPerfil').classList.add('hidden');
 });
@@ -2161,9 +2368,9 @@ if (modalBit) {
     });
 }
 
-// Atajos de teclado en la mesa: M mantener, C cambiar, B campana. Hacen lo
+// Atajos de teclado en la mesa: M mantener, C cambiar. Hacen lo
 // mismo que tocar el botón (que ya ignora el clic si no es tu turno).
-const ATAJOS_MESA = { m: 'btnMantener', c: 'btnCambiar', b: 'btnCampana' };
+const ATAJOS_MESA = { m: 'btnMantener', c: 'btnCambiar' };
 
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') cerrarModalBitacora();
@@ -2200,7 +2407,7 @@ async function peticionAuth(ruta) {
                 miNombreUsuario = data.username;
                 localStorage.setItem('reyToken', data.token);
                 localStorage.setItem('reyUsername', data.username);
-                document.getElementById('displayUsername').innerText = miNombreUsuario;
+                pintarUsuarioBarra();
                 document.getElementById('seccion-inicio').classList.add('hidden');
                 document.getElementById('pantallaJuego').classList.remove('hidden');
                 conectarSocket();
@@ -2272,6 +2479,13 @@ document.getElementById('btnLogin').addEventListener('click', () => peticionAuth
 document.getElementById('btnRegistro').addEventListener('click', () => peticionAuth('/registro'));
 document.getElementById('btnVerReglas').addEventListener('click', () => document.getElementById('modalReglas').classList.remove('hidden'));
 document.getElementById('btnCerrarReglas').addEventListener('click', () => document.getElementById('modalReglas').classList.add('hidden'));
+// ✕ fija arriba de Perfil y Reglas (antes solo se cerraban con el botón del final)
+// y cierre al tocar fuera de la ventana.
+document.querySelectorAll('.modal-cerrar-x').forEach(b => b.addEventListener('click', () =>
+    document.getElementById(b.dataset.cierra)?.classList.add('hidden')));
+['modalPerfil', 'modalReglas'].forEach(id => document.getElementById(id)?.addEventListener('click', (e) => {
+    if (e.target.id === id) e.currentTarget.classList.add('hidden');
+}));
 
 const btnSonido = document.getElementById('btnToggleSonido');
 if (btnSonido) {
@@ -2293,6 +2507,8 @@ if (btnPractica) {
     btnPractica.onclick = () => { if (socket?.connected) empezarPractica('basica'); };
     const btnPracticaPoderes = document.getElementById('btnPracticaPoderes');
     if (btnPracticaPoderes) btnPracticaPoderes.onclick = () => { if (socket?.connected) empezarPractica('poderes'); };
+    const btnPracticaFiesta = document.getElementById('btnPracticaFiesta');
+    if (btnPracticaFiesta) btnPracticaFiesta.onclick = () => { if (socket?.connected) empezarPractica('fiesta'); };
 }
 document.getElementById('coachSalir')?.addEventListener('click', terminarPractica);
 
@@ -2794,7 +3010,7 @@ function dibujarMesaCircular() {
             derIdx = (derIdx + 1) % listaJugadoresGlobal.length;
             intentos++;
         } while (listaJugadoresGlobal[derIdx]?.vidas <= 0 && intentos < listaJugadoresGlobal.length);
-        if (listaJugadoresGlobal[derIdx] && listaJugadoresGlobal[derIdx].id !== campanaRingerId) {
+        if (listaJugadoresGlobal[derIdx]) {
             idObjetivoDerecha = listaJugadoresGlobal[derIdx].id;
         }
     }
@@ -2867,20 +3083,21 @@ function dibujarMesaCircular() {
                     // Si la carta está en vuelo (reparto escalonado), pintar el
                     // reverso oculto para que no aparezca encimado al fantasma.
                     const estiloReparto = _repartiendo.has(op.id) ? ' style="opacity:0"' : '';
-                    cartaHTML = `<div class="perfil-carta-reverso ${claseVuelo}"${estiloReparto}></div>`;
+                    cartaHTML = `<div class="perfil-carta-reverso${claseDorso(op.look)} ${claseVuelo}"${estiloReparto}></div>`;
                 }
             }
         }
 
-        const iconoAsiento = op.dealer ? icono('corona') : (esSuTurno ? icono('espadas') : (op.esBot || op.automatico ? icono('bot') : icono('persona')));
+        const iconoAsiento = op.dealer ? icono('corona') : (esSuTurno ? icono('espadas') : (op.esBot || op.automatico ? icono('bot')
+            : (op.look && op.look.avatar !== 'inicial' ? contenidoAvatar(op.look, op.nombre) : icono('persona'))));
         let claseEstado = estaMuerto ? 'jugador-eliminado' : '';
 
         divSilla.innerHTML = `
-            <div class="perfil-oponente ${claseEstado} ${animReparto} ${claseDanio} ${op.escudo && !estaMuerto ? 'con-escudo' : ''} ${op.equipo !== undefined && op.equipo !== null ? `equipo-${op.equipo}` : ''}">
+            <div class="perfil-oponente${claseMarco(op.look)} ${claseEstado} ${animReparto} ${claseDanio} ${op.escudo && !estaMuerto ? 'con-escudo' : ''} ${op.equipo !== undefined && op.equipo !== null ? `equipo-${op.equipo}` : ''}">
                 <div style="font-size:13px;font-weight:bold;line-height:1.2;word-wrap:break-word;">${iconoAsiento} ${escapeHTML(op.nombre)}</div>
                 ${op.automatico && !estaMuerto ? '<span class="marca-auto" title="Ausente: un bot juega por él">Auto</span>' : ''}
                 ${op.equipo !== undefined && op.equipo !== null && miJugador.equipo !== undefined
-                    ? `<span class="rol-equipo equipo-${op.equipo}">${op.equipo === miJugador.equipo ? 'Compañero' : 'Rival'} · ${NOMBRE_EQUIPO[op.equipo]}</span>` : ''}
+                    ? `<span class="rol-equipo equipo-${op.equipo}" title="Equipo ${NOMBRE_EQUIPO[op.equipo]}">${op.equipo === miJugador.equipo ? 'Compañero' : 'Rival'}</span>` : ''}
                 <span class="vidas-destacadas">${estaMuerto ? icono('calavera') + ' 0' : icono('corazon') + ' ' + op.vidas}${op.numPoderes && !estaMuerto ? `<span class="num-poderes" title="Poderes guardados">${icono('rayo')}${op.numPoderes}</span>` : ''}</span>
             </div>
             ${cartaHTML}
@@ -3057,8 +3274,9 @@ function conectarSocket() {
                 vidas: parseInt(document.getElementById('selectVidas').value),
                 maxJugadores: parseInt(document.getElementById('selectJugadores').value),
                 poderes: document.getElementById('selectPoderes').value === 'SI',
+                publica: document.getElementById('selectVisibilidad')?.value === 'PUBLICA',
                 equipos: parseInt(document.getElementById('selectEquipos').value || '0'),
-                modoJuego: document.getElementById('selectModoJuego').value,
+                modoJuego: document.getElementById('selectModoJuego')?.value === 'FIESTA' ? 'FIESTA' : 'CLASICO',
                 password: document.getElementById('inputPasswordSala').value.trim()
             }
         });
@@ -3190,17 +3408,24 @@ function conectarSocket() {
         socket.emit('iniciarPartida', miSalaActual);
     };
 
+    // Compartir: el menú del celular si lo hay (solo con HTTPS); si no, WhatsApp
+    // con el mensaje listo.
+    document.getElementById('btnCompartirSala').onclick = () => {
+        const link = linkDeSala();
+        const texto = `¡Juega Rey Contento conmigo! Entra aquí: ${link} (código ${miSalaActual})`;
+        if (navigator.share) {
+            navigator.share({ title: 'Rey Contento', text: texto }).catch(() => {});
+        } else {
+            window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank', 'noopener');
+        }
+    };
+
     document.getElementById('btnCopiarLink').onclick = () => {
         const link = linkDeSala();
-        const btn = document.getElementById('btnCopiarLink');
-        const exito = () => {
-            btn.innerText = "¡Copiado!";
-            setTimeout(() => { btn.innerText = "🔗 ENLACE"; }, 2000);
-        };
-        const error = () => {
-            btn.innerText = "Error";
-            setTimeout(() => { btn.innerText = "🔗 ENLACE"; }, 2000);
-        };
+        const txt = document.querySelector('#btnCopiarLink span');
+        const aviso = (t) => { txt.textContent = t; setTimeout(() => { txt.textContent = 'Copiar enlace'; }, 2000); };
+        const exito = () => { aviso('¡Copiado!'); mostrarToast('Enlace copiado: pégalo en WhatsApp o donde quieras', 'rey', 2500); };
+        const error = () => aviso('No se pudo');
 
         // navigator.clipboard solo existe en contexto seguro (HTTPS o localhost).
         // En HTTP plano caemos al fallback con execCommand.
@@ -3224,7 +3449,6 @@ function conectarSocket() {
 
     socket.on('actualizarLobby', (datos) => {
         window._reingresando = false; window._servidorReinicio = false;
-        if (datos && datos.config) pintarComoSeraPartida(datos.config, datos.maxJugadores);
         const jugadores = Array.isArray(datos) ? datos : datos.jugadores;
         const maxJug = (datos && datos.maxJugadores) ? datos.maxJugadores : parseInt(document.getElementById('selectJugadores')?.value || 8);
         const conEquipos = !!(datos && datos.equipos);
@@ -3243,6 +3467,8 @@ function conectarSocket() {
             mostrarToast('👑 Ahora eres el host de la sala.', 'rey', 3000);
         }
         soyElHost = esHostAhora;
+        // Después de saber si soy anfitrión: el chip Privada/Pública solo se lo deja tocar a él.
+        if (datos && datos.config) pintarComoSeraPartida(datos.config, datos.maxJugadores);
         const btnEmpezar = document.getElementById('btnEmpezar');
         if (btnEmpezar) {
             btnEmpezar.classList.toggle('hidden', !soyElHost);
@@ -3261,7 +3487,7 @@ function conectarSocket() {
                     ? 'background:rgba(155,89,182,0.25);color:#e2cdf0'
                     : 'background:rgba(46,204,113,0.2);color:#7ee2a8';
             return `<li>
-                <div class="jugador-avatar-lobby" style="background:${color};">${esBot ? icono('bot') : inicial}</div>
+                <div class="jugador-avatar-lobby${esBot ? '' : claseMarco(j.look)}" style="background:${color};">${esBot ? icono('bot') : (j.look ? contenidoAvatar(j.look, j.nombre) : inicial)}</div>
                 <span class="jugador-nombre-lobby">${escapeHTML(j.nombre)}</span>
                 ${conEquipos ? `<span class="etiqueta-equipo equipo-${i % 2}">${NOMBRE_EQUIPO[i % 2]}</span>` : ''}
                 <span class="jugador-badge-lobby" style="${badgeStyle}">${badge}</span>
@@ -3301,6 +3527,7 @@ function conectarSocket() {
         _cartasCompaneros = {};
         if (datos.ronda === 1) { _turnosConGuiaGestos = 0; mostrarAvisoEquipo(datos.jugadores || []); }
         eventoActual = datos.evento || null;
+        vengadoresRonda = datos.vengadores || [];
         ocultarEvento();
         marcarDuelo(datos.duelo);
         if (datos.anunciarDuelo) mostrarPresentacionDuelo(datos.duelistas);
@@ -3484,7 +3711,6 @@ function conectarSocket() {
 
         document.getElementById('panelAccionesPartida').classList.remove('hidden'); // ver cambioDeTurno
         const esMio = socket.id === datosTurno.id;
-        const esCampana = datosTurno.modoJuego === 'CAMPANA';
         if (esMio) {
             Sonidos.turno();
             vibrar([80, 40, 80]);
@@ -3494,9 +3720,6 @@ function conectarSocket() {
         document.getElementById('btnCambiar').style.display = esMio ? "inline-block" : "none";
         document.getElementById('btnMantener').disabled = !esMio;
         document.getElementById('btnCambiar').disabled = !esMio;
-        const btnCampana = document.getElementById('btnCampana');
-        btnCampana.classList.toggle('hidden', !(esMio && esCampana && !datosTurno.campanaTocada));
-        btnCampana.disabled = !(esMio && esCampana && !datosTurno.campanaTocada);
         document.getElementById('btnSiguienteRonda').classList.add('hidden');
         document.getElementById('btnSiguienteRonda').style.display = "none";
 
@@ -3517,12 +3740,12 @@ function conectarSocket() {
                 animarVueloCartaTween(contenedorCarta, gen, () => {
                     pintarCartaPrincipal(carta);
                     contenedorCarta.classList.add('flipped');
-                    actualizarBotonesTurno(esMio, esCampana, datosTurno.campanaTocada);
+                    actualizarBotonesTurno(esMio);
                     gestionarRelojVisual(datosTurno.id, datosTurno.tiempo);
                 });
             } else {
                 // Sin carta que animar: iniciar reloj y revisar si es penultimo jugador
-                actualizarBotonesTurno(esMio, esCampana, datosTurno.campanaTocada);
+                actualizarBotonesTurno(esMio);
                 gestionarRelojVisual(datosTurno.id, datosTurno.tiempo);
             }
             dibujarMesaCircular();
@@ -3559,7 +3782,6 @@ function conectarSocket() {
         // llegó tuCarta, que era quien lo mostraba), los botones no salían.
         document.getElementById('panelAccionesPartida').classList.remove('hidden');
         const esMio = socket.id === datosTurno.id;
-        const esCampana = datosTurno.modoJuego === 'CAMPANA';
         if (esMio) {
             Sonidos.turno();
             vibrar([80, 40, 80]);
@@ -3569,10 +3791,7 @@ function conectarSocket() {
         document.getElementById('btnCambiar').style.display = esMio ? "inline-block" : "none";
         document.getElementById('btnMantener').disabled = !esMio;
         document.getElementById('btnCambiar').disabled = !esMio;
-        const btnCampana = document.getElementById('btnCampana');
-        btnCampana.classList.toggle('hidden', !(esMio && esCampana && !datosTurno.campanaTocada));
-        btnCampana.disabled = !(esMio && esCampana && !datosTurno.campanaTocada);
-        actualizarBotonesTurno(esMio, esCampana, datosTurno.campanaTocada);
+        actualizarBotonesTurno(esMio);
         gestionarRelojVisual(datosTurno.id, datosTurno.tiempo);
     });
 
@@ -3580,6 +3799,7 @@ function conectarSocket() {
         const btn = document.getElementById('btnMantener');
         if (!btn || btn.disabled || btn.style.display === 'none') return;
         ocultarGuiaTurno();
+        terminarMiJugada();
         Sonidos.boton();
         vibrar(25);
         const c = document.getElementById('miCarta');
@@ -3590,8 +3810,6 @@ function conectarSocket() {
         btn.disabled = true;
         const btnCambiar = document.getElementById('btnCambiar');
         if (btnCambiar) btnCambiar.disabled = true;
-        const btnCampana = document.getElementById('btnCampana');
-        if (btnCampana) btnCampana.disabled = true;
         socket.emit('accionJugador', { idSala: miSalaActual, accion: 'MANTENER' });
     }
 
@@ -3599,6 +3817,7 @@ function conectarSocket() {
         const btn = document.getElementById('btnCambiar');
         if (!btn || btn.disabled || btn.style.display === 'none') return;
         ocultarGuiaTurno();
+        terminarMiJugada();
         Sonidos.boton();
         vibrar(35);
         const c = document.getElementById('miCarta');
@@ -3610,8 +3829,6 @@ function conectarSocket() {
         btn.disabled = true;
         const btnMantener = document.getElementById('btnMantener');
         if (btnMantener) btnMantener.disabled = true;
-        const btnCampana = document.getElementById('btnCampana');
-        if (btnCampana) btnCampana.disabled = true;
         socket.emit('accionJugador', { idSala: miSalaActual, accion: 'CAMBIAR' });
     }
 
@@ -3619,23 +3836,26 @@ function conectarSocket() {
     document.getElementById('btnCambiar').onclick = ejecutarAccionCambiar;
     inicializarGestosCarta(ejecutarAccionMantener, ejecutarAccionCambiar);
 
-    document.getElementById('btnCampana').onclick = () => {
-        ocultarGuiaTurno();
-        Sonidos.campana();
-        vibrar([150, 80, 150]);
-        socket.emit('accionJugador', { idSala: miSalaActual, accion: 'CAMPANA' });
-        document.getElementById('btnCampana').disabled = true;
+    socket.on('votosEvento', (v) => { if (_votacion) pintarVotacion(v); });
+    document.getElementById('resumenVotacionOpciones').onclick = (e) => {
+        const b = e.target.closest('.opcion-voto');
+        if (!b || !_votacion) return;
+        Sonidos.boton();
+        socket.emit('votarEvento', { idSala: miSalaActual, evento: b.dataset.evento });
     };
-
-    socket.on('campanaTocada', (datos) => {
-        campanaRingerId = datos.jugadorId;
-        document.getElementById('btnCampana').classList.add('hidden');
-        document.getElementById('btnCampana').disabled = true;
-        document.getElementById('bannerUltimaVuelta').classList.remove('hidden');
-        Sonidos.campana();
-        vibrar([160, 80, 160]);
-        animarCampana(datos.jugadorId);
-    });
+    // Venganza: tocar un asiento = cambiar con esa persona.
+    document.getElementById('tapeteVistas').onclick = (e) => {
+        if (!document.body.classList.contains('venganza-activa')) return;
+        const silla = e.target.closest('.silla[data-jugador-id]');
+        const j = silla && listaJugadoresGlobal.find(x => x.id === silla.dataset.jugadorId);
+        if (!j || j.id === socket.id || j.vidas <= 0) return;
+        ocultarGuiaTurno();
+        terminarMiJugada();
+        Sonidos.boton();
+        vibrar(35);
+        ['btnMantener', 'btnCambiar'].forEach(id => { const b = document.getElementById(id); if (b) b.disabled = true; });
+        socket.emit('accionJugador', { idSala: miSalaActual, accion: 'CAMBIAR', objetivo: j.nombre });
+    };
 
     // --- ACCIONES EN MESA (MINI-FEED) ---
     socket.on('accionMesa', (datos) => {
@@ -3717,6 +3937,8 @@ function conectarSocket() {
     // --- FIN DE RONDA ---
     socket.on('rondaTerminada', (datos) => {
         datos._recibido = Date.now();
+        pintarVotacion(datos.votacion);
+        terminarMiJugada();
         setTimeout(() => practicaEvento('fin', datos), 1600);
         ocultarGuiaTurno();
         registrarCaidas(datos);
@@ -3741,7 +3963,7 @@ function conectarSocket() {
         mostrandoRevelacion = true;
         perdedoresActuales = datos.perdedores;
         turnoActualId = "";
-        // Cuántas vidas perdió cada quien (doble castigo, campana): el corazón roto lo dice.
+        // Cuántas vidas perdió cada quien (doble castigo): el corazón roto lo dice.
         const vidasAntes = Object.fromEntries(listaJugadoresGlobal.map(j => [j.id, j.vidas]));
         datos.jugadores.forEach(j => { j._perdio = Math.max(1, (vidasAntes[j.id] ?? j.vidas + 1) - j.vidas); });
         listaJugadoresGlobal = datos.jugadores;
@@ -3792,8 +4014,6 @@ function conectarSocket() {
         document.getElementById('btnMantener').style.display = "none";
         document.getElementById('btnCambiar').style.display = "none";
         document.getElementById('btnCambiar').innerText = 'CAMBIAR';
-        document.getElementById('btnCampana').classList.add('hidden');
-        document.getElementById('btnCampana').disabled = true;
 
         // Mostrar el resumen tras un respiro: la carta nueva del dealer (y las
         // cartas reveladas en la mesa) ya se actualizaron arriba de forma síncrona,
@@ -3915,9 +4135,7 @@ function conectarSocket() {
         mostrandoRevelacion = false;
         perdedoresActuales = [];
         turnoActualId = "";
-        document.getElementById('bannerUltimaVuelta').classList.add('hidden');
         document.getElementById('btnCambiar').innerText = 'CAMBIAR';
-        campanaRingerId = null;
         document.getElementById('miCarta').classList.remove('flipped', 'volar-desde-centro-bottom', 'danio-recibido');
         document.getElementById('miCarta').style.cssText = "";
         limpiarPila();
@@ -3929,9 +4147,7 @@ function conectarSocket() {
         ++_renderGen;
         desactivarModoEspectador();
         ocultarResumenRonda();
-        document.getElementById('bannerUltimaVuelta').classList.add('hidden');
         document.getElementById('btnCambiar').innerText = 'CAMBIAR';
-        campanaRingerId = null;
         mostrandoRevelacion = false;
         perdedoresActuales = [];
         cartasRepartidas = false;
@@ -3957,6 +4173,7 @@ function conectarSocket() {
 
     // --- FIN DEL JUEGO ---
     socket.on('finDelJuego', (ganador) => {
+        setTimeout(actualizarVictoriasBarra, 3000); // el servidor guarda las stats al terminar
         ocultarGuiaTurno();
         contarPartidaParaGuias();
         ++_renderGen;
@@ -4091,7 +4308,7 @@ function restaurarSesion() {
 
     miToken = token;
     miNombreUsuario = username;
-    document.getElementById('displayUsername').innerText = miNombreUsuario;
+    pintarUsuarioBarra();
     document.getElementById('seccion-inicio').classList.add('hidden');
     document.getElementById('pantallaJuego').classList.remove('hidden');
     conectarSocket();

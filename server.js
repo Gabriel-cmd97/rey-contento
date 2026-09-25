@@ -8,12 +8,13 @@ const pool = require('./db');
 const bots = require('./bots');
 const practica = require('./practica');
 const logros = require('./logros');
+const cosmeticos = require('./cosmeticos');
 const eventos = require('./eventos');
 const poderes = require('./poderes');
 const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
-const { barajar, crearMazo, siguienteVivo, resolverCartas } = require('./reglas');
+const { barajar, crearMazo, siguienteVivo, resolverCartas, rotarCartas } = require('./reglas');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
@@ -137,10 +138,13 @@ const limitarAuth = rateLimit({
     legacyHeaders: false,
 });
 
-// Más estricto para login: 10 intentos por IP cada 15 min mitiga brute force.
+// Más estricto para login: 10 intentos FALLIDOS por IP cada 15 min mitiga
+// brute force. Los que entran bien no cuentan (antes, varias personas en la
+// misma red o las pruebas e2e se quedaban sin intentos).
 const limitarLogin = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 10,
+    skipSuccessfulRequests: true,
     message: { error: 'Demasiados intentos de login. Espera 15 minutos.' },
     standardHeaders: true,
     legacyHeaders: false,
@@ -239,7 +243,8 @@ function sanitizarConfig(raw) {
 
     const vidas         = enteroEnRango(raw.vidas, 1, 10, 3);
     const maxJugadores  = enteroEnRango(raw.maxJugadores, 2, 8, 6);
-    const modoJuego     = enLista(raw.modoJuego, ['CLASICO', 'CAMPANA'], 'CLASICO');
+    // CLASICO o FIESTA (evento en cada ronda y la mesa vota el siguiente). Campana se quitó el 24/09/2026.
+    const modoJuego     = enLista(raw.modoJuego, ['CLASICO', 'FIESTA'], 'CLASICO');
     const modoRey       = enLista(raw.modoRey, ['SORPRESA', 'DECLARADO'], 'SORPRESA');
     // Reyes: se sortea al crear la sala (ya no se elige); la sala de espera lo muestra.
     const frecuenciaReyes = ['NORMAL', 'ALTA', 'LOCURA'][Math.floor(Math.random() * 3)];
@@ -249,9 +254,10 @@ function sanitizarConfig(raw) {
 
     // Partida de práctica guiada: mesa fija contra 2 bots con guion
     // (practica.js). Todo lo demás de la config se ignora.
-    // Dos guiones (practica.js): 'basica' y 'poderes' (eventos y poderes).
+    // Tres guiones (practica.js): 'basica', 'poderes' (eventos y poderes) y
+    // 'fiesta' (eventos de amigos: Confesión, Venganza y Carrusel).
     const tipoPractica = raw.practica === true || raw.practica === 'basica' ? 'basica'
-        : raw.practica === 'poderes' ? 'poderes' : null;
+        : ['poderes', 'fiesta'].includes(raw.practica) ? raw.practica : null;
     if (tipoPractica) {
         return { vidas: 3, maxJugadores: 3, numBots: 2, modoJuego: 'CLASICO',
                  modoRey: tipoPractica === 'basica' ? 'DECLARADO' : 'SORPRESA',
@@ -268,6 +274,10 @@ function sanitizarConfig(raw) {
 
     const conEventos = true; // eventos de ronda siempre (solo afectan al modo clásico); ya no se apagan al crear sala
     const conPoderes = raw.poderes === true;  // modo "Con poderes" (opcional)
+    // Pública: aparece en "Mesas abiertas" (pestaña Unirse). Por defecto las
+    // mesas creadas son privadas (solo con código/enlace/QR); las rápidas
+    // siempre salen en la lista.
+    const publica = raw.publica === true;
     // Parejas: 0 = sin equipos, 2 = 2 contra 2, 3 = 3 contra 3. La mesa queda
     // de 4 o 6 y al empezar se completa con bots.
     const equipos = enLista(Number.parseInt(raw.equipos, 10), [0, 2, 3], 0);
@@ -276,7 +286,7 @@ function sanitizarConfig(raw) {
     // los amigos): entran al empezar, solo en los lugares que quedaron libres.
     // Los bots ya no se eligen: al empezar, completarConBots() llena los lugares libres.
     return { vidas, maxJugadores: maxMesa, numBots: 0, modoJuego, modoRey, frecuenciaReyes,
-             dificultadBots, tiempoTurno: TIEMPO_TURNO, eventos: conEventos, poderes: conPoderes, equipos, password };
+             dificultadBots, tiempoTurno: TIEMPO_TURNO, eventos: conEventos, poderes: conPoderes, equipos, publica, password };
 }
 
 // Formato del idSala: 5 caracteres alfanuméricos. El alfabeto real es
@@ -346,13 +356,13 @@ function limpiarSala(idSala) {
 // suya aparte con 'tuCarta'.
 function jugadoresPublicos(sala) {
     const rondaRevelada = sala.estadoActual === "REVELACION" || sala.estadoActual === "FINALIZADO";
-    const reyDeclarado = sala.config.modoRey === "DECLARADO" && sala.config.modoJuego !== 'CAMPANA';
-    const sinCampana = sala.config.modoJuego !== 'CAMPANA';
+    const reyDeclarado = sala.config.modoRey === "DECLARADO";
     const escudos = sala.escudos || [];
     return sala.jugadores.map(({ memoria, cartaActual, cartaRevelada, reyDescubierto, poderes: susPoderes, turnosSinJugar, ...publico }) => {
         publico.numPoderes = (susPoderes || []).length; // la mesa ve cuántos, no cuáles
         publico.escudo = escudos.includes(publico.nombre);
-        const esReyVisible = cartaActual === 9 && (reyDeclarado || (sinCampana && reyDescubierto));
+        if (!publico.esBot && looks[publico.nombre]) publico.look = looks[publico.nombre];
+        const esReyVisible = cartaActual === 9 && (reyDeclarado || reyDescubierto);
         if (rondaRevelada || esReyVisible) publico.cartaActual = cartaActual;
         publico.cartaRevelada = esReyVisible;
         return publico;
@@ -365,6 +375,7 @@ function emitirLobby(idSala) {
     if (!sala) return;
     // Config pública para "Cómo será la partida" (sin contraseña).
     const { password, ...configPublica } = sala.config;
+    configPublica.conContrasena = !!sala.password; // para no ofrecer "Pública" si tiene contraseña
     io.to(idSala).emit('actualizarLobby', {
         jugadores: jugadoresPublicos(sala),
         config: configPublica,
@@ -454,6 +465,46 @@ app.post('/codigo-recuperacion', limitarAuth, async (req, res) => {
         res.json({ codigoRecuperacion });
     } catch (e) {
         log.error('Nuevo código falló', { error: e.message });
+        res.status(500).json({ error: 'Error en el servidor.' });
+    }
+});
+
+// ==========================================
+// COSMÉTICOS (cosmeticos.js)
+// ==========================================
+// looks[username] = { avatar, marco, dorso }: lo que ve la mesa. Se carga al
+// conectarse el socket y se actualiza al elegir; jugadoresPublicos lo agrega.
+const looks = {};
+async function cargarLook(username) {
+    try {
+        const [rows] = await pool.execute('SELECT cosmeticos FROM usuarios WHERE username = ?', [username]);
+        looks[username] = cosmeticos.leer(rows[0]?.cosmeticos);
+    } catch (e) { log.warn('No se pudieron cargar cosméticos', { username, error: e.message }); }
+}
+
+// Elegir un cosmético: { tipo, id }. Solo si lo tienes desbloqueado.
+app.post('/cosmeticos', limitarLectura, async (req, res) => {
+    const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+    let datos;
+    try { datos = jwt.verify(token, JWT_SECRET); } catch { return res.status(401).json({ error: 'Tu sesión expiró. Vuelve a iniciar sesión.' }); }
+    const { tipo, id } = req.body || {};
+    if (!cosmeticos.TIPOS.includes(tipo) || typeof id !== 'string') return res.status(400).json({ error: 'Cosmético inválido.' });
+    try {
+        const [ganados] = await pool.execute('SELECT logro FROM logros WHERE username = ?', [datos.username]);
+        if (!cosmeticos.disponible(tipo, id, ganados.map(g => g.logro))) {
+            return res.status(403).json({ error: 'Todavía no lo desbloqueas.' });
+        }
+        const [rows] = await pool.execute('SELECT cosmeticos FROM usuarios WHERE username = ?', [datos.username]);
+        const elegidos = { ...cosmeticos.leer(rows[0]?.cosmeticos), [tipo]: id };
+        await pool.execute('UPDATE usuarios SET cosmeticos = ? WHERE username = ?', [JSON.stringify(elegidos), datos.username]);
+        looks[datos.username] = elegidos;
+        // Si está en una sala de espera, que la mesa lo vea ya.
+        Object.values(estadoSalas).forEach(sl => {
+            if (sl.estadoActual === 'LOBBY' && sl.jugadores.some(j => j.nombre === datos.username)) emitirLobby(sl.idSala);
+        });
+        res.json({ elegidos });
+    } catch (e) {
+        log.error('Elegir cosmético falló', { error: e.message });
         res.status(500).json({ error: 'Error en el servidor.' });
     }
 });
@@ -632,13 +683,13 @@ app.get('/mis-stats/:username', limitarLectura, async (req, res) => {
     try {
         const [rows] = await conRetry(
             () => pool.execute(
-                'SELECT username, victorias, partidas_jugadas, racha_actual, racha_maxima FROM usuarios WHERE username = ?',
+                'SELECT username, victorias, partidas_jugadas, racha_actual, racha_maxima, cosmeticos AS cosm FROM usuarios WHERE username = ?',
                 [username]
             ),
             { op: 'mis-stats', username }
         );
         if (rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
-        const u = rows[0];
+        const { cosm, ...u } = rows[0];
         const winrate = u.partidas_jugadas > 0 ? Math.round((u.victorias / u.partidas_jugadas) * 100) : 0;
         const [ganados] = await conRetry(
             () => pool.execute('SELECT logro, fecha FROM logros WHERE username = ? ORDER BY fecha', [username]),
@@ -648,7 +699,8 @@ app.get('/mis-stats/:username', limitarLectura, async (req, res) => {
                 'SELECT fecha, lugar, jugadores, rondas, ganador, cayo_ronda, modo FROM historial WHERE username = ? ORDER BY fecha DESC, id DESC LIMIT 10',
                 [username]),
             { op: 'mi-historial', username });
-        res.json({ ...u, winrate, catalogoLogros: logros.CATALOGO, logros: ganados, historial });
+        res.json({ ...u, winrate, catalogoLogros: logros.CATALOGO, logros: ganados, historial,
+            cosmeticos: { catalogo: cosmeticos.CATALOGO, elegidos: cosmeticos.leer(cosm) } });
     } catch (error) {
         log.error('mis-stats falló', { error: error.message, codigo: error.code, username });
         res.status(500).json({ error: 'Error al cargar stats' });
@@ -772,6 +824,42 @@ async function registrarHistorialYLogros(sala, ganador, humanos) {
 // ==========================================
 // MOTOR DEL JUEGO
 // ==========================================
+// Lo que el cliente necesita de la votación de Fiesta: los eventos, cuántos
+// votos lleva cada uno y quién votó qué (se vota a la vista, es parte del juego).
+function datosVotacion(sala) {
+    if (!sala.votacion) return null;
+    return {
+        opciones: sala.votacion.opciones.map(id => eventos.CATALOGO[id]),
+        conteo: eventos.contarVotos(sala.votacion),
+        votos: sala.votacion.votos,
+    };
+}
+
+// Lo que se manda en finDelJuego: el ganador (sin su carta ni la memoria de
+// bot) y la tabla completa, armada aquí porque el cliente solo ve las rondas
+// que le tocaron (si se reconectó, o si alguien salió, le faltaban jugadores).
+// Orden: ganador, quienes seguían vivos (más vidas primero), luego del último
+// en caer al primero y al final quienes salieron de la partida.
+function datosFin(sala, ganador) {
+    const { id, nombre, vidas, esEquipo, equipo, integrantes } = ganador;
+    const datos = { id, nombre, vidas, esEquipo, equipo, integrantes };
+    if (esEquipo) return datos;
+    const caidas = sala.caidas || [];
+    const tabla = [];
+    const ganadorJ = sala.jugadores.find(j => j.nombre === nombre && j.vidas > 0);
+    if (ganadorJ) tabla.push({ nombre, esBot: !!ganadorJ.esBot, vidas: ganadorJ.vidas, estado: 'gano' });
+    sala.jugadores.filter(j => j.vidas > 0 && j !== ganadorJ).sort((a, b) => b.vidas - a.vidas)
+        .forEach(j => tabla.push({ nombre: j.nombre, esBot: !!j.esBot, vidas: j.vidas, estado: 'vivo' }));
+    [...caidas].reverse().forEach(c => {
+        const j = sala.jugadores.find(x => x.nombre === c.nombre);
+        if (j && j.vidas <= 0) tabla.push({ nombre: c.nombre, esBot: !!j.esBot, ronda: c.ronda, estado: 'cayo' });
+    });
+    sala.jugadores.filter(j => j.vidas <= 0 && !caidas.some(c => c.nombre === j.nombre))
+        .forEach(j => tabla.push({ nombre: j.nombre, esBot: !!j.esBot, estado: 'salio' }));
+    datos.clasificacion = tabla;
+    return datos;
+}
+
 function resolverRonda(sala, io) {
     // Guardia contra timers fantasma: la sala puede haberse borrado
     // entre que se programó esta llamada y que se ejecutó.
@@ -783,7 +871,20 @@ function resolverRonda(sala, io) {
     let vivos = sala.jugadores.filter(j => j.vidas > 0);
     if (vivos.length === 0) return;
 
-    const { valorCritico, perdedores, culpables, castigados, campanaInfo, mensajes } = resolverCartas(sala);
+    // Carrusel: todos pasan su carta a la derecha antes de revelar. A cada
+    // quien se le manda su carta nueva ahora: el cliente la pinta con rondaTerminada.
+    if (sala.evento === 'CARRUSEL') {
+        const pases = rotarCartas(sala.jugadores, j => reyProtegido(sala) && j.cartaActual === 9);
+        if (pases.length) {
+            io.to(sala.idSala).emit('mensajeGlobal', '🎠 ¡Carrusel! Todos pasaron su carta a la derecha.');
+            io.to(sala.idSala).emit('accionMesa', { tipo: 'CARRUSEL', icono: '🎠', texto: 'Carrusel: todos pasaron su carta a la derecha' });
+            pases.forEach(({ a }) => enviarCarta(sala, a));
+        }
+    }
+
+    const { valorCritico, perdedores, culpables, castigados, mensajes } = resolverCartas(sala);
+    // Venganza: quien perdió vida y sigue vivo puede vengarse la ronda siguiente.
+    sala.vengadores = sala.jugadores.filter(j => perdedores.includes(j.id) && j.vidas > 0).map(j => j.nombre);
     // Amnistía: quien tenía la carta mortal pierde su turno en la ronda siguiente.
     sala.castigadosSiguiente = sala.jugadores.filter(j => castigados.includes(j.id)).map(j => j.nombre);
     mensajes.forEach(m => io.to(sala.idSala).emit('mensajeGlobal', m));
@@ -803,10 +904,6 @@ function resolverRonda(sala, io) {
             if (!j.esBot) io.to(j.id).emit('poderGanado', { poder: poderes.CATALOGO[id], poderes: j.poderes });
             io.to(sala.idSala).emit('accionMesa', { tipo: 'PODER', icono: '✨', jugador: j.nombre, texto: `${j.nombre} ganó un poder` });
         });
-    }
-    if (campanaInfo && campanaInfo.acertada && !sala.config.practica) {
-        const ringer = sala.jugadores.find(j => j.id === campanaInfo.tocadorId);
-        if (ringer) otorgarLogro(sala, ringer.nombre, 'oido_fino');
     }
 
     let sobrevivientes = sala.jugadores.filter(j => j.vidas > 0);
@@ -845,16 +942,28 @@ function resolverRonda(sala, io) {
     const msAutoSiguiente = (juegoTerminado || finDePractica) ? null
         : (dealerEsBot ? pausaBot : pausaHumano * 1000) + extraDuelo;
 
+    // Fiesta: la mesa vota el evento de la siguiente ronda mientras ve el
+    // resumen (los bots votan al azar). Se decide en iniciarRonda.
+    sala.votacion = null;
+    if (sala.config.modoJuego === 'FIESTA' && msAutoSiguiente !== null && sobrevivientes.length > 2) { // en el duelo no hay eventos
+        const opciones = eventos.opcionesVotacion(sala);
+        if (opciones.length > 1) {
+            sala.votacion = { opciones, votos: {} };
+            sala.jugadores.filter(j => j.esBot && j.vidas > 0)
+                .forEach(b => { sala.votacion.votos[b.nombre] = opciones[Math.floor(Math.random() * opciones.length)]; });
+        }
+    }
+
     io.to(sala.idSala).emit('rondaTerminada', {
         jugadores: jugadoresPublicos(sala),
         perdedores: perdedores,
         cartaMortal: valorCritico,
         dealerId: sala.jugadores[sala.dealerIndex].id,
         juegoTerminado: juegoTerminado,
-        campana: campanaInfo,
         autoSiguienteMs: msAutoSiguiente,
         // Parejas: quién tenía la carta mortal (el equipo entero pierde la vida).
         culpables: sala.jugadores.filter(j => culpables.includes(j.id)).map(j => j.nombre),
+        votacion: datosVotacion(sala),
     });
 
     io.to(sala.idSala).emit('accionMesa', {
@@ -891,7 +1000,7 @@ function resolverRonda(sala, io) {
         setTimeout(() => {
             // Sala pudo borrarse o saltar a otro estado mientras esperábamos
             if (!estadoSalas[sala.idSala]) return;
-            io.to(sala.idSala).emit('finDelJuego', ganador);
+            io.to(sala.idSala).emit('finDelJuego', datosFin(sala, ganador));
             registrarFinPartida(sala, ganador);
             sala.votosRevancha = new Set();
             sala.revanchaIniciada = false;
@@ -917,11 +1026,6 @@ function gestionarTurnos(sala, io, esInicio = false) {
 
     let indiceActual = sala.turnoActualIndex;
 
-    // Campana: si la vuelta llegó al que tocó la campana → resolver
-    if (sala.campanaTocada && sala.campanaTocadorIndex !== -1 && indiceActual === sala.campanaTocadorIndex) {
-        resolverRonda(sala, io);
-        return;
-    }
     let jugadorActual = sala.jugadores[indiceActual];
     let jugadorDerecha = sala.jugadores[siguienteVivo(sala.jugadores, indiceActual)];
 
@@ -945,8 +1049,6 @@ function gestionarTurnos(sala, io, esInicio = false) {
 
     let debeSaltar = false;
     let razon = "";
-    const esCampana = sala.config.modoJuego === 'CAMPANA';
-
     // Quien tiene al Rey siempre se queda con él. En DECLARADO todos lo saben,
     // así que su turno se salta a la vista; en SORPRESA su turno debe verse
     // como cualquier otro (pausa y "decidió mantener") para no delatarlo.
@@ -969,8 +1071,7 @@ function gestionarTurnos(sala, io, esInicio = false) {
                 id: jugadorActual.id, nombre: jugadorActual.nombre,
                 tiempo: 0, jugadores: jugadoresPublicos(sala),
                 modoRey: sala.config.modoRey,
-                modoJuego: sala.config.modoJuego || 'CLASICO',
-                campanaTocada: sala.campanaTocada
+                modoJuego: sala.config.modoJuego || 'CLASICO'
             });
         }
         jugadorActual.yaJugo = true;
@@ -1008,8 +1109,7 @@ function gestionarTurnos(sala, io, esInicio = false) {
             id: idJugadorEnTurno, nombre: jugadorActual.nombre,
             tiempo: tiempoTurno, jugadores: jugadoresPublicos(sala),
             modoRey: sala.config.modoRey,
-            modoJuego: sala.config.modoJuego || 'CLASICO',
-            campanaTocada: sala.campanaTocada
+            modoJuego: sala.config.modoJuego || 'CLASICO'
         };
         if (esInicio) {
             io.to(sala.idSala).emit('juegoIniciado', payloadTurno);
@@ -1036,7 +1136,6 @@ function gestionarTurnos(sala, io, esInicio = false) {
                 : bots.decidirBot(sala, jugadorActual, {
                 esDealer,
                 derecha: jugadorDerecha,
-                derechaEsRinger: esCampana && sala.campanaTocada && jugadorDerecha.id === sala.campanaTocadorId,
             });
             const sigueSuTurno = () => {
                 const salaActual = estadoSalas[sala.idSala];
@@ -1046,7 +1145,7 @@ function gestionarTurnos(sala, io, esInicio = false) {
             setTimeout(() => {
                 if (!sigueSuTurno()) return;
                 // Modo con poderes: el bot puede usar uno antes de jugar.
-                const pierdeLaMasAlta = esCampana || sala.evento === 'MUNDO_AL_REVES';
+                const pierdeLaMasAlta = sala.evento === 'MUNDO_AL_REVES';
                 const poder = sala.config.poderes && !sala.config.practica ? poderes.poderParaBot(jugadorActual, {
                     esDealer, pierdeLaMasAlta, mercado: sala.evento === 'MERCADO', niebla: sala.evento === 'NIEBLA',
                     puedeSaltar: !esDealer && sala.evento !== 'MERCADO' && sala.jugadores.filter(j => j.vidas > 0).length >= 3,
@@ -1057,7 +1156,12 @@ function gestionarTurnos(sala, io, esInicio = false) {
                 const decision = (!r.error && r.carta !== undefined)
                     ? (poderes.mejorQue(r.carta, jugadorActual.cartaActual, pierdeLaMasAlta) ? 'CAMBIAR' : 'MANTENER')
                     : decidir();
-                setTimeout(() => { if (sigueSuTurno()) ejecutarAccion(sala.idSala, decision, io, jugadorActual.id); }, poder && !r.error ? 900 : 0);
+                // Venganza: si sabe de una carta mejor en la mesa, va por ella.
+                const objetivo = puedeVengarse(sala, jugadorActual) && !jugadorActual.automatico && !sala.config.practica
+                    ? bots.objetivoVenganza(sala, jugadorActual) : null;
+                const accionBot = objetivo !== null ? 'CAMBIAR' : decision;
+                const opcionesBot = objetivo !== null ? { objetivoIndex: objetivo, venganza: true } : {};
+                setTimeout(() => { if (sigueSuTurno()) ejecutarAccion(sala.idSala, accionBot, io, jugadorActual.id, false, opcionesBot); }, poder && !r.error ? 900 : 0);
             }, bots.retrasoBot());
             return;
         }
@@ -1112,12 +1216,9 @@ function desactivarAutomatico(sala, j, avisar = true) {
 function decisionPorAusente(sala, j) {
     const idx = sala.jugadores.indexOf(j);
     const derecha = sala.jugadores[siguienteVivo(sala.jugadores, idx)];
-    const esCampana = sala.config.modoJuego === 'CAMPANA';
-    const decision = bots.decidirBot({ ...sala, config: { ...sala.config, dificultadBots: 'NORMAL' } }, j, {
+    return bots.decidirBot({ ...sala, config: { ...sala.config, dificultadBots: 'NORMAL' } }, j, {
         esDealer: idx === sala.dealerIndex, derecha,
-        derechaEsRinger: esCampana && sala.campanaTocada && derecha.id === sala.campanaTocadorId,
     });
-    return decision === 'CAMPANA' && (!esCampana || sala.campanaTocada) ? 'MANTENER' : decision;
 }
 
 function iniciarReloj(idSala, io, tiempoSegundos) {
@@ -1170,12 +1271,6 @@ function iniciarRonda(sala, io) {
         texto: `Comienza la Ronda ${sala.rondaActual}`
     });
 
-    // Reset campana
-    sala.campanaTocada       = false;
-    sala.campanaTocadorId    = null;
-    sala.campanaTocadorIndex = -1;
-    sala.vueltasCampana      = 0;
-
     let vivos = sala.jugadores.filter(j => j.vidas > 0);
 
     // Reshuffle si no hay suficientes cartas para repartir
@@ -1190,7 +1285,7 @@ function iniciarRonda(sala, io) {
         sala.estadoActual = "FINALIZADO";
         const sobrevivientes = vivos;
         const ganador = sobrevivientes[0] || { nombre: "Nadie", vidas: 0 };
-        io.to(sala.idSala).emit('finDelJuego', ganador);
+        io.to(sala.idSala).emit('finDelJuego', datosFin(sala, ganador));
         registrarFinPartida(sala, ganador);
         return;
     }
@@ -1284,6 +1379,7 @@ function iniciarRonda(sala, io) {
 
     io.to(sala.idSala).emit('datosMesa', {
         evento: sala.evento ? eventos.CATALOGO[sala.evento] : null,
+        vengadores: sala.evento === 'VENGANZA' ? sala.vengadores : [],
         duelo: sala.enDuelo,
         anunciarDuelo,
         duelistas: sala.enDuelo ? vivos.map(j => j.nombre) : null,
@@ -1300,11 +1396,28 @@ function iniciarRonda(sala, io) {
         if (j.vidas > 0 && j.online) enviarCarta(sala, j);
     });
 
+    // Confesión: la carta de alguien al azar, para toda la mesa (los bots la
+    // recuerdan como un cambio visto). Se anuncia cuando ya se leyó el evento.
+    if (sala.evento === 'CONFESION') {
+        const guion = sala.config.practica ? practica.confesionDeRonda(sala) : null;
+        const confeso = (guion !== null && sala.jugadores[guion]?.vidas > 0) ? sala.jugadores[guion]
+            : vivos[Math.floor(Math.random() * vivos.length)];
+        sala.jugadores.forEach(b => { if (b.esBot && b !== confeso) (b.memoria ||= {})[confeso.id] = confeso.cartaActual; });
+        if (confeso.cartaActual === 9) confeso.reyDescubierto = true;
+        const ronda = sala.rondaActual;
+        setTimeout(() => {
+            if (!estadoSalas[sala.idSala] || sala.rondaActual !== ronda) return;
+            io.to(sala.idSala).emit('mensajeGlobal', `🗣️ Confesión: ${confeso.nombre} tiene un ${confeso.cartaActual}.`);
+            io.to(sala.idSala).emit('accionMesa', { tipo: 'CONFESION', icono: '🗣️', jugador: confeso.nombre,
+                texto: `Confesión: ${confeso.nombre} tiene un ${confeso.cartaActual}` });
+        }, introMs);
+    }
+
     // DECLARADO: el Rey se reparte boca abajo y se revela a MS_REVELAR_REY
     // (el cliente espera lo mismo para voltearlo); el primer turno arranca
     // después, para que nadie juegue antes de saber dónde está.
     const MS_REVELAR_REY = 2000;
-    const hayReyDeclarado = sala.config.modoRey === "DECLARADO" && sala.config.modoJuego !== 'CAMPANA' && sala.evento !== 'NIEBLA'
+    const hayReyDeclarado = sala.config.modoRey === "DECLARADO" && sala.evento !== 'NIEBLA'
         && sala.jugadores.some(j => j.vidas > 0 && j.cartaActual === 9);
     if (hayReyDeclarado) {
         const ronda = sala.rondaActual;
@@ -1470,10 +1583,15 @@ function companeros(sala, jugador) {
     return sala.jugadores.filter(t => t !== jugador && t.equipo === jugador.equipo && t.vidas > 0);
 }
 
-// ¿El Rey protege esta ronda? No en campana (ahí el 9 es la peor carta) ni
-// con el evento "Mundo al revés" (pierde la más alta y el Rey queda expuesto).
+// Venganza: ¿este jugador puede cambiar con cualquiera esta ronda?
+function puedeVengarse(sala, j) {
+    return sala.evento === 'VENGANZA' && (sala.vengadores || []).includes(j.nombre) && j.vidas > 0;
+}
+
+// ¿El Rey protege esta ronda? No con el evento "Mundo al revés" (pierde la
+// más alta y el Rey queda expuesto).
 function reyProtegido(sala) {
-    return sala.config.modoJuego !== 'CAMPANA' && sala.evento !== 'MUNDO_AL_REVES';
+    return sala.evento !== 'MUNDO_AL_REVES';
 }
 
 // Manda a un jugador su carta. Con el evento "Niebla" nadie la ve hasta la
@@ -1523,48 +1641,13 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false, opcion
     // Quien tiene al Rey no puede soltarlo (ni cambiando ni robando del mazo).
     if (accion === 'CAMBIAR' && reyProtegido(sala) && jugadorActual.cartaActual === 9) accion = 'MANTENER';
 
-    if (accion === 'CAMPANA') {
-        if (sala.config.modoJuego !== 'CAMPANA' || sala.campanaTocada) return;
-        sala.campanaTocada       = true;
-        sala.campanaTocadorId    = socketId;
-        sala.campanaTocadorIndex = indiceActual;
-        jugadorActual.yaJugo     = true;
-
-        io.to(idSala).emit('campanaTocada', { jugadorId: socketId, nombre: jugadorActual.nombre });
-        io.to(idSala).emit('mensajeGlobal', `🔔 ¡${jugadorActual.nombre} tocó la campana! Última vuelta para todos.`);
-        io.to(idSala).emit('accionMesa', {
-            tipo: 'CAMPANA',
-            icono: '🔔',
-            jugador: jugadorActual.nombre,
-            texto: `¡${jugadorActual.nombre} tocó la campana!`
-        });
-
-        // Avanzar al siguiente jugador vivo
-        sala.turnoActualIndex = siguienteVivo(sala.jugadores, sala.turnoActualIndex);
-
-        // Si no hay más jugadores vivos después del ringer → resolver directo
-        if (!sala.jugadores[sala.turnoActualIndex] || sala.jugadores[sala.turnoActualIndex].vidas <= 0 || sala.turnoActualIndex === indiceActual) {
-            resolverRonda(sala, io);
-            return;
-        }
-
-        setTimeout(() => {
-            if (!estadoSalas[idSala]) return;
-            // gestionarTurnos arranca el reloj con la duración correcta; no volver
-            // a llamar iniciarReloj sin argumento (pisaría con el default de 10s).
-            gestionarTurnos(sala, io, false);
-        }, 500);
-        return;
-    }
-
     if (accion === 'CAMBIAR') {
         // Con el evento "Mercado" todos roban del mazo, como el dealer.
-        if (indiceActual !== sala.dealerIndex && sala.evento !== 'MERCADO') {
+        if ((indiceActual !== sala.dealerIndex && sala.evento !== 'MERCADO') || opciones.venganza) {
             const esSalto = opciones.objetivoIndex !== undefined;
             let jugadorDerecha = sala.jugadores[esSalto ? opciones.objetivoIndex : siguienteVivo(sala.jugadores, indiceActual)];
             const bloqueEscudo = (sala.escudos || []).includes(jugadorDerecha.nombre);
             const bloqueRey = !bloqueEscudo && reyProtegido(sala) && jugadorDerecha.cartaActual === 9;
-            const derechaEsRinger = !esSalto && sala.config.modoJuego === 'CAMPANA' && sala.campanaTocada && jugadorDerecha.id === sala.campanaTocadorId;
 
             if (bloqueEscudo) {
                 io.to(idSala).emit('mensajeGlobal', `🛡️ El escudo de ${jugadorDerecha.nombre} rebotó el cambio de ${jugadorActual.nombre}.`);
@@ -1586,37 +1669,6 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false, opcion
                     objetivo: jugadorDerecha.nombre,
                     texto: `¡Rey de ${jugadorDerecha.nombre} frenó a ${jugadorActual.nombre}!`
                 });
-            } else if (derechaEsRinger) {
-                // Jugador adyacente al que tocó campana → roba del mazo en vez de intercambiar
-                if (sala.mazo.length === 0 && sala.descarte.length > 0) {
-                    sala.mazo = barajar([...sala.descarte]);
-                    sala.descarte = [];
-                    io.to(sala.idSala).emit('mensajeGlobal', '🔀 ¡La baraja se agotó y fue mezclada de nuevo!');
-                }
-                if (sala.mazo.length > 0) {
-                    const cartaVieja = jugadorActual.cartaActual;
-                    let nuevaCarta = sala.mazo.pop();
-                    sala.descarte.push(cartaVieja);
-                    jugadorActual.cartaActual = nuevaCarta;
-                    bots.olvidarCarta(sala.jugadores, jugadorActual);
-                    enviarCarta(sala, jugadorActual);
-                    io.to(idSala).emit('mensajeGlobal', `🃏 ${jugadorActual.nombre} robó del mazo (no puede cambiar con quien tocó la campana).`);
-                    io.to(idSala).emit('actualizarMazo', { cartasRestantes: sala.mazo.length });
-                    io.to(idSala).emit('accionMesa', {
-                        tipo: 'MAZO',
-                        icono: '🃏',
-                        jugador: jugadorActual.nombre,
-                        texto: `${jugadorActual.nombre} robó del mazo (campana)`
-                    });
-                } else {
-                    io.to(idSala).emit('mensajeGlobal', `⚠️ No quedan cartas en el mazo, ${jugadorActual.nombre} mantiene.`);
-                    io.to(idSala).emit('accionMesa', {
-                        tipo: 'MANTENER',
-                        icono: '✋',
-                        jugador: jugadorActual.nombre,
-                        texto: `${jugadorActual.nombre} mantiene (sin cartas)`
-                    });
-                }
             } else {
                 let temp = jugadorActual.cartaActual;
                 bots.recordarCambio(sala.jugadores, jugadorActual, jugadorDerecha, temp, jugadorDerecha.cartaActual);
@@ -1624,7 +1676,9 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false, opcion
                 jugadorDerecha.cartaActual = temp;
                 enviarCarta(sala, jugadorActual);
                 enviarCarta(sala, jugadorDerecha);
-                io.to(idSala).emit('mensajeGlobal', esSalto
+                io.to(idSala).emit('mensajeGlobal', opciones.venganza
+                    ? `😈 ¡Venganza! ${jugadorActual.nombre} cambió con ${jugadorDerecha.nombre}.`
+                    : esSalto
                     ? `🏹 ${jugadorActual.nombre} saltó y cambió con ${jugadorDerecha.nombre}.`
                     : `🔄 ${jugadorActual.nombre} cambió con ${jugadorDerecha.nombre}.`);
                 io.to(idSala).emit('accionMesa', {
@@ -1634,7 +1688,7 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false, opcion
                     objetivo: jugadorDerecha.nombre,
                     texto: `${jugadorActual.nombre} cambió con ${jugadorDerecha.nombre}`
                 });
-                if (sala.config.modoRey === "DECLARADO" && sala.config.modoJuego !== 'CAMPANA') {
+                if (sala.config.modoRey === "DECLARADO") {
                     jugadorActual.cartaRevelada = jugadorActual.cartaActual === 9;
                     jugadorDerecha.cartaRevelada = jugadorDerecha.cartaActual === 9;
                 }
@@ -1694,21 +1748,11 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false, opcion
     jugadorActual.yaJugo = true;
 
     const esDealer = indiceActual === sala.dealerIndex;
-    const esModoCampana = sala.config.modoJuego === 'CAMPANA';
 
-    if (esDealer && !esModoCampana) {
-        // Clásico: el dealer termina la ronda
+    if (esDealer) {
+        // El dealer termina la ronda
         setTimeout(() => { resolverRonda(sala, io); }, 1000);
     } else {
-        // Campana: al pasar por el dealer se incrementa el contador de vueltas
-        if (esDealer && esModoCampana) {
-            sala.vueltasCampana = (sala.vueltasCampana || 0) + 1;
-            if (sala.vueltasCampana >= 2) {
-                // 2 vueltas sin campana → resolver con penalización
-                setTimeout(() => { resolverRonda(sala, io); }, 1000);
-                return;
-            }
-        }
         sala.turnoActualIndex = siguienteVivo(sala.jugadores, sala.turnoActualIndex);
         gestionarTurnos(sala, io, false);
     }
@@ -1796,6 +1840,7 @@ function iniciarRevancha(sala, io) {
 // ==========================================
 io.on('connection', (socket) => {
     const nombreUsuarioLogueado = socket.usuario.username;
+    if (!looks[nombreUsuarioLogueado]) cargarLook(nombreUsuarioLogueado);
     log.info('Socket conectado', { user: nombreUsuarioLogueado, socketId: socket.id });
 
     // Radar de partidas pendientes
@@ -1896,7 +1941,6 @@ io.on('connection', (socket) => {
             idSala, estadoActual: "LOBBY", config: cfg, password, hostId: socket.id,
             jugadores: [{ id: socket.id, nombre: nombreUsuarioLogueado, vidas: cfg.vidas, yaJugo: false, online: true }],
             dealerIndex: 0, turnoActualIndex: 1, mazo: [], descarte: [], rondaActual: 1,
-            campanaTocada: false, campanaTocadorId: null, campanaTocadorIndex: -1,
             ultimaActividad: Date.now() // para el sweeper de salas zombi
         };
 
@@ -1923,6 +1967,7 @@ io.on('connection', (socket) => {
         const ahora = Date.now();
         const salas = Object.values(estadoSalas)
             .filter(s => s.estadoActual === "LOBBY" && !s.password && !s.config.practica
+                && (s.config.rapida || s.config.publica)
                 && s.jugadores.length < s.config.maxJugadores
                 && s.jugadores.some(j => !j.esBot && j.online)
                 && !s.jugadores.some(j => j.nombre === nombreUsuarioLogueado))
@@ -1972,7 +2017,6 @@ io.on('connection', (socket) => {
             sala = estadoSalas[idSala] = {
                 idSala, estadoActual: "LOBBY", config: configRapida(), password: null, hostId: null,
                 jugadores: [], dealerIndex: 0, turnoActualIndex: 1, mazo: [], descarte: [], rondaActual: 1,
-                campanaTocada: false, campanaTocadorId: null, campanaTocadorIndex: -1,
                 ultimaActividad: Date.now(), arrancaEn: Date.now() + RAPIDA_ESPERA_MS, creadaEn: Date.now(),
             };
             temporizadoresRapida[idSala] = setTimeout(() => arrancarRapida(idSala), RAPIDA_ESPERA_MS);
@@ -2019,7 +2063,6 @@ io.on('connection', (socket) => {
                 io.to(sala.idSala).emit('mensajeGlobal', `🔌 ${username} regresó a la batalla a tiempo.`);
             }
             // Su socket cambió: lo que apuntaba al id viejo debe seguirlo.
-            if (sala.campanaTocadorId === jugadorExistente.id) sala.campanaTocadorId = socket.id;
             if (sala.hostId === jugadorExistente.id) sala.hostId = socket.id;
             jugadorExistente.id = socket.id;
             jugadorExistente.online = true;
@@ -2062,7 +2105,7 @@ io.on('connection', (socket) => {
                     socket.emit('cambioDeTurno', {
                         id: socket.id, nombre: username, tiempo: quedan,
                         jugadores: jugadoresPublicos(sala), modoRey: sala.config.modoRey,
-                        modoJuego: sala.config.modoJuego || 'CLASICO', campanaTocada: sala.campanaTocada
+                        modoJuego: sala.config.modoJuego || 'CLASICO'
                     });
                 }
             } else {
@@ -2125,13 +2168,13 @@ io.on('connection', (socket) => {
         if (vivos.length === 1) {
             const ganador = vivos[0];
             sala.estadoActual = "FINALIZADO";
-            io.to(id).emit('finDelJuego', ganador);
+            io.to(id).emit('finDelJuego', datosFin(sala, ganador));
             registrarFinPartida(sala, ganador);
             return;
         } else if (vivos.length === 0) {
             sala.estadoActual = "FINALIZADO";
             const empate = { nombre: "Nadie (Empate Total)", vidas: 0 };
-            io.to(id).emit('finDelJuego', empate);
+            io.to(id).emit('finDelJuego', datosFin(sala, empate));
             registrarFinPartida(sala, empate);
             return;
         }
@@ -2142,10 +2185,11 @@ io.on('connection', (socket) => {
 
     socket.on('accionJugador', (payload) => {
         if (!payload || typeof payload !== 'object') return;
-        const { idSala, accion } = payload;
+        const { idSala, accion, objetivo } = payload;
         if (!permitir(socket.id, 'accionJugador', 400)) return;
         if (!esIdSalaValido(idSala)) return;
-        if (!['MANTENER', 'CAMBIAR', 'CAMPANA'].includes(accion)) return;
+        if (!['MANTENER', 'CAMBIAR'].includes(accion)) return;
+        if (objetivo !== undefined && typeof objetivo !== 'string') return;
 
         // Validar identidad por nombre (no socket.id) para sobrevivir reconexiones
         // y prevenir que un socket extranjero ejecute un turno ajeno.
@@ -2154,10 +2198,51 @@ io.on('connection', (socket) => {
         const jugadorEnTurno = sala.jugadores[sala.turnoActualIndex];
         if (!jugadorEnTurno || jugadorEnTurno.nombre !== nombreUsuarioLogueado) return;
 
+        // Venganza: el vengador puede elegir con quién cambiar (por nombre).
+        let opciones = {};
+        if (objetivo !== undefined) {
+            const idx = sala.jugadores.findIndex(j => j.nombre === objetivo);
+            if (accion !== 'CAMBIAR' || !puedeVengarse(sala, jugadorEnTurno) || idx === -1
+                || idx === sala.turnoActualIndex || sala.jugadores[idx].vidas <= 0) return;
+            opciones = { objetivoIndex: idx, venganza: true };
+        }
+
         desactivarAutomatico(sala, jugadorEnTurno); // jugó él: está presente
         if (sala.inicioTurno) registrarDecision(sala, jugadorEnTurno, 'jugada', Date.now() - sala.inicioTurno);
         sala.inicioTurno = null;
-        ejecutarAccion(idSala, accion, io, socket.id);
+        ejecutarAccion(idSala, accion, io, socket.id, false, opciones);
+    });
+
+    // El anfitrión abre o cierra su mesa desde la sala de espera (p. ej. ya
+    // entraron sus amigos y la hace pública para completar con alguien más).
+    socket.on('cambiarVisibilidad', (payload) => {
+        if (!payload || typeof payload !== 'object') return;
+        const { idSala, publica } = payload;
+        if (!permitir(socket.id, 'cambiarVisibilidad', 800)) return;
+        if (!esIdSalaValido(idSala) || typeof publica !== 'boolean') return;
+        const sala = estadoSalas[idSala];
+        if (!sala || sala.estadoActual !== 'LOBBY' || sala.config.rapida || sala.config.practica) return;
+        if (sala.jugadores[0]?.nombre !== nombreUsuarioLogueado) return; // solo el anfitrión
+        if (publica && sala.password) return socket.emit('errorSala', 'Una mesa con contraseña no puede ser pública.');
+        sala.config.publica = publica;
+        emitirLobby(idSala);
+        io.to(idSala).emit('mensajeGlobal', publica
+            ? `🌐 ${nombreUsuarioLogueado} abrió la mesa: ahora sale en «Unirse».`
+            : `🔒 ${nombreUsuarioLogueado} cerró la mesa: solo con enlace o código.`);
+    });
+
+    // Fiesta: votar el evento de la siguiente ronda (también quien ya quedó fuera).
+    socket.on('votarEvento', (payload) => {
+        if (!payload || typeof payload !== 'object') return;
+        const { idSala, evento } = payload;
+        if (!permitir(socket.id, 'votarEvento', 300)) return;
+        if (!esIdSalaValido(idSala)) return;
+        const sala = estadoSalas[idSala];
+        if (!sala || sala.estadoActual !== 'REVELACION' || !sala.votacion) return;
+        if (!sala.votacion.opciones.includes(evento)) return;
+        if (!sala.jugadores.some(j => j.nombre === nombreUsuarioLogueado && !j.esBot)) return;
+        sala.votacion.votos[nombreUsuarioLogueado] = evento;
+        io.to(idSala).emit('votosEvento', datosVotacion(sala));
     });
 
     socket.on('quieroJugarOtraVez', (idSala) => {
@@ -2299,6 +2384,7 @@ async function agregarColumnasSiNoExisten() {
         { nombre: 'racha_actual',     def: 'INT DEFAULT 0' },
         { nombre: 'racha_maxima',     def: 'INT DEFAULT 0' },
         { nombre: 'codigo_recuperacion', def: 'VARCHAR(255) DEFAULT NULL' }, // hash bcrypt
+        { nombre: 'cosmeticos', def: 'VARCHAR(255) DEFAULT NULL' }, // JSON { avatar, marco, dorso }
     ];
     for (const col of columnas) {
         if (!REGEX_NOMBRE_COLUMNA.test(col.nombre)) {
@@ -2565,7 +2651,8 @@ async function shutdownGracefully(signal) {
     // Cerrar HTTP server, con timeout duro de 5s por si hay requests colgados.
     const httpCerrado = new Promise(resolve => {
         server.close(err => {
-            if (err) log.error('Error cerrando HTTP server', { error: err.message });
+            // io.close() ya cierra el server HTTP que tiene pegado: ese caso no es error.
+            if (err && err.code !== 'ERR_SERVER_NOT_RUNNING') log.error('Error cerrando HTTP server', { error: err.message });
             else log.info('HTTP server cerrado');
             resolve();
         });

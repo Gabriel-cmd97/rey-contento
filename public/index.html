@@ -106,11 +106,16 @@
             <div class="barra-top-item hidden" id="infoRonda"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> RND:<span id="numRonda">1</span></div>
             <div class="barra-top-item hidden" id="infoDealer"><svg class="icono" aria-hidden="true"><use href="#i-corona"/></svg> DEALER:<span id="nombreDealer">...</span></div>
             <div class="barra-top-item hidden" id="infoModo"></div>
-            <div class="barra-top-item" style="gap:8px;">
+            <div class="barra-marca" aria-hidden="true"><img src="/iconos/mazo.svg" alt="" draggable="false"><span>Rey Contento</span></div>
+            <div class="barra-top-item barra-acciones">
+                <button id="btnVerReglas" class="btn-sonido-top" title="¿Cómo se juega?" aria-label="¿Cómo se juega?"><svg class="icono" aria-hidden="true"><use href="#i-libro"/></svg></button>
                 <button id="btnToggleGuias" class="btn-sonido-top" title="Guías"><svg class="icono" aria-hidden="true"><use href="#i-foco"/></svg> </button>
                 <button id="btnToggleSonido" class="btn-sonido-top" title="Silenciar / Activar sonido"><svg class="icono" aria-hidden="true"><use href="#i-altavoz"/></svg> </button>
-                <button id="btnMiPerfil" class="btn-perfil-top" title="Mi perfil"><svg class="icono" aria-hidden="true"><use href="#i-persona"/></svg> <span id="displayUsername">...</span></button>
-                <span class="punto-en-linea" title="En línea"></span>
+                <button id="btnMiPerfil" class="btn-perfil-top" title="Mi perfil">
+                    <span class="avatar-top"><span id="inicialUsuario">?</span><span class="punto-en-linea" title="En línea"></span></span>
+                    <span id="displayUsername">...</span>
+                    <span id="victoriasTop" class="victorias-top hidden" title="Tus victorias"><svg class="icono" aria-hidden="true"><use href="#i-corona"/></svg><b id="numVictoriasTop">0</b></span>
+                </button>
             </div>
         </header>
 
@@ -136,7 +141,7 @@
                 <div class="lobby-bloque">
                     <p class="lobby-section-label">Jugar ahora</p>
                     <button id="btnRapida" class="boton-oro boton-lobby full-width boton-rapida"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Partida rápida</button>
-                    <p class="practica-lema">Te sentamos en una mesa de 4 · si faltan jugadores, completamos con bots</p>
+                    <p class="practica-lema">Mesa de 4 · si falta gente, entran bots</p>
                 </div>
 
                 <!-- 2. Aprender -->
@@ -153,6 +158,11 @@
                             <strong>Eventos y poderes</strong>
                             <span>3 rondas guiadas</span>
                         </button>
+                        <button id="btnPracticaFiesta" class="tarjeta-aprender">
+                            <svg class="icono" aria-hidden="true"><use href="#i-grupo"/></svg>
+                            <strong>Modo Fiesta</strong>
+                            <span>3 rondas guiadas</span>
+                        </button>
                     </div>
                 </div>
 
@@ -164,7 +174,7 @@
                             <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-naipe"/></svg> Modo de juego</span>
                             <select id="selectModoJuego" class="selector-medieval selector-compacto">
                             <option value="CLASICO">Clásico</option>
-                            <option value="CAMPANA">Campana</option>
+                            <option value="FIESTA">Fiesta: evento en cada ronda</option>
                         </select>
                         </div>
                         <div class="config-item-nuevo">
@@ -187,10 +197,10 @@
                             <option value="8" selected>8 jugadores</option>
                         </select>
                         </div>
-                        <div class="config-item-nuevo config-full">
-                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-grupo"/></svg> Parejas (equipos Oro y Plata)</span>
+                        <div class="config-item-nuevo" title="Parejas: equipos Oro y Plata">
+                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-grupo"/></svg> Parejas</span>
                             <select id="selectEquipos" class="selector-medieval selector-compacto">
-                                <option value="0" selected>No, cada quien por su lado</option>
+                                <option value="0" selected>Individual</option>
                                 <option value="2">2 contra 2</option>
                                 <option value="3">3 contra 3</option>
                             </select>
@@ -202,23 +212,30 @@
                             <span id="resumenMasOpciones" class="resumen-mas-opciones"></span>
                         </summary>
                         <div class="config-grid-nuevo">
-                            <div class="config-item-nuevo config-full">
+                            <div class="config-item-nuevo" title="Sorpresa: el 9 va oculto · Declarado: todos saben quién lo tiene">
                             <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-mascara"/></svg> Modo Rey</span>
                             <select id="selectModo" class="selector-medieval selector-compacto">
                             <option value="SORPRESA">Sorpresa</option>
                             <option value="DECLARADO">Declarado</option>
                         </select>
                         </div>
-                            <div class="config-item-nuevo config-full">
-                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-ojo"/></svg> Poderes (al perder una vida ganas uno)</span>
+                            <div class="config-item-nuevo" title="Cada vez que pierdes una vida ganas un poder de un solo uso">
+                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-ojo"/></svg> Poderes <span class="etiqueta-canje"><svg class="icono" aria-hidden="true"><use href="#i-corazon-roto"/></svg>→<svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg></span></span>
                             <select id="selectPoderes" class="selector-medieval selector-compacto">
-                            <option value="NO" selected>Desactivados</option>
-                            <option value="SI">Activados</option>
+                            <option value="NO" selected>No</option>
+                            <option value="SI">Sí</option>
                         </select>
                         </div>
-                            <div class="config-item-nuevo config-full">
-                                <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-candado"/></svg> Contraseña de sala (opcional)</span>
-                                <input type="text" id="inputPasswordSala" class="selector-compacto" placeholder="Sin contraseña = sala abierta" maxlength="20" autocomplete="off">
+                            <div class="config-item-nuevo" title="Privada: solo entran con el código, el enlace o el QR · Pública: aparece en Unirse para cualquiera">
+                                <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-globo"/></svg> Visibilidad</span>
+                                <select id="selectVisibilidad" class="selector-medieval selector-compacto">
+                                    <option value="PRIVADA" selected>Privada</option>
+                                    <option value="PUBLICA">Pública</option>
+                                </select>
+                            </div>
+                            <div class="config-item-nuevo">
+                                <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-candado"/></svg> Contraseña</span>
+                                <input type="text" id="inputPasswordSala" class="selector-compacto" placeholder="Opcional" maxlength="20" autocomplete="off">
                             </div>
                         </div>
                     </details>
@@ -227,7 +244,6 @@
                 <!-- 4. Acciones siempre a la mano -->
                 <div class="lobby-acciones-fijas">
                     <button id="btnCrearSala" class="boton-oro boton-lobby full-width" disabled>CREAR PARTIDA</button>
-                    <button id="btnVerReglas" class="boton-lobby-ghost full-width"><svg class="icono" aria-hidden="true"><use href="#i-libro"/></svg> ¿Cómo se juega?</button>
                 </div>
             </section>
 
@@ -254,18 +270,21 @@
             <section class="lobby-panel hidden" id="panelJugadores">
 
                 <!-- Código de sala arriba siempre visible -->
-                <div id="mostrarCodigo" class="sala-code-bar hidden" style="flex-direction:column; align-items:stretch; gap:8px;">
-                    <p class="lobby-section-label" style="margin:0;"><svg class="icono" aria-hidden="true"><use href="#i-sobre"/></svg> Compartir sala — invita con el enlace o el QR</p>
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <div class="sala-code-sublabel">Código de sala</div>
-                            <div id="codigoDisplay" class="sala-code-display">...</div>
+                <!-- Invitar: código grande + si es privada/pública, y tres formas de invitar -->
+                <div id="mostrarCodigo" class="invitar-caja hidden">
+                    <div class="invitar-fila">
+                        <div class="invitar-codigo">
+                            <span class="invitar-codigo-label">Código de la mesa</span>
+                            <span id="codigoDisplay" class="invitar-codigo-num">...</span>
                         </div>
-                        <div style="display:flex; gap:6px;">
-                            <button id="btnCopiarLink" class="btn-copiar-link"><svg class="icono" aria-hidden="true"><use href="#i-enlace"/></svg> ENLACE</button>
-                            <button id="btnMostrarQR" class="btn-copiar-link"><svg class="icono" aria-hidden="true"><use href="#i-celular"/></svg> QR</button>
-                        </div>
+                        <button type="button" id="chipVisibilidad" class="chip-visibilidad" disabled><svg class="icono" aria-hidden="true"><use href="#i-candado"/></svg> Privada</button>
                     </div>
+                    <div class="invitar-acciones">
+                        <button id="btnCompartirSala" class="btn-invitar btn-invitar-principal"><svg class="icono" aria-hidden="true"><use href="#i-sobre"/></svg> Compartir</button>
+                        <button id="btnCopiarLink" class="btn-invitar"><svg class="icono" aria-hidden="true"><use href="#i-enlace"/></svg> <span>Copiar enlace</span></button>
+                        <button id="btnMostrarQR" class="btn-invitar"><svg class="icono" aria-hidden="true"><use href="#i-qr"/></svg> QR</button>
+                    </div>
+                    <p id="textoInvitar" class="invitar-ayuda">Tus amigos entran con el enlace, el QR o el código en «Unirse»</p>
                 </div>
 
                 <!-- Resumen config -->
@@ -283,13 +302,16 @@
 
                 <!-- Cómo será la partida: lo arma pintarComoSeraPartida() con la config real de la sala -->
                 <div id="comoSeraPartida" class="como-sera hidden" aria-live="polite"></div>
-                <p id="rapidaEspera" class="rapida-espera hidden" role="status" aria-live="polite"></p>
-                <button id="btnRapidaMasTiempo" class="boton-madera boton-lobby full-width hidden"><svg class="icono" aria-hidden="true"><use href="#i-reloj"/></svg> Esperar 30 s más (para compartir)</button>
-
-                <!-- Botones siempre visibles -->
+                <!-- Botones siempre visibles. En la partida rápida la cuenta y "+30 s"
+                     van aquí dentro: afuera quedaban tapados por esta barra fija y el
+                     toque caía en "Salir" (25/09/2026). -->
                 <div class="lobby-sticky-bottom lobby-acciones-fijas">
+                    <p id="rapidaEspera" class="rapida-espera hidden" role="status" aria-live="polite"></p>
                     <button id="btnEmpezar" class="boton-oro boton-lobby full-width hidden">¡EMPEZAR JUEGO!</button>
-                    <button id="btnSalirLobby" class="boton-lobby-ghost full-width margin-top-10"><svg class="icono" aria-hidden="true"><use href="#i-cerrar"/></svg> Cancelar / Salir</button>
+                    <div class="fila-salir-espera">
+                        <button id="btnRapidaMasTiempo" class="boton-madera boton-lobby hidden"><svg class="icono" aria-hidden="true"><use href="#i-reloj"/></svg> +30 s</button>
+                        <button id="btnSalirLobby" class="boton-lobby-ghost full-width"><svg class="icono" aria-hidden="true"><use href="#i-cerrar"/></svg> Cancelar / Salir</button>
+                    </div>
                 </div>
             </section>
 
@@ -306,6 +328,10 @@
                             <div class="resumen-header"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> FIN DE RONDA — Carta mortal: <span id="resumenCartaMortal" class="resumen-mortal-num">—</span></div>
                             <div id="resumenExplicacion" class="resumen-explicacion hidden"></div>
                             <div id="resumenCartas" class="resumen-cartas-grid"></div>
+                            <div id="resumenVotacion" class="resumen-votacion hidden">
+                                <p class="resumen-votacion-titulo">Voten el evento de la siguiente ronda</p>
+                                <div id="resumenVotacionOpciones" class="resumen-votacion-opciones"></div>
+                            </div>
                             <div id="resumenCuenta" class="resumen-cuenta hidden" role="timer" aria-live="off">
                                 <p id="resumenCuentaTexto"></p>
                                 <div class="resumen-cuenta-barra"><span id="resumenCuentaBarra"></span></div>
@@ -328,7 +354,7 @@
                         <span id="misVidasMesa" class="vidas-chicas"><svg class="icono" aria-hidden="true"><use href="#i-corazon"/></svg> 3</span>
                     </div>
 
-                    <div id="bannerUltimaVuelta" class="hidden banner-ultima-vuelta"><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> ¡ÚLTIMA VUELTA!</div>
+                    
                     <div id="bannerObjetivo" class="hidden banner-objetivo"></div>
 
                     <!-- Gran revelación del Rey -->
@@ -426,6 +452,15 @@
                     </div>
 
                     <div id="miSilla" class="silla bottom">
+                        <!-- Jugada con gestos (como el UNO): indicadores junto a tu carta que
+                             también se pueden tocar. Con "Botones de jugada" en el menú
+                             vuelven MANTENER/CAMBIAR grandes abajo. -->
+                        <button type="button" id="chipMantener" class="chip-jugada chip-mantener" aria-label="Mantener tu carta">
+                            <svg class="icono" aria-hidden="true"><use href="#i-mano"/></svg><b>Mantener</b><small>2 toques · ↓</small>
+                        </button>
+                        <button type="button" id="chipCambiar" class="chip-jugada chip-cambiar" aria-label="Cambiar tu carta">
+                            <b>Cambiar</b><small>desliza</small><span class="chip-flecha" aria-hidden="true">⟶</span>
+                        </button>
                         <div id="miCarta" class="carta-naipe" style="margin:0 auto;">
                             <div class="flipper">
                                 <div class="face back-pattern"></div>
@@ -454,6 +489,8 @@
         <div id="panelMenuMesa" class="panel-menu-mesa hidden" role="menu">
             <button role="menuitemcheckbox" aria-checked="false" data-accion="guias"><svg class="icono" aria-hidden="true"><use href="#i-foco"/></svg> <span>Guías</span><i class="interruptor" aria-hidden="true"></i></button>
             <button role="menuitemcheckbox" aria-checked="false" data-accion="sonido"><svg class="icono" aria-hidden="true"><use href="#i-altavoz"/></svg> <span>Sonido</span><i class="interruptor" aria-hidden="true"></i></button>
+            <button role="menuitemcheckbox" aria-checked="false" data-accion="botones"><svg class="icono" aria-hidden="true"><use href="#i-naipe"/></svg> <span>Botones de jugada</span><i class="interruptor" aria-hidden="true"></i></button>
+            <button role="menuitem" data-accion="horizontal" id="menuHorizontal"><svg class="icono" aria-hidden="true"><use href="#i-celular"/></svg> <span>Jugar en horizontal</span></button>
             <button role="menuitem" data-accion="bitacora"><svg class="icono" aria-hidden="true"><use href="#i-pergamino"/></svg> <span>Bitácora de la ronda</span></button>
             <button role="menuitem" data-accion="reglas"><svg class="icono" aria-hidden="true"><use href="#i-libro"/></svg> <span>¿Cómo se juega?</span></button>
             <button role="menuitem" data-accion="perfil"><svg class="icono" aria-hidden="true"><use href="#i-persona"/></svg> <span>Mi perfil</span></button>
@@ -477,7 +514,7 @@
             <div class="acciones-row">
                 <button id="btnReacciones" class="btn-abrir-reacciones" aria-expanded="false" aria-controls="barraReacciones" title="Reacciones y frases">😀</button>
                 <button id="btnMantener" class="boton-medieval full-width" data-tecla="M" disabled>MANTENER</button>
-                <button id="btnCampana" class="boton-campana hidden" data-tecla="B" disabled><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> </button>
+                
                 <button id="btnCambiar"  class="boton-medieval full-width" data-tecla="C" disabled>CAMBIAR</button>
             </div>
         </footer>
@@ -504,6 +541,7 @@
     <!-- Modal Perfil Personal -->
     <div id="modalPerfil" class="hidden modal-overlay">
         <div class="modal-caja">
+            <button type="button" class="modal-cerrar-x" data-cierra="modalPerfil" aria-label="Cerrar"><svg class="icono" aria-hidden="true"><use href="#i-cerrar"/></svg></button>
             <h3 class="medieval-font" style="color:var(--oro);margin:0 0 16px;text-align:center;font-size:20px;"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> Mi Perfil</h3>
             <div id="contenidoPerfil" class="perfil-stats-grid">
                 <div class="perfil-stat-item"><span class="perfil-stat-val" id="pVictorias">—</span><span class="perfil-stat-label">Victorias</span></div>
@@ -512,6 +550,9 @@
                 <div class="perfil-stat-item"><span class="perfil-stat-val" id="pRachaActual">—</span><span class="perfil-stat-label">Racha actual</span></div>
                 <div class="perfil-stat-item perfil-stat-full"><span class="perfil-stat-val" id="pRachaMax">—</span><span class="perfil-stat-label"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Racha máxima</span></div>
             </div>
+            <h4 class="perfil-seccion">Mis cosméticos</h4>
+            <p class="perfil-cosm-ayuda">Se ven en la mesa. Los que tienen candado se ganan con logros.</p>
+            <div id="pCosmeticos" class="perfil-cosmeticos"></div>
             <h4 class="perfil-seccion">Logros <span id="pLogrosCuenta"></span></h4>
             <ul id="pLogros" class="perfil-logros"></ul>
             <h4 class="perfil-seccion">Últimas partidas</h4>
@@ -588,6 +629,7 @@
     <!-- Modal Reglas -->
     <div id="modalReglas" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;overflow-y:auto;-webkit-overflow-scrolling:touch;transform:translateZ(0);padding:20px;">
         <div style="max-width:600px;margin:0 auto;background:var(--pergamino);color:var(--texto);border-radius:15px;border:4px solid var(--oro-oscuro);padding:30px;">
+            <button type="button" class="modal-cerrar-x modal-cerrar-x-claro" data-cierra="modalReglas" aria-label="Cerrar"><svg class="icono" aria-hidden="true"><use href="#i-cerrar"/></svg></button>
             <h2 class="medieval-font" style="color:var(--rojo-rey);text-align:center;font-size:28px;margin-top:0;"><svg class="icono" aria-hidden="true"><use href="#i-corona"/></svg> REY CONTENTO</h2>
 
             <h3 class="medieval-font" style="color:var(--oro-tinta);"><svg class="icono" aria-hidden="true"><use href="#i-diana"/></svg> Objetivo</h3>
@@ -609,7 +651,7 @@
                 <li><strong><svg class="icono" aria-hidden="true"><use href="#i-mano"/></svg> MANTENER</strong> — Te quedas con tu carta.</li>
                 <li><strong><svg class="icono" aria-hidden="true"><use href="#i-cambio"/></svg> CAMBIAR</strong> — Fuerzas al jugador de tu derecha a intercambiar.</li>
             </ul>
-            <p><strong>Con tu carta:</strong> deslízala a la derecha para <strong>cambiar</strong>, o tócala dos veces (también puedes deslizarla hacia abajo) para <strong>mantener</strong>. En computadora: teclas <strong>M</strong>, <strong>C</strong> y <strong>B</strong> para la campana.</p>
+            <p><strong>Con tu carta:</strong> deslízala a la derecha para <strong>cambiar</strong>, o tócala dos veces (también puedes deslizarla hacia abajo) para <strong>mantener</strong>. En computadora: teclas <strong>M</strong> (mantener) y <strong>C</strong> (cambiar).</p>
 
             <h3 class="medieval-font" style="color:var(--oro-tinta);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-escudo"/></svg> Reglas Especiales</h3>
             <ul style="margin:8px 0 0 20px;line-height:1.8;">
@@ -627,14 +669,19 @@
             </ul>
 
             <h3 class="medieval-font" style="color:var(--oro-tinta);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Eventos de ronda</h3>
-            <p>En modo clásico, a veces una ronda trae una regla especial que dura solo esa ronda:</p>
+            <p>A veces una ronda trae una regla especial que dura solo esa ronda:</p>
             <ul>
                 <li><strong>Mundo al revés:</strong> pierde la carta más alta, y el Rey no protege a nadie.</li>
                 <li><strong>Niebla:</strong> nadie ve su carta hasta el final; decides a ciegas.</li>
                 <li><strong>Doble castigo:</strong> quien pierde, pierde 2 vidas.</li>
                 <li><strong>Mercado:</strong> si cambias, robas del mazo (todos, no solo el dealer).</li>
                 <li><strong>Amnistía:</strong> nadie pierde vida, pero quien tenga la más baja pierde su próximo turno.</li>
+                <li><strong>Carrusel:</strong> al final de la ronda todos pasan su carta a la derecha. El Rey no se mueve.</li>
+                <li><strong>Confesión:</strong> al empezar se revela a toda la mesa la carta de alguien al azar.</li>
+                <li><strong>Venganza:</strong> quien perdió vida la ronda pasada puede cambiar con cualquier jugador: en su turno toca el asiento de quien quiera.</li>
+                <li><strong>Premio real:</strong> quien tenga la carta más alta gana una vida (sin pasar de las vidas iniciales).</li>
             </ul>
+            <p><strong>Modo Fiesta:</strong> hay evento en <strong>todas</strong> las rondas, desde la primera. Mientras ven el resumen de la ronda, la mesa vota entre 3 eventos cuál sigue; gana el más votado (si empatan, decide la suerte).</p>
             <p><strong>Poderes</strong> (si la sala los tiene activados): cada vez que pierdes una vida y sigues en juego, ganas un poder de un solo uso (máximo 2):</p>
             <ul>
                 <li><strong>Espiar</strong> (en tu turno): ves la carta de tu vecino de la derecha.</li>
@@ -644,18 +691,6 @@
             </ul>
             <p><strong>Parejas</strong> (2 contra 2 o 3 contra 3): los equipos Oro y Plata se sientan alternados, así que tu vecino de la derecha siempre es rival. Las vidas son del equipo: si alguien del equipo tiene la carta mortal, el equipo pierde una vida. <strong>Ves la carta de tu compañero</strong> (los rivales no). Gana el último equipo con vidas. Con poderes, el Salto te deja cambiar con tu compañero.</p>
             <p><strong>Duelo final:</strong> cuando solo quedan dos jugadores, se enfrentan cara a cara y sus cartas chocan al centro de la mesa.</p>
-            <h3 class="medieval-font" style="color:var(--oro-tinta);margin-top:15px;"><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> Modo Campana</h3>
-            <p style="margin-bottom:4px;"><strong>Regla invertida:</strong> aquí pierde quien tiene la carta <strong>más alta</strong>. ¡Quieres cartas pequeñas!</p>
-            <ul style="margin:4px 0 0 20px;line-height:1.8;font-size:14px;">
-                <li>En tu turno aparece el botón <strong><svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> </strong> — úsalo cuando creas que tienes la carta más baja y quieras cerrar la ronda.</li>
-                <li>Al tocarlo, aparece el banner <em>"¡ÚLTIMA VUELTA!"</em> y cada jugador recibe <strong>1 turno más</strong>, luego se revelan las cartas.</li>
-                <li>Si acertaste (no tenías la más alta) → sin penalización extra.</li>
-                <li>Si te equivocaste (tenías la más alta) → pierdes <strong>1 vida extra</strong> de castigo.</li>
-                <li><strong>El jugador a la derecha de quien tocó la campana</strong> no puede intercambiar con él — si elige CAMBIAR, roba del mazo central.</li>
-                <li>Si tras <strong>2 vueltas completas</strong> nadie toca la campana, el de la carta más alta pierde <strong>2 vidas</strong> (penalización por inacción). Si todos tienen la misma carta, nadie pierde.</li>
-                <li>Si todos empatan con la carta más alta, nadie pierde vida.</li>
-            </ul>
-            <p class="nota-pergamino" style="font-size:12px;margin-top:6px;">Solo una campana por ronda. El botón <svg class="icono" aria-hidden="true"><use href="#i-campana"/></svg> desaparece en cuanto alguien la toca.</p>
 
             <p class="nota-pergamino" style="font-size:11px;text-align:center;margin-top:18px;margin-bottom:0;">Íconos de las cartas: <a href="https://game-icons.net" target="_blank" rel="noopener" style="color:inherit;">game-icons.net</a> · CC BY 3.0</p>
             <button id="btnCerrarReglas" class="boton-oro boton-lobby full-width" style="margin-top:14px;font-size:15px;"><svg class="icono" aria-hidden="true"><use href="#i-check"/></svg> ¡ENTENDIDO! VOLVER AL JUEGO</button>
@@ -700,7 +735,7 @@
         function actualizarResumenConfig() {
             const ic = (n) => `<svg class="icono" aria-hidden="true"><use href="#i-${n}"/></svg>`;
             const modo      = document.getElementById('selectModo')?.value === 'DECLARADO' ? 'Declarado' : 'Sorpresa';
-            const modoJuego = document.getElementById('selectModoJuego')?.value === 'CAMPANA' ? `${ic('campana')} Campana` : `${ic('espadas')} Clásico`;
+            const modoJuego = document.getElementById('selectModoJuego')?.value === 'FIESTA' ? `${ic('rayo')} Fiesta` : `${ic('espadas')} Clásico`;
             const vidas     = document.getElementById('selectVidas')?.value;
             const jugadores = document.getElementById('selectJugadores')?.value;
             const bots      = ''; // los bots se ponen al empezar, en los lugares libres
@@ -717,6 +752,7 @@
             // Resumen de "Más opciones" para verlo sin desplegar
             const extras = [modo];
             if (document.getElementById('selectPoderes')?.value === 'SI') extras.push('con poderes');
+            if (document.getElementById('selectVisibilidad')?.value === 'PUBLICA') extras.push('pública');
             if (document.getElementById('inputPasswordSala')?.value.trim()) extras.push('con contraseña');
             const resMas = document.getElementById('resumenMasOpciones');
             if (resMas) resMas.textContent = extras.join(' · ');
@@ -728,7 +764,7 @@
 
         // Escuchar cambios en selects para actualizar resumen
         document.addEventListener('DOMContentLoaded', () => {
-            ['selectModo','selectVidas','selectJugadores','selectModoJuego','selectPoderes','selectEquipos'].forEach(id => {
+            ['selectModo','selectVidas','selectJugadores','selectModoJuego','selectPoderes','selectEquipos','selectVisibilidad'].forEach(id => {
                 document.getElementById(id)?.addEventListener('change', actualizarResumenConfig);
             });
             document.getElementById('inputPasswordSala')?.addEventListener('input', actualizarResumenConfig);
@@ -740,11 +776,6 @@
          falla (típico en redes de celular), main.js igual corre —el login funciona— y
          las animaciones degradan al keyframe CSS (ver animarVueloCartaTween). El
          ticker en main.js tolera que TWEEN aparezca después de cargar main.js. -->
-    <script async src="https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
-    <!-- QR para compartir sala. `async`: no bloquea main.js; si falla, el overlay
-         muestra un fallback y siguen disponibles el código y "Copiar link". -->
-    <script async src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="main.js"></script>
 <div id="modalSalirPartida" class="hidden" role="dialog" aria-modal="true" aria-labelledby="tituloSalirPartida">
     <div class="caja-salir">
         <h2 id="tituloSalirPartida" class="medieval-font">¿Salir de la partida?</h2>
@@ -755,5 +786,11 @@
         </div>
     </div>
 </div>
+
+    <script async src="https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
+    <!-- QR para compartir sala. `async`: no bloquea main.js; si falla, el overlay
+         muestra un fallback y siguen disponibles el código y "Copiar link". -->
+    <script async src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>

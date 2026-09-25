@@ -7,7 +7,7 @@ const { resolverCartas } = require('../reglas');
 
 const mesa = (cartas) => ({
     jugadores: cartas.map((c, i) => ({ id: ['tu', 'A', 'B'][i], nombre: ['tu', 'A', 'B'][i], vidas: 3, cartaActual: c })),
-    config: { modoJuego: 'CLASICO' }, campanaTocada: false, vueltasCampana: 0,
+    config: { modoJuego: 'CLASICO' },
 });
 
 test('ronda 1: tú cambias con A, A cambia con B y B roba → pierde A con 4', () => {

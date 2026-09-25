@@ -6,7 +6,7 @@
 // Requiere puppeteer y chrome-headless-shell con sus librerías (ver el
 // historial del 24/09/2026 en CLAUDE.md). Uso:
 //   CHROME=<ruta a chrome-headless-shell> LD_LIBRARY_PATH=<libs> TAM=360x740 \
-//   node tests/auditoria-visual.js            # SOLO=6 | 33 | 3 para un escenario
+//   node tests/auditoria-visual.js            # SOLO=6 | 33 | F | 3 para un escenario
 // Encimados esperados: miCarta × miPerfil, aviso × pila, marcador × reloj/turno
 // (el marcador vive dentro del cuadro del reloj).
 const puppeteer = require('puppeteer');
@@ -29,7 +29,7 @@ function muestra() {
   add('reloj/turno', document.getElementById('focoTurno')); add('mazo', document.getElementById('mazoFlotante'));
   add('pila', document.getElementById('pilaCentro')); add('marcador', document.getElementById('marcadorEquipos'));
   add('chipEvento', document.getElementById('chipEvento')); add('bannerEquipo', document.getElementById('bannerEquipo'));
-  add('bannerObjetivo', document.getElementById('bannerObjetivo')); add('ultimaVuelta', document.getElementById('bannerUltimaVuelta'));
+  add('bannerObjetivo', document.getElementById('bannerObjetivo'));
   add('btnMenu', document.getElementById('btnMenuMesa')); add('btnBitacora', document.getElementById('btnBitacoraMesa'));
   add('aviso', document.querySelector('#toastContainer .toast-mensaje'));
   const pie = vis(document.getElementById('panelAccionesPartida'));
@@ -58,7 +58,7 @@ function muestra() {
     cartaEvento: !!vis(document.getElementById('cartaEvento')) && !document.getElementById('cartaEvento').classList.contains('saliendo'),
     duelo: !!vis(document.getElementById('presentacionDuelo')),
     resumen: !!vis(document.getElementById('panelResumenRonda')),
-    banners: ['bannerEquipo', 'bannerObjetivo', 'bannerUltimaVuelta'].filter(id => vis(document.getElementById(id))),
+    banners: ['bannerEquipo', 'bannerObjetivo'].filter(id => vis(document.getElementById(id))),
   };
   return { ov, cortados, estado };
 }
@@ -114,6 +114,7 @@ async function escenario(browser, nombre, config, w, h, duracionMs) {
   const [w, h] = (process.env.TAM || '390x844').split('x').map(Number);
   if (!process.env.SOLO || process.env.SOLO === '6') await escenario(browser, '6 jugadores, eventos y poderes', { vidas: 3, maxJugadores: 6, numBots: 5, eventos: true, poderes: true, frecuenciaReyes: 'LOCURA', modoRey: 'DECLARADO' }, w, h, 110000);
   if (!process.env.SOLO || process.env.SOLO === '33') await escenario(browser, '3 contra 3', { vidas: 3, equipos: 3, eventos: true }, w, h, 90000);
+  if (!process.env.SOLO || process.env.SOLO === 'F') await escenario(browser, 'Fiesta 5 jugadores', { vidas: 3, maxJugadores: 5, modoJuego: 'FIESTA' }, w, h, 110000);
   if (!process.env.SOLO || process.env.SOLO === '3') await escenario(browser, 'mesa de 3 (duelo)', { vidas: 2, maxJugadores: 3, numBots: 2, eventos: false }, w, h, 90000);
   await browser.close(); process.exit(0);
 })().catch(e => { console.error('FALLO', e.message); process.exit(1); });

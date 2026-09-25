@@ -43,7 +43,7 @@ function quitarPoder(jugador, id) {
 }
 
 // ¿Conviene la carta `otra` en lugar de la `mia`? (la más baja pierde, salvo
-// que pierda la más alta: campana o "Mundo al revés")
+// que pierda la más alta: "Mundo al revés")
 function mejorQue(otra, mia, pierdeLaMasAlta) {
     return pierdeLaMasAlta ? otra < mia : otra > mia;
 }

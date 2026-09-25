@@ -7,5 +7,6 @@ codigo=$?
 NODE_PATH=/tmp/rey-tests/node_modules node tests/rapida.js || codigo=1
 NODE_PATH=/tmp/rey-tests/node_modules node tests/revancha.js || codigo=1
 NODE_PATH=/tmp/rey-tests/node_modules node tests/reconexion.js || codigo=1
+NODE_PATH=/tmp/rey-tests/node_modules node tests/fiesta.js || codigo=1
 yarn node tests/limpiar-usuarios-prueba.js 2>&1 | grep -v -e dotenv -e INFO
 exit $codigo

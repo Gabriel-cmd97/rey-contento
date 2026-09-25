@@ -5,7 +5,7 @@ const { crearMazo, siguienteVivo, resolverCartas } = require('../reglas');
 
 const j = (id, carta, vidas = 3) => ({ id, nombre: id, cartaActual: carta, vidas });
 const sala = (jugadores, config = {}, extra = {}) => ({
-    jugadores, config: { modoJuego: 'CLASICO', ...config }, campanaTocada: false, vueltasCampana: 0, ...extra,
+    jugadores, config: { modoJuego: 'CLASICO', ...config }, ...extra,
 });
 const vidas = (s) => s.jugadores.map(x => x.vidas);
 
@@ -45,43 +45,6 @@ test('los eliminados no cuentan para la carta mortal', () => {
     const s = sala([j('a', 0, 0), j('b', 5), j('c', 7)]);
     resolverCartas(s);
     assert.deepStrictEqual(vidas(s), [0, 2, 3]);
-});
-
-test('campana: pierde la más alta; quien tocó y acertó no paga extra', () => {
-    const s = sala([j('a', 1), j('b', 8), j('c', 4)], { modoJuego: 'CAMPANA' },
-        { campanaTocada: true, campanaTocadorId: 'a' });
-    const r = resolverCartas(s);
-    assert.deepStrictEqual(vidas(s), [3, 2, 3]);
-    assert.deepStrictEqual(r.campanaInfo, { tocadorId: 'a', acertada: true });
-});
-
-test('campana: quien tocó con la carta mortal paga doble', () => {
-    const s = sala([j('a', 8), j('b', 1), j('c', 4)], { modoJuego: 'CAMPANA' },
-        { campanaTocada: true, campanaTocadorId: 'a' });
-    const r = resolverCartas(s);
-    assert.deepStrictEqual(vidas(s), [1, 3, 3]);
-    assert.strictEqual(r.campanaInfo.acertada, false);
-});
-
-test('campana: 2 vueltas sin tocarla → la más alta paga doble', () => {
-    const s = sala([j('a', 8), j('b', 1)], { modoJuego: 'CAMPANA' }, { vueltasCampana: 2 });
-    const r = resolverCartas(s);
-    assert.deepStrictEqual(vidas(s), [1, 3]);
-    assert.match(r.mensajes[0], /cobarde/);
-});
-
-test('campana: si la penalización extra lo elimina, no pierde otra vida', () => {
-    const s = sala([j('a', 8, 1), j('b', 1)], { modoJuego: 'CAMPANA' }, { vueltasCampana: 2 });
-    resolverCartas(s);
-    assert.deepStrictEqual(vidas(s), [0, 3]);
-});
-
-test('campana: el empate total también perdona la penalización de no tocarla', () => {
-    const s = sala([j('a', 6), j('b', 6)], { modoJuego: 'CAMPANA' }, { vueltasCampana: 2 });
-    const r = resolverCartas(s);
-    assert.deepStrictEqual(vidas(s), [3, 3]);
-    assert.strictEqual(r.mensajes.length, 1);
-    assert.match(r.mensajes[0], /Empate total/);
 });
 
 test('evento Mundo al revés: pierde la carta más alta en clásico', () => {

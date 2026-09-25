@@ -2,13 +2,14 @@
 // cliente en /mis-stats (catalogo) y en el aviso 'logroDesbloqueado', así que
 // para agregar uno basta con sumarlo aquí y otorgarlo en server.js.
 // `icono` es un símbolo del sprite de index.html (i-<icono>).
+// `retirado`: ya no se puede ganar; solo se muestra a quien ya lo tiene.
 
 const CATALOGO = [
     { id: 'aprendiz',       titulo: 'Aprendiz',       descripcion: 'Completa la partida de práctica.',         icono: 'libro' },
     { id: 'primera_corona', titulo: 'Primera corona', descripcion: 'Gana tu primera partida.',                 icono: 'corona' },
     { id: 'por_un_pelo',    titulo: 'Por un pelo',    descripcion: 'Gana una partida con una sola vida.',      icono: 'corazon' },
     { id: 'intocable',      titulo: 'Intocable',      descripcion: 'Gana una partida sin perder ninguna vida.', icono: 'escudo' },
-    { id: 'oido_fino',      titulo: 'Oído fino',      descripcion: 'Toca la campana y acierta.',               icono: 'campana' },
+    { id: 'oido_fino',      titulo: 'Oído fino',      descripcion: 'Toca la campana y acierta.',               icono: 'campana', retirado: true },
     { id: 'muro_del_rey',   titulo: 'Muro del Rey',   descripcion: 'Ten al Rey y frena un cambio.',            icono: 'mano' },
     { id: 'racha_real',     titulo: 'Racha real',     descripcion: 'Gana 3 partidas seguidas.',                icono: 'rayo' },
     { id: 'rey_de_reyes',   titulo: 'Rey de reyes',   descripcion: 'Gana 10 partidas.',                        icono: 'trofeo' },

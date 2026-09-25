@@ -109,7 +109,6 @@ select,
 .btn-reaccion,
 .boton-medieval,
 .boton-lobby,
-.boton-campana,
 .lobby-tab,
 .btn-copiar-link,
 .btn-perfil-top,
@@ -917,7 +916,6 @@ select,
 }
 .acciones-row { display: flex; gap: 8px; align-items: stretch; }
 .acciones-row button { flex-grow: 1; margin: 0; }
-.acciones-row .boton-campana { flex-grow: 0; flex-shrink: 0; width: 52px; padding: 0; font-size: 22px; }
 
 /* === REACCIONES RÁPIDAS === */
 .barra-reacciones {
@@ -940,50 +938,6 @@ select,
 }
 .btn-reaccion:hover:not(:disabled) { background: rgba(255,255,255,0.18); transform: scale(1.25); }
 .btn-reaccion:disabled { opacity: 0.35; cursor: default; }
-
-/* ---- MODO CAMPANA ---- */
-.boton-campana {
-    background: linear-gradient(135deg, #e67e22, #d35400);
-    border: 2px solid #f39c12;
-    border-bottom: 4px solid #b7770d;
-    border-radius: 8px;
-    color: #fff;
-    font-family: 'MedievalSharp', cursive;
-    cursor: pointer;
-    transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
-    box-shadow: 0 4px 0 rgba(0,0,0,0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.boton-campana:hover:not(:disabled) {
-    filter: brightness(1.15);
-    box-shadow: 0 4px 12px rgba(241,196,15,0.5);
-}
-.boton-campana:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.4); border-bottom-width: 1px; }
-.boton-campana:disabled { opacity: 0.25; cursor: default; }
-
-.banner-ultima-vuelta {
-    position: absolute;
-    top: 38px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: linear-gradient(135deg, #f39c12, #e67e22);
-    color: #fff;
-    font-family: 'MedievalSharp', cursive;
-    font-size: 13px;
-    font-weight: bold;
-    padding: 5px 18px;
-    border-radius: 20px;
-    z-index: 50;
-    letter-spacing: 1px;
-    white-space: nowrap;
-    animation: pulsarCampana 1.2s ease infinite;
-}
-@keyframes pulsarCampana {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(243,156,18,0.6); }
-    50%       { box-shadow: 0 0 0 8px rgba(243,156,18,0); }
-}
 
 .reaccion-flotante {
     position: fixed;              /* fijo al viewport, no al silla */
@@ -1587,7 +1541,6 @@ select,
     }
     .acciones-row { width: 100%; }
     #btnMantener, #btnCambiar { flex-grow: 1; width: auto; }
-    .acciones-row .boton-campana { width: 56px; font-size: 24px; }
 
     #bannerEspectador {
         top: 20px;
@@ -2406,7 +2359,6 @@ body.con-guia #toastContainer { bottom: calc(165px + env(safe-area-inset-bottom,
         opacity: 0.55;
         text-shadow: none;
     }
-    .acciones-row .boton-campana { position: relative; }
 }
 
 /* Foco visible para quien juega con teclado. */
@@ -2721,27 +2673,6 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
     filter: drop-shadow(0 0 10px rgba(241,196,15,0.9));
 }
 .destello-rey .icono { width: 34px; height: 34px; stroke-width: 2.2; }
-
-/* Campana: la campana se balancea y una onda dorada cruza el tapete. */
-.campana-balanceo {
-    position: fixed;
-    z-index: 300;
-    pointer-events: none;
-    color: #ffe27a;
-    line-height: 0;
-    transform-origin: 50% 0%;
-    filter: drop-shadow(0 0 8px rgba(241,196,15,0.8));
-}
-.campana-balanceo .icono { width: 40px; height: 40px; stroke-width: 2.2; }
-.onda-campana {
-    position: fixed;
-    z-index: 30;
-    pointer-events: none;
-    border-radius: 50%;
-    border: 3px solid rgba(241,196,15,0.8);
-    box-shadow: 0 0 18px rgba(241,196,15,0.5), inset 0 0 18px rgba(241,196,15,0.35);
-    transform: translate(-50%, -50%);
-}
 
 /* =========================================
    PRÁCTICA GUIADA
@@ -3354,7 +3285,7 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
 
 .boton-rapida { padding-block: 16px; font-size: 17px; }
 
-.aprender-fila { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.aprender-fila { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .tarjeta-aprender {
     position: relative;
     display: flex;
@@ -3739,7 +3670,7 @@ body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 13%; }
 .info-evento { color: #ffe27a; white-space: nowrap; }
 .info-evento .icono { width: 12px; height: 12px; }
 /* Banners en el hueco entre los asientos de arriba y el reloj. */
-.banner-objetivo, .banner-equipo, .banner-ultima-vuelta { top: 31% !important; }
+.banner-objetivo, .banner-equipo { top: 31% !important; }
 
 #toastContainer, body.con-guia #toastContainer { width: min(52%, 220px) !important; }
 .info-objetivo { color: #ffe27a; }
@@ -3832,7 +3763,7 @@ body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 13%; }
     100% { transform: scale(1); }
 }
 
-/* Doble castigo / campana: el corazón roto dice cuántas vidas se fueron */
+/* Doble castigo: el corazón roto dice cuántas vidas se fueron */
 .corazon-roto-capa .vidas-menos {
     position: absolute; left: 50%; top: -1.1em; transform: translateX(-50%);
     font: 800 1.35rem/1 system-ui, sans-serif; color: #ffd9d4;
@@ -3919,3 +3850,322 @@ body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 13%; }
 /* En la sala de espera el escudo del juego sobra (ya se vio al entrar) y
    quita el espacio que necesita "Cómo será la partida". */
 #seccion-lobby:has(#panelJugadores:not(.hidden)) .lobby-blason { display: none; }
+
+/* =========================================
+   EVENTOS DE AMIGOS Y MODO FIESTA
+   ========================================= */
+/* Votación del evento siguiente, dentro del resumen de la ronda. */
+.resumen-votacion { margin: 10px 0 2px; }
+.resumen-votacion-titulo { margin: 0 0 6px; font-size: 13px; color: var(--texto-suave); text-align: center; }
+.resumen-votacion-opciones { display: flex; gap: 6px; }
+.opcion-voto {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 4px;
+    border-radius: 10px;
+    border: 2px solid rgba(255, 226, 122, 0.35);
+    background: rgba(0, 0, 0, 0.35);
+    color: var(--pergamino);
+    font: inherit;
+    cursor: pointer;
+}
+.opcion-voto.elegida { border-color: #ffe27a; background: rgba(255, 226, 122, 0.18); }
+.opcion-voto-icono .icono { width: 22px; height: 22px; color: #ffe27a; }
+.opcion-voto-titulo { font-size: 13px; font-weight: bold; }
+.opcion-voto-desc { font-size: 10px; line-height: 1.2; color: var(--texto-suave); }
+.opcion-voto-cuenta { font-size: 11px; color: #ffe27a; font-variant-numeric: tabular-nums; }
+
+/* Venganza: los asientos que puedes elegir laten. */
+body.venganza-activa .silla:not(.hidden) .perfil-oponente {
+    cursor: pointer;
+    outline: 2px dashed #ff8a65;
+    outline-offset: 3px;
+    border-radius: 10px;
+    animation: latido-venganza 1.1s ease-in-out infinite;
+}
+@keyframes latido-venganza { 50% { outline-color: rgba(255, 138, 101, 0.3); } }
+@media (prefers-reduced-motion: reduce) {
+    body.venganza-activa .silla:not(.hidden) .perfil-oponente { animation: none; }
+}
+.aprender-fila .tarjeta-aprender { padding: 10px 8px; }
+
+/* =========================================
+   LOBBY COMPACTO (25/09/2026): menos scroll en celular
+   La marca pasa a la barra de arriba y se recortan márgenes y rellenos.
+   ========================================= */
+/* Barra de arriba: marca a la izquierda; ayuda, guías, sonido y tu perfil a la derecha */
+.barra-top-juego { padding: 6px 12px; min-height: 46px; }
+.barra-marca { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.barra-marca img { width: 24px; height: 24px; }
+.barra-marca span { font-family: var(--fuente-medieval); font-size: 16px; color: var(--oro); white-space: nowrap; }
+@media (max-width: 420px) { .barra-marca span { display: none; } }
+.barra-acciones { gap: 4px; }
+.btn-sonido-top { color: var(--oro); width: 34px; height: 34px; border-radius: 50%; }
+.btn-sonido-top .icono { width: 19px; height: 19px; }
+.btn-sonido-top:hover { background: rgba(241,196,15,0.12); }
+.btn-perfil-top {
+    gap: 6px; margin-left: 4px; padding: 3px 10px 3px 3px; border-radius: 999px;
+    border: 1px solid rgba(241,196,15,0.35); background: rgba(241,196,15,0.08);
+    font-size: 12px; letter-spacing: 0; text-transform: none; max-width: 190px;
+}
+.avatar-top {
+    position: relative; flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%;
+    display: grid; place-items: center; background: #c0392b; color: #fff; font-size: 13px;
+}
+.avatar-top .punto-en-linea { position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border: 2px solid #140a05; box-sizing: content-box; }
+#displayUsername { max-width: 78px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.victorias-top { display: flex; align-items: center; gap: 2px; color: #ffe27a; font-variant-numeric: tabular-nums; }
+.victorias-top .icono { width: 14px; height: 14px; }
+
+/* Lobby: el blasón queda en una línea discreta (la marca ya está arriba) */
+#seccion-lobby.main-seccion-centro { margin-top: 46px; min-height: calc(100dvh - 46px); padding: 8px 14px 0; }
+#seccion-lobby .lobby-blason { display: none; }
+#seccion-lobby .lobby-tabs { margin-bottom: 10px; }
+#seccion-lobby .lobby-tab { padding: 9px 0; }
+.lobby-bloque { margin-bottom: 10px; }
+.lobby-bloque .lobby-section-label { margin-bottom: 5px; }
+.lobby-bloque .practica-lema { margin: 4px 0 0; font-size: 12.5px; }
+.boton-rapida { padding-block: 12px; }
+.aprender-fila { gap: 6px; }
+.aprender-fila .tarjeta-aprender { padding: 8px 8px 7px; gap: 2px; }
+.tarjeta-aprender .icono { width: 19px; height: 19px; }
+.tarjeta-aprender strong { font-size: 13px; }
+.tarjeta-aprender span { font-size: 10.5px; }
+#seccion-lobby .config-item-nuevo { padding: 7px 10px; min-height: 0; }
+#seccion-lobby .config-grid-nuevo { gap: 6px; margin-bottom: 6px; }
+.lobby-acciones-fijas { padding: 8px 14px calc(8px + env(safe-area-inset-bottom, 0px)); margin-inline: -14px; gap: 6px; }
+#btnCrearSala { padding-block: 13px; }
+
+/* Sala de espera */
+#panelJugadores .sala-code-bar { padding: 10px 12px; gap: 4px !important; }
+#panelJugadores .lobby-section-label[style*="margin-top"] { margin-top: 8px !important; }
+.como-sera { margin-top: 6px; }
+.como-sera dl > div { padding: 3px 0; }
+
+/* ✕ para cerrar Perfil y Reglas: se queda a la vista al bajar */
+.modal-cerrar-x {
+    position: sticky; top: 0; float: right; z-index: 5; margin: -12px -10px 0 8px;
+    width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
+    border: 1px solid rgba(241,196,15,0.45); background: rgba(20,10,5,0.9); color: var(--oro); cursor: pointer;
+}
+.modal-cerrar-x .icono { width: 18px; height: 18px; }
+.modal-cerrar-x-claro { margin: -20px -20px 0 8px; top: 8px; }
+
+/* "Poderes 💔→⚡": pierdes una vida, ganas un poder (sin texto largo) */
+.etiqueta-canje { display: inline-flex; align-items: center; gap: 1px; margin-left: 4px; color: #ffe27a; letter-spacing: 0; }
+.etiqueta-canje .icono { width: 12px; height: 12px; }
+
+/* Sala de espera: "Cómo será la partida" en dos columnas de chips (25/09/2026) */
+.como-sera-chips { list-style: none; margin: 4px 0 0; padding: 6px 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px;
+    border-radius: 10px; background: rgba(0,0,0,.28); border: 1px solid rgba(241,196,15,.18); }
+.como-sera-chips li { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 0; font-size: 13px; color: var(--pergamino); }
+.como-sera-chips li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.como-sera-chips .icono { flex: 0 0 auto; width: 15px; height: 15px; color: #ffe27a; }
+.como-sera-pie { margin: 5px 2px 0; font-size: 12px; color: var(--texto-suave); font-style: italic; }
+/* Con "Cómo será" en chips cabe más lista: ~5 jugadores a la vista en 740 px */
+.contenedor-jugadores { max-height: min(38dvh, 280px); }
+
+/* Salir de la partida: botones lado a lado; si no caben (pantallas muy
+   angostas) se acomodan solos uno arriba del otro, como antes. */
+#modalSalirPartida .acciones-salir { flex-direction: row; flex-wrap: wrap; }
+#modalSalirPartida .acciones-salir button { flex: 1 1 130px; margin: 0; padding-inline: 10px; white-space: nowrap; }
+#modalSalirPartida .acciones-salir button { padding-block: 12px; font-size: 14px; border-radius: 10px; }
+
+/* Cada dato con su explicación corta debajo */
+.como-sera-chips li { align-items: flex-start; padding: 4px 0; }
+.como-sera-chips li .icono { margin-top: 2px; }
+.como-sera-chips li b { display: block; font-weight: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.como-sera-chips li small { display: block; font-size: 11px; line-height: 1.25; color: var(--texto-suave); white-space: normal; }
+.como-sera-chips li span { white-space: normal; }
+
+/* Sala de espera: "+30 s" y "Salir" lado a lado dentro de la barra fija */
+.fila-salir-espera { display: flex; gap: 8px; }
+.fila-salir-espera button { flex: 1 1 0; margin: 0; min-width: 0; white-space: nowrap; }
+.lobby-acciones-fijas .rapida-espera { margin: 0; padding: 6px 10px; font-size: 14px; }
+.lobby-acciones-fijas .rapida-espera span { display: block; font-size: 11.5px; }
+.fila-salir-espera button { padding-inline: 8px; letter-spacing: .5px; font-size: 14px; }
+.fila-salir-espera #btnRapidaMasTiempo { flex: 0 0 38%; }
+
+/* La mesa no se desplaza: el tapete ya se calcula para caber (a veces se
+   pasaba 2–3 px por redondeo y la página hacía scroll). */
+html:has(body.en-mesa), body.en-mesa { overflow: hidden; overscroll-behavior: none; }
+body.en-mesa .perfil-oponente { position: relative; }
+
+/* =========================================
+   INVITAR A LA MESA (25/09/2026)
+   ========================================= */
+.invitar-caja { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; padding: 10px 12px;
+    border-radius: 14px; border: 1px solid rgba(241,196,15,.45);
+    background: linear-gradient(180deg, rgba(241,196,15,.10), rgba(0,0,0,.35)); }
+.invitar-caja.hidden { display: none; }
+.invitar-fila { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.invitar-codigo { display: flex; flex-direction: column; min-width: 0; }
+.invitar-codigo-label { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--texto-suave); }
+.invitar-codigo-num { font-family: var(--fuente-medieval); font-size: 30px; line-height: 1.05; letter-spacing: 6px; color: #ffe27a;
+    text-shadow: 0 0 12px rgba(241,196,15,.35); }
+.chip-visibilidad { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; padding: 4px 10px; border-radius: 999px;
+    font-size: 12px; color: #f6e7c1; background: rgba(0,0,0,.4); border: 1px solid rgba(243,230,200,.3); }
+.chip-visibilidad.publica { color: #b8f5c9; border-color: rgba(46,204,113,.5); background: rgba(46,204,113,.12); }
+.chip-visibilidad .icono { width: 13px; height: 13px; }
+.invitar-acciones { display: grid; grid-template-columns: 1.2fr 1.2fr .8fr; gap: 6px; }
+.btn-invitar { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; padding: 9px 6px;
+    border-radius: 10px; font: 13px Georgia, serif; white-space: nowrap; cursor: pointer; touch-action: manipulation;
+    color: var(--pergamino); background: rgba(0,0,0,.35); border: 1px solid rgba(243,230,200,.28); }
+.btn-invitar .icono { width: 15px; height: 15px; flex: 0 0 auto; }
+.btn-invitar-principal { color: #2b1d1a; font-weight: bold; border-color: #b7770d;
+    background: linear-gradient(180deg, #ffe27a, #e0b12a); }
+.btn-invitar:active { transform: scale(.97); }
+.invitar-ayuda { margin: 0; font-size: 11.5px; line-height: 1.3; color: var(--texto-suave); }
+.contenedor-jugadores { max-height: min(33dvh, 240px); }
+
+/* Chip Privada/Pública: el anfitrión lo toca para abrir o cerrar la mesa */
+button.chip-visibilidad { font: inherit; font-size: 12px; cursor: default; }
+button.chip-visibilidad:not(:disabled) { cursor: pointer; border-color: rgba(241,196,15,.6); }
+button.chip-visibilidad:not(:disabled):active { transform: scale(.96); }
+.chip-cambiar { margin-left: 2px; padding: 1px 6px; border-radius: 999px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em;
+    background: rgba(241,196,15,.22); color: #ffe27a; }
+
+/* =========================================
+   COSMÉTICOS (25/09/2026): marcos de avatar y dorsos de carta
+   ========================================= */
+.marco-bronce { box-shadow: 0 0 0 2px #cd7f32, 0 0 8px rgba(205,127,50,.6) !important; }
+.marco-plata  { box-shadow: 0 0 0 2px #dfe6ee, 0 0 9px rgba(223,230,238,.7) !important; }
+.marco-oro    { box-shadow: 0 0 0 2px #ffd54a, 0 0 12px rgba(255,213,74,.85) !important; }
+.marco-fuego  { box-shadow: 0 0 0 2px #ff7a2f, 0 0 12px rgba(255,90,20,.85) !important; animation: marco-fuego 1.6s ease-in-out infinite; }
+@keyframes marco-fuego { 50% { box-shadow: 0 0 0 2px #ffd54a, 0 0 18px rgba(255,160,40,.95); } }
+@media (prefers-reduced-motion: reduce) { .marco-fuego { animation: none; } }
+
+.dorso-carmesi { background: repeating-linear-gradient(-45deg, #5c0f16, #5c0f16 3px, #8e1b25 3px, #8e1b25 6px) !important; }
+.dorso-real    { background: repeating-linear-gradient(-45deg, #0d2a5c, #0d2a5c 3px, #1c4a94 3px, #1c4a94 6px) !important; }
+.dorso-dorado  { background: repeating-linear-gradient(-45deg, #8a6212, #8a6212 3px, #d9a820 3px, #d9a820 6px) !important;
+    border-color: #ffe27a !important; }
+
+/* Perfil: Mis cosméticos */
+.perfil-cosm-ayuda { margin: -4px 0 6px; font-size: 12px; color: var(--texto-suave); }
+.perfil-cosm-tipo { margin: 8px 0 4px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--texto-suave); }
+.perfil-cosm-fila { display: flex; gap: 6px; overflow-x: auto; padding: 4px 2px 6px; scrollbar-width: thin; }
+.cosm-opcion { flex: 0 0 72px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px 6px;
+    border-radius: 10px; border: 1px solid rgba(243,230,200,.2); background: rgba(0,0,0,.3); color: var(--pergamino); cursor: pointer;
+    font: 11px Georgia, serif; }
+.cosm-opcion.elegido { border-color: #ffe27a; background: rgba(241,196,15,.16); }
+.cosm-opcion.bloqueado { opacity: .55; cursor: default; }
+.cosm-nombre { line-height: 1.15; text-align: center; }
+.cosm-nombre .icono { width: 10px; height: 10px; }
+.avatar-cosm { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: #c0392b; color: #fff;
+    font-size: 15px; font-weight: bold; }
+.avatar-cosm .icono, .avatar-top .icono, .jugador-avatar-lobby .icono { width: 60%; height: 60%; }
+.muestra-dorso { width: 26px; height: 38px; border-radius: 4px; border: 2px solid #fff;
+    background: repeating-linear-gradient(-45deg, #1d1d1d, #1d1d1d 2px, #3e2723 2px, #3e2723 4px); }
+/* Íconos de avatar: tamaño fijo (con % el SVG medía 150 px de alto y se encimaba) */
+#inicialUsuario { display: grid; place-items: center; line-height: 0; }
+.avatar-top .icono { width: 15px; height: 15px; }
+.jugador-avatar-lobby .icono { width: 17px; height: 17px; }
+.avatar-cosm .icono { width: 19px; height: 19px; }
+/* Celulares muy angostos (≤ 340 px): los tres botones de invitar sin ícono, para que quepa el texto */
+@media (max-width: 340px) {
+    .btn-invitar .icono { display: none; }
+    .btn-invitar { font-size: 12px; padding-inline: 4px; }
+}
+
+/* QA 25/09/2026 (360 px, parejas 3 contra 3): el cuadro del reloj quedaba
+   pegado a los asientos de los lados; se angosta para dejarles aire. */
+@media (max-width: 420px) {
+    .foco-turno-medieval { max-width: calc(100% - 170px) !important; padding-inline: 10px !important; }
+}
+/* Nombres del resumen de ronda: hasta dos líneas en vez de cortarse en una */
+.resumen-carta-nombre { white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.15; }
+
+/* =========================================
+   MESA HORIZONTAL (25/09/2026)
+   Con el celular acostado: la mesa a la izquierda y los botones en una
+   columna a la derecha. Lo activa la orientación (así se ve bien aunque lo
+   giren sin querer); "Jugar en horizontal" del menú gira la pantalla.
+   ========================================= */
+@media (orientation: landscape) and (max-height: 600px) {
+    body.en-mesa { --ancho-columna: clamp(170px, 24vw, 230px); }
+    body.en-mesa #mesaDeJuego { padding: 0 !important; }
+    body.en-mesa .tapete-virtual {
+        position: fixed !important; top: 6px !important; bottom: 6px !important; left: 6px !important;
+        right: calc(var(--ancho-columna) + 10px) !important;
+        width: auto !important; height: auto !important; max-width: none !important; min-height: 0 !important;
+        margin: 0 !important; border-width: 6px !important; border-radius: 26px !important;
+    }
+    /* Cartas más chicas: el alto manda (el JS las calcula por ancho) */
+    :root {
+        --carta-w: 58px !important; --carta-h: 84px !important; --carta-num: 30px !important; --carta-fig: 26px !important;
+        --reverso-w: 24px !important; --reverso-h: 35px !important;
+        --mini-w: 38px !important; --mini-h: 54px !important;
+        --pila-w: 34px !important; --pila-h: 48px !important;
+    }
+    body.en-mesa #panelAccionesPartida {
+        position: fixed !important; top: 0 !important; bottom: 0 !important; right: 0 !important; left: auto !important;
+        width: var(--ancho-columna) !important; max-width: none !important; transform: none !important;
+        display: flex; flex-direction: column; justify-content: flex-end; gap: 6px;
+        padding: 52px 8px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+        border-radius: 0 !important; border-top: 0 !important; border-left: 1px solid rgba(241,196,15,.3) !important;
+        overflow-y: auto;
+    }
+    body.en-mesa #panelAccionesPartida.hidden { display: none !important; }
+    body.en-mesa .acciones-row { display: grid !important; grid-template-columns: 1fr; gap: 6px; }
+    body.en-mesa .acciones-row #btnReacciones { order: 3; width: 100%; height: 34px; }
+    body.en-mesa .acciones-row #btnMantener, body.en-mesa .acciones-row #btnCambiar { width: 100% !important; padding-block: 12px; }
+    body.en-mesa .guia-acciones { font-size: 11px; line-height: 1.3; max-height: 40vh; overflow-y: auto; }
+    body.en-mesa .barra-reacciones.abierta { position: static !important; flex-wrap: wrap; }
+    /* Botones de las esquinas: bitácora sobre la mesa, menú arriba de la columna */
+    body.en-mesa #btnMenuMesa { right: 10px !important; }
+    /* Tu nombre y vidas al lado de tu carta (arriba tapaba el mazo) */
+    body.en-mesa .mi-perfil-esquina { bottom: 22px !important; left: calc(50% + var(--carta-w) / 2 + 14px) !important; transform: none !important; }
+    /* Asientos compactos y más separados en vertical (el alto es poco) */
+    body.en-mesa .perfil-oponente { padding: 3px 8px !important; min-width: 66px; max-width: 120px; }
+    body.en-mesa .perfil-oponente > div:first-child { font-size: 11px !important; }
+    body.en-mesa .perfil-oponente .vidas-destacadas { font-size: 11px; }
+    body.en-mesa .rol-equipo { font-size: 9px; padding: 0 5px; }
+    body.en-mesa .perfil-carta-reverso, body.en-mesa .mini-carta-frente { margin-top: 2px !important; }
+    body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 6% !important; }
+    body.en-mesa .silla.left, body.en-mesa .silla.right { top: 60% !important; }
+    /* Resumen de ronda a lo ancho y con scroll propio si no cabe (votación de Fiesta) */
+    body.en-mesa .resumen-box { width: min(560px, 94%); max-height: calc(100% - 12px); overflow-y: auto; padding: 10px 14px; }
+    body.en-mesa .resumen-cartas-grid { gap: 6px; max-width: none !important; display: flex !important; flex-wrap: wrap; justify-content: center; }
+    body.en-mesa .opcion-voto-desc { display: none; }
+    body.en-mesa .opcion-voto { padding: 6px 4px; }
+}
+
+/* =========================================
+   JUGAR CON GESTOS (25/09/2026)
+   Sin botones grandes: indicadores junto a tu carta en tu turno.
+   ========================================= */
+body:not(.con-botones) #btnMantener, body:not(.con-botones) #btnCambiar { display: none !important; }
+.chip-jugada { display: none; }
+body:not(.con-botones).puedo-jugar .chip-jugada {
+    display: flex; flex-direction: column; align-items: center; gap: 1px;
+    position: absolute; bottom: calc(var(--carta-h, 125px) / 2 - 6px); z-index: 25;
+    padding: 7px 10px; border-radius: 14px; cursor: pointer; touch-action: manipulation;
+    font: 13px var(--fuente-medieval); letter-spacing: .5px; line-height: 1.1;
+    box-shadow: 0 4px 14px rgba(0,0,0,.55);
+    animation: chip-entra .35s ease-out both;
+}
+.chip-jugada b { font-weight: normal; }
+.chip-jugada small { font: 10.5px Georgia, serif; opacity: .85; }
+.chip-jugada .icono { width: 16px; height: 16px; }
+.chip-mantener { right: calc(50% + var(--carta-w, 90px) / 2 + 12px);
+    color: #f6e7c1; background: linear-gradient(180deg, #6d4c41, #3e2723); border: 1px solid rgba(241,196,15,.55); }
+.chip-cambiar { left: calc(50% + var(--carta-w, 90px) / 2 + 12px);
+    color: #2b1d1a; background: linear-gradient(180deg, #ffe27a, #e0b12a); border: 1px solid #b7770d; }
+.chip-flecha { font-size: 18px; line-height: .8; animation: chip-flecha 1.1s ease-in-out infinite; }
+@keyframes chip-flecha { 50% { transform: translateX(6px); } }
+@keyframes chip-entra { from { opacity: 0; transform: scale(.8); } }
+@media (prefers-reduced-motion: reduce) { .chip-flecha, .chip-jugada { animation: none !important; } }
+/* En horizontal: los dos indicadores a la derecha de la carta (uno arriba del
+   otro) y tu nombre a la izquierda. */
+@media (orientation: landscape) and (max-height: 600px) {
+    /* Un indicador a cada lado de la carta, como en vertical; tu nombre más a la izquierda */
+    body.en-mesa:not(.con-botones).puedo-jugar .chip-jugada { bottom: calc(var(--carta-h) / 2 - 18px); }
+    body.en-mesa:not(.con-botones) .mi-perfil-esquina { left: auto !important; right: calc(50% + var(--carta-w) / 2 + 106px) !important; }
+    /* Sin botones grandes la columna solo lleva guía y reacciones: más angosta */
+    body.en-mesa:not(.con-botones) { --ancho-columna: clamp(120px, 17vw, 170px); }
+}
+.chip-jugada small { white-space: nowrap; }
