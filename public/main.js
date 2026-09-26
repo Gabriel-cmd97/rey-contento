@@ -83,7 +83,43 @@ const Sonidos = (function() {
         } catch (e) {}
     }
 
+    // Ruido corto filtrado (aplausos, splat, whoosh)
+    function ruido(duracion, gainVal, frecFiltro, tipoFiltro = 'lowpass', retraso = 0) {
+        if (!habilitado) return;
+        const c = getCtx();
+        if (!c) return;
+        try {
+            const buf = c.createBuffer(1, Math.floor(c.sampleRate * duracion), c.sampleRate);
+            const d = buf.getChannelData(0);
+            for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+            const src = c.createBufferSource(); src.buffer = buf;
+            const f = c.createBiquadFilter(); f.type = tipoFiltro; f.frequency.value = frecFiltro;
+            const g = c.createGain(); g.gain.value = gainVal;
+            src.connect(f); f.connect(g); g.connect(c.destination);
+            src.start(c.currentTime + retraso);
+        } catch (e) {}
+    }
+
     return {
+        // Sonido de cada reacción (y del impacto de lo que se lanza).
+        reaccion: (emoji) => {
+            if (!habilitado) return;
+            const t = (f, d, tipo, g, ms) => setTimeout(() => tono(f, d, tipo, g), ms);
+            switch (emoji) {
+                case '😂': [620, 540, 470, 420].forEach((f, i) => t(f, .09, 'triangle', .08, i * 95)); break;
+                case '👏': [0, 110, 210, 330, 430].forEach(ms => ruido(.06, .25, 2500, 'highpass', ms / 1000)); break;
+                case '🔥': ruido(.45, .18, 900, 'bandpass'); break;
+                case '😡': t(160, .25, 'sawtooth', .06, 0); t(130, .3, 'sawtooth', .06, 120); break;
+                case '😭': [520, 480, 440].forEach((f, i) => t(f, .22, 'sine', .07, i * 170)); break;
+                case '🍅': case '🥚': ruido(.22, .45, 700); t(90, .18, 'sine', .2, 0); break;
+                case '💋': t(900, .08, 'sine', .08, 0); t(1400, .07, 'sine', .07, 60); break;
+                case '🌹': [880, 1175, 1320].forEach((f, i) => t(f, .35, 'sine', .06, i * 90)); break;
+                case '🍺': t(2100, .12, 'triangle', .07, 0); t(2600, .18, 'triangle', .07, 90); break;
+                case '🐉': ruido(.5, .2, 400, 'bandpass'); t(110, .5, 'sawtooth', .07, 0); break;
+                case '💎': case '⚡': [1046, 1318, 1568, 2093].forEach((f, i) => t(f, .2, 'triangle', .07, i * 70)); break;
+                default: tono(680, .05, 'sine', .1);
+            }
+        },
         estaHabilitado: () => habilitado,
         toggle: () => {
             habilitado = !habilitado;
@@ -203,7 +239,7 @@ function pintarCartaPrincipal(carta) {
     document.getElementById('figuraCarta').innerHTML = hay ? figuraIMG(carta, 34) : '';
     document.getElementById('nombrePersonaje').innerText = hay ? (nombresCartas[carta] || '') : '';
     document.getElementById('cartaFrente').className = "face front-character " +
-        (carta === 0 ? "carta-0" : carta === 9 ? "carta-9" : "");
+        (carta === 0 ? "carta-0" : carta === 9 ? "carta-9" : "") + (hay ? ` valor-${carta}` : '');
 }
 
 // ==========================================
@@ -426,6 +462,7 @@ function renderizarPila() {
 
     if (contador) contador.textContent = `${total} jugadas`;
     pilaRenderizadaCount = total;
+    colorearCartas(document.getElementById('pilaCentro') || document);
 }
 
 function agregarCartasAPila(jugadores) {
@@ -443,7 +480,21 @@ function limpiarPila() {
     renderizarPila();
 }
 
+function lanzarConfeti() {
+    if (menosMovimiento()) return;
+    const colores = ['#ffe27a', '#e0b12a', '#c0392b', '#2ecc71', '#3498db', '#9b59b6', '#ff7a2f', '#ffffff'];
+    for (let i = 0; i < 90; i++) {
+        const p = document.createElement('div');
+        p.className = 'confeti';
+        const dur = 2400 + Math.random() * 2200;
+        p.style.cssText = `left:${Math.random() * 100}vw;background:${colores[i % colores.length]};width:${6 + Math.random() * 6}px;height:${8 + Math.random() * 8}px;animation-duration:${dur}ms;animation-delay:${Math.random() * 900}ms;--deriva:${(Math.random() - .5) * 160}px;--giro:${(Math.random() > .5 ? 1 : -1) * (360 + Math.random() * 720)}deg`;
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), dur + 1000);
+    }
+}
+
 function lanzarCoronasVictoria() {
+    lanzarConfeti();
     const simbolos = ['👑','⚔️','🏆','✨','👑','🌟','👑'];
     const total = 28;
     for (let i = 0; i < total; i++) {
@@ -482,6 +533,13 @@ document.getElementById('chipMantener')?.addEventListener('click', () => documen
 document.getElementById('chipCambiar')?.addEventListener('click', () => document.getElementById('btnCambiar')?.click());
 
 function actualizarBotonesTurno(esMio) {
+    // "¡Es tu turno!": la orilla de la pantalla brilla y tu carta da un saltito.
+    if (esMio && !document.body.classList.contains('puedo-jugar') && !menosMovimiento()) {
+        document.getElementById('miCarta')?.animate([
+            { transform: 'translateY(0)' }, { transform: 'translateY(-16px)', offset: .35 },
+            { transform: 'translateY(0)', offset: .7 }, { transform: 'translateY(-5px)', offset: .85 }, { transform: 'translateY(0)' },
+        ], { duration: 650, easing: 'ease-out', composite: 'add' });
+    }
     document.body.classList.toggle('puedo-jugar', !!esMio);
     document.getElementById('btnCambiar').innerText = 'CAMBIAR';
     pintarBarraPoderes();
@@ -604,7 +662,32 @@ window.addEventListener('DOMContentLoaded', () => {
     aplicar();
 });
 
+// Cartas a color: cada valor tiene su tinta (clase valor-N, ver bloque
+// CARTAS A COLOR de style.css). Se aplica a las cartas boca arriba de la mesa,
+// la pila y el resumen leyendo el número que ya pintaron.
+function colorearCartas(raiz = document) {
+    raiz.querySelectorAll('.mini-carta-frente, .carta-en-pila, .resumen-carta-cara').forEach(el => {
+        const n = parseInt(el.textContent, 10);
+        if (Number.isNaN(n)) return;
+        [...el.classList].filter(c => c.startsWith('valor-')).forEach(c => el.classList.remove(c));
+        el.classList.add(`valor-${n}`);
+    });
+}
+
+// La mesa toma el color del evento de la ronda (clase tema-<ID>) y, sin
+// evento, el tapete que elegiste (cosmético, clase tapete-<id>).
+function aplicarTemaMesa() {
+    const t = document.getElementById('tapeteVistas');
+    if (!t) return;
+    // Ojo: la clase base se llama "tapete-virtual"; no quitarla.
+    [...t.classList].filter(c => c.startsWith('tema-') || (c.startsWith('tapete-') && c !== 'tapete-virtual')).forEach(c => t.classList.remove(c));
+    if (eventoActual) t.classList.add(`tema-${eventoActual.id}`);
+    else if (miLook?.tapete && miLook.tapete !== 'verde') t.classList.add(`tapete-${miLook.tapete}`);
+}
+
 function pintarInfoMesa() {
+    aplicarTemaMesa();
+    colorearCartas(document.getElementById('tapeteVistas') || document);
     const info = document.getElementById('infoMesa');
     if (!info) return;
     const ronda = document.getElementById('numRonda')?.innerText || '1';
@@ -1878,7 +1961,54 @@ function registrarCaidas(datos) {
     });
 }
 
+// Revelación con drama: la carta mortal se agranda con brillo rojo, la mesa
+// tiembla y suena un golpe (si no fuiste tú, que ya suena el daño).
+function dramaCartaMortal(datos) {
+    if (datos.perdedores.length === 0) return;
+    colorearCartas(document.getElementById('tapeteVistas'));
+    const perdedores = datos.jugadores.filter(j => datos.perdedores.includes(j.id));
+    perdedores.forEach(j => {
+        const el = j.id === socket.id ? document.getElementById('miCarta')
+            : document.querySelector(`.silla:not(.hidden)[data-jugador-id="${CSS.escape(j.id)}"] .mini-carta-frente`);
+        if (!el) return;
+        el.classList.remove('carta-mortal-drama'); void el.offsetWidth;
+        el.classList.add('carta-mortal-drama');
+        setTimeout(() => el.classList.remove('carta-mortal-drama'), 1600);
+    });
+    if (menosMovimiento()) return;
+    const tapete = document.getElementById('tapeteVistas');
+    tapete?.classList.remove('temblor'); void tapete?.offsetWidth; tapete?.classList.add('temblor');
+    setTimeout(() => tapete?.classList.remove('temblor'), 500);
+    if (!datos.perdedores.includes(socket.id)) Sonidos.danio();
+}
+
+// Podio de los 3 primeros con su avatar y marco (la tabla completa sigue abajo).
+function pintarPodio(ganador) {
+    const podio = document.getElementById('podioFinal');
+    if (!podio) return;
+    const tabla = ganador.clasificacion || [];
+    if (ganador.esEquipo || tabla.length < 2) { podio.classList.add('hidden'); return; }
+    const lugares = [tabla[1], tabla[0], tabla[2]].map((c, i) => c ? { c, lugar: [2, 1, 3][i] } : null).filter(Boolean);
+    podio.innerHTML = lugares.map(({ c, lugar }) => `
+        <div class="podio-lugar podio-${lugar}${c.nombre === miNombreUsuario ? ' es-yo' : ''}">
+            ${lugar === 1 ? `<span class="podio-corona">${icono('corona')}</span>` : ''}
+            <span class="avatar-cosm podio-avatar${c.esBot ? '' : claseMarco(c.look)}">${c.esBot ? icono('bot') : contenidoAvatar(c.look, c.nombre)}</span>
+            <span class="podio-nombre">${escapeHTML(c.nombre)}</span>
+            <span class="podio-base">${lugar}.º</span>
+        </div>`).join('');
+    podio.classList.remove('hidden');
+}
+
 function pintarFinalPartida(ganador) {
+    document.getElementById('progresoXP')?.classList.add('hidden');
+    // En el torneo no hay revancha: se pasa a la final (si ganaste tu mesa).
+    const enTorneo = !!ganador.torneo;
+    document.getElementById('btnRevancha')?.classList.toggle('hidden', enTorneo);
+    const cont = document.getElementById('contadorRevancha');
+    if (cont && enTorneo) cont.textContent = ganador.torneo === 'final' ? '🏆 ¡Fin del torneo de la noche!'
+        : ganador.nombre === miNombreUsuario ? '🏆 ¡Ganaste tu mesa! En unos segundos pasas a la final.' : '🏆 Esperando a que termine la final del torneo…';
+    else if (cont) cont.textContent = 'Esperando jugadores...';
+    pintarPodio(ganador);
     const rondas = parseInt(document.getElementById('numRonda')?.innerText || '0', 10) || 0;
     const hayGanador = !!ganador.id;
     const gane = ganador.esEquipo ? (ganador.integrantes || []).includes(miNombreUsuario) : (hayGanador && ganador.id === socket.id);
@@ -1911,10 +2041,12 @@ function pintarFinalPartida(ganador) {
         filas.length = 0;
         ganador.clasificacion.forEach((c, i, tabla) => {
             const anterior = filas[filas.length - 1];
-            const empata = anterior && c.estado === 'cayo' && tabla[i - 1].estado === 'cayo' && tabla[i - 1].ronda === c.ronda;
+            // Empate solo si cayeron en la misma ronda y perdieron su primera vida en la misma ronda.
+            const empata = anterior && c.estado === 'cayo' && tabla[i - 1].estado === 'cayo' && tabla[i - 1].ronda === c.ronda && tabla[i - 1].primera === c.primera;
+            const empataConSiguiente = c.estado === 'cayo' && tabla[i + 1]?.estado === 'cayo' && tabla[i + 1].ronda === c.ronda && tabla[i + 1].primera === c.primera;
             const detalle = c.estado === 'gano' ? (c.vidas > 0 ? `${c.vidas} ${c.vidas === 1 ? 'vida' : 'vidas'} en pie` : '')
                 : c.estado === 'vivo' ? `seguía con ${c.vidas} ${c.vidas === 1 ? 'vida' : 'vidas'}`
-                : c.estado === 'cayo' ? `cayó en la ronda ${c.ronda}` : 'salió de la partida';
+                : c.estado === 'cayo' ? `cayó en la ronda ${c.ronda}${empata || empataConSiguiente ? ' (empate)' : ''}` : 'salió de la partida';
             filas.push({ lugar: empata ? anterior.lugar : filas.length + 1, nombre: c.nombre + (c.esBot ? ' (bot)' : ''), detalle,
                          esYo: c.nombre === miNombreUsuario });
         });
@@ -1964,7 +2096,7 @@ function mostrarReaccion(jugadorId, emoji) {
     const dy = Math.round((destinoY - origenY) * 0.45);
 
     const el = document.createElement('div');
-    el.className = 'reaccion-flotante';
+    el.className = 'reaccion-flotante' + (REACCIONES.especiales[emoji] ? ' reaccion-especial' : '');
     el.textContent = emoji;
     el.style.left = origenX + 'px';
     el.style.top  = origenY + 'px';
@@ -1972,9 +2104,123 @@ function mostrarReaccion(jugadorId, emoji) {
     el.style.setProperty('--dy', dy + 'px');
 
     document.body.appendChild(el);
-    Sonidos.pop();
+    Sonidos.reaccion(emoji);
     setTimeout(() => el.remove(), 2700);
 }
+
+// ==========================================
+// REACCIONES: catálogo, lanzar cosas y sugerencias
+// ==========================================
+// La lista cerrada también vive en server.js (EMOJIS_REACCION, EMOJIS_LANZABLES,
+// REACCIONES_ESPECIALES): si agregas una, agrégala en los dos lados.
+const REACCIONES = {
+    emojis: ['😂', '🔥', '😡', '👏', '🙏', '😈', '🤫', '😭', '😱', '🤡', '👑', '💀', '🎭', '🍀'],
+    especiales: { '🐉': 'veterano', '💎': 'rey_de_reyes', '⚡': 'racha_real' },
+    lanzar: ['🍅', '🌹', '💋', '🥚', '🍺'],
+};
+let misLogros = []; // ids de logro (de /mis-stats) para las especiales
+let _apuntando = null; // emoji que vas a lanzar (esperando que toques un asiento)
+
+function pintarPanelReacciones() {
+    const g = document.getElementById('gridEmojis'), l = document.getElementById('gridLanzar');
+    if (!g || !l) return;
+    const boton = (e, extra = '', titulo = '') => `<button type="button" class="btn-reaccion${extra}" data-emoji="${e}"${titulo ? ` title="${escapeHTML(titulo)}"` : ''}>${e}</button>`;
+    g.innerHTML = REACCIONES.emojis.map(e => boton(e)).join('')
+        + Object.entries(REACCIONES.especiales).map(([e, logro]) => misLogros.includes(logro)
+            ? boton(e, ' reaccion-especial-btn', 'Especial')
+            : `<button type="button" class="btn-reaccion bloqueada" disabled title="Se gana con un logro">${icono('candado')}</button>`).join('');
+    l.innerHTML = REACCIONES.lanzar.map(e => boton(e, ' lanzable', 'Toca y luego elige a quién')).join('');
+}
+
+// Elemento de un asiento (o el tuyo) para animar desde/hacia él.
+function elementoAsiento(id) {
+    return id === socket.id ? document.getElementById('miCarta') || document.getElementById('miSilla')
+        : document.querySelector(`.silla:not(.hidden)[data-jugador-id="${CSS.escape(id)}"] .perfil-oponente`);
+}
+
+// Lo lanzado vuela en arco de un asiento a otro y hace su efecto al llegar.
+function mostrarLanzamiento(desdeId, haciaId, emoji) {
+    const a = elementoAsiento(desdeId), b = elementoAsiento(haciaId);
+    if (!a || !b) return mostrarReaccion(desdeId, emoji);
+    const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+    const x0 = ra.left + ra.width / 2, y0 = ra.top + ra.height / 2, x1 = rb.left + rb.width / 2, y1 = rb.top + rb.height / 2;
+    const p = document.createElement('div');
+    p.className = 'proyectil';
+    p.textContent = emoji;
+    p.style.left = x0 + 'px'; p.style.top = y0 + 'px';
+    document.body.appendChild(p);
+    const dx = x1 - x0, dy = y1 - y0, alto = -Math.max(60, Math.abs(dx) * .35);
+    const dur = menosMovimiento() ? 0 : 750;
+    p.animate([
+        { transform: 'translate(-50%,-50%) scale(.6) rotate(0deg)' },
+        { transform: `translate(calc(-50% + ${dx / 2}px), calc(-50% + ${dy / 2 + alto}px)) scale(1.25) rotate(200deg)`, offset: .5 },
+        { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1) rotate(400deg)` },
+    ], { duration: dur, easing: 'cubic-bezier(.35,.1,.55,1)', fill: 'forwards' }).onfinish = () => {
+        p.remove();
+        impactoLanzamiento(x1, y1, emoji);
+        if (haciaId === socket.id) sugerirReacciones(['😡', '😂', emoji === '🌹' || emoji === '💋' ? '🥰' : '🍅'].filter(e => REACCIONES.emojis.includes(e) || REACCIONES.lanzar.includes(e)), desdeId);
+    };
+}
+
+function impactoLanzamiento(x, y, emoji) {
+    Sonidos.reaccion(emoji);
+    vibrar(30);
+    const tipo = { '🍅': 'splat-rojo', '🥚': 'splat-amarillo', '🌹': 'corazones', '💋': 'corazones', '🍺': 'brindis' }[emoji] || '';
+    const golpe = document.createElement('div');
+    golpe.className = `impacto ${tipo}`;
+    golpe.textContent = emoji === '🍺' ? '🍻' : emoji;
+    golpe.style.left = x + 'px'; golpe.style.top = y + 'px';
+    document.body.appendChild(golpe);
+    setTimeout(() => golpe.remove(), 1600);
+    if (tipo === 'corazones' && !menosMovimiento()) {
+        for (let i = 0; i < 7; i++) {
+            const c = document.createElement('div');
+            c.className = 'corazon-impacto'; c.textContent = '💕';
+            c.style.left = x + 'px'; c.style.top = y + 'px';
+            c.style.setProperty('--dx', `${(Math.random() - .5) * 110}px`); c.style.setProperty('--dy', `${-40 - Math.random() * 70}px`);
+            document.body.appendChild(c);
+            setTimeout(() => c.remove(), 1300);
+        }
+    }
+}
+
+// Sugerencia en el momento: dos o tres reacciones que vienen al caso, 4 s.
+// `aQuien`: si es una respuesta a un lanzamiento, lo lanzable se le regresa.
+let _sugerenciaTimer = null;
+function sugerirReacciones(emojis, aQuien = null) {
+    const caja = document.getElementById('sugerenciaReaccion');
+    if (!caja || !document.body.classList.contains('en-mesa')) return;
+    caja.innerHTML = emojis.map(e => `<button type="button" data-emoji="${e}">${e}</button>`).join('');
+    caja.dataset.aQuien = aQuien || '';
+    caja.classList.remove('hidden');
+    clearTimeout(_sugerenciaTimer);
+    _sugerenciaTimer = setTimeout(() => caja.classList.add('hidden'), 4000);
+}
+document.getElementById('sugerenciaReaccion')?.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-emoji]');
+    if (!b) return;
+    const caja = e.currentTarget, emoji = b.dataset.emoji;
+    caja.classList.add('hidden');
+    const aQuien = listaJugadoresGlobal.find(j => j.id === caja.dataset.aQuien);
+    if (REACCIONES.lanzar.includes(emoji) && aQuien) lanzarA(aQuien, emoji);
+    else enviarReaccion(emoji);
+});
+
+function enviarReaccion(emoji) {
+    if (window._cooldownReaccion) return;
+    socket.emit('reaccion', { idSala: miSalaActual, emoji });
+    mostrarReaccion(socket.id, emoji);
+    window._cooldownReaccion = true;
+    setTimeout(() => { window._cooldownReaccion = false; }, 2500);
+}
+function lanzarA(j, emoji) {
+    if (window._cooldownReaccion) return;
+    socket.emit('reaccion', { idSala: miSalaActual, emoji, objetivo: j.nombre });
+    mostrarLanzamiento(socket.id, j.id, emoji);
+    window._cooldownReaccion = true;
+    setTimeout(() => { window._cooldownReaccion = false; }, 2500);
+}
+function cancelarApuntar() { _apuntando = null; document.body.classList.remove('apuntando'); }
 
 // ==========================================
 // RESUMEN DE RONDA
@@ -2026,6 +2272,7 @@ function mostrarResumenRonda(datos) {
     if (msRestantes > 0) iniciarCuentaResumen(msRestantes, socket.id === datos.dealerId);
     else detenerCuentaResumen();
 
+    colorearCartas(panel);
     panel.classList.remove('hidden');
 }
 
@@ -2261,7 +2508,8 @@ async function cargarMiPerfil() {
         document.getElementById('pRachaActual').textContent = data.racha_actual ?? '—';
         document.getElementById('pRachaMax').textContent    = data.racha_maxima ?? '—';
         pintarLogrosPerfil(data.catalogoLogros || [], data.logros || []);
-        pintarCosmeticosPerfil(data.cosmeticos, data.logros || [], data.catalogoLogros || []);
+        pintarNivelPerfil(data.nivel);
+        pintarCosmeticosPerfil(data.cosmeticos, data.logros || [], data.catalogoLogros || [], data.nivel?.nivel || 1);
         pintarHistorialPerfil(data.historial || []);
     } catch { /* sin conexión, los valores quedan en — */ }
 }
@@ -2292,9 +2540,10 @@ function pintarMiLook() {
     }
     const reverso = document.querySelector('#miCarta .back-pattern');
     if (reverso) reverso.className = 'face back-pattern' + claseDorso(miLook);
+    aplicarTemaMesa();
 }
 
-function pintarCosmeticosPerfil(datos, ganados, catalogoLogros) {
+function pintarCosmeticosPerfil(datos, ganados, catalogoLogros, nivel = 1) {
     const caja = document.getElementById('pCosmeticos');
     if (!caja || !datos) return;
     _catalogoCosm = datos.catalogo;
@@ -2304,17 +2553,19 @@ function pintarCosmeticosPerfil(datos, ganados, catalogoLogros) {
     const nombreLogro = (id) => catalogoLogros.find(l => l.id === id)?.titulo || id;
     const muestra = (c) => c.tipo === 'avatar' ? `<span class="avatar-cosm">${c.icono ? icono(c.icono) : escapeHTML(miNombreUsuario.charAt(0).toUpperCase())}</span>`
         : c.tipo === 'marco' ? `<span class="avatar-cosm${c.id !== 'ninguno' ? ' marco-' + c.id : ''}">${contenidoAvatar(miLook, miNombreUsuario)}</span>`
+        : c.tipo === 'tapete' ? `<span class="muestra-tapete tapete-${c.id}"></span>`
         : `<span class="muestra-dorso${c.id !== 'clasico' ? ' dorso-' + c.id : ''}"></span>`;
-    const titulos = { avatar: 'Avatar', marco: 'Marco', dorso: 'Dorso de tus cartas' };
-    caja.innerHTML = ['avatar', 'marco', 'dorso'].map(tipo => `
+    const titulos = { avatar: 'Avatar', marco: 'Marco', dorso: 'Dorso de tus cartas', tapete: 'Tapete de tu mesa (solo tú lo ves)' };
+    caja.innerHTML = ['avatar', 'marco', 'dorso', 'tapete'].map(tipo => `
         <p class="perfil-cosm-tipo">${titulos[tipo]}</p>
         <div class="perfil-cosm-fila">${datos.catalogo.filter(c => c.tipo === tipo).map(c => {
-            const libre = !c.logro || tengo.has(c.logro);
+            const libre = (!c.logro || tengo.has(c.logro)) && (!c.nivel || nivel >= c.nivel);
+            const requisito = c.nivel && nivel < c.nivel ? `Nivel ${c.nivel}` : nombreLogro(c.logro);
             const elegido = datos.elegidos[tipo] === c.id;
             return `<button type="button" class="cosm-opcion${elegido ? ' elegido' : ''}${libre ? '' : ' bloqueado'}"
                 data-tipo="${tipo}" data-id="${escapeHTML(c.id)}" ${libre ? '' : 'disabled'}
-                title="${escapeHTML(libre ? c.titulo : `${c.titulo}: se gana con el logro «${nombreLogro(c.logro)}»`)}">
-                ${muestra(c)}<span class="cosm-nombre">${libre ? escapeHTML(c.titulo) : icono('candado') + ' ' + escapeHTML(nombreLogro(c.logro))}</span>
+                title="${escapeHTML(libre ? c.titulo : c.nivel && nivel < c.nivel ? `${c.titulo}: se abre al llegar al nivel ${c.nivel}` : `${c.titulo}: se gana con el logro «${nombreLogro(c.logro)}»`)}">
+                ${muestra(c)}<span class="cosm-nombre">${libre ? escapeHTML(c.titulo) : icono('candado') + ' ' + escapeHTML(requisito)}</span>
             </button>`;
         }).join('')}</div>`).join('');
     caja.onclick = async (e) => {
@@ -2327,15 +2578,151 @@ function pintarCosmeticosPerfil(datos, ganados, catalogoLogros) {
             const r = await res.json();
             if (!res.ok) return mostrarToast(r.error || 'No se pudo cambiar.', 'danio', 2500);
             datos.elegidos = r.elegidos;
-            pintarCosmeticosPerfil(datos, ganados, catalogoLogros);
+            pintarCosmeticosPerfil(datos, ganados, catalogoLogros, nivel);
             Sonidos.boton();
         } catch { mostrarToast('Sin conexión: intenta de nuevo.', 'danio', 2500); }
     };
 }
 
+// ==========================================
+// NIVELES Y RECOMPENSA DIARIA (progreso.js en el servidor)
+// ==========================================
+function barraXP(n, anima = null) {
+    const pct = Math.min(100, Math.round(100 * n.xpEnNivel / n.xpDelNivel));
+    return `<div class="xp-fila"><span class="xp-nivel">Nivel ${n.nivel}</span><span class="xp-num">${n.xpEnNivel} / ${n.xpDelNivel} XP</span></div>
+        <div class="xp-barra"><span style="width:${anima ?? pct}%" data-final="${pct}"></span></div>`;
+}
+function pintarNivelPerfil(n) {
+    const c = document.getElementById('pNivel');
+    if (c && n) c.innerHTML = barraXP(n);
+}
+
+// Anima la barra de XP (en la victoria o al abrir el cofre): llena el nivel de
+// antes y, si subió, festeja y sigue con el nuevo.
+function animarProgreso(caja, p) {
+    if (!caja || !p) return;
+    const subio = p.ahora.nivel > p.antes.nivel;
+    const pctAntes = Math.round(100 * p.antes.xpEnNivel / p.antes.xpDelNivel);
+    const extras = (p.extras || []).map(e => `<li>+${e.xp} ${escapeHTML(e.motivo)}</li>`).join('');
+    caja.innerHTML = `<p class="xp-ganada">+${p.ganada} XP${p.motivo === 'premio' ? ' del cofre' : ''}</p>`
+        + (extras ? `<ul class="xp-extras"><li>+${p.base} por la partida</li>${extras}</ul>` : '') + barraXP(p.antes, pctAntes)
+        + `<p class="xp-subio hidden"></p>`;
+    caja.classList.remove('hidden');
+    const barra = caja.querySelector('.xp-barra span');
+    const cambiarA = (n) => { caja.querySelector('.xp-fila').outerHTML; const f = caja.querySelector('.xp-fila');
+        f.querySelector('.xp-nivel').textContent = `Nivel ${n.nivel}`; f.querySelector('.xp-num').textContent = `${n.xpEnNivel} / ${n.xpDelNivel} XP`; };
+    setTimeout(() => {
+        if (!subio) { barra.style.width = Math.round(100 * p.ahora.xpEnNivel / p.ahora.xpDelNivel) + '%'; cambiarA(p.ahora); return; }
+        barra.style.width = '100%';
+        setTimeout(() => {
+            barra.style.transition = 'none'; barra.style.width = '0%'; void barra.offsetWidth; barra.style.transition = '';
+            cambiarA(p.ahora);
+            barra.style.width = Math.round(100 * p.ahora.xpEnNivel / p.ahora.xpDelNivel) + '%';
+            const aviso = caja.querySelector('.xp-subio');
+            aviso.innerHTML = `${icono('corona')} ¡Subiste a nivel ${p.ahora.nivel}!` + (p.desbloqueos?.length ? `<small>Desbloqueaste: ${p.desbloqueos.map(escapeHTML).join(', ')}</small>` : '');
+            aviso.classList.remove('hidden');
+            Sonidos.victoria(); vibrar([60, 40, 120]);
+            const nv = document.getElementById('nivelTop'); if (nv) { nv.textContent = p.ahora.nivel; nv.classList.remove('hidden'); }
+        }, 900);
+    }, 500);
+}
+
+// ==========================================
+// TORNEO DE LA NOCHE (servidor: sección TORNEO DE LA NOCHE, torneo.js)
+// ==========================================
+let _torneo = null, _relojTorneo = null;
+function pintarTorneo(t) {
+    _torneo = t ? { ...t, recibido: Date.now() } : null;
+    clearInterval(_relojTorneo);
+    const caja = document.getElementById('bannerTorneo');
+    if (!caja || !t) return;
+    const hora = `${t.hora > 12 ? t.hora - 12 : t.hora}:00 ${t.hora >= 12 ? 'pm' : 'am'}`;
+    const rey = t.rey ? ` · ${icono('corona')} Rey de la noche: <b>${escapeHTML(t.rey)}</b>` : '';
+    const pintar = () => {
+        let html = '';
+        if (t.estado === 'inscripcion') {
+            const resta = Math.max(0, (t.empiezaEn || 0) - (Date.now() - _torneo.recibido));
+            const mm = Math.floor(resta / 60000), ss = String(Math.floor(resta / 1000) % 60).padStart(2, '0');
+            const inscrito = (t.nombres || []).includes(miNombreUsuario);
+            html = `<span>${icono('trofeo')} Torneo en <b>${mm}:${ss}</b> · ${t.inscritos} ${t.inscritos === 1 ? 'inscrito' : 'inscritos'}</span>
+                <button type="button" class="${inscrito ? 'inscrito' : ''}" data-torneo="${inscrito ? 'salir' : 'entrar'}">${inscrito ? '✓ Inscrito' : 'Inscribirme'}</button>`;
+        } else if (t.estado === 'mesas' || t.estado === 'final') {
+            html = `<span>${icono('trofeo')} Torneo de la noche en juego${t.estado === 'final' ? ' · ¡la final!' : ''}</span>`;
+        } else if (t.estado === 'terminado') {
+            html = `<span>${t.campeon ? `${icono('corona')} Rey de la noche: <b>${escapeHTML(t.campeon)}</b>` : `${icono('trofeo')} El torneo de hoy terminó`}</span>`;
+        } else {
+            html = `<span>${icono('trofeo')} Torneo de la noche · hoy ${hora}${t.estado === 'cancelado' ? ' (cancelado)' : ''}${rey}</span>`;
+        }
+        caja.innerHTML = html;
+        caja.classList.remove('hidden');
+    };
+    pintar();
+    if (t.estado === 'inscripcion') _relojTorneo = setInterval(pintar, 1000);
+}
+document.getElementById('bannerTorneo')?.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-torneo]');
+    if (!b) return;
+    socket.emit('torneoInscribir', b.dataset.torneo === 'entrar');
+    Sonidos.boton();
+});
+
+// ==========================================
+// APUESTAS DE LOS ELIMINADOS
+// ==========================================
+// Si ya quedaste fuera, al empezar cada ronda eliges quién pierde; se cierra
+// en la primera jugada. Acertar da +15 XP (llega al final con la partida).
+function pintarApuesta(jugadores) {
+    const caja = document.getElementById('panelApuesta');
+    if (!caja) return;
+    const yo = jugadores.find(j => j.nombre === miNombreUsuario);
+    const vivos = jugadores.filter(j => j.vidas > 0);
+    if (!yo || yo.vidas > 0 || _practica || vivos.length < 2) { caja.classList.add('hidden'); return; }
+    caja.innerHTML = `<p class="apuesta-titulo">🎲 ¿Quién pierde esta ronda? <small>Acierta y gana +15 XP</small></p>
+        <div class="apuesta-opciones">${vivos.map(j => `<button type="button" data-nombre="${escapeHTML(j.nombre)}">${escapeHTML(j.nombre)}</button>`).join('')}</div>`;
+    caja.classList.remove('hidden', 'cerrada');
+    caja.onclick = (e) => {
+        const b = e.target.closest('button[data-nombre]');
+        if (!b || caja.classList.contains('cerrada')) return;
+        socket.emit('apostar', { idSala: miSalaActual, objetivo: b.dataset.nombre });
+    };
+}
+
+// Recompensa diaria: al entrar, si hay cofre de hoy, se ofrece.
+async function revisarPremioDiario() {
+    if (!miToken) return;
+    try {
+        const r = await fetch(`${URL_SERVIDOR}/premio-diario`, { headers: { Authorization: `Bearer ${miToken}` } });
+        const e = await r.json();
+        if (!r.ok || !e.disponible) return;
+        const lista = document.getElementById('premioDias');
+        lista.innerHTML = e.premios.map((xp, i) => `<li class="${i + 1 < e.racha ? 'cobrado' : i + 1 === e.racha ? 'hoy' : ''}${i === 6 ? ' grande' : ''}">
+            <span>Día ${i + 1}</span><b>${i === 6 ? '🎁' : '⭐'}</b><small>+${xp}</small></li>`).join('');
+        document.getElementById('premioResultado').classList.add('hidden');
+        const cofre = document.getElementById('btnAbrirCofre'); cofre.classList.remove('abierto'); cofre.textContent = '🎁'; cofre.disabled = false;
+        const cerrar = document.getElementById('btnCerrarPremio'); cerrar.textContent = '¡Abrir cofre!';
+        document.getElementById('modalPremio').classList.remove('hidden');
+        let cobrado = false;
+        const abrir = async () => {
+            if (cobrado) return document.getElementById('modalPremio').classList.add('hidden');
+            cobrado = true; cofre.disabled = true;
+            try {
+                const rr = await fetch(`${URL_SERVIDOR}/premio-diario`, { method: 'POST', headers: { Authorization: `Bearer ${miToken}` } });
+                const d = await rr.json();
+                if (!rr.ok) { mostrarToast(d.error || 'No se pudo abrir.', 'danio', 2500); return document.getElementById('modalPremio').classList.add('hidden'); }
+                cofre.classList.add('abierto'); cofre.textContent = '✨';
+                Sonidos.reaccion('💎');
+                animarProgreso(document.getElementById('premioResultado'), d.progreso);
+                cerrar.textContent = d.racha === 7 ? '¡Racha completa! Seguir' : `Día ${d.racha} de 7 · Seguir`;
+            } catch { mostrarToast('Sin conexión: intenta de nuevo.', 'danio', 2500); cobrado = false; cofre.disabled = false; }
+        };
+        cofre.onclick = abrir; cerrar.onclick = abrir;
+    } catch { /* sin conexión: otro día */ }
+}
+
 // Barra de arriba: inicial en el avatar (con el punto de "en línea"), nombre
 // y victorias. Las victorias se piden al entrar y al terminar cada partida.
 function pintarUsuarioBarra() {
+    setTimeout(revisarPremioDiario, 1200); // el cofre de hoy, ya con el lobby a la vista
     document.getElementById('displayUsername').innerText = miNombreUsuario;
     document.getElementById('inicialUsuario').innerText = (miNombreUsuario || '?').charAt(0).toUpperCase();
     actualizarVictoriasBarra();
@@ -2347,6 +2734,9 @@ async function actualizarVictoriasBarra() {
         const n = data.victorias ?? 0;
         document.getElementById('numVictoriasTop').textContent = n;
         if (data.cosmeticos) { _catalogoCosm = data.cosmeticos.catalogo; miLook = data.cosmeticos.elegidos; pintarMiLook(); }
+        misLogros = (data.logros || []).map(l => l.logro);
+        if (data.nivel) { const nv = document.getElementById('nivelTop'); nv.textContent = data.nivel.nivel; nv.classList.remove('hidden'); }
+        pintarPanelReacciones();
         document.getElementById('victoriasTop').classList.toggle('hidden', data.victorias === undefined);
     } catch { /* sin conexión: se queda como estaba */ }
 }
@@ -2898,6 +3288,10 @@ function dibujarMesaCircular() {
     const nombreMesa = document.getElementById('miNombreMesa');
     const vidasMesa = document.getElementById('misVidasMesa');
     document.getElementById('miPerfil')?.classList.toggle('con-escudo', !!miJugador.escudo && miJugador.vidas > 0);
+    // Rey de la mesa (ganaste la partida anterior)
+    let coronaMia = document.getElementById('miReyMesa');
+    if (miJugador.reyMesa && !coronaMia) { coronaMia = document.createElement('span'); coronaMia.id = 'miReyMesa'; coronaMia.className = 'rey-mesa'; miPerfil.prepend(coronaMia); }
+    if (coronaMia) { coronaMia.classList.toggle('hidden', !miJugador.reyMesa); coronaMia.innerHTML = `${icono('corona')} Rey${miJugador.reyMesa > 1 ? ' ×' + miJugador.reyMesa : ''}`; }
     ['equipo-0', 'equipo-1'].forEach(c => document.getElementById('miPerfil')?.classList.toggle(c, `equipo-${miJugador.equipo}` === c));
     pintarMarcadorEquipos();
     if (nombreMesa) nombreMesa.innerHTML = icono(miJugador.dealer ? 'corona' : 'persona') + ' ' + escapeHTML(miJugador.nombre)
@@ -3095,6 +3489,8 @@ function dibujarMesaCircular() {
         divSilla.innerHTML = `
             <div class="perfil-oponente${claseMarco(op.look)} ${claseEstado} ${animReparto} ${claseDanio} ${op.escudo && !estaMuerto ? 'con-escudo' : ''} ${op.equipo !== undefined && op.equipo !== null ? `equipo-${op.equipo}` : ''}">
                 <div style="font-size:13px;font-weight:bold;line-height:1.2;word-wrap:break-word;">${iconoAsiento} ${escapeHTML(op.nombre)}</div>
+                ${op.reyNoche ? `<span class="rey-noche" title="Ganó el torneo de la noche">${icono('trofeo')} Rey de la noche</span>` : ''}
+                ${op.reyMesa ? `<span class="rey-mesa" title="Rey de la mesa: ganó la partida anterior">${icono('corona')} Rey${op.reyMesa > 1 ? ' ×' + op.reyMesa : ''}</span>` : ''}
                 ${op.automatico && !estaMuerto ? '<span class="marca-auto" title="Ausente: un bot juega por él">Auto</span>' : ''}
                 ${op.equipo !== undefined && op.equipo !== null && miJugador.equipo !== undefined
                     ? `<span class="rol-equipo equipo-${op.equipo}" title="Equipo ${NOMBRE_EQUIPO[op.equipo]}">${op.equipo === miJugador.equipo ? 'Compañero' : 'Rival'}</span>` : ''}
@@ -3327,7 +3723,7 @@ function conectarSocket() {
     });
     socket.on('errorPoder', (m) => { mostrarToast(m, 'danio', 3000); pintarBarraPoderes(); });
 
-    socket.on('rapidaUnido', ({ idSala, faltanMs }) => {
+    const alEntrarRapida = ({ idSala, faltanMs }) => {
         miSalaActual = idSala; soyElHost = false;
         terminarEsperaRapida();
         _rapida = { fin: Date.now() + faltanMs };
@@ -3347,7 +3743,21 @@ function conectarSocket() {
         document.getElementById('codigoDisplay').innerText = idSala;
         pintarEsperaRapida();
         _rapida.intervalo = setInterval(pintarEsperaRapida, 1000);
+    };
+    socket.on('rapidaUnido', alEntrarRapida);
+    // Torneo: el servidor ya te sentó; misma espera que la rápida, sin invitar ni pedir más tiempo.
+    socket.on('torneoUnido', (d) => {
+        document.getElementById('pantallaVictoria')?.classList.add('hidden');
+        document.getElementById('mesaDeJuego')?.classList.add('hidden');
+        document.getElementById('panelAccionesPartida')?.classList.add('hidden');
+        document.getElementById('seccion-lobby')?.classList.remove('hidden');
+        alEntrarRapida(d);
+        document.getElementById('btnRapidaMasTiempo')?.classList.add('hidden');
+        document.getElementById('mostrarCodigo')?.classList.add('hidden');
+        mostrarToast(d.fase === 'final' ? '🏆 ¡Llegaste a la final del torneo! Empieza en 15 s' : '🏆 Torneo de la noche: tu mesa empieza en 15 s', 'rey', 4000);
     });
+    socket.on('torneo', pintarTorneo);
+    socket.on('torneoCampeon', ({ nombre }) => mostrarToast(nombre ? `👑 ${nombre} es el Rey de la noche` : '🏆 El torneo terminó sin campeón humano: ganó un bot', 'rey', 5000));
 
     socket.on('rapidaTiempo', ({ faltanMs, alMaximo, quien }) => {
         if (!_rapida) return;
@@ -3528,6 +3938,7 @@ function conectarSocket() {
         if (datos.ronda === 1) { _turnosConGuiaGestos = 0; mostrarAvisoEquipo(datos.jugadores || []); }
         eventoActual = datos.evento || null;
         vengadoresRonda = datos.vengadores || [];
+        pintarApuesta(datos.jugadores || []);
         ocultarEvento();
         marcarDuelo(datos.duelo);
         if (datos.anunciarDuelo) mostrarPresentacionDuelo(datos.duelistas);
@@ -3845,6 +4256,14 @@ function conectarSocket() {
     };
     // Venganza: tocar un asiento = cambiar con esa persona.
     document.getElementById('tapeteVistas').onclick = (e) => {
+        if (_apuntando) {
+            const s = e.target.closest('.silla[data-jugador-id]');
+            const j = s && listaJugadoresGlobal.find(x => x.id === s.dataset.jugadorId);
+            const emoji = _apuntando;
+            cancelarApuntar();
+            if (j && j.id !== socket.id) lanzarA(j, emoji);
+            return;
+        }
         if (!document.body.classList.contains('venganza-activa')) return;
         const silla = e.target.closest('.silla[data-jugador-id]');
         const j = silla && listaJugadoresGlobal.find(x => x.id === silla.dataset.jugadorId);
@@ -3859,6 +4278,7 @@ function conectarSocket() {
 
     // --- ACCIONES EN MESA (MINI-FEED) ---
     socket.on('accionMesa', (datos) => {
+        if (datos.tipo === 'BLOQUEO' && datos.jugador === miNombreUsuario) setTimeout(() => sugerirReacciones(['😡', '🤡', '😭']), 1200);
         registrarJugadaFeed(datos);
         practicaEvento('accion', datos);
         if (datos.tipo === 'CAMBIO' && datos.jugador && datos.objetivo) {
@@ -3997,6 +4417,11 @@ function conectarSocket() {
                 vibrar([120, 60, 200]);
             }
             datos.jugadores.filter(j => datos.perdedores.includes(j.id)).forEach(animarPerdidaVida);
+            dramaCartaMortal(datos);
+            // Sugerencia de reacción según cómo te fue en la ronda.
+            const yoVivo = datos.jugadores.find(j => j.id === socket.id)?.vidas > 0;
+            if (datos.perdedores.includes(socket.id) && yoVivo) sugerirReacciones(['😭', '💀', '🤡']);
+            else if (yoVivo && datos.perdedores.length) sugerirReacciones(['😈', '👏', '😂']);
         }, fin);
 
         const yoMori = datos.jugadores.find(j => j.id === socket.id && j.vidas <= 0);
@@ -4040,22 +4465,22 @@ function conectarSocket() {
     };
 
     // --- REACCIONES ---
-    let _cooldownReaccion = false;
-    document.querySelectorAll('.btn-reaccion').forEach(btn => {
-        btn.onclick = () => {
-            if (_cooldownReaccion) return;
-            const emoji = btn.dataset.emoji;
-            socket.emit('reaccion', { idSala: miSalaActual, emoji });
-            cerrarReacciones();
-            mostrarReaccion(socket.id, emoji);
-            _cooldownReaccion = true;
-            btn.style.opacity = '0.35';
-            setTimeout(() => {
-                _cooldownReaccion = false;
-                btn.style.opacity = '';
-            }, 2500);
-        };
-    });
+    pintarPanelReacciones();
+    document.getElementById('barraReacciones').onclick = (e) => {
+        const btn = e.target.closest('.btn-reaccion:not(.bloqueada)');
+        if (!btn) return;
+        const emoji = btn.dataset.emoji;
+        cerrarReacciones();
+        if (btn.classList.contains('lanzable')) {
+            // Lanzar: ahora toca el asiento de alguien.
+            _apuntando = emoji;
+            document.body.classList.add('apuntando');
+            mostrarToast(`${emoji} Toca a quién se lo lanzas`, 'rey', 3000);
+            setTimeout(() => { if (_apuntando === emoji) cancelarApuntar(); }, 7000);
+            return;
+        }
+        enviarReaccion(emoji);
+    };
 
     // --- FRASES RÁPIDAS ---
     const panelFrases = document.getElementById('panelFrases');
@@ -4101,10 +4526,31 @@ function conectarSocket() {
         setTimeout(() => { aviso.classList.add('saliendo'); setTimeout(() => aviso.remove(), 400); }, 4500);
     });
 
+    // Experiencia de la partida: la pantalla de victoria llena la barra.
+    socket.on('progreso', (p) => animarProgreso(document.getElementById('progresoXP'), p));
+
+    socket.on('apuestaHecha', ({ objetivo }) => {
+        document.querySelectorAll('#panelApuesta button').forEach(b => b.classList.toggle('elegida', b.dataset.nombre === objetivo));
+        Sonidos.boton();
+    });
+    socket.on('apuestasCerradas', () => {
+        const caja = document.getElementById('panelApuesta');
+        if (!caja || caja.classList.contains('hidden')) return;
+        caja.classList.add('cerrada');
+        const elegida = caja.querySelector('button.elegida')?.dataset.nombre;
+        if (!elegida) caja.classList.add('hidden');
+        else caja.querySelector('.apuesta-titulo').innerHTML = `🎲 Apostaste por <b>${escapeHTML(elegida)}</b>…`;
+    });
+    socket.on('resultadoApuesta', (r) => {
+        document.getElementById('panelApuesta')?.classList.add('hidden');
+        mostrarToast(r.acierto ? `🎲 ¡Acertaste! ${r.objetivo} perdió vida. +${r.xp} XP` : `🎲 Fallaste: ${r.objetivo} se salvó.`, r.acierto ? 'rey' : '', 3000);
+        if (r.acierto) Sonidos.reaccion('💎');
+    });
+
     socket.on('reaccionJugador', (datos) => {
-        if (datos.jugadorId !== socket.id) {
-            mostrarReaccion(datos.jugadorId, datos.emoji);
-        }
+        if (datos.jugadorId === socket.id) return;
+        if (datos.objetivoId) mostrarLanzamiento(datos.jugadorId, datos.objetivoId, datos.emoji);
+        else mostrarReaccion(datos.jugadorId, datos.emoji);
     });
     
     document.getElementById('btnRevancha').onclick = () => {

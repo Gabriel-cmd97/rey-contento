@@ -112,7 +112,7 @@
                 <button id="btnToggleGuias" class="btn-sonido-top" title="Guías"><svg class="icono" aria-hidden="true"><use href="#i-foco"/></svg> </button>
                 <button id="btnToggleSonido" class="btn-sonido-top" title="Silenciar / Activar sonido"><svg class="icono" aria-hidden="true"><use href="#i-altavoz"/></svg> </button>
                 <button id="btnMiPerfil" class="btn-perfil-top" title="Mi perfil">
-                    <span class="avatar-top"><span id="inicialUsuario">?</span><span class="punto-en-linea" title="En línea"></span></span>
+                    <span class="avatar-top"><span id="inicialUsuario">?</span><span class="punto-en-linea" title="En línea"></span><span id="nivelTop" class="nivel-top hidden" title="Tu nivel">1</span></span>
                     <span id="displayUsername">...</span>
                     <span id="victoriasTop" class="victorias-top hidden" title="Tus victorias"><svg class="icono" aria-hidden="true"><use href="#i-corona"/></svg><b id="numVictoriasTop">0</b></span>
                 </button>
@@ -142,6 +142,8 @@
                     <p class="lobby-section-label">Jugar ahora</p>
                     <button id="btnRapida" class="boton-oro boton-lobby full-width boton-rapida"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Partida rápida</button>
                     <p class="practica-lema">Mesa de 4 · si falta gente, entran bots</p>
+                    <!-- Torneo de la noche (pintarTorneo en main.js) -->
+                    <div id="bannerTorneo" class="banner-torneo hidden"></div>
                 </div>
 
                 <!-- 2. Aprender -->
@@ -500,12 +502,11 @@
         <!-- Footer acciones -->
         <footer id="panelAccionesPartida" class="hidden panel-acciones-fijo">
             <div id="barraReacciones" class="barra-reacciones hidden">
-                <button class="btn-reaccion" data-emoji="😱">😱</button>
-                <button class="btn-reaccion" data-emoji="🤡">🤡</button>
-                <button class="btn-reaccion" data-emoji="👑">👑</button>
-                <button class="btn-reaccion" data-emoji="💀">💀</button>
-                <button class="btn-reaccion" data-emoji="🎭">🎭</button>
-                <button class="btn-reaccion" data-emoji="🍀">🍀</button>
+                <!-- Se llena desde REACCIONES en main.js (pintarPanelReacciones) -->
+                <p class="reac-titulo">Reacciones</p>
+                <div id="gridEmojis" class="reac-grid"></div>
+                <p class="reac-titulo">Lánzale algo a alguien</p>
+                <div id="gridLanzar" class="reac-grid reac-grid-lanzar"></div>
                 <button id="btnFrases" class="btn-frases" aria-label="Frases rápidas" aria-expanded="false" aria-controls="panelFrases"><svg class="icono" aria-hidden="true"><use href="#i-globo"/></svg></button>
             </div>
             <div id="guiaAcciones" class="guia-acciones hidden"></div>
@@ -527,6 +528,8 @@
                 <h1 id="victoriaTitulo" class="medieval-font victoria-titulo">¡Tenemos un Rey!</h1>
                 <h2 id="nombreGanador" class="medieval-font victoria-ganador">Nombre</h2>
                 <p id="victoriaMiLugar" class="victoria-mi-lugar hidden"></p>
+                <div id="podioFinal" class="podio-final hidden" aria-label="Podio"></div>
+                <div id="progresoXP" class="progreso-xp hidden" aria-live="polite"></div>
                 <ol id="tablaFinal" class="tabla-final"></ol>
                 <div class="victoria-acciones">
                     <button id="btnRevancha" class="boton-oro btn-revancha"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> ¡Revancha!</button>
@@ -543,6 +546,7 @@
         <div class="modal-caja">
             <button type="button" class="modal-cerrar-x" data-cierra="modalPerfil" aria-label="Cerrar"><svg class="icono" aria-hidden="true"><use href="#i-cerrar"/></svg></button>
             <h3 class="medieval-font" style="color:var(--oro);margin:0 0 16px;text-align:center;font-size:20px;"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> Mi Perfil</h3>
+            <div id="pNivel" class="perfil-nivel"></div>
             <div id="contenidoPerfil" class="perfil-stats-grid">
                 <div class="perfil-stat-item"><span class="perfil-stat-val" id="pVictorias">—</span><span class="perfil-stat-label">Victorias</span></div>
                 <div class="perfil-stat-item"><span class="perfil-stat-val" id="pPartidas">—</span><span class="perfil-stat-label">Partidas</span></div>
@@ -776,6 +780,24 @@
          falla (típico en redes de celular), main.js igual corre —el login funciona— y
          las animaciones degradan al keyframe CSS (ver animarVueloCartaTween). El
          ticker en main.js tolera que TWEEN aparezca después de cargar main.js. -->
+<!-- Recompensa diaria (revisarPremioDiario en main.js) -->
+<div id="modalPremio" class="hidden modal-overlay" role="dialog" aria-modal="true" aria-labelledby="tituloPremio">
+    <div class="modal-caja premio-caja">
+        <p class="premio-sub">Recompensa diaria</p>
+        <h3 id="tituloPremio" class="medieval-font premio-titulo">¡Tu cofre de hoy!</h3>
+        <ol id="premioDias" class="premio-dias"></ol>
+        <button type="button" id="btnAbrirCofre" class="premio-cofre" aria-label="Abrir el cofre">🎁</button>
+        <div id="premioResultado" class="premio-resultado hidden"></div>
+        <button type="button" id="btnCerrarPremio" class="boton-oro boton-lobby full-width">¡Abrir cofre!</button>
+    </div>
+</div>
+
+<!-- Apuestas de los eliminados (pintarApuesta en main.js) -->
+<div id="panelApuesta" class="panel-apuesta hidden" role="group" aria-label="Apuesta de la ronda"></div>
+
+<!-- Sugerencia de reacción en el momento (sugerirReacciones en main.js) -->
+<div id="sugerenciaReaccion" class="sugerencia-reaccion hidden" aria-label="Reacción sugerida"></div>
+
 <div id="modalSalirPartida" class="hidden" role="dialog" aria-modal="true" aria-labelledby="tituloSalirPartida">
     <div class="caja-salir">
         <h2 id="tituloSalirPartida" class="medieval-font">¿Salir de la partida?</h2>

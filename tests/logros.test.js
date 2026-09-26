@@ -24,6 +24,13 @@ test('perder solo puede dar Veterano', () => {
     assert.deepStrictEqual(logrosDeFinDePartida({ gano: false, vidasFinales: 0, vidasPerdidas: 3, stats: { victorias: 0, partidas_jugadas: 25, racha_actual: 0 } }), ['veterano']);
 });
 
+test('lugares: caen juntos pero uno aguantó más sin perder vida → no empatan', () => {
+    const lugar = lugaresFinales('Rey', [{ nombre: 'C', ronda: 2, primera: 1 }, { nombre: 'A', ronda: 4, primera: 1 }, { nombre: 'B', ronda: 4, primera: 3 }], 4);
+    assert.strictEqual(lugar('B'), 2);
+    assert.strictEqual(lugar('A'), 3);
+    assert.strictEqual(lugar('C'), 4);
+});
+
 test('lugares: el último en caer queda 2.º y los que caen juntos comparten lugar', () => {
     const lugar = lugaresFinales('Rey', [{ nombre: 'A', ronda: 1 }, { nombre: 'B', ronda: 3 }, { nombre: 'C', ronda: 3 }], 4);
     assert.strictEqual(lugar('Rey'), 1);

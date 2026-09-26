@@ -44,7 +44,8 @@ function muestra() {
     if (w > 4 && h > 4 && !permitido) ov.push(par.replace(/:[^ ×]+/g, ''));
   }
   // Tapado por el panel de abajo
-  if (pie) piezas.forEach(p => { if (p.r.b - pie.top > 6 && !['aviso'].includes(p.nombre)) ov.push(`${p.nombre.replace(/:.*/, '')} × panel de abajo`); });
+  // Se toca de verdad con el panel (en horizontal el panel es una columna a la derecha, no una barra abajo).
+  if (pie) piezas.forEach(p => { if (p.r.b - pie.top > 6 && p.r.t < pie.bottom - 6 && p.r.r - pie.left > 6 && p.r.l < pie.right - 6 && !['aviso', 'btnMenu'].includes(p.nombre)) ov.push(`${p.nombre.replace(/:.*/, '')} × panel de abajo`); });
   // Textos cortados
   const cortados = [];
   document.querySelectorAll('#tapeteVistas *, #panelAccionesPartida *, #toastContainer *').forEach(el => {

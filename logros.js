@@ -43,7 +43,8 @@ function lugaresFinales(ganadorNombre, caidas, totalJugadores) {
     let siguiente = ganadorNombre ? 2 : 1;
     const inversas = [...caidas].reverse();
     inversas.forEach((c, i) => {
-        const mismaRonda = i > 0 && inversas[i - 1].ronda === c.ronda;
+        // Empate solo si cayeron en la misma ronda Y perdieron su primera vida en la misma ronda.
+        const mismaRonda = i > 0 && inversas[i - 1].ronda === c.ronda && inversas[i - 1].primera === c.primera;
         lugares[c.nombre] = mismaRonda ? lugares[inversas[i - 1].nombre] : siguiente;
         siguiente++;
     });

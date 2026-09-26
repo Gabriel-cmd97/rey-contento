@@ -9,6 +9,8 @@ const bots = require('./bots');
 const practica = require('./practica');
 const logros = require('./logros');
 const cosmeticos = require('./cosmeticos');
+const progreso = require('./progreso');
+const torneoReglas = require('./torneo');
 const eventos = require('./eventos');
 const poderes = require('./poderes');
 const fs = require('fs');
@@ -299,7 +301,12 @@ function esIdSalaValido(v) {
 // Whitelist de emojis de reacciones — debe coincidir con data-emoji del HTML.
 // Sin esto, un cliente puede broadcastear strings arbitrarios (XSS no aplica
 // porque el cliente sanitiza, pero sí puede mandar payloads gigantes).
-const EMOJIS_REACCION = new Set(['😱', '🤡', '👑', '💀', '🎭', '🍀']);
+// Reacciones (la lista del cliente vive en REACCIONES de main.js; si agregas una, agrégala aquí).
+const EMOJIS_REACCION = new Set(['😂', '🔥', '😡', '👏', '🙏', '😈', '🤫', '😭', '😱', '🤡', '👑', '💀', '🎭', '🍀']);
+// Se lanzan a otro jugador: vuelan de tu asiento al suyo.
+const EMOJIS_LANZABLES = new Set(['🍅', '🌹', '💋', '🥚', '🍺']);
+// Especiales: se desbloquean con un logro.
+const REACCIONES_ESPECIALES = { '🐉': 'veterano', '💎': 'rey_de_reyes', '⚡': 'racha_real' };
 // Frases rápidas: el cliente manda solo el número de la frase (su lista está en
 // FRASES_RAPIDAS de main.js). Nunca texto libre: nada que moderar ni payloads raros.
 const TOTAL_FRASES = 8;
@@ -362,6 +369,8 @@ function jugadoresPublicos(sala) {
         publico.numPoderes = (susPoderes || []).length; // la mesa ve cuántos, no cuáles
         publico.escudo = escudos.includes(publico.nombre);
         if (!publico.esBot && looks[publico.nombre]) publico.look = looks[publico.nombre];
+        if (sala.reyDeMesa && publico.nombre === sala.reyDeMesa) publico.reyMesa = sala.coronasSeguidas || 1;
+        if (reyDeLaNoche && publico.nombre === reyDeLaNoche.nombre && Date.now() < reyDeLaNoche.hasta) publico.reyNoche = true;
         const esReyVisible = cartaActual === 9 && (reyDeclarado || reyDescubierto);
         if (rondaRevelada || esReyVisible) publico.cartaActual = cartaActual;
         publico.cartaRevelada = esReyVisible;
@@ -475,10 +484,13 @@ app.post('/codigo-recuperacion', limitarAuth, async (req, res) => {
 // looks[username] = { avatar, marco, dorso }: lo que ve la mesa. Se carga al
 // conectarse el socket y se actualiza al elegir; jugadoresPublicos lo agrega.
 const looks = {};
+const logrosDe = {}; // username → [ids de logro]: reacciones especiales
 async function cargarLook(username) {
     try {
         const [rows] = await pool.execute('SELECT cosmeticos FROM usuarios WHERE username = ?', [username]);
         looks[username] = cosmeticos.leer(rows[0]?.cosmeticos);
+        const [lg] = await pool.execute('SELECT logro FROM logros WHERE username = ?', [username]);
+        logrosDe[username] = lg.map(x => x.logro);
     } catch (e) { log.warn('No se pudieron cargar cosméticos', { username, error: e.message }); }
 }
 
@@ -491,7 +503,9 @@ app.post('/cosmeticos', limitarLectura, async (req, res) => {
     if (!cosmeticos.TIPOS.includes(tipo) || typeof id !== 'string') return res.status(400).json({ error: 'Cosmético inválido.' });
     try {
         const [ganados] = await pool.execute('SELECT logro FROM logros WHERE username = ?', [datos.username]);
-        if (!cosmeticos.disponible(tipo, id, ganados.map(g => g.logro))) {
+        const [xpRow] = await pool.execute('SELECT xp FROM usuarios WHERE username = ?', [datos.username]);
+        const nivel = progreso.nivelDe(xpRow[0]?.xp || 0).nivel;
+        if (!cosmeticos.disponible(tipo, id, ganados.map(g => g.logro), nivel)) {
             return res.status(403).json({ error: 'Todavía no lo desbloqueas.' });
         }
         const [rows] = await pool.execute('SELECT cosmeticos FROM usuarios WHERE username = ?', [datos.username]);
@@ -683,7 +697,7 @@ app.get('/mis-stats/:username', limitarLectura, async (req, res) => {
     try {
         const [rows] = await conRetry(
             () => pool.execute(
-                'SELECT username, victorias, partidas_jugadas, racha_actual, racha_maxima, cosmeticos AS cosm FROM usuarios WHERE username = ?',
+                'SELECT username, victorias, partidas_jugadas, racha_actual, racha_maxima, xp, cosmeticos AS cosm FROM usuarios WHERE username = ?',
                 [username]
             ),
             { op: 'mis-stats', username }
@@ -700,7 +714,8 @@ app.get('/mis-stats/:username', limitarLectura, async (req, res) => {
                 [username]),
             { op: 'mi-historial', username });
         res.json({ ...u, winrate, catalogoLogros: logros.CATALOGO, logros: ganados, historial,
-            cosmeticos: { catalogo: cosmeticos.CATALOGO, elegidos: cosmeticos.leer(cosm) } });
+            cosmeticos: { catalogo: cosmeticos.CATALOGO, elegidos: cosmeticos.leer(cosm) },
+            nivel: progreso.nivelDe(u.xp || 0) });
     } catch (error) {
         log.error('mis-stats falló', { error: error.message, codigo: error.code, username });
         res.status(500).json({ error: 'Error al cargar stats' });
@@ -725,6 +740,7 @@ async function otorgarLogro(sala, nombre, idLogro) {
             { op: 'otorgar_logro', nombre, idLogro }
         );
         if (r.affectedRows === 1) {
+            (logrosDe[nombre] ||= []).push(idLogro); // reacciones especiales al momento
             io.to(jugador.id).emit('logroDesbloqueado', logros.POR_ID[idLogro]);
             log.info('Logro desbloqueado', { nombre, logro: idLogro });
         }
@@ -735,6 +751,7 @@ async function otorgarLogro(sala, nombre, idLogro) {
 
 async function registrarFinPartida(sala, ganador) {
     if (sala.config.practica) return; // la práctica no cuenta en las estadísticas
+    if (sala.config.torneo) torneoMesaTerminada(sala, ganador);
     const humanos = sala.jugadores.filter(j => !j.esBot);
     if (humanos.length === 0) return;
 
@@ -781,7 +798,228 @@ async function registrarFinPartida(sala, ganador) {
     }
 
     await registrarHistorialYLogros(sala, ganador, humanos);
+    await sumarXpDePartida(sala, ganadoresNombres, humanos);
 }
+
+// Experiencia al terminar: se suma en la base y a cada quien le llega
+// 'progreso' (la pantalla de victoria llena la barra y avisa si subió de nivel).
+async function sumarXpDePartida(sala, ganadoresNombres, humanos) {
+    for (const j of humanos) {
+        const caida = (sala.caidas || []).find(c => c.nombre === j.nombre);
+        const base = progreso.xpDePartida({ gano: ganadoresNombres.includes(j.nombre), rondasAguantadas: caida ? caida.ronda : sala.rondaActual });
+        const extras = (sala.bonusXp || {})[j.nombre] || [];
+        const ganada = base + extras.reduce((t, e) => t + e.xp, 0);
+        try {
+            const aviso = await sumarXp(j.nombre, ganada);
+            if (aviso && j.online) io.to(j.id).emit('progreso', { ...aviso, motivo: 'partida', base, extras });
+        } catch (e) { log.error('Fallo sumar XP', { error: e.message, nombre: j.nombre }); }
+    }
+}
+
+// Suma XP y devuelve lo que la pantalla necesita para animarlo.
+async function sumarXp(username, ganada) {
+    const [antes] = await pool.execute('SELECT xp FROM usuarios WHERE username = ?', [username]);
+    if (!antes.length) return null;
+    const xpAntes = antes[0].xp || 0, xpAhora = xpAntes + ganada;
+    await pool.execute('UPDATE usuarios SET xp = xp + ? WHERE username = ?', [ganada, username]);
+    const a = progreso.nivelDe(xpAntes), b = progreso.nivelDe(xpAhora);
+    return { ganada, xpAntes, xpAhora, antes: a, ahora: b,
+             desbloqueos: cosmeticos.desbloqueadosPorNivel(a.nivel, b.nivel).map(c => c.titulo) };
+}
+
+// ==========================================
+// TORNEO DE LA NOCHE (reglas en torneo.js)
+// ==========================================
+// Todos los días a las 9 pm (CDMX); inscripción 10 min antes desde el lobby.
+// A la hora, cada inscrito conectado se sienta en una mesa de hasta 6 (como
+// la partida rápida: cuenta de 15 s y bots en los lugares libres). Los humanos
+// que ganan su mesa juegan la final; el campeón es Rey de la noche 24 h (tabla
+// `torneos`), gana XP y lo ven todos (jugadoresPublicos → reyNoche). Si una
+// fase no termina en 25 min, se cierra con lo que haya. PANEL_CLAVE puede
+// abrirlo a mano (POST /api/torneo/abrir) para probarlo fuera de horario.
+let torneo = null;       // { fecha, estado, inscritos, mesas, resultados, inicioFase, cierraEn, campeon }
+let reyDeLaNoche = null; // { nombre, hasta }
+const MS_ESPERA_MESA = 15000;
+const MS_LIMITE_FASE = 25 * 60 * 1000;
+
+function estadoTorneoPublico() {
+    const rey = reyDeLaNoche && Date.now() < reyDeLaNoche.hasta ? reyDeLaNoche.nombre : null;
+    if (!torneo) return { estado: 'antes', hora: torneoReglas.HORA, rey };
+    return { estado: torneo.estado, hora: torneoReglas.HORA, rey, inscritos: torneo.inscritos.length,
+             nombres: torneo.inscritos.slice(0, 30), empiezaEn: torneo.cierraEn ? Math.max(0, torneo.cierraEn - Date.now()) : null,
+             campeon: torneo.campeon ?? null };
+}
+
+async function cargarReyDeLaNoche() {
+    try {
+        const [r] = await pool.execute('SELECT ganador, creado FROM torneos WHERE ganador IS NOT NULL ORDER BY id DESC LIMIT 1');
+        if (r[0]) {
+            const hasta = new Date(r[0].creado).getTime() + torneoReglas.MS_REY_NOCHE;
+            if (Date.now() < hasta) reyDeLaNoche = { nombre: r[0].ganador, hasta };
+        }
+    } catch (e) { log.warn('No se pudo cargar el Rey de la noche', { error: e.message }); }
+}
+
+function abrirInscripcion(msHastaArranque, manual = false) {
+    torneo = { fecha: progreso.hoyCDMX(), manual, estado: 'inscripcion', inscritos: [], mesas: [], resultados: {},
+               cierraEn: Date.now() + msHastaArranque, inicioFase: null, campeon: undefined };
+    io.emit('torneo', estadoTorneoPublico());
+    log.info('Torneo: inscripción abierta', { fecha: torneo.fecha });
+}
+
+// El socket conectado de alguien (el más reciente) o null.
+function socketDe(nombre) {
+    let s = null;
+    for (const x of io.sockets.sockets.values()) if (x.usuario?.username === nombre) s = x;
+    return s;
+}
+
+function arrancarTorneo() {
+    // Solo quien sigue conectado y no está a media partida.
+    const ocupado = (n) => Object.values(estadoSalas).some(sl => !['LOBBY', 'FINALIZADO'].includes(sl.estadoActual)
+        && !sl.config.torneo && sl.jugadores.some(j => j.nombre === n && j.vidas > 0 && j.online));
+    const listos = torneo.inscritos.filter(n => socketDe(n) && !ocupado(n));
+    if (listos.length < torneoReglas.MIN_JUGADORES) {
+        torneo.estado = 'cancelado';
+        io.emit('torneo', estadoTorneoPublico());
+        listos.forEach(n => socketDe(n)?.emit('mensajeGlobal', '🏆 El torneo de hoy se canceló: no se juntaron al menos 2 jugadores.'));
+        log.info('Torneo cancelado', { inscritos: torneo.inscritos.length });
+        return;
+    }
+    const mesas = torneoReglas.repartirMesas(listos);
+    torneo.jugadores = listos.length;
+    torneo.estado = mesas.length === 1 ? 'final' : 'mesas';
+    torneo.inicioFase = Date.now();
+    torneo.mesas = mesas.map(nombres => crearMesaTorneo(nombres, mesas.length === 1 ? 'final' : 'mesas'));
+    io.emit('torneo', estadoTorneoPublico());
+    log.info('Torneo arrancó', { jugadores: listos.length, mesas: mesas.length });
+}
+
+// Sienta a los nombres en una mesa nueva y la arranca a los MS_ESPERA_MESA.
+function crearMesaTorneo(nombres, fase) {
+    const idSala = nuevoIdSala();
+    const sala = estadoSalas[idSala] = {
+        idSala, estadoActual: "LOBBY", password: null, hostId: null,
+        // La final es solo entre finalistas (sin bots que se lleven el título); las mesas se completan a 4.
+        config: { ...configRapida(), rapida: false, torneo: fase, maxJugadores: fase === 'final' ? Math.max(2, nombres.length) : Math.max(4, nombres.length) },
+        jugadores: [], dealerIndex: 0, turnoActualIndex: 1, mazo: [], descarte: [], rondaActual: 1,
+        ultimaActividad: Date.now(), arrancaEn: Date.now() + MS_ESPERA_MESA, creadaEn: Date.now(),
+    };
+    nombres.forEach(n => {
+        const s = socketDe(n);
+        if (!s) return;
+        // Si estaba esperando en otra sala de espera, sale de ahí.
+        Object.values(estadoSalas).forEach(otra => {
+            const i = otra !== sala && otra.estadoActual === 'LOBBY' ? otra.jugadores.findIndex(j => j.nombre === n) : -1;
+            if (i !== -1) { otra.jugadores.splice(i, 1); s.leave(otra.idSala); otra.jugadores.length ? emitirLobby(otra.idSala) : limpiarSala(otra.idSala); }
+        });
+        sala.jugadores.push({ id: s.id, nombre: n, vidas: sala.config.vidas, yaJugo: false, online: true });
+        s.join(idSala);
+        s.emit('torneoUnido', { idSala, faltanMs: MS_ESPERA_MESA, fase });
+    });
+    emitirLobby(idSala);
+    setTimeout(() => { const sl = estadoSalas[idSala]; if (sl && sl.estadoActual === 'LOBBY') empezarPartida(sl); }, MS_ESPERA_MESA);
+    return idSala;
+}
+
+function torneoMesaTerminada(sala, ganador) {
+    if (!torneo || !torneo.mesas.includes(sala.idSala) || sala.idSala in torneo.resultados) return;
+    const nombre = ganador && ganador.id && !ganador.esBot && !ganador.esEquipo ? ganador.nombre : null;
+    torneo.resultados[sala.idSala] = nombre;
+    if (sala.config.torneo === 'final') return coronarTorneo(nombre);
+    revisarFaseTorneo();
+}
+
+function revisarFaseTorneo(forzar = false) {
+    if (!torneo || torneo.estado !== 'mesas') return;
+    if (!forzar && !torneo.mesas.every(id => id in torneo.resultados)) return;
+    const sig = torneoReglas.siguienteFase(torneo.mesas.map(id => torneo.resultados[id] || null));
+    if ('campeon' in sig) return coronarTorneo(sig.campeon);
+    // Final a los 8 s: da tiempo de ver la victoria de su mesa.
+    torneo.estado = 'final';
+    torneo.inicioFase = Date.now();
+    io.emit('torneo', estadoTorneoPublico());
+    setTimeout(() => { torneo.mesas = [crearMesaTorneo(sig.final, 'final')]; torneo.inicioFase = Date.now(); }, 8000);
+}
+
+async function coronarTorneo(nombre) {
+    if (!torneo || torneo.estado === 'terminado') return;
+    torneo.estado = 'terminado';
+    torneo.campeon = nombre;
+    if (nombre) reyDeLaNoche = { nombre, hasta: Date.now() + torneoReglas.MS_REY_NOCHE };
+    io.emit('torneo', estadoTorneoPublico());
+    io.emit('torneoCampeon', { nombre });
+    log.info('Torneo terminado', { campeon: nombre });
+    try {
+        await pool.execute('INSERT INTO torneos (fecha, ganador, jugadores) VALUES (?, ?, ?)', [torneo.fecha, nombre, torneo.jugadores || 0]);
+        if (nombre) {
+            const aviso = await sumarXp(nombre, torneoReglas.PREMIO_CAMPEON);
+            if (aviso) socketDe(nombre)?.emit('progreso', { ...aviso, motivo: 'torneo', base: 0, extras: [{ xp: torneoReglas.PREMIO_CAMPEON, motivo: 'campeón del torneo' }] });
+        }
+    } catch (e) { log.error('Guardar torneo falló', { error: e.message }); }
+}
+
+// Reloj del torneo (cada 10 s).
+setInterval(() => {
+    const hoy = progreso.hoyCDMX();
+    const m = torneoReglas.momento(torneoReglas.minutosCDMX());
+    // Uno abierto a mano (prueba) no le quita su turno al torneo de la noche.
+    const hayQueAbrir = !torneo || torneo.fecha !== hoy || (torneo.manual && ['terminado', 'cancelado'].includes(torneo.estado));
+    if (hayQueAbrir && m === 'inscripcion') {
+        const inicio = torneoReglas.HORA * 60, ahora = torneoReglas.minutosCDMX();
+        return abrirInscripcion((inicio - ahora) * 60000 - new Date().getSeconds() * 1000);
+    }
+    if (!torneo) return;
+    if (torneo.estado === 'inscripcion' && Date.now() >= torneo.cierraEn) return arrancarTorneo();
+    if (['mesas', 'final'].includes(torneo.estado) && torneo.inicioFase && Date.now() - torneo.inicioFase > MS_LIMITE_FASE) {
+        log.warn('Torneo: fase vencida, se cierra con lo que haya', { estado: torneo.estado });
+        if (torneo.estado === 'mesas') revisarFaseTorneo(true); else coronarTorneo(null);
+    }
+}, 10000);
+
+// Abrir el torneo a mano (para probarlo): { segundos } de inscripción.
+app.post('/api/torneo/abrir', limitarLectura, (req, res) => {
+    if (!claveDelPanelValida(req)) return res.status(401).json({ error: 'Clave incorrecta.' });
+    if (torneo && ['inscripcion', 'mesas', 'final'].includes(torneo.estado)) return res.status(409).json({ error: 'Ya hay un torneo en curso.' });
+    const seg = Math.max(20, Math.min(900, Number(req.body?.segundos) || 60));
+    abrirInscripcion(seg * 1000, true);
+    res.json({ ok: true, arrancaEnSeg: seg });
+});
+
+// ==========================================
+// RECOMPENSA DIARIA (progreso.js)
+// ==========================================
+function usuarioDelToken(req) {
+    const token = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+    try { return jwt.verify(token, JWT_SECRET).username; } catch { return null; }
+}
+app.get('/premio-diario', limitarLectura, async (req, res) => {
+    const username = usuarioDelToken(req);
+    if (!username) return res.status(401).json({ error: 'Tu sesión expiró. Vuelve a iniciar sesión.' });
+    try {
+        const [rows] = await pool.execute('SELECT racha_diaria, dia_premio FROM usuarios WHERE username = ?', [username]);
+        if (!rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
+        res.json({ ...progreso.estadoPremio(rows[0].dia_premio, rows[0].racha_diaria), premios: progreso.PREMIOS_DIARIOS });
+    } catch (e) { log.error('Premio diario (estado) falló', { error: e.message }); res.status(500).json({ error: 'Error en el servidor.' }); }
+});
+app.post('/premio-diario', limitarLectura, async (req, res) => {
+    const username = usuarioDelToken(req);
+    if (!username) return res.status(401).json({ error: 'Tu sesión expiró. Vuelve a iniciar sesión.' });
+    try {
+        const [rows] = await pool.execute('SELECT racha_diaria, dia_premio FROM usuarios WHERE username = ?', [username]);
+        if (!rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
+        const hoy = progreso.hoyCDMX();
+        const e = progreso.estadoPremio(rows[0].dia_premio, rows[0].racha_diaria, hoy);
+        if (!e.disponible) return res.status(409).json({ error: 'Ya cobraste el premio de hoy.' });
+        // Solo si nadie lo cobró entre la lectura y ahora (dos pestañas a la vez).
+        const [r] = await pool.execute(
+            'UPDATE usuarios SET racha_diaria = ?, dia_premio = ? WHERE username = ? AND (dia_premio <=> ?)',
+            [e.racha, hoy, username, rows[0].dia_premio]);
+        if (r.affectedRows !== 1) return res.status(409).json({ error: 'Ya cobraste el premio de hoy.' });
+        const aviso = await sumarXp(username, e.premio);
+        res.json({ racha: e.racha, premio: e.premio, progreso: { ...aviso, motivo: 'premio' } });
+    } catch (e) { log.error('Premio diario (cobrar) falló', { error: e.message }); res.status(500).json({ error: 'Error en el servidor.' }); }
+});
 
 // Una fila de historial por humano y los logros de fin de partida.
 async function registrarHistorialYLogros(sala, ganador, humanos) {
@@ -835,6 +1073,55 @@ function datosVotacion(sala) {
     };
 }
 
+// Suma XP extra a la partida de alguien (se entrega junto con la de la
+// partida en 'progreso', con su motivo).
+function darBonus(sala, nombre, xp, motivo) {
+    const b = ((sala.bonusXp ||= {})[nombre] ||= []);
+    b.push({ xp, motivo });
+}
+
+// Al cerrar cada ronda: paga las apuestas de los eliminados, avisa si
+// derrocaron al Rey de la mesa y, al terminar, corona al ganador.
+function resolverApuestasYCorona(sala, perdedores, juegoTerminado, sobrevivientes) {
+    const idSala = sala.idSala;
+    // Apuestas (+15 XP si el elegido perdió vida)
+    Object.entries(sala.apuestas || {}).forEach(([quien, objetivo]) => {
+        const obj = sala.jugadores.find(j => j.nombre === objetivo);
+        const apostador = sala.jugadores.find(j => j.nombre === quien);
+        const acierto = !!obj && perdedores.includes(obj.id);
+        if (acierto) {
+            darBonus(sala, quien, 15, 'apuesta acertada');
+            io.to(idSala).emit('mensajeGlobal', `🎲 ${quien} acertó su apuesta: ${objetivo} perdió vida.`);
+        }
+        if (apostador?.online) io.to(apostador.id).emit('resultadoApuesta', { acierto, objetivo, xp: acierto ? 15 : 0 });
+    });
+    sala.apuestas = {};
+    sala.apuestasAbiertas = false;
+
+    // Derrocar al Rey de la mesa: +25 XP a cada humano que sigue vivo.
+    const rey = sala.reyDeMesa && sala.jugadores.find(j => j.nombre === sala.reyDeMesa);
+    if (rey && !sala.reyDerrocado && rey.vidas <= 0 && perdedores.includes(rey.id)) {
+        sala.reyDerrocado = true;
+        io.to(idSala).emit('mensajeGlobal', `👑💥 ¡Derrocaron al Rey ${rey.nombre}! +25 XP para quienes siguen en pie.`);
+        io.to(idSala).emit('accionMesa', { tipo: 'DERROCADO', icono: '👑', jugador: rey.nombre, texto: `¡Derrocaron al Rey ${rey.nombre}!` });
+        sala.jugadores.filter(j => !j.esBot && j.vidas > 0).forEach(j => darBonus(sala, j.nombre, 25, 'derrocaste al Rey'));
+    }
+
+    // Fin de partida: el ganador es el nuevo Rey de la mesa (no en parejas).
+    if (juegoTerminado) {
+        const ganador = !sala.config.equipos && sobrevivientes.length === 1 ? sobrevivientes[0] : null;
+        if (!ganador) { sala.reyDeMesa = null; sala.coronasSeguidas = 0; return; }
+        if (ganador.nombre === sala.reyDeMesa) {
+            sala.coronasSeguidas = (sala.coronasSeguidas || 1) + 1;
+            if (!ganador.esBot) darBonus(sala, ganador.nombre, 30, 'defendiste la corona');
+            io.to(idSala).emit('mensajeGlobal', `👑 ${ganador.nombre} defendió la corona (×${sala.coronasSeguidas}).`);
+        } else {
+            sala.coronasSeguidas = 1;
+        }
+        sala.reyDeMesa = ganador.nombre;
+    }
+}
+
 // Lo que se manda en finDelJuego: el ganador (sin su carta ni la memoria de
 // bot) y la tabla completa, armada aquí porque el cliente solo ve las rondas
 // que le tocaron (si se reconectó, o si alguien salió, le faltaban jugadores).
@@ -842,21 +1129,23 @@ function datosVotacion(sala) {
 // en caer al primero y al final quienes salieron de la partida.
 function datosFin(sala, ganador) {
     const { id, nombre, vidas, esEquipo, equipo, integrantes } = ganador;
-    const datos = { id, nombre, vidas, esEquipo, equipo, integrantes };
+    const datos = { id, nombre, vidas, esEquipo, equipo, integrantes, torneo: sala.config.torneo || null };
     if (esEquipo) return datos;
     const caidas = sala.caidas || [];
     const tabla = [];
     const ganadorJ = sala.jugadores.find(j => j.nombre === nombre && j.vidas > 0);
     if (ganadorJ) tabla.push({ nombre, esBot: !!ganadorJ.esBot, vidas: ganadorJ.vidas, estado: 'gano' });
+    // Para el podio: avatar y marco de cada humano.
+    const conLook = (fila) => { if (!fila.esBot && looks[fila.nombre]) fila.look = looks[fila.nombre]; return fila; };
     sala.jugadores.filter(j => j.vidas > 0 && j !== ganadorJ).sort((a, b) => b.vidas - a.vidas)
         .forEach(j => tabla.push({ nombre: j.nombre, esBot: !!j.esBot, vidas: j.vidas, estado: 'vivo' }));
     [...caidas].reverse().forEach(c => {
         const j = sala.jugadores.find(x => x.nombre === c.nombre);
-        if (j && j.vidas <= 0) tabla.push({ nombre: c.nombre, esBot: !!j.esBot, ronda: c.ronda, estado: 'cayo' });
+        if (j && j.vidas <= 0) tabla.push({ nombre: c.nombre, esBot: !!j.esBot, ronda: c.ronda, primera: c.primera, estado: 'cayo' });
     });
     sala.jugadores.filter(j => j.vidas <= 0 && !caidas.some(c => c.nombre === j.nombre))
         .forEach(j => tabla.push({ nombre: j.nombre, esBot: !!j.esBot, estado: 'salio' }));
-    datos.clasificacion = tabla;
+    datos.clasificacion = tabla.map(conLook);
     return datos;
 }
 
@@ -891,12 +1180,17 @@ function resolverRonda(sala, io) {
 
     // Historial y logros: quién perdió vidas y quién quedó fuera en esta ronda.
     sala.caidas ||= []; sala.vidasPerdidas ||= {};
+    sala.primeraPerdida ||= {}; // ronda en que perdió su primera vida (desempata a quienes caen juntos)
     sala.jugadores.filter(j => perdedores.includes(j.id)).forEach(j => {
         sala.vidasPerdidas[j.nombre] = (sala.vidasPerdidas[j.nombre] || 0) + (sala.evento === 'DOBLE_CASTIGO' ? 2 : 1);
-        if (j.vidas <= 0 && !sala.caidas.some(c => c.nombre === j.nombre)) {
-            sala.caidas.push({ nombre: j.nombre, ronda: sala.rondaActual });
-        }
+        sala.primeraPerdida[j.nombre] ??= sala.rondaActual;
     });
+    // Quienes caen en la misma ronda se registran del que aguantó menos al que
+    // aguantó más sin perder vida: así la tabla (que va del último en caer al
+    // primero) pone más arriba al que resistió más.
+    sala.jugadores.filter(j => perdedores.includes(j.id) && j.vidas <= 0 && !sala.caidas.some(c => c.nombre === j.nombre))
+        .sort((a, b) => sala.primeraPerdida[a.nombre] - sala.primeraPerdida[b.nombre])
+        .forEach(j => sala.caidas.push({ nombre: j.nombre, ronda: sala.rondaActual, primera: sala.primeraPerdida[j.nombre] }));
     if (sala.config.poderes && !sala.config.practica) { // en la práctica los poderes los da el guion
         sala.jugadores.filter(j => perdedores.includes(j.id) && j.vidas > 0).forEach(j => {
             const id = poderes.darPoder(j);
@@ -914,6 +1208,7 @@ function resolverRonda(sala, io) {
         : sobrevivientes.length <= 1 || humanosVivos.length === 0;
 
     if (juegoTerminado) sala.estadoActual = "FINALIZADO";
+    resolverApuestasYCorona(sala, perdedores, juegoTerminado, sobrevivientes);
 
     // Enviar cartas reveladas al descarte (persistente entre rondas)
     vivos.forEach(j => { if (j.cartaActual !== undefined && j.cartaActual !== null) sala.descarte.push(j.cartaActual); });
@@ -1258,12 +1553,18 @@ function iniciarRonda(sala, io) {
     sala.castigadosSiguiente = [];
     if (sala.rondaActual === 1) {
         prepararEquipos(sala);
-        sala.caidas = []; sala.vidasPerdidas = {};
+        sala.caidas = []; sala.vidasPerdidas = {}; sala.primeraPerdida = {};
         sala.dueloAnunciado = false; sala.rondasSinEvento = 0; sala.ultimoEvento = null; sala.castigados = [];
         sala.idPartida = `${sala.idSala}-${Date.now().toString(36)}`; // agrupa el historial por partida
         sala.inicioPartida = Date.now();
+        sala.bonusXp = {}; sala.reyDerrocado = false;
+        // El Rey de la mesa solo sigue si sigue sentado (en la revancha se van los bots).
+        if (sala.reyDeMesa && !sala.jugadores.some(j => j.nombre === sala.reyDeMesa)) { sala.reyDeMesa = null; sala.coronasSeguidas = 0; }
     }
     sala.estadoActual = "TURNOS_INTERCAMBIO";
+    // Apuestas de los eliminados: abiertas hasta la primera jugada de la ronda.
+    sala.apuestas = {};
+    sala.apuestasAbiertas = !sala.config.practica;
 
     io.to(sala.idSala).emit('accionMesa', {
         tipo: 'RONDA',
@@ -1638,6 +1939,7 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false, opcion
 
     if (jugadorActual.id !== socketId) return;
     if (jugadorActual.vidas <= 0) return;
+    if (sala.apuestasAbiertas) { sala.apuestasAbiertas = false; io.to(idSala).emit('apuestasCerradas'); }
     // Quien tiene al Rey no puede soltarlo (ni cambiando ni robando del mazo).
     if (accion === 'CAMBIAR' && reyProtegido(sala) && jugadorActual.cartaActual === 9) accion = 'MANTENER';
 
@@ -1760,6 +2062,7 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false, opcion
 
 function iniciarRevancha(sala, io) {
     if (!estadoSalas[sala.idSala]) return;
+    if (sala.config.torneo) return; // en el torneo no hay revancha: se sigue a la final
     if (sala.estadoActual !== "FINALIZADO") return;
     if (sala.revanchaIniciada) return;
     if (!sala.votosRevancha || sala.votosRevancha.size === 0) return;
@@ -2046,6 +2349,10 @@ io.on('connection', (socket) => {
 
         const sala = estadoSalas[idSala.toUpperCase()];
         if (!sala) return socket.emit('errorSala', 'La sala no existe.');
+        // Mesa del torneo: solo quien ya está sentado ahí (reconexión); nadie se cuela con el código.
+        if (sala.config.torneo && !sala.jugadores.some(j => j.nombre === nombreUsuarioLogueado)) {
+            return socket.emit('errorSala', 'Esa mesa es del Torneo de la noche: solo para los inscritos.');
+        }
         tocarSala(sala); // actividad para el sweeper
 
         let jugadorExistente = sala.jugadores.find(j => j.nombre === username);
@@ -2151,6 +2458,7 @@ io.on('connection', (socket) => {
         if (!permitir(socket.id, 'iniciarPartida', 1000)) return;
         if (!esIdSalaValido(idSala)) return;
         let sala = estadoSalas[idSala];
+        if (sala?.config.torneo) return; // las mesas del torneo arrancan solas
         if (sala && !sala.config.rapida && sala.jugadores[0].nombre === nombreUsuarioLogueado) {
             empezarPartida(sala);
         }
@@ -2231,6 +2539,32 @@ io.on('connection', (socket) => {
             : `🔒 ${nombreUsuarioLogueado} cerró la mesa: solo con enlace o código.`);
     });
 
+    // Torneo de la noche: el estado al conectarse y la inscripción.
+    socket.emit('torneo', estadoTorneoPublico());
+    socket.on('torneoInscribir', (quiere) => {
+        if (!permitir(socket.id, 'torneoInscribir', 800)) return;
+        if (!torneo || torneo.estado !== 'inscripcion') return socket.emit('errorSala', 'Las inscripciones abren 10 minutos antes del torneo.');
+        const i = torneo.inscritos.indexOf(nombreUsuarioLogueado);
+        if (quiere === true && i === -1) torneo.inscritos.push(nombreUsuarioLogueado);
+        if (quiere === false && i !== -1) torneo.inscritos.splice(i, 1);
+        io.emit('torneo', estadoTorneoPublico());
+    });
+
+    // Apuestas de los eliminados: ¿quién pierde esta ronda?
+    socket.on('apostar', (payload) => {
+        if (!payload || typeof payload !== 'object') return;
+        const { idSala, objetivo } = payload;
+        if (!permitir(socket.id, 'apostar', 500)) return;
+        if (!esIdSalaValido(idSala) || typeof objetivo !== 'string') return;
+        const sala = estadoSalas[idSala];
+        if (!sala || !sala.apuestasAbiertas || sala.estadoActual !== 'TURNOS_INTERCAMBIO') return;
+        const yo = sala.jugadores.find(j => j.nombre === nombreUsuarioLogueado);
+        if (!yo || yo.esBot || yo.vidas > 0) return; // solo quien ya quedó fuera
+        if (!sala.jugadores.some(j => j.nombre === objetivo && j.vidas > 0)) return;
+        sala.apuestas[nombreUsuarioLogueado] = objetivo;
+        socket.emit('apuestaHecha', { objetivo });
+    });
+
     // Fiesta: votar el evento de la siguiente ronda (también quien ya quedó fuera).
     socket.on('votarEvento', (payload) => {
         if (!payload || typeof payload !== 'object') return;
@@ -2276,15 +2610,25 @@ io.on('connection', (socket) => {
         // 300ms — bloquea spam si alguien hace bypass del cliente.
         if (!permitir(socket.id, 'reaccion', 300)) return;
         if (!payload || typeof payload !== 'object') return;
-        const { idSala, emoji } = payload;
+        const { idSala, emoji, objetivo } = payload;
         if (!esIdSalaValido(idSala)) return;
-        if (!EMOJIS_REACCION.has(emoji)) return; // bloquea payloads gigantes / arbitrarios
+        const lanzable = EMOJIS_LANZABLES.has(emoji);
+        // Lista cerrada: bloquea payloads gigantes / arbitrarios.
+        if (!EMOJIS_REACCION.has(emoji) && !lanzable && !REACCIONES_ESPECIALES[emoji]) return;
+        if (REACCIONES_ESPECIALES[emoji] && !(logrosDe[nombreUsuarioLogueado] || []).includes(REACCIONES_ESPECIALES[emoji])) return;
         const sala = estadoSalas[idSala];
         if (!sala) return;
         const jugador = sala.jugadores.find(j => j.id === socket.id);
         if (!jugador) return;
-        // Broadcast to others in the room
-        socket.to(idSala).emit('reaccionJugador', { jugadorId: socket.id, emoji });
+        // Lanzar: el objetivo (por nombre) debe estar en la mesa y no ser uno mismo.
+        let objetivoId = null;
+        if (lanzable) {
+            if (typeof objetivo !== 'string') return;
+            const obj = sala.jugadores.find(j => j.nombre === objetivo);
+            if (!obj || obj === jugador) return;
+            objetivoId = obj.id;
+        }
+        socket.to(idSala).emit('reaccionJugador', { jugadorId: socket.id, emoji, objetivoId });
     });
 
     socket.on('volverAJugar', (idSala) => {
@@ -2384,7 +2728,10 @@ async function agregarColumnasSiNoExisten() {
         { nombre: 'racha_actual',     def: 'INT DEFAULT 0' },
         { nombre: 'racha_maxima',     def: 'INT DEFAULT 0' },
         { nombre: 'codigo_recuperacion', def: 'VARCHAR(255) DEFAULT NULL' }, // hash bcrypt
-        { nombre: 'cosmeticos', def: 'VARCHAR(255) DEFAULT NULL' }, // JSON { avatar, marco, dorso }
+        { nombre: 'cosmeticos', def: 'VARCHAR(255) DEFAULT NULL' }, // JSON { avatar, marco, dorso, tapete }
+        { nombre: 'xp',           def: 'INT DEFAULT 0' },              // experiencia (progreso.js)
+        { nombre: 'racha_diaria', def: 'INT DEFAULT 0' },              // días seguidos cobrando el premio
+        { nombre: 'dia_premio',   def: 'VARCHAR(255) DEFAULT NULL' },  // último día cobrado, AAAA-MM-DD (CDMX)
     ];
     for (const col of columnas) {
         if (!REGEX_NOMBRE_COLUMNA.test(col.nombre)) {
@@ -2459,6 +2806,14 @@ async function crearTablasSiNoExisten() {
         fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_decisiones_fecha (fecha)
     )`), { op: 'crear_decisiones' });
+    // Campeones del Torneo de la noche.
+    await conRetry(() => pool.execute(`CREATE TABLE IF NOT EXISTS torneos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        fecha VARCHAR(10) NOT NULL,
+        ganador VARCHAR(50) NULL,
+        jugadores INT NOT NULL,
+        creado DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`), { op: 'crear_torneos' });
 }
 
 // ==========================================
@@ -2542,6 +2897,7 @@ server.listen(PUERTO, async () => {
         await agregarColumnasSiNoExisten();
         await crearTablasSiNoExisten();
         log.info('Migración de stats verificada');
+        await cargarReyDeLaNoche();
     } catch (err) {
         log.error('Migración de stats falló', { error: err.message });
     }

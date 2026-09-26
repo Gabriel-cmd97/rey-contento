@@ -4169,3 +4169,343 @@ body:not(.con-botones).puedo-jugar .chip-jugada {
     body.en-mesa:not(.con-botones) { --ancho-columna: clamp(120px, 17vw, 170px); }
 }
 .chip-jugada small { white-space: nowrap; }
+
+/* =========================================
+   MÁS COLOR Y EMOCIÓN (25/09/2026)
+   ========================================= */
+/* 1. La mesa toma el color del evento de la ronda (aplicarTemaMesa en main.js) */
+.tapete-virtual.tema-MUNDO_AL_REVES { background: radial-gradient(ellipse at 50% 30%, #b06ad1 0%, #7d3c98 45%, #4a235a 100%) !important; }
+.tapete-virtual.tema-NIEBLA { background: radial-gradient(ellipse at 50% 30%, #7f9c8f 0%, #56736a 50%, #33443f 100%) !important; }
+.tapete-virtual.tema-NIEBLA::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 1;
+    background: radial-gradient(40% 30% at 20% 30%, rgba(255,255,255,.35), transparent 70%),
+                radial-gradient(35% 25% at 75% 60%, rgba(255,255,255,.3), transparent 70%),
+                radial-gradient(30% 25% at 45% 85%, rgba(255,255,255,.25), transparent 70%);
+    background-size: 200% 200%; animation: niebla-deriva 9s ease-in-out infinite alternate; }
+@keyframes niebla-deriva { to { background-position: 100% 60%; } }
+.tapete-virtual.tema-DOBLE_CASTIGO { background: radial-gradient(ellipse at 50% 30%, #c0392b 0%, #8e1b1b 45%, #4d0c0c 100%) !important;
+    animation: borde-castigo 1.6s ease-in-out infinite; }
+@keyframes borde-castigo { 50% { box-shadow: 0 0 0 3px rgba(255,80,60,.8), 0 0 40px rgba(255,40,20,.55), inset 0 0 60px rgba(0,0,0,.5); } }
+.tapete-virtual.tema-MERCADO { background: radial-gradient(ellipse at 50% 30%, #e0b12a 0%, #b7770d 45%, #6b4306 100%) !important; }
+.tapete-virtual.tema-AMNISTIA { background: radial-gradient(ellipse at 50% 30%, #6fd3d6 0%, #2e9ea3 45%, #145e62 100%) !important; }
+.tapete-virtual.tema-CARRUSEL { background: radial-gradient(ellipse at 50% 30%, #f39c4a 0%, #d35400 45%, #7a2f00 100%) !important; }
+.tapete-virtual.tema-CARRUSEL::after { content: ''; position: absolute; inset: 12%; border-radius: 50%; pointer-events: none; z-index: 1;
+    border: 3px dashed rgba(255,255,255,.28); animation: carrusel-gira 12s linear infinite; }
+@keyframes carrusel-gira { to { transform: rotate(360deg); } }
+.tapete-virtual.tema-CONFESION { background: radial-gradient(circle at 50% 42%, #5b8fd8 0%, #1f3f7a 40%, #0d1f40 100%) !important; }
+.tapete-virtual.tema-VENGANZA { background: radial-gradient(ellipse at 50% 30%, #a3243b 0%, #6d1026 45%, #300612 100%) !important; }
+.tapete-virtual.tema-PREMIO { background: radial-gradient(ellipse at 50% 30%, #f7dc6f 0%, #d4ac0d 40%, #7d6608 100%) !important;
+    box-shadow: 0 0 50px rgba(255,215,0,.45), inset 0 0 60px rgba(0,0,0,.35) !important; }
+@media (prefers-reduced-motion: reduce) { .tapete-virtual::after, .tapete-virtual.tema-DOBLE_CASTIGO { animation: none !important; } }
+
+/* 3. Tapetes (cosmético: solo tú lo ves) */
+.tapete-virtual.tapete-azul   { background: radial-gradient(ellipse at 50% 30%, #3a78b8 0%, #1f4e79 45%, #0e2742 100%) !important; }
+.tapete-virtual.tapete-rojo   { background: radial-gradient(ellipse at 50% 30%, #c0392b 0%, #8b1a1a 45%, #4a0b0b 100%) !important; }
+.tapete-virtual.tapete-morado { background: radial-gradient(ellipse at 50% 30%, #8e5bb5 0%, #5b2c83 45%, #2c1242 100%) !important; }
+.tapete-virtual.tapete-madera { background: repeating-linear-gradient(90deg, rgba(0,0,0,.08) 0 3px, transparent 3px 22px),
+    radial-gradient(ellipse at 50% 30%, #a0714a 0%, #7a4f2c 50%, #4a2d15 100%) !important; }
+.muestra-tapete { width: 40px; height: 28px; border-radius: 8px; border: 3px solid #5d4037;
+    background: radial-gradient(ellipse at 50% 30%, #2ecc71 0%, #1a8c45 70%, #145a32 100%); }
+.muestra-tapete.tapete-azul   { background: radial-gradient(ellipse at 50% 30%, #3a78b8, #0e2742); }
+.muestra-tapete.tapete-rojo   { background: radial-gradient(ellipse at 50% 30%, #c0392b, #4a0b0b); }
+.muestra-tapete.tapete-morado { background: radial-gradient(ellipse at 50% 30%, #8e5bb5, #2c1242); }
+.muestra-tapete.tapete-madera { background: radial-gradient(ellipse at 50% 30%, #a0714a, #4a2d15); }
+
+/* 2. Cartas a color: cada valor con su tinta */
+.valor-1 { --tinta: #8d6e4a; } .valor-2 { --tinta: #3c8d3a; } .valor-3 { --tinta: #1e8f8f; }
+.valor-4 { --tinta: #2d63b8; } .valor-5 { --tinta: #7d1f2e; } .valor-6 { --tinta: #b53f7e; }
+.valor-7 { --tinta: #6d3fc0; } .valor-8 { --tinta: #c0392b; }
+:is(.front-character, .mini-carta-frente, .carta-en-pila):is(.valor-1, .valor-2, .valor-3, .valor-4, .valor-5, .valor-6, .valor-7, .valor-8) {
+    background: linear-gradient(160deg, color-mix(in srgb, var(--tinta) 26%, #f8efd6) 0%, #f3e6c4 45%, color-mix(in srgb, var(--tinta) 14%, #e6d2a6) 100%) !important;
+    border-color: var(--tinta) !important; color: color-mix(in srgb, var(--tinta) 80%, #000) !important;
+}
+.front-character:is(.valor-1, .valor-2, .valor-3, .valor-4, .valor-5, .valor-6, .valor-7, .valor-8) { box-shadow: inset 0 0 0 3px var(--tinta); }
+.front-character[class*="valor-"] #numeroCarta { color: var(--tinta); }
+.resumen-carta-cara[class*="valor-"]:not(.valor-0):not(.valor-9) > div:first-child { color: color-mix(in srgb, var(--tinta) 55%, #fff) !important; }
+
+/* 4. Revelación con drama */
+.carta-mortal-drama { position: relative; z-index: 30; animation: carta-mortal 1.5s cubic-bezier(.2,.8,.3,1) both; }
+@keyframes carta-mortal {
+    0% { scale: 1; filter: none; }
+    25% { scale: 1.45; filter: drop-shadow(0 0 18px rgba(255,40,30,1)) drop-shadow(0 0 6px #fff); }
+    60% { scale: 1.2; filter: drop-shadow(0 0 14px rgba(255,40,30,.9)); }
+    100% { scale: 1; filter: drop-shadow(0 0 6px rgba(255,40,30,.6)); }
+}
+.tapete-virtual.temblor { animation: temblor-mesa .45s linear; }
+@keyframes temblor-mesa { 0%,100% { translate: 0 0; } 20% { translate: -6px 2px; } 40% { translate: 5px -2px; } 60% { translate: -4px 1px; } 80% { translate: 3px 0; } }
+
+/* 5. Victoria: podio y confeti */
+.podio-final { display: flex; align-items: flex-end; justify-content: center; gap: 8px; margin: 10px auto 12px; max-width: 340px; }
+.podio-final.hidden { display: none; }
+.podio-lugar { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; animation: podio-sube .7s cubic-bezier(.2,.9,.3,1.2) both; }
+.podio-1 { animation-delay: .35s; } .podio-2 { animation-delay: .15s; } .podio-3 { animation-delay: .5s; }
+@keyframes podio-sube { from { opacity: 0; transform: translateY(30px); } }
+.podio-avatar { width: 46px; height: 46px; font-size: 19px; }
+.podio-1 .podio-avatar { width: 58px; height: 58px; font-size: 24px; }
+.podio-avatar .icono { width: 55%; height: 55%; }
+.podio-corona { color: #ffe27a; line-height: 0; animation: corona-flota 1.8s ease-in-out infinite; }
+.podio-corona .icono { width: 28px; height: 28px; filter: drop-shadow(0 0 8px rgba(255,226,122,.8)); }
+@keyframes corona-flota { 50% { transform: translateY(-4px); } }
+.podio-nombre { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--pergamino); }
+.podio-lugar.es-yo .podio-nombre { color: #ffe27a; font-weight: bold; }
+.podio-base { width: 100%; display: grid; place-items: center; border-radius: 8px 8px 0 0; font-family: var(--fuente-medieval); color: #2b1d1a; font-size: 18px; }
+.podio-1 .podio-base { height: 64px; background: linear-gradient(180deg, #ffe27a, #d4a017); }
+.podio-2 .podio-base { height: 46px; background: linear-gradient(180deg, #eef2f5, #aab4bd); }
+.podio-3 .podio-base { height: 34px; background: linear-gradient(180deg, #e6a36b, #b0703a); }
+.confeti { position: fixed; top: -20px; z-index: 10001; pointer-events: none; border-radius: 2px; animation: confeti-cae linear both; }
+@keyframes confeti-cae { to { transform: translate(var(--deriva), 105vh) rotate(var(--giro)); } }
+
+/* 6. Tu turno: la orilla de la pantalla brilla */
+body.en-mesa.puedo-jugar::after { content: ''; position: fixed; inset: 0; z-index: 60; pointer-events: none;
+    box-shadow: inset 0 0 0 3px rgba(255,226,122,.85), inset 0 0 34px rgba(255,190,40,.5); animation: brillo-turno 1.4s ease-in-out infinite; }
+@keyframes brillo-turno { 50% { box-shadow: inset 0 0 0 2px rgba(255,226,122,.45), inset 0 0 18px rgba(255,190,40,.25); } }
+@media (prefers-reduced-motion: reduce) { body.en-mesa.puedo-jugar::after, .podio-corona, .carta-mortal-drama { animation: none !important; } }
+
+/* Victoria: si no cabe, se desplaza desde arriba (antes se centraba y el
+   título quedaba cortado sin forma de subir). */
+.pantalla-victoria { justify-content: flex-start !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; padding-block: 12px; }
+.victoria-contenido { margin-block: auto; }
+/* En horizontal: dos columnas (título y podio | tabla y botones) */
+@media (orientation: landscape) and (max-height: 600px) {
+    .victoria-contenido { width: min(96vw, 860px) !important; display: grid !important; grid-template-columns: 1fr 1fr;
+        column-gap: 24px; align-items: center; justify-items: center; }
+    .victoria-contenido > * { grid-column: 1; }
+    .victoria-emblema { display: none; }
+    .victoria-titulo { font-size: clamp(26px, 5vw, 40px) !important; margin-bottom: 2px !important; }
+    .victoria-ganador { margin: 0 !important; }
+    .victoria-contenido .podio-final { margin: 6px auto 0; }
+    .victoria-contenido #tablaFinal { grid-column: 2; grid-row: 1 / span 5; align-self: end; width: 100%; max-height: 58vh; overflow-y: auto; margin: 0; }
+    .victoria-contenido .victoria-acciones { grid-column: 2; grid-row: 6 / span 2; width: 100%; align-self: start; margin-top: 8px; }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+    .victoria-contenido #tablaFinal { max-height: 46vh; }
+    .victoria-contenido .victoria-acciones { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px; align-items: center; }
+    .victoria-contenido .victoria-acciones #contadorRevancha { grid-column: 1 / -1; margin: 0; }
+    .victoria-contenido .victoria-acciones button { width: 100% !important; margin: 0 !important; padding-block: 10px !important; font-size: 15px !important; }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+    .victoria-contenido .victoria-acciones #btnRevancha { grid-row: 1; grid-column: 1; }
+    .victoria-contenido .victoria-acciones #btnVolverLobby { grid-row: 1; grid-column: 2; }
+    .victoria-contenido .victoria-acciones #contadorRevancha { grid-row: 2; }
+    .victoria-contenido #tablaFinal { grid-row: 1 / span 3; }
+    .victoria-contenido .victoria-acciones { grid-row: 4 / span 3; }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+    .podio-avatar { width: 38px; height: 38px; font-size: 16px; }
+    .podio-1 .podio-avatar { width: 46px; height: 46px; }
+    .podio-1 .podio-base { height: 42px; } .podio-2 .podio-base { height: 30px; } .podio-3 .podio-base { height: 22px; }
+    .podio-corona .icono { width: 22px; height: 22px; }
+    .victoria-resumen { margin: 0 !important; }
+    .victoria-mi-lugar { margin: 2px 0 !important; }
+}
+
+/* =========================================
+   LOBBY Y SALA DE ESPERA EN HORIZONTAL (25/09/2026)
+   Dos columnas para aprovechar el ancho con el celular acostado.
+   ========================================= */
+@media (orientation: landscape) and (max-height: 600px) {
+    #seccion-lobby.main-seccion-centro { max-width: 900px !important; padding-top: 6px; }
+    #seccion-lobby .lobby-tabs { margin-bottom: 8px; }
+    /* Crear: rápida y aprender | crear mesa y su botón */
+    #panelConfiguracion:not(.hidden) { display: grid !important; grid-template-columns: 1fr 1fr; column-gap: 16px; align-items: start; }
+    #panelConfiguracion > :nth-child(1) { grid-column: 1; grid-row: 1; }
+    #panelConfiguracion > :nth-child(2) { grid-column: 1; grid-row: 2; }
+    #panelConfiguracion > :nth-child(3) { grid-column: 2; grid-row: 1 / span 2; }
+    #panelConfiguracion > .lobby-acciones-fijas { grid-column: 2; grid-row: 3; position: static; margin: 0; padding: 4px 0 8px; background: none; }
+    /* Sala de espera: invitar y jugadores | cómo será y botones */
+    #panelJugadores:not(.hidden) { display: grid !important; grid-template-columns: 1fr 1fr; column-gap: 16px; align-items: start; grid-auto-flow: row dense; }
+    #panelJugadores > * { grid-column: 1; }
+    #panelJugadores > #comoSeraPartida { grid-column: 2; grid-row: 1 / span 3; margin-top: 0; }
+    #panelJugadores > .lobby-acciones-fijas { grid-column: 2; grid-row: 4 / span 2; position: static; margin: 0; padding: 4px 0 8px; background: none; }
+    #panelJugadores .contenedor-jugadores { max-height: 42vh; }
+    #panelJugadores > .lobby-section-label { margin-top: 6px !important; }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+    #panelJugadores > #comoSeraPartida { grid-row: 1 / span 2; }
+    #panelJugadores > .lobby-acciones-fijas { grid-row: 3; align-self: end; }
+    #panelJugadores .contenedor-jugadores { max-height: calc(100dvh - 260px); min-height: 60px; }
+}
+@media (orientation: landscape) and (max-height: 600px) { #panelJugadores > .lobby-section-label { align-self: end; margin-bottom: 4px; } }
+
+/* Computadora y tableta: el panel de abajo fijo al fondo, centrado. Estaba en
+   el flujo debajo de la mesa y, con la página fija (sin scroll en la mesa),
+   quedaba fuera de la pantalla. La mesa ya resta su alto (--alto-pie). */
+@media (min-width: 768px) {
+    body.en-mesa .panel-acciones-fijo { position: fixed !important; bottom: 0; left: 50% !important; transform: translateX(-50%);
+        width: min(500px, 100%) !important; padding: 6px 0 max(10px, env(safe-area-inset-bottom, 10px)) !important; }
+}
+
+/* =========================================
+   REACCIONES (25/09/2026): panel flotante, lanzar cosas, sugerencias
+   ========================================= */
+/* El panel se abre flotando sobre la barra de abajo: no achica la mesa */
+body.en-mesa #panelAccionesPartida { position: fixed; }
+body.en-mesa #barraReacciones.abierta {
+    position: absolute !important; left: 8px; right: 8px; bottom: calc(100% + 6px); z-index: 70;
+    display: flex !important; flex-direction: column; align-items: stretch; gap: 4px;
+    padding: 8px 10px 10px; border-radius: 14px; border: 1px solid rgba(241,196,15,.45);
+    background: rgba(20,12,8,.97); box-shadow: 0 8px 24px rgba(0,0,0,.6);
+    animation: chip-entra .2s ease-out both;
+}
+.reac-titulo { margin: 2px 0 0; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--texto-suave); text-align: left; }
+.reac-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 4px; }
+.reac-grid .btn-reaccion { width: auto !important; height: 38px !important; font-size: 21px !important; border-radius: 10px !important;
+    background: rgba(255,255,255,.06) !important; border: 1px solid rgba(255,255,255,.1) !important; }
+.reac-grid .btn-reaccion.lanzable { background: rgba(241,196,15,.12) !important; border-color: rgba(241,196,15,.4) !important; }
+.reac-grid .btn-reaccion.reaccion-especial-btn { background: radial-gradient(circle, rgba(255,226,122,.35), rgba(255,226,122,.05)) !important; border-color: #ffe27a !important; }
+.reac-grid .btn-reaccion.bloqueada { opacity: .4; color: var(--texto-suave); }
+.reac-grid .btn-reaccion.bloqueada .icono { width: 14px; height: 14px; }
+#barraReacciones #btnFrases { align-self: flex-end; }
+/* Especiales: más grandes y con brillo al flotar */
+.reaccion-flotante.reaccion-especial { font-size: 70px !important; filter: drop-shadow(0 0 14px rgba(255,226,122,.95)); }
+
+/* Apuntando: los asientos de los demás laten para elegir a quién lanzar */
+body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline: 2px solid #ffe27a; outline-offset: 3px; border-radius: 10px;
+    animation: latido-venganza 1s ease-in-out infinite; }
+
+/* Vuelo e impacto */
+.proyectil { position: fixed; z-index: 400; font-size: 34px; line-height: 1; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,.5)); }
+.impacto { position: fixed; z-index: 401; font-size: 42px; line-height: 1; pointer-events: none; transform: translate(-50%,-50%);
+    animation: impacto-golpe 1.5s ease-out forwards; }
+@keyframes impacto-golpe { 0% { transform: translate(-50%,-50%) scale(.4); } 15% { transform: translate(-50%,-50%) scale(1.5); } 30% { transform: translate(-50%,-50%) scale(1.15); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%,-50%) scale(1.1); } }
+.impacto.splat-rojo::after, .impacto.splat-amarillo::after { content: ''; position: absolute; left: 50%; top: 50%; width: 90px; height: 90px;
+    transform: translate(-50%,-50%) scale(.3); border-radius: 46% 54% 42% 58% / 55% 40% 60% 45%; z-index: -1;
+    animation: splat 1.5s ease-out forwards; }
+.impacto.splat-rojo::after { background: radial-gradient(circle, rgba(214,40,40,.85) 40%, rgba(214,40,40,0) 72%); }
+.impacto.splat-amarillo::after { background: radial-gradient(circle, rgba(255,214,70,.9) 30%, rgba(255,255,255,.7) 45%, rgba(255,255,255,0) 72%); }
+@keyframes splat { 20% { transform: translate(-50%,-50%) scale(1.2); } 100% { transform: translate(-50%,-50%) scale(1.35); opacity: 0; } }
+.corazon-impacto { position: fixed; z-index: 402; font-size: 18px; pointer-events: none; transform: translate(-50%,-50%);
+    animation: corazon-sube 1.2s ease-out forwards; }
+@keyframes corazon-sube { to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.6); opacity: 0; } }
+
+/* Sugerencia en el momento: arriba del panel, al centro */
+.sugerencia-reaccion { position: fixed; left: 50%; bottom: calc(var(--alto-pie, 90px) + 12px); transform: translateX(-50%); z-index: 75;
+    display: flex; gap: 6px; padding: 6px 8px; border-radius: 999px; background: rgba(20,12,8,.95); border: 1px solid rgba(241,196,15,.5);
+    box-shadow: 0 6px 18px rgba(0,0,0,.55); animation: chip-entra .25s ease-out both; }
+.sugerencia-reaccion.hidden { display: none; }
+.sugerencia-reaccion button { width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.07);
+    font-size: 22px; line-height: 1; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .impacto, .corazon-impacto, .impacto::after { animation-duration: .01s !important; } }
+
+/* Horizontal: el panel sale a la izquierda de la columna de la derecha */
+@media (orientation: landscape) and (max-height: 600px) {
+    body.en-mesa #barraReacciones.abierta { position: fixed !important; left: auto; right: calc(var(--ancho-columna) + 8px); bottom: 8px; width: min(330px, 60vw); }
+    .sugerencia-reaccion { bottom: 12px; left: calc(50% - var(--ancho-columna) / 2); }
+}
+/* Ajustes tras probar: la sugerencia no debe tapar tu carta ni los indicadores */
+.sugerencia-reaccion { bottom: auto !important; top: 24%; }
+@media (orientation: landscape) and (max-height: 600px) {
+    body.en-mesa #barraReacciones.abierta { max-height: calc(100dvh - 16px); overflow-y: auto; }
+    body.en-mesa #barraReacciones.abierta .reac-grid { grid-template-columns: repeat(7, 1fr); }
+    body.en-mesa #barraReacciones.abierta .btn-reaccion { height: 34px !important; font-size: 19px !important; }
+    /* En horizontal va en la columna de la derecha, en vertical */
+    .sugerencia-reaccion { top: 50% !important; left: auto !important; right: calc((var(--ancho-columna) - 58px) / 2); transform: translateY(-50%) !important; flex-direction: column; border-radius: 30px; }
+}
+
+/* =========================================
+   NIVELES Y RECOMPENSA DIARIA (25/09/2026)
+   ========================================= */
+.nivel-top { position: absolute; left: -5px; bottom: -4px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px;
+    display: grid; place-items: center; font: bold 9.5px/1 Georgia, serif; color: #2b1d1a; background: #ffe27a; border: 1.5px solid #140a05; }
+.nivel-top.hidden { display: none; }
+.perfil-nivel { margin: -6px 0 12px; }
+.xp-fila { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; color: var(--texto-suave); margin-bottom: 4px; }
+.xp-nivel { font-family: var(--fuente-medieval); font-size: 15px; color: #ffe27a; }
+.xp-barra { height: 10px; border-radius: 6px; background: rgba(0,0,0,.45); border: 1px solid rgba(241,196,15,.35); overflow: hidden; }
+.xp-barra span { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, #e0b12a, #ffe27a);
+    box-shadow: 0 0 10px rgba(255,226,122,.6); transition: width .9s cubic-bezier(.3,.8,.3,1); }
+/* Victoria: la experiencia ganada */
+.progreso-xp { width: min(340px, 100%); margin: 4px auto 10px; padding: 8px 12px; border-radius: 12px; background: rgba(0,0,0,.35); border: 1px solid rgba(241,196,15,.3); }
+.progreso-xp.hidden, .premio-resultado.hidden { display: none; }
+.xp-ganada { margin: 0 0 4px; text-align: center; font-family: var(--fuente-medieval); font-size: 18px; color: #7ee2a8; }
+.xp-subio { margin: 8px 0 0; text-align: center; color: #ffe27a; font-family: var(--fuente-medieval); font-size: 16px; animation: chip-entra .4s ease-out both; }
+.xp-subio .icono { width: 18px; height: 18px; vertical-align: -3px; }
+.xp-subio small { display: block; margin-top: 2px; font: 12px Georgia, serif; color: var(--pergamino); }
+.xp-subio.hidden { display: none; }
+/* Cofre diario */
+.premio-caja { text-align: center; max-width: 380px !important; }
+.premio-sub { margin: 0; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--texto-suave); }
+.premio-titulo { margin: 2px 0 10px; color: #ffe27a; font-size: 22px; }
+.premio-dias { list-style: none; margin: 0 0 8px; padding: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.premio-dias li { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 5px 0; border-radius: 8px;
+    background: rgba(0,0,0,.35); border: 1px solid rgba(243,230,200,.15); font-size: 10px; color: var(--texto-suave); }
+.premio-dias li b { font-size: 16px; line-height: 1.2; }
+.premio-dias li small { color: #ffe27a; font-size: 10px; }
+.premio-dias li.cobrado { opacity: .5; }
+.premio-dias li.cobrado b { filter: grayscale(1); }
+.premio-dias li.hoy { border-color: #ffe27a; background: rgba(241,196,15,.18); color: #fff; box-shadow: 0 0 12px rgba(255,226,122,.4); }
+.premio-dias li.grande { background: rgba(155,89,182,.2); }
+.premio-cofre { display: block; margin: 6px auto; font-size: 64px; line-height: 1; background: none; border: 0; cursor: pointer;
+    animation: cofre-late 1.3s ease-in-out infinite; filter: drop-shadow(0 0 16px rgba(255,226,122,.55)); }
+.premio-cofre.abierto { animation: cofre-abre .6s ease-out both; cursor: default; }
+@keyframes cofre-late { 50% { transform: scale(1.08) rotate(-3deg); } }
+@keyframes cofre-abre { 0% { transform: scale(1); } 40% { transform: scale(1.5) rotate(8deg); } 100% { transform: scale(1.2); } }
+.premio-resultado { margin: 4px 0 10px; }
+@media (prefers-reduced-motion: reduce) { .premio-cofre, .xp-barra span { animation: none !important; transition: none !important; } }
+@media (orientation: landscape) and (max-height: 600px) {
+    .victoria-contenido #progresoXP { grid-column: 2; grid-row: 7; margin: 6px 0 0; width: 100%; }
+    .premio-caja { max-height: calc(100dvh - 20px); overflow-y: auto; padding: 12px 16px !important; }
+    .premio-cofre { font-size: 44px; margin: 2px auto; }
+    .premio-titulo { margin-bottom: 6px; font-size: 19px; }
+}
+
+/* =========================================
+   REY DE LA MESA Y APUESTAS (25/09/2026)
+   ========================================= */
+.rey-mesa { display: inline-flex; align-items: center; gap: 2px; margin: 1px auto 0; padding: 0 6px; border-radius: 999px;
+    font: bold 9.5px/1.5 Georgia, serif; color: #2b1d1a; background: linear-gradient(180deg, #ffe27a, #d4a017);
+    box-shadow: 0 0 10px rgba(255,226,122,.7); animation: corona-flota 1.8s ease-in-out infinite; }
+.rey-mesa.hidden { display: none; }
+.rey-mesa .icono { width: 11px; height: 11px; }
+.perfil-oponente:has(.rey-mesa) { border-color: #ffe27a !important; }
+/* Panel de apuestas (eliminados) */
+.panel-apuesta { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 80; width: min(92vw, 360px);
+    padding: 8px 10px; border-radius: 14px; background: rgba(20,12,8,.96); border: 1px solid rgba(241,196,15,.55);
+    box-shadow: 0 8px 22px rgba(0,0,0,.6); text-align: center; animation: chip-entra .3s ease-out both; }
+.panel-apuesta.hidden { display: none; }
+.apuesta-titulo { margin: 0 0 6px; font-family: var(--fuente-medieval); color: #ffe27a; font-size: 15px; }
+.apuesta-titulo small { display: block; font: 11px Georgia, serif; color: var(--texto-suave); }
+.apuesta-opciones { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; }
+.apuesta-opciones button { padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(243,230,200,.3); background: rgba(0,0,0,.35);
+    color: var(--pergamino); font: 13px Georgia, serif; cursor: pointer; max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.apuesta-opciones button.elegida { border-color: #ffe27a; background: rgba(241,196,15,.25); color: #fff; }
+.panel-apuesta.cerrada .apuesta-opciones { display: none; }
+/* Desglose de XP en la victoria */
+.xp-extras { list-style: none; margin: 0 0 6px; padding: 0; font-size: 12px; color: var(--pergamino); text-align: center; }
+.xp-extras li:not(:first-child) { color: #ffe27a; }
+@media (orientation: landscape) and (max-height: 600px) {
+    .panel-apuesta { top: 10px; left: calc(50% - var(--ancho-columna, 0px) / 2); }
+}
+
+/* =========================================
+   TORNEO DE LA NOCHE (25/09/2026)
+   ========================================= */
+.banner-torneo { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; padding: 6px 10px;
+    border-radius: 12px; border: 1px solid rgba(155,89,182,.6); background: linear-gradient(90deg, rgba(91,44,131,.55), rgba(40,20,60,.55));
+    color: var(--pergamino); font-size: 12.5px; line-height: 1.3; }
+.banner-torneo.hidden { display: none; }
+.banner-torneo .icono { width: 14px; height: 14px; color: #ffe27a; vertical-align: -2px; }
+.banner-torneo b { color: #ffe27a; font-variant-numeric: tabular-nums; }
+.banner-torneo button { flex: 0 0 auto; padding: 5px 12px; border-radius: 999px; border: 1px solid #b7770d; cursor: pointer;
+    font: bold 12px Georgia, serif; color: #2b1d1a; background: linear-gradient(180deg, #ffe27a, #e0b12a); animation: cofre-late 1.4s ease-in-out infinite; }
+.banner-torneo button.inscrito { animation: none; color: #b8f5c9; background: rgba(46,204,113,.15); border-color: rgba(46,204,113,.6); }
+.rey-noche { display: inline-flex; align-items: center; gap: 2px; margin: 1px auto 0; padding: 0 6px; border-radius: 999px;
+    font: bold 9px/1.5 Georgia, serif; color: #fff; background: linear-gradient(180deg, #8e5bb5, #5b2c83); box-shadow: 0 0 10px rgba(155,89,182,.8); }
+.rey-noche .icono { width: 10px; height: 10px; color: #ffe27a; }
+/* QA 25/09/2026 en horizontal: la carta revelada del asiento de arriba tocaba
+   el reloj y la del lado izquierdo rozaba tu nombre. */
+@media (orientation: landscape) and (max-height: 600px) {
+    body.en-mesa .centro-mesa-wrapper { top: 49% !important; }
+    body.en-mesa .foco-turno-medieval { padding: 3px 14px !important; }
+    body.en-mesa #mensajeTurno { font-size: 13px !important; line-height: 1.2 !important; }
+    body.en-mesa .silla.left, body.en-mesa .silla.right { top: 52% !important; }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+    /* Parejas: el reloj lleva el marcador y la carta del compañero de arriba está a la vista */
+    /* (bajar el centro chocaba la pila con tu carta): mejor cartas reveladas más chicas */
+    :root { --mini-w: 31px !important; --mini-h: 44px !important; }
+    body.en-mesa .silla.top { top: 4px !important; }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+    /* Parejas: 11 px más abajo (con 55% la pila chocaba con tu carta) */
+    body.en-mesa .tapete-virtual:has(#marcadorEquipos:not(.hidden)) .centro-mesa-wrapper { top: 52% !important; }
+}
