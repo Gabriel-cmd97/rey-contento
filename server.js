@@ -246,7 +246,8 @@ function sanitizarConfig(raw) {
     const vidas         = enteroEnRango(raw.vidas, 1, 10, 3);
     const maxJugadores  = enteroEnRango(raw.maxJugadores, 2, 8, 6);
     // CLASICO o FIESTA (evento en cada ronda y la mesa vota el siguiente). Campana se quitó el 24/09/2026.
-    const modoJuego     = enLista(raw.modoJuego, ['CLASICO', 'FIESTA'], 'CLASICO');
+    // CORTE (La Corte: Rey secreto por equipo) siempre va en equipos.
+    const modoJuego     = enLista(raw.modoJuego, ['CLASICO', 'FIESTA', 'CORTE'], 'CLASICO');
     const modoRey       = enLista(raw.modoRey, ['SORPRESA', 'DECLARADO'], 'SORPRESA');
     // Reyes: se sortea al crear la sala (ya no se elige); la sala de espera lo muestra.
     const frecuenciaReyes = ['NORMAL', 'ALTA', 'LOCURA'][Math.floor(Math.random() * 3)];
@@ -259,7 +260,13 @@ function sanitizarConfig(raw) {
     // Tres guiones (practica.js): 'basica', 'poderes' (eventos y poderes) y
     // 'fiesta' (eventos de amigos: Confesión, Venganza y Carrusel).
     const tipoPractica = raw.practica === true || raw.practica === 'basica' ? 'basica'
-        : ['poderes', 'fiesta'].includes(raw.practica) ? raw.practica : null;
+        : ['poderes', 'fiesta', 'corte'].includes(raw.practica) ? raw.practica : null;
+    if (tipoPractica === 'corte') {
+        // La Corte guiada: 2 contra 2 con 3 bots y 4 vidas (nadie queda fuera en las 2 rondas).
+        return { vidas: 4, maxJugadores: 4, numBots: 3, modoJuego: 'CORTE', equipos: 2, modoRey: 'SORPRESA',
+                 frecuenciaReyes: 'NORMAL', dificultadBots: 'NORMAL', tiempoTurno: 60,
+                 practica: 'corte', eventos: false, poderes: false, password: null };
+    }
     if (tipoPractica) {
         return { vidas: 3, maxJugadores: 3, numBots: 2, modoJuego: 'CLASICO',
                  modoRey: tipoPractica === 'basica' ? 'DECLARADO' : 'SORPRESA',
@@ -282,7 +289,8 @@ function sanitizarConfig(raw) {
     const publica = raw.publica === true;
     // Parejas: 0 = sin equipos, 2 = 2 contra 2, 3 = 3 contra 3. La mesa queda
     // de 4 o 6 y al empezar se completa con bots.
-    const equipos = enLista(Number.parseInt(raw.equipos, 10), [0, 2, 3], 0);
+    let equipos = enLista(Number.parseInt(raw.equipos, 10), [0, 2, 3], 0);
+    if (modoJuego === 'CORTE' && !equipos) equipos = 2;
     const maxMesa = equipos ? equipos * 2 : maxJugadores;
     // En parejas los bots no ocupan lugares desde el lobby (dejarían fuera a
     // los amigos): entran al empezar, solo en los lugares que quedaron libres.
@@ -370,6 +378,7 @@ function jugadoresPublicos(sala) {
         publico.escudo = escudos.includes(publico.nombre);
         if (!publico.esBot && looks[publico.nombre]) publico.look = looks[publico.nombre];
         if (sala.reyDeMesa && publico.nombre === sala.reyDeMesa) publico.reyMesa = sala.coronasSeguidas || 1;
+        if (sala.reyReveladoCorte?.[publico.equipo] && sala.reyesCorte?.[publico.equipo] === publico.nombre) publico.reyCorteRevelado = true;
         if (reyDeLaNoche && publico.nombre === reyDeLaNoche.nombre && Date.now() < reyDeLaNoche.hasta) publico.reyNoche = true;
         const esReyVisible = cartaActual === 9 && (reyDeclarado || reyDescubierto);
         if (rondaRevelada || esReyVisible) publico.cartaActual = cartaActual;
@@ -1027,7 +1036,7 @@ async function registrarHistorialYLogros(sala, ganador, humanos) {
     const lugarDe = ganador.esEquipo
         ? (n => ganador.integrantes.includes(n) ? 1 : 2) // parejas: 1.º el equipo ganador, 2.º el otro
         : logros.lugaresFinales(hayGanador ? ganador.nombre : null, sala.caidas || [], sala.jugadores.length);
-    const modo = sala.config.rapida ? 'RAPIDA' : sala.config.equipos ? 'PAREJAS' : sala.config.modoJuego;
+    const modo = sala.config.rapida ? 'RAPIDA' : sala.config.modoJuego === 'CORTE' ? 'CORTE' : sala.config.equipos ? 'PAREJAS' : sala.config.modoJuego;
     for (const j of humanos) {
         const caida = (sala.caidas || []).find(c => c.nombre === j.nombre);
         await conRetry(
@@ -1171,7 +1180,7 @@ function resolverRonda(sala, io) {
         }
     }
 
-    const { valorCritico, perdedores, culpables, castigados, mensajes } = resolverCartas(sala);
+    const { valorCritico, perdedores, culpables, castigados, mensajes, diez, corte } = resolverCartas(sala);
     // Venganza: quien perdió vida y sigue vivo puede vengarse la ronda siguiente.
     sala.vengadores = sala.jugadores.filter(j => perdedores.includes(j.id) && j.vidas > 0).map(j => j.nombre);
     // Amnistía: quien tenía la carta mortal pierde su turno en la ronda siguiente.
@@ -1224,7 +1233,7 @@ function resolverRonda(sala, io) {
     const SEG_AUTO_SIGUIENTE_RONDA = 15;
     // La práctica termina al revelar la última ronda del guion: el cliente
     // muestra el cierre y el jugador sale de la sala.
-    const finDePractica = sala.config.practica && sala.rondaActual >= practica.ULTIMA_RONDA;
+    const finDePractica = sala.config.practica && sala.rondaActual >= practica.ultimaRonda(sala);
     if (finDePractica) sala.jugadores.filter(j => !j.esBot).forEach(j => otorgarLogro(sala, j.nombre, 'aprendiz'));
     const dealerEsBot = sala.jugadores[sala.dealerIndex].esBot;
     // En la práctica hay que dar tiempo a leer las explicaciones.
@@ -1253,6 +1262,8 @@ function resolverRonda(sala, io) {
         jugadores: jugadoresPublicos(sala),
         perdedores: perdedores,
         cartaMortal: valorCritico,
+        diez: diez || null, // Parejas: { objetivo, sumas por equipo, perdedores }
+        corte: corte || null, // La Corte: { perdedores (equipos), castigo } (sin nombres ni cartas de los Reyes)
         dealerId: sala.jugadores[sala.dealerIndex].id,
         juegoTerminado: juegoTerminado,
         autoSiguienteMs: msAutoSiguiente,
@@ -1264,7 +1275,9 @@ function resolverRonda(sala, io) {
     io.to(sala.idSala).emit('accionMesa', {
         tipo: 'FIN_RONDA',
         icono: '💀',
-        texto: `Fin de ronda — Carta mortal: ${valorCritico}`
+        texto: corte ? (corte.perdedores.length ? `Fin de ronda — pierde el Rey de ${corte.perdedores.map(e => NOMBRE_EQUIPO[e]).join(' y ')}` : 'Fin de ronda — los Reyes empataron')
+            : diez ? `Fin de ronda — Meta ${diez.objetivo}: ${Object.entries(diez.sumas).map(([e, n]) => `${NOMBRE_EQUIPO[e]} ${n}`).join(' · ')}`
+            : `Fin de ronda — Carta mortal: ${valorCritico}`
     });
 
     // Avance automático. Si el dealer avanza antes, el estado ya no es
@@ -1451,11 +1464,21 @@ function gestionarTurnos(sala, io, esInicio = false) {
                 const decision = (!r.error && r.carta !== undefined)
                     ? (poderes.mejorQue(r.carta, jugadorActual.cartaActual, pierdeLaMasAlta) ? 'CAMBIAR' : 'MANTENER')
                     : decidir();
+                // La Corte: acusar si hay pista y proteger al Rey si conviene.
+                let corte = null;
+                if (sala.config.modoJuego === 'CORTE' && !jugadorActual.automatico && sala.config.practica && decision === 'PROTEGER') {
+                    // Guion de práctica: este bot protege a su Rey.
+                    corte = sala.jugadores.findIndex(j => j.nombre === sala.reyesCorte[jugadorActual.equipo]);
+                } else if (sala.config.modoJuego === 'CORTE' && !jugadorActual.automatico && !sala.config.practica) {
+                    const plan = bots.planCorte(sala, jugadorActual);
+                    if (plan.acusar) acusarCorte(sala, jugadorActual, plan.acusar);
+                    if (plan.proteger !== undefined && puedeProteger(sala, jugadorActual)) corte = plan.proteger;
+                }
                 // Venganza: si sabe de una carta mejor en la mesa, va por ella.
-                const objetivo = puedeVengarse(sala, jugadorActual) && !jugadorActual.automatico && !sala.config.practica
+                const objetivo = corte === null && puedeVengarse(sala, jugadorActual) && !jugadorActual.automatico && !sala.config.practica
                     ? bots.objetivoVenganza(sala, jugadorActual) : null;
-                const accionBot = objetivo !== null ? 'CAMBIAR' : decision;
-                const opcionesBot = objetivo !== null ? { objetivoIndex: objetivo, venganza: true } : {};
+                const accionBot = corte !== null || objetivo !== null ? 'CAMBIAR' : decision;
+                const opcionesBot = corte !== null ? { objetivoIndex: corte, proteger: true } : objetivo !== null ? { objetivoIndex: objetivo, venganza: true } : {};
                 setTimeout(() => { if (sigueSuTurno()) ejecutarAccion(sala.idSala, accionBot, io, jugadorActual.id, false, opcionesBot); }, poder && !r.error ? 900 : 0);
             }, bots.retrasoBot());
             return;
@@ -1474,7 +1497,7 @@ function gestionarTurnos(sala, io, esInicio = false) {
 // Sin bots ni práctica. Se guarda sin esperar: nunca frena el juego.
 function registrarDecision(sala, jugador, tipo, ms = null) {
     if (!jugador || jugador.esBot || sala.config.practica) return;
-    const modo = sala.config.rapida ? 'RAPIDA' : sala.config.equipos ? 'PAREJAS' : sala.config.modoJuego;
+    const modo = sala.config.rapida ? 'RAPIDA' : sala.config.modoJuego === 'CORTE' ? 'CORTE' : sala.config.equipos ? 'PAREJAS' : sala.config.modoJuego;
     pool.execute('INSERT INTO decisiones (username, partida, tipo, ms, modo) VALUES (?, ?, ?, ?, ?)',
         [jugador.nombre, sala.idPartida || null, tipo, ms, modo])
         .catch(err => log.error('Fallo registrar decisión', { error: err.message }));
@@ -1553,6 +1576,7 @@ function iniciarRonda(sala, io) {
     sala.castigadosSiguiente = [];
     if (sala.rondaActual === 1) {
         prepararEquipos(sala);
+        if (sala.config.modoJuego === 'CORTE') repartirReyesCorte(sala);
         sala.caidas = []; sala.vidasPerdidas = {}; sala.primeraPerdida = {};
         sala.dueloAnunciado = false; sala.rondasSinEvento = 0; sala.ultimoEvento = null; sala.castigados = [];
         sala.idPartida = `${sala.idSala}-${Date.now().toString(36)}`; // agrupa el historial por partida
@@ -1562,6 +1586,7 @@ function iniciarRonda(sala, io) {
         if (sala.reyDeMesa && !sala.jugadores.some(j => j.nombre === sala.reyDeMesa)) { sala.reyDeMesa = null; sala.coronasSeguidas = 0; }
     }
     sala.estadoActual = "TURNOS_INTERCAMBIO";
+    sala.protegioCorte = {}; // La Corte: cada escudero protege una vez por ronda
     // Apuestas de los eliminados: abiertas hasta la primera jugada de la ronda.
     sala.apuestas = {};
     sala.apuestasAbiertas = !sala.config.practica;
@@ -1747,7 +1772,7 @@ function empezarPartida(sala) {
         emitirLobby(sala.idSala);
     }
     sala.rondaActual = 0;
-    sala.dealerIndex = sala.config.practica ? practica.DEALER_INICIAL : 0;
+    sala.dealerIndex = sala.config.practica ? practica.dealerInicial(sala) : 0;
     sala.mazo = crearMazo(sala.config);
     sala.descarte = [];
     sala.jugadoresAlEmpezar = sala.jugadores.length; // la revancha rellena hasta aquí, no hasta maxJugadores
@@ -1884,6 +1909,51 @@ function companeros(sala, jugador) {
     return sala.jugadores.filter(t => t !== jugador && t.equipo === jugador.equipo && t.vidas > 0);
 }
 
+// ==========================================
+// LA CORTE (Rey secreto por equipo; reglas.resolverCorte)
+// ==========================================
+// Al empezar cada partida, un Rey al azar por equipo: su equipo lo sabe
+// (evento privado 'corte'), los rivales no. Los escuderos protegen una vez
+// por ronda (cambio secreto con su Rey: los delata como escuderos) y cada
+// equipo puede acusar una vez por partida (acierto: el Rey rival queda
+// descubierto y su equipo pierde una vida extra; fallo: la pierde el propio).
+function repartirReyesCorte(sala) {
+    sala.reyesCorte = {}; sala.reyReveladoCorte = {}; sala.acusoCorte = {}; sala.castigoCorte = {}; sala.delatadosCorte = {};
+    const guion = sala.config.practica ? practica.reyesDeGuion(sala) : null; // en la práctica, los del guion
+    [...new Set(sala.jugadores.map(j => j.equipo))].forEach(e => {
+        const del = sala.jugadores.filter(j => j.equipo === e);
+        sala.reyesCorte[e] = guion?.[e] || del[Math.floor(Math.random() * del.length)].nombre;
+    });
+    sala.jugadores.filter(j => !j.esBot).forEach(j => io.to(j.id).emit('corte', infoCorte(sala, j)));
+}
+function infoCorte(sala, j) {
+    return { miEquipo: j.equipo, miRey: sala.reyesCorte?.[j.equipo] || null, soyRey: sala.reyesCorte?.[j.equipo] === j.nombre,
+             yaAcusamos: !!sala.acusoCorte?.[j.equipo], revelados: Object.fromEntries(Object.keys(sala.reyReveladoCorte || {}).map(e => [e, sala.reyesCorte[e]])) };
+}
+function puedeProteger(sala, j) {
+    return sala.config.modoJuego === 'CORTE' && sala.reyesCorte && sala.reyesCorte[j.equipo] !== j.nombre
+        && !sala.protegioCorte?.[j.nombre] && sala.jugadores.some(x => x.nombre === sala.reyesCorte[j.equipo] && x.vidas > 0);
+}
+// Acusar a `objetivo` (nombre) de ser el Rey rival. Devuelve error o null.
+function acusarCorte(sala, j, objetivo) {
+    if (sala.config.modoJuego !== 'CORTE' || sala.estadoActual !== 'TURNOS_INTERCAMBIO') return 'Ahora no se puede acusar.';
+    if (sala.acusoCorte[j.equipo]) return 'Tu equipo ya usó su acusación.';
+    const obj = sala.jugadores.find(x => x.nombre === objetivo);
+    if (!obj || obj.equipo === j.equipo || obj.vidas <= 0 || sala.reyReveladoCorte[obj.equipo]) return 'Elige a un rival que siga en juego.';
+    sala.acusoCorte[j.equipo] = true;
+    const acierto = sala.reyesCorte[obj.equipo] === obj.nombre;
+    const castigado = acierto ? obj.equipo : j.equipo;
+    sala.castigoCorte[castigado] = (sala.castigoCorte[castigado] || 0) + 1;
+    if (acierto) sala.reyReveladoCorte[obj.equipo] = true;
+    io.to(sala.idSala).emit('acusacionCorte', { acusador: j.nombre, objetivo: obj.nombre, acierto, equipoCastigado: castigado });
+    io.to(sala.idSala).emit('mensajeGlobal', acierto
+        ? `⚔️ ¡Regicidio! ${j.nombre} descubrió al Rey de ${NOMBRE_EQUIPO[obj.equipo]}: ${obj.nombre}. ${NOMBRE_EQUIPO[obj.equipo]} perderá una vida extra.`
+        : `⚔️ ${j.nombre} acusó a ${obj.nombre}… ¡no era el Rey! ${NOMBRE_EQUIPO[j.equipo]} perderá una vida.`);
+    sala.jugadores.filter(x => !x.esBot && x.online).forEach(x => io.to(x.id).emit('corte', infoCorte(sala, x)));
+    io.to(sala.idSala).emit('actualizarJugadores', jugadoresPublicos(sala));
+    return null;
+}
+
 // Venganza: ¿este jugador puede cambiar con cualquiera esta ronda?
 function puedeVengarse(sala, j) {
     return sala.evento === 'VENGANZA' && (sala.vengadores || []).includes(j.nombre) && j.vidas > 0;
@@ -1945,7 +2015,7 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false, opcion
 
     if (accion === 'CAMBIAR') {
         // Con el evento "Mercado" todos roban del mazo, como el dealer.
-        if ((indiceActual !== sala.dealerIndex && sala.evento !== 'MERCADO') || opciones.venganza) {
+        if ((indiceActual !== sala.dealerIndex && sala.evento !== 'MERCADO') || opciones.venganza || opciones.proteger) {
             const esSalto = opciones.objetivoIndex !== undefined;
             let jugadorDerecha = sala.jugadores[esSalto ? opciones.objetivoIndex : siguienteVivo(sala.jugadores, indiceActual)];
             const bloqueEscudo = (sala.escudos || []).includes(jugadorDerecha.nombre);
@@ -1978,6 +2048,14 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false, opcion
                 jugadorDerecha.cartaActual = temp;
                 enviarCarta(sala, jugadorActual);
                 enviarCarta(sala, jugadorDerecha);
+                if (opciones.proteger) {
+                    // La Corte: la mesa no ve con quién; solo que ese equipo hizo un cambio secreto
+                    // (y así ya se sabe que quien lo hizo no es el Rey).
+                    sala.protegioCorte[jugadorActual.nombre] = true;
+                    (sala.delatadosCorte ||= {})[jugadorActual.equipo] = [...new Set([...(sala.delatadosCorte[jugadorActual.equipo] || []), jugadorActual.nombre])];
+                    io.to(idSala).emit('mensajeGlobal', `🛡️ ${jugadorActual.nombre} (${NOMBRE_EQUIPO[jugadorActual.equipo]}) hizo un cambio secreto con su Rey.`);
+                    io.to(idSala).emit('accionMesa', { tipo: 'SECRETO', icono: '🛡️', jugador: jugadorActual.nombre, texto: `${jugadorActual.nombre} hizo un cambio secreto` });
+                } else {
                 io.to(idSala).emit('mensajeGlobal', opciones.venganza
                     ? `😈 ¡Venganza! ${jugadorActual.nombre} cambió con ${jugadorDerecha.nombre}.`
                     : esSalto
@@ -1990,6 +2068,7 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false, opcion
                     objetivo: jugadorDerecha.nombre,
                     texto: `${jugadorActual.nombre} cambió con ${jugadorDerecha.nombre}`
                 });
+                }
                 if (sala.config.modoRey === "DECLARADO") {
                     jugadorActual.cartaRevelada = jugadorActual.cartaActual === 9;
                     jugadorDerecha.cartaRevelada = jugadorDerecha.cartaActual === 9;
@@ -2384,6 +2463,7 @@ io.on('connection', (socket) => {
 
             if (sala.estadoActual !== "LOBBY") {
                 if (sala.config.poderes) socket.emit('misPoderes', jugadorExistente.poderes || []);
+                if (sala.config.modoJuego === 'CORTE') socket.emit('corte', infoCorte(sala, jugadorExistente));
                 if (sala.config.equipos && sala.evento !== 'NIEBLA' && sala.estadoActual === "TURNOS_INTERCAMBIO") {
                     companeros(sala, jugadorExistente).forEach(t => socket.emit('cartaCompanero', { id: t.id, carta: t.cartaActual }));
                 }
@@ -2510,9 +2590,10 @@ io.on('connection', (socket) => {
         let opciones = {};
         if (objetivo !== undefined) {
             const idx = sala.jugadores.findIndex(j => j.nombre === objetivo);
-            if (accion !== 'CAMBIAR' || !puedeVengarse(sala, jugadorEnTurno) || idx === -1
-                || idx === sala.turnoActualIndex || sala.jugadores[idx].vidas <= 0) return;
-            opciones = { objetivoIndex: idx, venganza: true };
+            if (accion !== 'CAMBIAR' || idx === -1 || idx === sala.turnoActualIndex || sala.jugadores[idx].vidas <= 0) return;
+            if (puedeProteger(sala, jugadorEnTurno) && sala.reyesCorte[jugadorEnTurno.equipo] === objetivo) opciones = { objetivoIndex: idx, proteger: true };
+            else if (puedeVengarse(sala, jugadorEnTurno)) opciones = { objetivoIndex: idx, venganza: true };
+            else return;
         }
 
         desactivarAutomatico(sala, jugadorEnTurno); // jugó él: está presente
@@ -2548,6 +2629,20 @@ io.on('connection', (socket) => {
         if (quiere === true && i === -1) torneo.inscritos.push(nombreUsuarioLogueado);
         if (quiere === false && i !== -1) torneo.inscritos.splice(i, 1);
         io.emit('torneo', estadoTorneoPublico());
+    });
+
+    // La Corte: acusar a un rival de ser su Rey (en tu turno, una vez por partida por equipo).
+    socket.on('acusar', (payload) => {
+        if (!payload || typeof payload !== 'object') return;
+        const { idSala, objetivo } = payload;
+        if (!permitir(socket.id, 'acusar', 1000)) return;
+        if (!esIdSalaValido(idSala) || typeof objetivo !== 'string') return;
+        const sala = estadoSalas[idSala];
+        if (!sala) return;
+        const yo = sala.jugadores[sala.turnoActualIndex];
+        if (!yo || yo.nombre !== nombreUsuarioLogueado || yo.vidas <= 0) return socket.emit('errorSala', 'Solo puedes acusar en tu turno.');
+        const error = acusarCorte(sala, yo, objetivo);
+        if (error) socket.emit('errorSala', error);
     });
 
     // Apuestas de los eliminados: ¿quién pierde esta ronda?

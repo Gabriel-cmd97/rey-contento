@@ -61,6 +61,8 @@ function siguienteVivo(jugadores, indice) {
 // una vida (sin pasar de config.vidas) a la carta más alta: `premiados`.
 // `mensajes` va en el orden en que se deben anunciar a la mesa.
 function resolverCartas(sala) {
+    if (sala.config.modoJuego === 'CORTE') return resolverCorte(sala); // La Corte: solo cuentan los Reyes
+    if (sala.config.equipos) return resolverDiez(sala); // Parejas se juega a "Diez"
     const vivos = sala.jugadores.filter(j => j.vidas > 0);
     const pierdeLaMasAlta = sala.evento === 'MUNDO_AL_REVES';
     const vidasPorPerder = sala.evento === 'DOBLE_CASTIGO' ? 2 : 1;
@@ -130,6 +132,87 @@ function resolverCartas(sala) {
     return { vivos, valorCritico, empateTotal, perdedores, culpables, castigados, premiados, mensajes };
 }
 
+// Parejas = "Diez" (desde el 29/09/2026 reemplaza al Parejas clásico): se
+// suman las cartas de cada equipo y la meta es 5 por integrante (10 en 2
+// contra 2, 15 en 3 contra 3). Pierde el equipo que se pasa (si se pasan
+// varios, el que se pasó más); si nadie se pasa, el que quedó más lejos. Si
+// empatan, nadie pierde. Mundo al revés invierte: pierde el que quedó más
+// cerca (pasarse sigue perdiendo). Doble castigo quita 2; Amnistía, ninguna
+// (los del equipo perdedor pierden su próximo turno, como siempre). La vida es
+// del equipo: se le quita a todos sus integrantes vivos.
+function resolverDiez(sala) {
+    const vivos = sala.jugadores.filter(j => j.vidas > 0);
+    const equipos = [...new Set(vivos.map(j => j.equipo))];
+    const porEquipo = Object.fromEntries(equipos.map(e => [e, vivos.filter(j => j.equipo === e)]));
+    const tamano = Math.max(...equipos.map(e => sala.jugadores.filter(j => j.equipo === e).length));
+    const objetivo = 5 * tamano;
+    const sumas = Object.fromEntries(equipos.map(e => [e, porEquipo[e].reduce((t, j) => t + j.cartaActual, 0)]));
+    // "Qué tan mal": pasarse siempre es peor que no llegar.
+    const mundoAlReves = sala.evento === 'MUNDO_AL_REVES';
+    const peor = (e) => sumas[e] > objetivo ? 1000 + (sumas[e] - objetivo)
+        : mundoAlReves ? sumas[e] : objetivo - sumas[e];
+    const maximo = Math.max(...equipos.map(peor));
+    const empateTotal = equipos.every(e => peor(e) === maximo);
+    const perdedoresEq = empateTotal ? [] : equipos.filter(e => peor(e) === maximo);
+    const vidasPorPerder = sala.evento === 'DOBLE_CASTIGO' ? 2 : 1;
+    const amnistia = sala.evento === 'AMNISTIA';
+    const perdedores = [], castigados = [], culpables = [], mensajes = [];
+    const NOMBRES = ['Oro', 'Plata', 'Bronce'];
+    const texto = (e) => `${NOMBRES[e] || 'Equipo ' + e} ${sumas[e]}${sumas[e] > objetivo ? ' (se pasó)' : ''}`;
+    if (empateTotal) {
+        mensajes.push(`🤝 ¡Empate! ${equipos.map(texto).join(' · ')}: nadie pierde vida.`);
+    } else {
+        perdedoresEq.forEach(e => porEquipo[e].forEach(j => {
+            culpables.push(j.id);
+            if (amnistia) castigados.push(j.id);
+            else { j.vidas = Math.max(0, j.vidas - vidasPorPerder); perdedores.push(j.id); }
+        }));
+        mensajes.push(`🎯 Meta ${objetivo}: ${equipos.map(texto).join(' · ')}.`);
+    }
+    return { vivos, valorCritico: null, empateTotal, perdedores, culpables, castigados, premiados: [], mensajes,
+             diez: { objetivo, sumas, perdedores: perdedoresEq } };
+}
+
+// La Corte (29/09/2026): cada equipo tiene un Rey secreto (sala.reyesCorte =
+// { equipo: nombre }). Al final se comparan solo las cartas de los Reyes: el
+// de la carta más baja (la más alta con Mundo al revés) le cuesta la vida a su
+// equipo; empate, nadie. Las acusaciones falladas o acertadas se cobran aquí
+// (sala.castigoCorte = { equipo: vidas extra }). Doble castigo quita 2 y la
+// Amnistía perdona (el Rey perdedor pierde su próximo turno).
+function resolverCorte(sala) {
+    const vivos = sala.jugadores.filter(j => j.vidas > 0);
+    const reyes = Object.entries(sala.reyesCorte || {})
+        .map(([e, nombre]) => ({ equipo: Number(e), j: vivos.find(x => x.nombre === nombre) }))
+        .filter(r => r.j);
+    const mundoAlReves = sala.evento === 'MUNDO_AL_REVES';
+    const cartas = reyes.map(r => r.j.cartaActual);
+    const critico = mundoAlReves ? Math.max(...cartas) : Math.min(...cartas);
+    const empateTotal = reyes.length < 2 || reyes.every(r => r.j.cartaActual === critico);
+    const perdedoresEq = empateTotal ? [] : reyes.filter(r => r.j.cartaActual === critico).map(r => r.equipo);
+    const vidasPorPerder = sala.evento === 'DOBLE_CASTIGO' ? 2 : 1;
+    const amnistia = sala.evento === 'AMNISTIA';
+    const castigo = sala.castigoCorte || {};
+    const perdedores = [], castigados = [], culpables = [], mensajes = [];
+    const NOMBRES = ['Oro', 'Plata', 'Bronce'];
+    const equipos = [...new Set(vivos.map(j => j.equipo))];
+    equipos.forEach(e => {
+        const porRonda = perdedoresEq.includes(e) ? (amnistia ? 0 : vidasPorPerder) : 0;
+        const total = porRonda + (castigo[e] || 0);
+        if (perdedoresEq.includes(e)) culpables.push(reyes.find(r => r.equipo === e).j.id);
+        if (perdedoresEq.includes(e) && amnistia) castigados.push(reyes.find(r => r.equipo === e).j.id);
+        if (!total) return;
+        vivos.filter(j => j.equipo === e).forEach(j => { j.vidas = Math.max(0, j.vidas - total); perdedores.push(j.id); });
+    });
+    sala.castigoCorte = {};
+    // Sin nombres ni cartas de los Reyes: el secreto se mantiene (se deduce, si acaso).
+    mensajes.push(empateTotal ? '🤝 Los Reyes empataron: nadie pierde por cartas.'
+        : `👑 El Rey de ${perdedoresEq.map(e => NOMBRES[e]).join(' y ')} tenía la carta ${mundoAlReves ? 'más alta' : 'más baja'}: ${perdedoresEq.map(e => NOMBRES[e]).join(' y ')} ${vidasPorPerder > 1 && !amnistia ? 'pierde 2 vidas' : amnistia ? 'se salva por la Amnistía' : 'pierde una vida'}.`);
+    Object.entries(castigo).forEach(([e, n]) => { if (n) mensajes.push(`⚔️ ${NOMBRES[e]} pierde ${n} ${n === 1 ? 'vida' : 'vidas'} por la acusación.`); });
+    // `culpables` vacío hacia afuera: nombrarlos delataría al Rey.
+    return { vivos, valorCritico: null, empateTotal, perdedores, culpables: [], reyesCulpables: culpables, castigados, premiados: [], mensajes,
+             corte: { perdedores: perdedoresEq, castigo } };
+}
+
 // Evento Carrusel: cada jugador vivo pasa su carta al siguiente vivo de su
 // derecha, todos a la vez. Quien cumple `retiene(j)` (el Rey protegido) no
 // entra en la vuelta: conserva su carta y los demás se la saltan.
@@ -147,4 +230,4 @@ function rotarCartas(jugadores, retiene = () => false) {
     return pases;
 }
 
-module.exports = { barajar, crearMazo, siguienteVivo, resolverCartas, rotarCartas };
+module.exports = { barajar, crearMazo, siguienteVivo, resolverCartas, resolverDiez, resolverCorte, rotarCartas };

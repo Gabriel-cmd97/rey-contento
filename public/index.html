@@ -160,6 +160,11 @@
                             <strong>Eventos y poderes</strong>
                             <span>3 rondas guiadas</span>
                         </button>
+                        <button id="btnPracticaCorte" class="tarjeta-aprender">
+                            <svg class="icono" aria-hidden="true"><use href="#i-corona"/></svg>
+                            <strong>La Corte</strong>
+                            <span>2 rondas guiadas</span>
+                        </button>
                         <button id="btnPracticaFiesta" class="tarjeta-aprender">
                             <svg class="icono" aria-hidden="true"><use href="#i-grupo"/></svg>
                             <strong>Modo Fiesta</strong>
@@ -177,6 +182,7 @@
                             <select id="selectModoJuego" class="selector-medieval selector-compacto">
                             <option value="CLASICO">Clásico</option>
                             <option value="FIESTA">Fiesta: evento en cada ronda</option>
+                            <option value="CORTE">La Corte: Rey secreto (equipos)</option>
                         </select>
                         </div>
                         <div class="config-item-nuevo">
@@ -512,6 +518,8 @@
             <div id="guiaAcciones" class="guia-acciones hidden"></div>
             <div id="panelFrases" class="panel-frases hidden" role="menu" aria-label="Frases rápidas"></div>
             <div id="barraPoderes" class="barra-poderes hidden" aria-label="Tus poderes"></div>
+            <!-- La Corte: proteger al Rey y acusar (pintarBarraCorte en main.js) -->
+            <div id="barraCorte" class="barra-corte hidden"></div>
             <div class="acciones-row">
                 <button id="btnReacciones" class="btn-abrir-reacciones" aria-expanded="false" aria-controls="barraReacciones" title="Reacciones y frases">😀</button>
                 <button id="btnMantener" class="boton-medieval full-width" data-tecla="M" disabled>MANTENER</button>
@@ -693,7 +701,8 @@
                 <li><strong>Salto</strong> (en tu turno): cambias con quien está dos lugares a tu derecha.</li>
                 <li><strong>Escudo</strong> (en cualquier momento de la ronda): nadie puede cambiar contigo esa ronda.</li>
             </ul>
-            <p><strong>Parejas</strong> (2 contra 2 o 3 contra 3): los equipos Oro y Plata se sientan alternados, así que tu vecino de la derecha siempre es rival. Las vidas son del equipo: si alguien del equipo tiene la carta mortal, el equipo pierde una vida. <strong>Ves la carta de tu compañero</strong> (los rivales no). Gana el último equipo con vidas. Con poderes, el Salto te deja cambiar con tu compañero.</p>
+            <p><strong>Parejas: Diez</strong> (2 contra 2 o 3 contra 3): los equipos Oro y Plata se sientan alternados, así que tu vecino de la derecha siempre es rival. Al final de la ronda <strong>se suman las cartas de cada equipo</strong> y la meta es <strong>10</strong> (15 en 3 contra 3): pierde una vida el equipo que <strong>se pasa</strong>; si nadie se pasa, el que quedó <strong>más lejos</strong>. Si empatan, nadie pierde. <strong>Ves la carta de tu compañero</strong> (los rivales no), así que pueden hacer cuentas juntos; bajo el reloj ves cuánto suma tu equipo. Las vidas son del equipo y gana el último con vidas. Con Mundo al revés pierde el que quedó más cerca de la meta.</p>
+            <p><strong>La Corte</strong> (2 contra 2 o 3 contra 3, equipos Oro y Plata alternados): al empezar, cada equipo tiene un <strong>Rey secreto</strong>; tu equipo sabe quién es, los rivales no. Al final de la ronda <strong>solo cuentan las cartas de los Reyes</strong>: el Rey con la carta más baja le cuesta una vida a su equipo (las cartas de los escuderos no cuentan). Ves la carta de tus compañeros. <strong>Proteger:</strong> una vez por ronda, un escudero puede cambiar su carta con la de su Rey esté donde esté; la mesa solo ve "cambio secreto"… pero ya sabe que tú no eres el Rey. <strong>¡Regicidio!</strong> Una vez por partida, cada equipo puede acusar a un rival de ser su Rey: si acierta, el Rey queda descubierto y su equipo pierde una vida extra; si falla, la pierde tu equipo. Gana el último equipo con vidas.</p>
             <p><strong>Duelo final:</strong> cuando solo quedan dos jugadores, se enfrentan cara a cara y sus cartas chocan al centro de la mesa.</p>
 
             <p class="nota-pergamino" style="font-size:11px;text-align:center;margin-top:18px;margin-bottom:0;">Íconos de las cartas: <a href="https://game-icons.net" target="_blank" rel="noopener" style="color:inherit;">game-icons.net</a> · CC BY 3.0</p>
@@ -739,7 +748,7 @@
         function actualizarResumenConfig() {
             const ic = (n) => `<svg class="icono" aria-hidden="true"><use href="#i-${n}"/></svg>`;
             const modo      = document.getElementById('selectModo')?.value === 'DECLARADO' ? 'Declarado' : 'Sorpresa';
-            const modoJuego = document.getElementById('selectModoJuego')?.value === 'FIESTA' ? `${ic('rayo')} Fiesta` : `${ic('espadas')} Clásico`;
+            const modoJuego = { FIESTA: `${ic('rayo')} Fiesta`, CORTE: `${ic('corona')} La Corte` }[document.getElementById('selectModoJuego')?.value] || `${ic('espadas')} Clásico`;
             const vidas     = document.getElementById('selectVidas')?.value;
             const jugadores = document.getElementById('selectJugadores')?.value;
             const bots      = ''; // los bots se ponen al empezar, en los lugares libres
@@ -791,6 +800,24 @@
         <button type="button" id="btnCerrarPremio" class="boton-oro boton-lobby full-width">¡Abrir cofre!</button>
     </div>
 </div>
+
+<!-- La Corte: confirmar la acusación (con el estilo de "Salir de la partida") -->
+<div id="modalAcusar" class="hidden" role="dialog" aria-modal="true" aria-labelledby="tituloAcusar">
+    <div class="caja-salir">
+        <h2 id="tituloAcusar" class="medieval-font">⚔️ ¿Acusar?</h2>
+        <p id="textoAcusar"></p>
+        <div class="acciones-salir">
+            <button id="btnCancelarAcusar" class="boton-madera">Mejor no</button>
+            <button id="btnConfirmarAcusar" class="boton-oro">¡Acusar!</button>
+        </div>
+    </div>
+</div>
+
+<!-- Primera vez en un modo: cómo se juega (mostrarModoNuevo en main.js) -->
+<div id="cartaModo" class="carta-modo hidden" role="dialog" aria-live="polite"></div>
+
+<!-- La Corte: tu papel al empezar (alRecibirCorte en main.js) -->
+<div id="cartaRol" class="carta-rol hidden" aria-live="assertive"></div>
 
 <!-- Apuestas de los eliminados (pintarApuesta en main.js) -->
 <div id="panelApuesta" class="panel-apuesta hidden" role="group" aria-label="Apuesta de la ronda"></div>

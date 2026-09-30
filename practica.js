@@ -43,6 +43,16 @@ const GUIONES = {
         // Carrusel: hagas lo que hagas, al final te llega el 8 de B.
         3: { cartas: [3, 6, 8], mazo: 1, bots: { 1: 'MANTENER', 2: 'MANTENER' }, evento: 'CARRUSEL' },
     },
+    // La Corte (2 contra 2): 0 = tú y 2 = B (tu Rey) en Oro; 1 = A y 3 = C (Rey
+    // rival) en Plata. Dealer inicial C: juegas primero. 2 rondas.
+    corte: {
+        dealer: 3, reyes: { 0: 2, 1: 3 }, ultima: 2,
+        // Tu Rey tiene un 1: lo proteges dándole tu 8 (Plata pierde con su 4).
+        1: { cartas: [8, 5, 1, 4], mazo: 6, bots: { 1: 'MANTENER', 2: 'MANTENER', 3: 'MANTENER' } },
+        // A protege a C (se delata como escudero): el Rey de Plata es C y lo
+        // acusas siendo el dealer; tu Rey (8) le gana a C (7).
+        2: { cartas: [3, 7, 8, 2], mazo: 5, bots: { 1: 'PROTEGER', 2: 'MANTENER', 3: 'MANTENER' } },
+    },
 };
 const ULTIMA_RONDA = 3;
 
@@ -85,6 +95,15 @@ function confesionDeRonda(sala) {
     return i === undefined ? null : i;
 }
 
+// Guion con su propio dealer, Reyes (La Corte) y última ronda.
+function dealerInicial(sala) { return guionDe(sala).dealer ?? DEALER_INICIAL; }
+function ultimaRonda(sala) { return guionDe(sala).ultima ?? ULTIMA_RONDA; }
+// { equipo: nombre } a partir de los asientos del guion (null si no aplica).
+function reyesDeGuion(sala) {
+    const r = guionDe(sala).reyes;
+    return r ? Object.fromEntries(Object.entries(r).map(([e, i]) => [e, sala.jugadores[i]?.nombre])) : null;
+}
+
 function esperaInicio(sala) {
     return rondaDe(sala)?.esperaInicio || 0;
 }
@@ -92,4 +111,4 @@ function esperaInicio(sala) {
 // Compatibilidad: RONDAS es el guion básico.
 const RONDAS = GUIONES.basica;
 
-module.exports = { DEALER_INICIAL, GUIONES, RONDAS, ULTIMA_RONDA, repartirGuion, decisionBot, eventoDeRonda, poderesDeRonda, confesionDeRonda, esperaInicio };
+module.exports = { DEALER_INICIAL, GUIONES, RONDAS, ULTIMA_RONDA, repartirGuion, decisionBot, eventoDeRonda, poderesDeRonda, confesionDeRonda, esperaInicio, dealerInicial, ultimaRonda, reyesDeGuion };

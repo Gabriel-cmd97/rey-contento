@@ -60,3 +60,30 @@ test('dificultad desconocida cae en NORMAL y el retraso es humano', () => {
     assert.strictEqual(d, 'MANTENER');
     assert.ok(bots.retrasoBot(fijo(0)) >= 3000 && bots.retrasoBot(fijo(0.999)) <= 4000);
 });
+
+test('diez: el bot cambia si lo acerca a la meta y mantiene si se pasaría', () => {
+    const fijo9 = () => 0.9;
+    const mk = (carta, compa) => {
+        const bot = { id: 'b', nombre: 'b', esBot: true, vidas: 3, cartaActual: carta, equipo: 0, memoria: { c: compa } };
+        const c = { id: 'c', nombre: 'c', vidas: 3, cartaActual: compa, equipo: 0 };
+        const r = { id: 'r', nombre: 'r', vidas: 3, cartaActual: 5, equipo: 1 };
+        return [bot, { jugadores: [bot, r, c, { id: 'r2', nombre: 'r2', vidas: 3, cartaActual: 5, equipo: 1 }], descarte: [], config: { equipos: 2, dificultadBots: 'NORMAL' } }, r];
+    };
+    let [bot, s, r] = mk(1, 5); // 6: le falta, cambiar suele acercar
+    assert.strictEqual(bots.decidirBot(s, bot, { esDealer: false, derecha: r }, fijo9), 'CAMBIAR');
+    [bot, s, r] = mk(5, 5); // 10 exacto: no tocar
+    assert.strictEqual(bots.decidirBot(s, bot, { esDealer: false, derecha: r }, fijo9), 'MANTENER');
+    [bot, s, r] = mk(8, 7); // 15: se pasa, cambiar para bajar
+    assert.strictEqual(bots.decidirBot(s, bot, { esDealer: false, derecha: r }, fijo9), 'CAMBIAR');
+});
+
+test('corte: el bot protege a su Rey si su carta le conviene y acusa al único rival sin delatar', () => {
+    const bot = { id: 'b', nombre: 'b', esBot: true, vidas: 3, cartaActual: 8, equipo: 0, memoria: { r: 2 } };
+    const rey = { id: 'r', nombre: 'r', vidas: 3, cartaActual: 2, equipo: 0 };
+    const x = { id: 'x', nombre: 'x', vidas: 3, cartaActual: 5, equipo: 1 }, y = { id: 'y', nombre: 'y', vidas: 3, cartaActual: 5, equipo: 1 };
+    const s = { jugadores: [bot, x, rey, y], descarte: [], config: { modoJuego: 'CORTE', equipos: 2 },
+                reyesCorte: { 0: 'r', 1: 'y' }, acusoCorte: {}, reyReveladoCorte: {}, delatadosCorte: { 1: ['x'] } };
+    assert.deepStrictEqual(bots.planCorte(s, bot), { proteger: 2, acusar: 'y' });
+    bot.cartaActual = 3; s.acusoCorte[0] = true;
+    assert.deepStrictEqual(bots.planCorte(s, bot), {}); // 3 contra 2: no vale la pena; ya acusaron
+});

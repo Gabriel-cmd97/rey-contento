@@ -75,28 +75,73 @@ test('evento Amnistía: nadie pierde vida y el de la más baja queda castigado',
 const conEquipos = (jugadores, extra = {}) => sala(jugadores, { equipos: 2 }, extra);
 const je = (id, carta, equipo, v = 3) => ({ ...j(id, carta, v), equipo });
 
-test('parejas: el equipo con la carta mortal pierde una vida para todos sus integrantes', () => {
-    const s = conEquipos([je('a1', 2, 0), je('b1', 6, 1), je('a2', 7, 0), je('b2', 5, 1)]);
+test('diez: meta 10 en 2 contra 2; pierde el que quedó más lejos sin pasarse', () => {
+    const s = conEquipos([je('a1', 2, 0), je('b1', 6, 1), je('a2', 5, 0), je('b2', 3, 1)]); // Oro 7, Plata 9
     const r = resolverCartas(s);
+    assert.strictEqual(r.diez.objetivo, 10);
+    assert.deepStrictEqual(r.diez.sumas, { 0: 7, 1: 9 });
     assert.deepStrictEqual(vidas(s), [2, 3, 2, 3]);
-    assert.deepStrictEqual(r.culpables, ['a1']);
     assert.deepStrictEqual(r.perdedores.sort(), ['a1', 'a2']);
 });
 
-test('parejas: si los dos compañeros tienen la carta mortal, el equipo pierde solo una vida', () => {
-    const s = conEquipos([je('a1', 2, 0), je('b1', 6, 1), je('a2', 2, 0), je('b2', 5, 1)]);
-    resolverCartas(s);
+test('diez: pasarse pierde aunque el otro esté lejos; si los dos se pasan, pierde el que se pasó más', () => {
+    const a = conEquipos([je('a1', 9, 0), je('b1', 1, 1), je('a2', 3, 0), je('b2', 1, 1)]); // Oro 12, Plata 2
+    resolverCartas(a);
+    assert.deepStrictEqual(vidas(a), [2, 3, 2, 3]);
+    const b = conEquipos([je('a1', 9, 0), je('b1', 8, 1), je('a2', 3, 0), je('b2', 7, 1)]); // Oro 12, Plata 15
+    resolverCartas(b);
+    assert.deepStrictEqual(vidas(b), [3, 2, 3, 2]);
+});
+
+test('diez: empate exacto nadie pierde; 3 contra 3 la meta es 15', () => {
+    const e = conEquipos([je('a1', 4, 0), je('b1', 6, 1), je('a2', 4, 0), je('b2', 2, 1)]); // 8 y 8
+    const r = resolverCartas(e);
+    assert.ok(r.empateTotal);
+    assert.deepStrictEqual(vidas(e), [3, 3, 3, 3]);
+    const t = sala([je('a1', 5, 0), je('b1', 5, 1), je('a2', 5, 0), je('b2', 5, 1), je('a3', 5, 0), je('b3', 4, 1)], { equipos: 3 });
+    assert.strictEqual(resolverCartas(t).diez.objetivo, 15);
+    assert.deepStrictEqual(vidas(t), [3, 2, 3, 2, 3, 2]); // Oro 15 exacto, Plata 14
+});
+
+test('diez con eventos: doble castigo quita 2, mundo al revés pierde el más cercano, amnistía no quita', () => {
+    const d = conEquipos([je('a1', 1, 0), je('b1', 6, 1), je('a2', 2, 0), je('b2', 3, 1)], { evento: 'DOBLE_CASTIGO' });
+    resolverCartas(d);
+    assert.deepStrictEqual(vidas(d), [1, 3, 1, 3]);
+    const m = conEquipos([je('a1', 1, 0), je('b1', 6, 1), je('a2', 2, 0), je('b2', 3, 1)], { evento: 'MUNDO_AL_REVES' }); // Oro 3, Plata 9
+    resolverCartas(m);
+    assert.deepStrictEqual(vidas(m), [3, 2, 3, 2]);
+    const am = conEquipos([je('a1', 1, 0), je('b1', 6, 1), je('a2', 2, 0), je('b2', 3, 1)], { evento: 'AMNISTIA' });
+    const r = resolverCartas(am);
+    assert.deepStrictEqual(vidas(am), [3, 3, 3, 3]);
+    assert.deepStrictEqual(r.castigados.sort(), ['a1', 'a2']);
+});
+
+// --- La Corte (Rey secreto) ---
+const corte = (jugadores, reyes, extra = {}) => sala(jugadores, { modoJuego: 'CORTE', equipos: 2 }, { reyesCorte: reyes, ...extra });
+
+test('corte: solo cuentan los Reyes; el de carta más baja le cuesta la vida a su equipo', () => {
+    // Los escuderos tienen 0 y 1, pero no cuentan.
+    const s = corte([je('a1', 6, 0), je('b1', 0, 1), je('a2', 1, 0), je('b2', 4, 1)], { 0: 'a1', 1: 'b2' });
+    const r = resolverCartas(s);
+    assert.deepStrictEqual(vidas(s), [3, 2, 3, 2]);
+    assert.deepStrictEqual(r.corte.perdedores, [1]);
+    assert.deepStrictEqual(r.reyesCulpables, ['b2']);
+    assert.deepStrictEqual(r.culpables, []); // hacia afuera no se nombra al Rey
+});
+
+test('corte: empate de Reyes nadie pierde; la acusación se cobra aunque empaten', () => {
+    const s = corte([je('a1', 5, 0), je('b1', 2, 1), je('a2', 1, 0), je('b2', 5, 1)], { 0: 'a1', 1: 'b2' }, { castigoCorte: { 0: 1 } });
+    const r = resolverCartas(s);
+    assert.ok(r.empateTotal);
     assert.deepStrictEqual(vidas(s), [2, 3, 2, 3]);
+    assert.deepStrictEqual(s.castigoCorte, {});
 });
 
-test('parejas: si ambos equipos tienen la carta mortal, los dos pierden', () => {
-    const s = conEquipos([je('a1', 2, 0), je('b1', 2, 1), je('a2', 7, 0), je('b2', 5, 1)]);
-    resolverCartas(s);
-    assert.deepStrictEqual(vidas(s), [2, 2, 2, 2]);
-});
-
-test('parejas con doble castigo: el equipo pierde 2 vidas', () => {
-    const s = conEquipos([je('a1', 1, 0), je('b1', 6, 1), je('a2', 7, 0), je('b2', 5, 1)], { evento: 'DOBLE_CASTIGO' });
-    resolverCartas(s);
-    assert.deepStrictEqual(vidas(s), [1, 3, 1, 3]);
+test('corte con mundo al revés y doble castigo', () => {
+    const m = corte([je('a1', 8, 0), je('b1', 2, 1), je('a2', 1, 0), je('b2', 3, 1)], { 0: 'a1', 1: 'b2' }, { evento: 'MUNDO_AL_REVES' });
+    resolverCartas(m);
+    assert.deepStrictEqual(vidas(m), [2, 3, 2, 3]);
+    const d = corte([je('a1', 8, 0), je('b1', 2, 1), je('a2', 1, 0), je('b2', 3, 1)], { 0: 'a1', 1: 'b2' }, { evento: 'DOBLE_CASTIGO' });
+    resolverCartas(d);
+    assert.deepStrictEqual(vidas(d), [3, 1, 3, 1]);
 });

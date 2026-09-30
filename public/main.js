@@ -541,6 +541,7 @@ function actualizarBotonesTurno(esMio) {
         ], { duration: 650, easing: 'ease-out', composite: 'add' });
     }
     document.body.classList.toggle('puedo-jugar', !!esMio);
+    setTimeout(pintarBarraCorte, 0);
     document.getElementById('btnCambiar').innerText = 'CAMBIAR';
     pintarBarraPoderes();
     actualizarGuiaTurno(esMio);
@@ -596,6 +597,7 @@ function puedoVengarme() {
 // Ya jugaste (o terminó la ronda): fuera indicadores de gesto y Venganza.
 function terminarMiJugada() {
     document.body.classList.remove('puedo-jugar');
+    document.getElementById('barraCorte')?.classList.add('hidden');
     quitarVenganza();
 }
 
@@ -611,7 +613,7 @@ function marcarAsientoSugerido(nombre) {
     const j = listaJugadoresGlobal.find(x => x.nombre === nombre);
     if (!j) return;
     if (!st) { st = document.createElement('style'); st.id = 'estiloAsientoSugerido'; document.head.appendChild(st); }
-    const sel = `body.venganza-activa .silla[data-jugador-id="${CSS.escape(j.id)}"] .perfil-oponente`;
+    const sel = `body:is(.venganza-activa, .apuntando) .silla[data-jugador-id="${CSS.escape(j.id)}"] .perfil-oponente`;
     st.textContent = `${sel} { outline: 3px solid #ffe27a !important; outline-offset: 4px; box-shadow: 0 0 22px rgba(255,226,122,.8); }
         ${sel}::after { content: '¡Tócalo!'; position: absolute; left: 50%; top: -26px; transform: translateX(-50%); white-space: nowrap;
             background: #ffe27a; color: #3e2723; font: bold 12px Georgia, serif; padding: 3px 8px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,.5); }`;
@@ -696,9 +698,27 @@ function pintarInfoMesa() {
     // Con guías, la línea recuerda el objetivo (antes era un banner que chocaba con el reloj).
     const objetivo = guiasActivas() && !_practica
         ? 'pierde la carta más baja' : null;
+    // Parejas (Diez): la meta y lo que suma tu equipo con lo que ves.
+    const diez = _corte ? null : cuentaDiez();
+    const extraCorte = _corte ? ` · <span class="info-diez">${_corte.soyRey ? `${icono('corona')} Eres el Rey` : `🛡️ Tu Rey: ${escapeHTML(_corte.miRey || '')}`}</span>` : '';
+    const extra = extraCorte || (diez ? ` · <span class="info-diez" title="Sumen lo más cerca de ${diez.meta} sin pasarse">${icono('diana')} Meta ${diez.meta} · tu equipo ${diez.suma}${diez.completa ? '' : '+?'}</span>` : '');
     info.innerHTML = eventoActual
-        ? `Ronda ${escapeHTML(ronda)} · <span class="info-evento" title="${escapeHTML(eventoActual.descripcion)}">${icono(eventoActual.icono)} ${escapeHTML(eventoActual.titulo)}</span>`
-        : `Ronda ${escapeHTML(ronda)} · ${objetivo ? `<span class="info-objetivo">${objetivo}</span>` : modo}`;
+        ? `Ronda ${escapeHTML(ronda)} · <span class="info-evento" title="${escapeHTML(eventoActual.descripcion)}">${icono(eventoActual.icono)} ${escapeHTML(eventoActual.titulo)}</span>${extra}`
+        : `Ronda ${escapeHTML(ronda)}${extra || ` · ${objetivo ? `<span class="info-objetivo">${objetivo}</span>` : modo}`}`;
+}
+
+// Parejas (Diez): { meta, suma, completa } con tu carta y las de tus compañeros vivos.
+function cuentaDiez() {
+    const yo = listaJugadoresGlobal.find(j => j.id === socket?.id);
+    if (!yo || yo.equipo === undefined || yo.equipo === null) return null;
+    const equipo = listaJugadoresGlobal.filter(j => j.equipo === yo.equipo);
+    const vivos = equipo.filter(j => j.vidas > 0);
+    let suma = 0, completa = true;
+    vivos.forEach(j => {
+        const c = j.id === socket.id ? parseInt(document.getElementById('numeroCarta')?.innerText, 10) : _cartasCompaneros[j.id];
+        if (Number.isInteger(c)) suma += c; else completa = false;
+    });
+    return { meta: 5 * equipo.length, suma, completa };
 }
 
 function menuMesaAbierto() {
@@ -820,7 +840,7 @@ function escribirLS(clave, valor) { try { localStorage.setItem(clave, valor); } 
 function partidasConGuia() { return parseInt(leerLS('reyPartidasGuia') || '0', 10) || 0; }
 
 function guiasActivas() {
-    if (_practica) return true;
+    if (_practica || _guiasPorModoNuevo) return true;
     const pref = leerLS('reyGuias');
     if (pref === 'on') return true;
     if (pref === 'off') return false;
@@ -947,6 +967,11 @@ function actualizarGuiaTurno(esMio, redibujar = false) {
     if (eventoActual?.id === 'MUNDO_AL_REVES') lineas.push('🔄 Mundo al revés: esta ronda pierde la carta más alta');
     if (eventoActual?.id === 'DOBLE_CASTIGO') lineas.push('⚔️ Doble castigo: quien tenga la carta más baja pierde 2 vidas');
     if (eventoActual?.id === 'AMNISTIA') lineas.push('🕊️ Amnistía: nadie pierde vida; la más baja pierde su próximo turno');
+    const diez = _corte ? null : cuentaDiez();
+    if (diez) lineas.push(`🎯 Diez: tu equipo suma ${diez.suma}${diez.completa ? '' : ' + lo que no ves'}; la meta es ${diez.meta} sin pasarse`);
+    if (_corte) lineas.push(_corte.soyRey
+        ? '👑 Eres el Rey: solo cuenta tu carta entre los Reyes. No te delates'
+        : `🛡️ Solo cuenta la carta de tu Rey (${_corte.miRey}). Protegerlo le da tu carta, pero te delata`);
     if (eventoActual?.id === 'CARRUSEL') lineas.push('🎠 Carrusel: al final le pasas tu carta al de tu derecha y recibes la del de tu izquierda');
     if (eventoActual?.id === 'PREMIO') lineas.push('👑 Premio real: quien termine con la carta más alta gana una vida');
     if (puedoVengarme()) lineas.push('😈 Venganza: toca el asiento de cualquier jugador para cambiar con él');
@@ -1003,6 +1028,22 @@ function explicacionRonda(datos) {
         j.cartaActual !== undefined && (j.vidas > 0 || datos.perdedores.includes(j.id)));
     if (enJuego.length > 1 && enJuego.every(j => j.cartaActual === datos.cartaMortal)) {
         return '🤝 Empate total: todos tenían la misma carta, nadie pierde.';
+    }
+    if (datos.corte && _corte) {
+        const perdimos = datos.corte.perdedores.map(Number).includes(_corte.miEquipo);
+        if (!datos.corte.perdedores.length) return '🤝 Los Reyes empataron: nadie pierde por cartas.';
+        const quien = _corte.soyRey ? 'Tu carta (eres el Rey)' : `La carta de tu Rey (${_corte.miRey})`;
+        return perdimos ? `💔 ${quien} fue la más baja entre los Reyes: tu equipo pierde.`
+                        : `✅ ${quien} aguantó: pierde el otro equipo.`;
+    }
+    if (datos.diez && yo.equipo !== undefined && yo.equipo !== null) {
+        const d = datos.diez, mia = d.sumas[yo.equipo], meta = d.objetivo;
+        const rival = Object.entries(d.sumas).filter(([e]) => Number(e) !== yo.equipo).map(([e, n]) => `${NOMBRE_EQUIPO[e]} ${n}`).join(', ');
+        const perdimos = d.perdedores.map(Number).includes(yo.equipo);
+        if (!d.perdedores.length) return `🤝 Empate: tu equipo sumó ${mia} y ${rival}. Nadie pierde.`;
+        return perdimos
+            ? `💔 Tu equipo (Equipo ${NOMBRE_EQUIPO[yo.equipo]}) sumó ${mia}${mia > meta ? ` y se pasó de ${meta}` : `, más lejos de ${meta}`} (${rival}): pierde${eventoActual?.id === 'DOBLE_CASTIGO' ? ' 2 vidas' : ' una vida'}.`
+            : `✅ Tu equipo sumó ${mia}${mia === meta ? ` ¡exacto!` : ''} y se salvó (${rival}).`;
     }
     if (yo.equipo !== undefined && yo.equipo !== null) {
         const quien = (datos.culpables || []).map(n => n === miNombreUsuario ? 'tú' : n).join(' y ');
@@ -1545,7 +1586,7 @@ function mostrarCoach(html, { boton = null, alPulsar = null } = {}) {
 
 function terminarPractica() {
     if (miSalaActual) socket.emit('abandonarSala', miSalaActual);
-    escribirLS({ poderes: 'reyPracticaPoderesHecha', fiesta: 'reyPracticaFiestaHecha' }[_practica?.tipo] || 'reyPracticaHecha', '1');
+    escribirLS({ poderes: 'reyPracticaPoderesHecha', fiesta: 'reyPracticaFiestaHecha', corte: 'reyPracticaCorteHecha' }[_practica?.tipo] || 'reyPracticaHecha', '1');
     _practica = null;
     document.getElementById('coachPractica')?.classList.add('hidden');
     mostrarLobbyLimpio();
@@ -1560,6 +1601,7 @@ function pintarBotonPractica() {
     b.classList.toggle('practica-nueva', !leerLS('reyPracticaHecha'));
     document.getElementById('btnPracticaPoderes')?.classList.toggle('practica-nueva', !leerLS('reyPracticaPoderesHecha'));
     document.getElementById('btnPracticaFiesta')?.classList.toggle('practica-nueva', !leerLS('reyPracticaFiestaHecha'));
+    document.getElementById('btnPracticaCorte')?.classList.toggle('practica-nueva', !leerLS('reyPracticaCorteHecha'));
 }
 
 // Un paso del guion solo se dice una vez.
@@ -1573,6 +1615,7 @@ function practicaEvento(tipo, datos) {
     if (!_practica) return;
     if (_practica.tipo === 'poderes') return practicaPoderesEvento(tipo, datos);
     if (_practica.tipo === 'fiesta') return practicaFiestaEvento(tipo, datos);
+    if (_practica.tipo === 'corte') return practicaCorteEvento(tipo, datos);
     const A = `<strong>${escapeHTML(_practica.nombreA)}</strong>`;
     const B = `<strong>${escapeHTML(_practica.nombreB)}</strong>`;
     const ronda = parseInt(document.getElementById('numRonda')?.innerText || '0', 10);
@@ -1799,11 +1842,11 @@ function pintarComoSeraPartida(c, maxJugadores) {
                     ALTA: ['Muchos reyes', 'más 9 al inicio'],
                     LOCURA: ['Lluvia de reyes', 'muchísimos 9 al inicio'] }[c.frecuenciaReyes] || ['Reyes normales', ''];
     const filas = [
-        ['espadas', fiesta ? 'Modo Fiesta' : 'Modo clásico', 'pierde la carta más baja'],
+        ['espadas', c.modoJuego === 'CORTE' ? 'La Corte' : c.equipos ? 'Parejas: Diez' : fiesta ? 'Modo Fiesta' : 'Modo clásico', c.modoJuego === 'CORTE' ? 'Rey secreto: solo cuentan los Reyes' : c.equipos ? 'se suman las cartas del equipo' : 'pierde la carta más baja'],
         ['mascara', c.modoRey === 'DECLARADO' ? 'Rey declarado' : 'Rey sorpresa', c.modoRey === 'DECLARADO' ? 'se ve quién tiene el 9' : 'el 9 va oculto'],
         ['llama', reyes[0], reyes[1]],
         ['corazon', `${c.vidas} ${c.vidas === 1 ? 'vida' : 'vidas'}`, c.equipos ? 'las comparte el equipo' : 'cada quien'],
-        ['grupo', c.equipos ? `${c.equipos} contra ${c.equipos}` : `${maxJugadores || c.maxJugadores} jugadores`, 'si falta gente, entran bots'],
+        ['grupo', c.equipos ? `${c.equipos} contra ${c.equipos}${c.modoJuego === 'CORTE' ? '' : ': Diez'}` : `${maxJugadores || c.maxJugadores} jugadores`, c.modoJuego === 'CORTE' ? 'protege a tu Rey, acusa al rival' : c.equipos ? `sumen ${c.equipos * 5} sin pasarse` : 'si falta gente, entran bots'],
         ['rayo', fiesta ? 'Evento cada ronda' : 'Eventos a veces', fiesta ? 'la mesa vota el siguiente' : 'reglas sorpresa'],
         ['ojo', c.poderes ? 'Con poderes' : 'Sin poderes', c.poderes ? 'ganas uno al perder vida' : 'solo tus cartas'],
         ['reloj', `Turnos de ${c.tiempoTurno || 20} s`, 'para decidir'],
@@ -1872,6 +1915,42 @@ function practicaPoderesEvento(tipo, datos) {
             : `Con el mundo al revés, tu 8 era la carta más alta y perdiste. Hay 9 eventos distintos; la etiqueta de arriba te recuerda cuál está activo.`);
         if (ronda === 2) decirUnaVez('p-f2', (miCarta === '8' ? `Robaste el 8 y te salvaste. ` : ``) + `Así se usan los poderes: primero el poder, luego tu jugada. Toca <b>SIGUIENTE RONDA</b>.`);
         if (ronda >= 3) decirUnaVez('p-f3', `<b>¡Listo!</b> Ya conoces los eventos y los poderes. Hay dos poderes más: <b>Espiar</b> (ves la carta de tu vecino) y <b>Salto</b> (cambias con quien está dos lugares a tu derecha). Para jugar con poderes, actívalos al crear una sala.`,
+            { boton: 'Terminar práctica', alPulsar: terminarPractica });
+    }
+}
+
+// Guion 'corte' (practica.js): 0 = tú, 1 = A (Plata), 2 = B (tu Rey, Oro), 3 = C (Rey de Plata).
+function practicaCorteEvento(tipo, datos) {
+    const ronda = parseInt(document.getElementById('numRonda')?.innerText || '0', 10);
+    const n = (i) => `<strong>${escapeHTML([null, _practica.nombreA, _practica.nombreB, _practica.nombreC][i] || '')}</strong>`;
+    const brillar = (sel) => setTimeout(() => document.querySelector(sel)?.classList.add('practica-brilla'), 150);
+    if (tipo === 'ronda') {
+        const js = datos.jugadores || [];
+        if (js[1]) _practica.nombreA = js[1].nombre;
+        if (js[2]) _practica.nombreB = js[2].nombre;
+        if (js[3]) _practica.nombreC = js[3].nombre;
+        if (datos.ronda === 2) decirUnaVez('co-r2', `Ronda 2. Ahora eres el dealer: juegas al final. <b>Observa lo que hacen los rivales</b>… una jugada puede delatar quién es su Rey.`);
+        return;
+    }
+    if (tipo === 'turno' && datos.id === socket.id) {
+        if (ronda === 1) { decirUnaVez('co-r1-tu', `<b>La Corte</b>: tú y ${n(2)} son <b>Oro</b>; ${n(1)} y ${n(3)} son <b>Plata</b>. Cada equipo tiene un <b>Rey secreto</b>: el tuyo es ${n(2)} (con corona); los rivales no lo saben. <b>Solo cuentan las cartas de los Reyes.</b><br>Tú eres <b>escudero</b> y ves que tu Rey tiene un <b>1</b>: ¡va a perder! Toca <b>🛡️ Proteger a mi Rey</b> para darle tu 8 en un cambio secreto.`); brillar('#barraCorte [data-corte="proteger"]'); }
+        if (ronda === 2) { decirUnaVez('co-r2-tu', `${n(1)} hizo un cambio secreto con su Rey: eso significa que ${n(1)} <b>no es el Rey</b>… así que el Rey de Plata tiene que ser ${n(3)}. Toca <b>⚔️ Acusar</b> y luego el asiento de ${n(3)}. Si aciertas, Plata pierde una vida extra; si fallas, la pierde tu equipo.`); brillar('#barraCorte [data-corte="acusar"]'); }
+        return;
+    }
+    if (tipo === 'accion') {
+        if (datos.tipo === 'SECRETO' && datos.jugador === miNombreUsuario) decirUnaVez('co-protegi', `¡Hecho! Tu Rey ahora tiene tu 8. Fíjate: la mesa vio "cambio secreto", así que los rivales ya saben que <b>tú no eres el Rey</b>. Proteger ayuda, pero da pistas. Mira qué hacen los demás…`);
+        if (datos.tipo === 'SECRETO' && datos.jugador === _practica.nombreA) decirUnaVez('co-delato', `👀 ¡${n(1)} hizo un cambio secreto con su Rey! Acaba de delatarse: <b>${n(1)} no es el Rey de Plata</b>. Recuérdalo para tu turno.`);
+        return;
+    }
+    if (tipo === 'acusacion') {
+        decirUnaVez('co-acuso', datos.acierto
+            ? `⚔️ ¡Regicidio! Descubriste al Rey de Plata: ahora todos lo ven con corona roja y Plata perderá una vida extra. Termina tu turno: toca <b>Mantener</b>.`
+            : `Esta vez fallaste: tu equipo perderá una vida. Termina tu turno con <b>Mantener</b>.`);
+        return;
+    }
+    if (tipo === 'fin') {
+        if (ronda === 1) decirUnaVez('co-f1', `Solo se compararon los Reyes: gracias a tu 8, el Rey de Plata tuvo la carta más baja y <b>Plata pierde una vida</b>. El resumen no dice quién era su Rey: eso lo tienes que descubrir tú. Toca <b>SIGUIENTE RONDA</b> cuando quieras.`);
+        if (ronda >= 2) decirUnaVez('co-f2', `<b>¡Ya sabes jugar La Corte!</b> 👑 Rey secreto: solo cuentan los Reyes · 🛡️ Proteger: una vez por ronda le das tu carta a tu Rey, pero te delatas · ⚔️ Acusar: una vez por partida; si fallas, pierde tu equipo. Para jugarla con amigos: al crear mesa, <b>Modo de juego: La Corte</b>.`,
             { boton: 'Terminar práctica', alPulsar: terminarPractica });
     }
 }
@@ -2231,7 +2310,21 @@ function mostrarResumenRonda(datos) {
     const mortal = document.getElementById('resumenCartaMortal');
     if (!panel) return;
 
-    mortal.textContent = datos.cartaMortal;
+    // Parejas (Diez): en lugar de la carta mortal, la meta y la suma de cada equipo.
+    const cabecera = mortal.parentElement;
+    if (datos.corte) {
+        cabecera.innerHTML = `${icono('corona')} FIN DE RONDA — ` + (datos.corte.perdedores.length
+            ? datos.corte.perdedores.map(e => `<span class="suma-equipo equipo-${e} perdio">Pierde el Rey de ${NOMBRE_EQUIPO[e]}</span>`).join(' ')
+            : 'Los Reyes empataron') + '<span id="resumenCartaMortal" class="hidden"></span>';
+    } else if (datos.diez) {
+        cabecera.innerHTML = `${icono('diana')} FIN DE RONDA — Meta ${datos.diez.objetivo}: ` + Object.entries(datos.diez.sumas).map(([e, n]) =>
+            `<span class="suma-equipo equipo-${e}${datos.diez.perdedores.map(String).includes(e) ? ' perdio' : ''}">${NOMBRE_EQUIPO[e]} ${n}${n > datos.diez.objetivo ? ' ✗' : ''}</span>`).join(' ')
+            + '<span id="resumenCartaMortal" class="hidden"></span>';
+    } else if (!document.getElementById('resumenCartaMortal') || cabecera.querySelector('.suma-equipo')) {
+        cabecera.innerHTML = `${icono('espadas')} FIN DE RONDA — Carta mortal: <span id="resumenCartaMortal" class="resumen-mortal-num">—</span>`;
+    }
+    const mortalAhora = document.getElementById('resumenCartaMortal');
+    if (!datos.diez && !datos.corte) mortalAhora.textContent = datos.cartaMortal;
     grid.innerHTML = '';
 
     datos.jugadores.forEach(j => {
@@ -2526,7 +2619,8 @@ let _catalogoCosm = [];
 // Contenido del círculo del avatar: el ícono elegido o la inicial.
 function contenidoAvatar(look, nombre) {
     const c = look && _catalogoCosm.find(x => x.tipo === 'avatar' && x.id === look.avatar);
-    const ic = c?.icono || (look && look.avatar !== 'inicial' ? look.avatar : null);
+    if (c?.img) return `<img class="avatar-img" src="/avatares/${c.img}.svg" alt="" draggable="false">`;
+    const ic = c?.icono || (look && look.avatar !== 'inicial' && !c ? look.avatar : null);
     return ic ? icono(ic) : escapeHTML((nombre || '?').charAt(0).toUpperCase());
 }
 const claseMarco = (look) => look && look.marco && look.marco !== 'ninguno' ? ` marco-${look.marco}` : '';
@@ -2551,20 +2645,35 @@ function pintarCosmeticosPerfil(datos, ganados, catalogoLogros, nivel = 1) {
     pintarMiLook();
     const tengo = new Set(ganados.map(g => g.logro));
     const nombreLogro = (id) => catalogoLogros.find(l => l.id === id)?.titulo || id;
-    const muestra = (c) => c.tipo === 'avatar' ? `<span class="avatar-cosm">${c.icono ? icono(c.icono) : escapeHTML(miNombreUsuario.charAt(0).toUpperCase())}</span>`
+    const muestra = (c) => c.tipo === 'avatar' ? `<span class="avatar-cosm">${c.img ? `<img class="avatar-img" src="/avatares/${c.img}.svg" alt="">` : c.icono ? icono(c.icono) : escapeHTML(miNombreUsuario.charAt(0).toUpperCase())}</span>`
         : c.tipo === 'marco' ? `<span class="avatar-cosm${c.id !== 'ninguno' ? ' marco-' + c.id : ''}">${contenidoAvatar(miLook, miNombreUsuario)}</span>`
         : c.tipo === 'tapete' ? `<span class="muestra-tapete tapete-${c.id}"></span>`
         : `<span class="muestra-dorso${c.id !== 'clasico' ? ' dorso-' + c.id : ''}"></span>`;
     const titulos = { avatar: 'Avatar', marco: 'Marco', dorso: 'Dorso de tus cartas', tapete: 'Tapete de tu mesa (solo tú lo ves)' };
-    caja.innerHTML = ['avatar', 'marco', 'dorso', 'tapete'].map(tipo => `
+    const RAREZA = { comun: 'Común', raro: 'Raro', epico: 'Épico', legendario: 'Legendario' };
+    const elegido = (tipo) => datos.catalogo.find(c => c.tipo === tipo && c.id === datos.elegidos[tipo]) || {};
+    // Vitrina: cómo te ven en la mesa, en grande.
+    const vitrina = `<div class="vitrina">
+        <span class="avatar-cosm vitrina-avatar${claseMarco(miLook)}">${contenidoAvatar(miLook, miNombreUsuario)}</span>
+        <div class="vitrina-datos"><b>${escapeHTML(miNombreUsuario)}</b>
+            <small>${escapeHTML(elegido('avatar').titulo || '')} · marco ${escapeHTML(elegido('marco').titulo || '')}</small>
+            <span class="vitrina-cartas"><span class="muestra-dorso${claseDorso(miLook)}"></span><span class="muestra-tapete tapete-${escapeHTML(miLook?.tapete || 'verde')}"></span></span></div>
+    </div>`;
+    // Primero lo que ya tienes, luego por rareza (lo más raro al final: da ganas de llegar).
+    const orden = { comun: 0, raro: 1, epico: 2, legendario: 3 };
+    caja.innerHTML = vitrina + ['avatar', 'marco', 'dorso', 'tapete'].map(tipo => `
         <p class="perfil-cosm-tipo">${titulos[tipo]}</p>
-        <div class="perfil-cosm-fila">${datos.catalogo.filter(c => c.tipo === tipo).map(c => {
+        <div class="perfil-cosm-fila">${datos.catalogo.filter(c => c.tipo === tipo)
+            .filter(c => !(c.tipo === 'avatar' && c.icono && c.id !== 'naipe' && c.id !== 'espadas' && datos.elegidos.avatar !== c.id)) // íconos viejos: solo si ya lo usas
+            .sort((a, b) => (orden[a.rareza] ?? 0) - (orden[b.rareza] ?? 0)).map(c => {
             const libre = (!c.logro || tengo.has(c.logro)) && (!c.nivel || nivel >= c.nivel);
             const requisito = c.nivel && nivel < c.nivel ? `Nivel ${c.nivel}` : nombreLogro(c.logro);
             const elegido = datos.elegidos[tipo] === c.id;
-            return `<button type="button" class="cosm-opcion${elegido ? ' elegido' : ''}${libre ? '' : ' bloqueado'}"
+            const rareza = c.rareza || 'comun';
+            return `<button type="button" class="cosm-opcion rareza-${rareza}${elegido ? ' elegido' : ''}${libre ? '' : ' bloqueado'}"
                 data-tipo="${tipo}" data-id="${escapeHTML(c.id)}" ${libre ? '' : 'disabled'}
                 title="${escapeHTML(libre ? c.titulo : c.nivel && nivel < c.nivel ? `${c.titulo}: se abre al llegar al nivel ${c.nivel}` : `${c.titulo}: se gana con el logro «${nombreLogro(c.logro)}»`)}">
+                <span class="cosm-rareza">${RAREZA[rareza]}</span>
                 ${muestra(c)}<span class="cosm-nombre">${libre ? escapeHTML(c.titulo) : icono('candado') + ' ' + escapeHTML(requisito)}</span>
             </button>`;
         }).join('')}</div>`).join('');
@@ -2664,6 +2773,121 @@ document.getElementById('bannerTorneo')?.addEventListener('click', (e) => {
     if (!b) return;
     socket.emit('torneoInscribir', b.dataset.torneo === 'entrar');
     Sonidos.boton();
+});
+
+// En el lobby, La Corte siempre va en equipos (2 contra 2 si estaba en Individual).
+(() => {
+    const modo = document.getElementById('selectModoJuego'), eq = document.getElementById('selectEquipos');
+    const ajustar = () => { if (modo?.value === 'CORTE' && eq?.value === '0') { eq.value = '2'; eq.dispatchEvent(new Event('change')); } };
+    modo?.addEventListener('change', ajustar); eq?.addEventListener('change', ajustar);
+})();
+
+// ==========================================
+// PRIMERA VEZ EN UN MODO
+// ==========================================
+// La primera partida real de Fiesta, Diez, La Corte o con poderes muestra una
+// tarjeta de "cómo se juega" y prende las guías esa partida (aunque estén
+// apagadas). Una vez por modo: localStorage reyModoVisto_<MODO>.
+var _configSala = null;          // config de la sala (actualizarLobby); var: se consulta antes de esta línea al cargar
+var _guiasPorModoNuevo = false;  // guías prendidas solo por esta partida
+const EXPLICA_MODO = {
+    FIESTA: ['🎉 Modo Fiesta', 'Cada ronda trae un <b>evento</b> que cambia la regla (lo ves bajo el reloj).', 'Al terminar la ronda, la mesa <b>vota</b> el evento de la siguiente.', 'Sigue perdiendo la carta más baja.'],
+    DIEZ: ['🎯 Parejas: Diez', 'Se <b>suman las cartas de tu equipo</b>: la meta es 10 (15 en 3 contra 3).', 'Pierde el equipo que <b>se pasa</b>, o el que queda más lejos.', 'Ves la carta de tu compañero; bajo el reloj va la cuenta.'],
+    CORTE: ['👑 La Corte', 'Cada equipo tiene un <b>Rey secreto</b>; solo cuentan las cartas de los Reyes.', '🛡️ <b>Proteger</b>: le das tu carta a tu Rey (una vez por ronda), pero te delatas.', '⚔️ <b>Acusar</b>: una vez por partida. Si fallas, pierde tu equipo.'],
+    PODERES: ['✨ Con poderes', 'Cada vez que pierdes una vida ganas un <b>poder</b> de un solo uso.', 'Tus poderes salen arriba de tus botones: Espiar, Oráculo, Salto y Escudo.'],
+};
+function mostrarModoNuevo(datos) {
+    if (_practica) return;
+    const cfg = _configSala || {};
+    const modos = [];
+    if (datos.modoJuego === 'CORTE') modos.push('CORTE');
+    else if ((datos.jugadores || []).some(j => j.equipo !== undefined && j.equipo !== null)) modos.push('DIEZ');
+    if (datos.modoJuego === 'FIESTA') modos.push('FIESTA');
+    if (cfg.poderes) modos.push('PODERES');
+    const nuevos = modos.filter(m => !leerLS('reyModoVisto_' + m));
+    _guiasPorModoNuevo = nuevos.length > 0;
+    if (!nuevos.length) return;
+    nuevos.forEach(m => escribirLS('reyModoVisto_' + m, '1'));
+    const carta = document.getElementById('cartaModo');
+    carta.innerHTML = nuevos.map(m => { const [t, ...l] = EXPLICA_MODO[m]; return `<b>${t}</b><ul>${l.map(x => `<li>${x}</li>`).join('')}</ul>`; }).join('')
+        + '<small>Primera vez en este modo: las guías te acompañan esta ronda. Toca para cerrar.</small>';
+    // Después de lo que sale al empezar: carta del evento (~4.4 s), aviso de
+    // tu equipo (5 s) y tarjeta de tu papel en La Corte (~4.6 s).
+    const hayEquipos = (datos.jugadores || []).some(j => j.equipo !== undefined && j.equipo !== null);
+    const retraso = (datos.evento || hayEquipos) ? 5300 : 600;
+    setTimeout(() => {
+        carta.classList.remove('hidden');
+        const cerrar = () => carta.classList.add('hidden');
+        carta.onclick = cerrar;
+        clearTimeout(carta._t); carta._t = setTimeout(cerrar, 8000);
+    }, retraso);
+}
+
+// ==========================================
+// LA CORTE (Rey secreto; servidor: sección LA CORTE, reglas.resolverCorte)
+// ==========================================
+let _corte = null;           // { miEquipo, miRey, soyRey, yaAcusamos, revelados }
+let _protegiEstaRonda = false;
+
+function alRecibirCorte(info, anunciar) {
+    const nuevo = !_corte || _corte.miRey !== info.miRey;
+    _corte = info;
+    if (anunciar && nuevo) {
+        // Tarjeta grande al centro (un aviso chico se perdía entre los demás).
+        const carta = document.getElementById('cartaRol');
+        carta.innerHTML = info.soyRey
+            ? `<span class="rol-icono">${icono('corona')}</span><b>Eres el REY</b><small>de ${NOMBRE_EQUIPO[info.miEquipo]}</small><p>Solo cuenta tu carta: que no sea la más baja entre los Reyes. ¡Que no te descubran!</p>`
+            : `<span class="rol-icono">🛡️</span><b>Eres ESCUDERO</b><small>de ${NOMBRE_EQUIPO[info.miEquipo]}</small><p>Tu Rey es <b>${escapeHTML(info.miRey)}</b>. Protégelo cambiándole tu carta… sin delatarlo.</p>`;
+        carta.classList.remove('hidden', 'saliendo');
+        vibrar([80, 40, 80]); Sonidos.reaccion(info.soyRey ? '💎' : '🔥');
+        setTimeout(() => { carta.classList.add('saliendo'); setTimeout(() => carta.classList.add('hidden'), 400); }, 4200);
+    }
+    dibujarMesaCircular();
+    pintarBarraCorte();
+}
+
+// Botones de tu turno: Proteger (escudero, 1 vez por ronda) y Acusar (1 vez por partida por equipo).
+function pintarBarraCorte() {
+    const barra = document.getElementById('barraCorte');
+    if (!barra) return;
+    const miTurno = document.body.classList.contains('puedo-jugar');
+    const yo = listaJugadoresGlobal.find(j => j.id === socket?.id);
+    if (!_corte || !miTurno || !yo || yo.vidas <= 0) { barra.classList.add('hidden'); return; }
+    const reyVivo = listaJugadoresGlobal.some(j => j.nombre === _corte.miRey && j.vidas > 0);
+    const proteger = !_corte.soyRey && !_protegiEstaRonda && reyVivo;
+    const acusar = !_corte.yaAcusamos;
+    barra.innerHTML = (proteger ? `<button type="button" data-corte="proteger">🛡️ Proteger a mi Rey</button>` : '')
+        + (acusar ? `<button type="button" data-corte="acusar">⚔️ Acusar</button>` : '');
+    barra.classList.toggle('hidden', !proteger && !acusar);
+}
+// Ventana propia para confirmar (antes era el confirm() del navegador).
+function confirmarAcusacion(j) {
+    const modal = document.getElementById('modalAcusar');
+    document.getElementById('textoAcusar').innerHTML = `¿Acusas a <b>${escapeHTML(j.nombre)}</b> de ser el Rey de ${NOMBRE_EQUIPO[j.equipo]}?<br>
+        <small>Si aciertas, ${NOMBRE_EQUIPO[j.equipo]} pierde una vida extra. Si fallas, la pierde tu equipo. Solo tienes una acusación por partida.</small>`;
+    modal.classList.remove('hidden');
+    document.getElementById('btnCancelarAcusar').onclick = () => modal.classList.add('hidden');
+    document.getElementById('btnConfirmarAcusar').onclick = () => {
+        modal.classList.add('hidden');
+        socket.emit('acusar', { idSala: miSalaActual, objetivo: j.nombre });
+        Sonidos.boton();
+    };
+}
+document.getElementById('barraCorte')?.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-corte]');
+    if (!b || !_corte) return;
+    if (b.dataset.corte === 'proteger') {
+        _protegiEstaRonda = true;
+        terminarMiJugada();
+        document.getElementById('barraCorte').classList.add('hidden');
+        socket.emit('accionJugador', { idSala: miSalaActual, accion: 'CAMBIAR', objetivo: _corte.miRey });
+        return;
+    }
+    _apuntando = 'ACUSAR';
+    document.body.classList.add('apuntando');
+    if (_practica?.tipo === 'corte') marcarAsientoSugerido(_practica.nombreC);
+    mostrarToast('⚔️ Toca al rival que crees que es su Rey. Si fallas, tu equipo pierde una vida.', 'rey', 4000);
+    setTimeout(() => { if (_apuntando === 'ACUSAR') cancelarApuntar(); }, 10000);
 });
 
 // ==========================================
@@ -2897,6 +3121,8 @@ if (btnPractica) {
     btnPractica.onclick = () => { if (socket?.connected) empezarPractica('basica'); };
     const btnPracticaPoderes = document.getElementById('btnPracticaPoderes');
     if (btnPracticaPoderes) btnPracticaPoderes.onclick = () => { if (socket?.connected) empezarPractica('poderes'); };
+    const btnPracticaCorte = document.getElementById('btnPracticaCorte');
+    if (btnPracticaCorte) btnPracticaCorte.onclick = () => { if (socket?.connected) empezarPractica('corte'); };
     const btnPracticaFiesta = document.getElementById('btnPracticaFiesta');
     if (btnPracticaFiesta) btnPracticaFiesta.onclick = () => { if (socket?.connected) empezarPractica('fiesta'); };
 }
@@ -3489,6 +3715,8 @@ function dibujarMesaCircular() {
         divSilla.innerHTML = `
             <div class="perfil-oponente${claseMarco(op.look)} ${claseEstado} ${animReparto} ${claseDanio} ${op.escudo && !estaMuerto ? 'con-escudo' : ''} ${op.equipo !== undefined && op.equipo !== null ? `equipo-${op.equipo}` : ''}">
                 <div style="font-size:13px;font-weight:bold;line-height:1.2;word-wrap:break-word;">${iconoAsiento} ${escapeHTML(op.nombre)}</div>
+                ${_corte && op.nombre === _corte.miRey ? `<span class="rey-corte" title="Tu Rey (los rivales no lo saben)">${icono('corona')} Tu Rey</span>` : ''}
+                ${op.reyCorteRevelado ? `<span class="rey-corte descubierto" title="Rey descubierto por una acusación">${icono('corona')} Rey descubierto</span>` : ''}
                 ${op.reyNoche ? `<span class="rey-noche" title="Ganó el torneo de la noche">${icono('trofeo')} Rey de la noche</span>` : ''}
                 ${op.reyMesa ? `<span class="rey-mesa" title="Rey de la mesa: ganó la partida anterior">${icono('corona')} Rey${op.reyMesa > 1 ? ' ×' + op.reyMesa : ''}</span>` : ''}
                 ${op.automatico && !estaMuerto ? '<span class="marca-auto" title="Ausente: un bot juega por él">Auto</span>' : ''}
@@ -3672,7 +3900,7 @@ function conectarSocket() {
                 poderes: document.getElementById('selectPoderes').value === 'SI',
                 publica: document.getElementById('selectVisibilidad')?.value === 'PUBLICA',
                 equipos: parseInt(document.getElementById('selectEquipos').value || '0'),
-                modoJuego: document.getElementById('selectModoJuego')?.value === 'FIESTA' ? 'FIESTA' : 'CLASICO',
+                modoJuego: document.getElementById('selectModoJuego')?.value || 'CLASICO', // el servidor valida la lista
                 password: document.getElementById('inputPasswordSala').value.trim()
             }
         });
@@ -3858,6 +4086,7 @@ function conectarSocket() {
     };
 
     socket.on('actualizarLobby', (datos) => {
+        if (datos && datos.config) _configSala = datos.config;
         window._reingresando = false; window._servidorReinicio = false;
         const jugadores = Array.isArray(datos) ? datos : datos.jugadores;
         const maxJug = (datos && datos.maxJugadores) ? datos.maxJugadores : parseInt(document.getElementById('selectJugadores')?.value || 8);
@@ -3935,10 +4164,12 @@ function conectarSocket() {
         terminarEsperaRapida();
         _espiado = null;
         _cartasCompaneros = {};
-        if (datos.ronda === 1) { _turnosConGuiaGestos = 0; mostrarAvisoEquipo(datos.jugadores || []); }
+        if (datos.ronda === 1) { _turnosConGuiaGestos = 0; mostrarAvisoEquipo(datos.jugadores || []); mostrarModoNuevo(datos); }
         eventoActual = datos.evento || null;
         vengadoresRonda = datos.vengadores || [];
         pintarApuesta(datos.jugadores || []);
+        _protegiEstaRonda = false;
+        if (datos.modoJuego !== 'CORTE') _corte = null; // otro modo: sin papel de La Corte
         ocultarEvento();
         marcarDuelo(datos.duelo);
         if (datos.anunciarDuelo) mostrarPresentacionDuelo(datos.duelistas);
@@ -4256,6 +4487,14 @@ function conectarSocket() {
     };
     // Venganza: tocar un asiento = cambiar con esa persona.
     document.getElementById('tapeteVistas').onclick = (e) => {
+        if (_apuntando === 'ACUSAR') {
+            const s = e.target.closest('.silla[data-jugador-id]');
+            const j = s && listaJugadoresGlobal.find(x => x.id === s.dataset.jugadorId);
+            cancelarApuntar();
+            if (!j || j.equipo === _corte?.miEquipo) return mostrarToast('Elige a un rival.', '', 2000);
+            confirmarAcusacion(j);
+            return;
+        }
         if (_apuntando) {
             const s = e.target.closest('.silla[data-jugador-id]');
             const j = s && listaJugadoresGlobal.find(x => x.id === s.dataset.jugadorId);
@@ -4397,7 +4636,8 @@ function conectarSocket() {
         registrarJugadaFeed({
             tipo: 'FIN_RONDA',
             icono: '💀',
-            texto: `Fin de ronda · Carta mortal: ${datos.cartaMortal}`
+            texto: datos.diez ? `Fin de ronda · Meta ${datos.diez.objetivo}: ${Object.entries(datos.diez.sumas).map(([e, n]) => `${NOMBRE_EQUIPO[e]} ${n}`).join(' · ')}`
+                : `Fin de ronda · Carta mortal: ${datos.cartaMortal}`
         });
 
         // Un roce por cada carta que se voltea, en el orden de la mesa.
@@ -4529,6 +4769,16 @@ function conectarSocket() {
     // Experiencia de la partida: la pantalla de victoria llena la barra.
     socket.on('progreso', (p) => animarProgreso(document.getElementById('progresoXP'), p));
 
+    socket.on('corte', (info) => alRecibirCorte(info, true));
+    socket.on('acusacionCorte', (a) => {
+        setTimeout(() => practicaEvento('acusacion', a), 600);
+        mostrarToast(a.acierto ? `⚔️ ¡Regicidio! ${a.acusador} descubrió al Rey: ${a.objetivo}` : `⚔️ ${a.acusador} acusó a ${a.objetivo}… ¡no era el Rey!`, a.acierto ? 'rey' : 'danio', 4500);
+        Sonidos.reaccion(a.acierto ? '🐉' : '😡'); vibrar([100, 50, 100]);
+    });
+    socket.on('actualizarJugadores', (jugadores) => {
+        listaJugadoresGlobal = jugadores.map(j => j.nombre === miNombreUsuario ? { ...j, id: socket.id } : j);
+        dibujarMesaCircular();
+    });
     socket.on('apuestaHecha', ({ objetivo }) => {
         document.querySelectorAll('#panelApuesta button').forEach(b => b.classList.toggle('elegida', b.dataset.nombre === objetivo));
         Sonidos.boton();
@@ -4590,6 +4840,11 @@ function conectarSocket() {
 
     // --- NUEVA RONDA ---
     socket.on('nuevaRondaIniciada', (datos) => {
+        // Modo nuevo: las guías solo acompañan la primera ronda; luego decides tú.
+        if (_guiasPorModoNuevo) {
+            _guiasPorModoNuevo = false;
+            if (!guiasActivas()) mostrarToast('💡 ¿Quieres seguir con las guías? Actívalas en el menú ☰ → Guías.', 'rey', 4500);
+        }
         ++_renderGen;
         desactivarModoEspectador();
         ocultarResumenRonda();
@@ -4619,6 +4874,7 @@ function conectarSocket() {
 
     // --- FIN DEL JUEGO ---
     socket.on('finDelJuego', (ganador) => {
+        _guiasPorModoNuevo = false;
         setTimeout(actualizarVictoriasBarra, 3000); // el servidor guarda las stats al terminar
         ocultarGuiaTurno();
         contarPartidaParaGuias();

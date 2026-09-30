@@ -71,8 +71,27 @@ function decisionFacil(sala, bot) {
     return c <= 4 ? 'CAMBIAR' : 'MANTENER';
 }
 
+// Parejas ("Diez", reglas.resolverDiez): el bot suma lo que sabe de su equipo
+// (ve la carta de sus compañeros, como un humano) y cambia solo si lo acerca a
+// la meta sin pasarse. Lo que no conoce lo cuenta como el promedio (4.5).
+function decisionDiez(sala, bot, ctx, azar) {
+    const equipo = sala.jugadores.filter(j => j.equipo === bot.equipo);
+    const objetivo = 5 * equipo.length;
+    const conocer = (j) => { const c = cartaConocida(sala, bot, j); return c === null ? 4.5 : c; };
+    const otros = equipo.filter(j => j !== bot && j.vidas > 0).reduce((t, j) => t + conocer(j), 0);
+    const mal = (suma) => suma > objetivo ? 100 + (suma - objetivo) : objetivo - suma;
+    const roba = ctx.esDealer || sala.evento === 'MERCADO';
+    const derecha = !roba && ctx.derecha ? cartaConocida(sala, bot, ctx.derecha) : null;
+    if (derecha === 9 && sala.evento !== 'MUNDO_AL_REVES') return 'MANTENER'; // al Rey no se le quita
+    const nueva = roba ? 4.5 : (derecha ?? 4.5);
+    let decision = mal(otros + nueva) < mal(otros + bot.cartaActual) - 0.5 ? 'CAMBIAR' : 'MANTENER';
+    if (azar() < 0.08) decision = decision === 'CAMBIAR' ? 'MANTENER' : 'CAMBIAR'; // a veces se equivoca, como en NORMAL
+    return decision;
+}
+
 // ctx: { esDealer, derecha (jugador vecino derecho vivo) }
 function decidirBot(sala, bot, ctx, azar = Math.random) {
+    if (sala.config.equipos && sala.config.modoJuego !== 'CORTE' && sala.evento !== 'NIEBLA') return decisionDiez(sala, bot, ctx, azar);
     const dificultad = DIFICULTADES.includes(sala.config.dificultadBots)
         ? sala.config.dificultadBots : 'NORMAL';
 
@@ -150,6 +169,29 @@ function olvidarRonda(jugadores) {
     jugadores.forEach(j => { if (j.esBot) j.memoria = {}; });
 }
 
+// La Corte: { proteger: índice del Rey } si al Rey (cuya carta ve) le conviene
+// la carta del bot; { acusar: nombre } si un equipo rival ya delató a todos sus
+// escuderos menos uno (ese tiene que ser el Rey).
+function planCorte(sala, bot) {
+    const plan = {};
+    const rey = sala.jugadores.find(j => j.nombre === sala.reyesCorte?.[bot.equipo]);
+    if (rey && rey !== bot && rey.vidas > 0) {
+        const cartaRey = cartaConocida(sala, bot, rey);
+        const alReves = sala.evento === 'MUNDO_AL_REVES';
+        if (cartaRey !== null && cartaRey !== 9 && (alReves ? bot.cartaActual < cartaRey - 1 : bot.cartaActual > cartaRey + 1)) {
+            plan.proteger = sala.jugadores.indexOf(rey);
+        }
+    }
+    if (!sala.acusoCorte?.[bot.equipo]) {
+        for (const [e, delatados] of Object.entries(sala.delatadosCorte || {})) {
+            if (Number(e) === bot.equipo || sala.reyReveladoCorte?.[e]) continue;
+            const quedan = sala.jugadores.filter(j => j.equipo === Number(e) && j.vidas > 0 && !delatados.includes(j.nombre));
+            if (quedan.length === 1) { plan.acusar = quedan[0].nombre; break; }
+        }
+    }
+    return plan;
+}
+
 // Venganza: con quién le conviene cambiar al bot que puede elegir. Solo usa
 // cartas que conoce (memoria, Confesión, Rey a la vista) y busca la más alta
 // que supere a la suya; null = cambiar con el vecino como siempre.
@@ -164,7 +206,7 @@ function objetivoVenganza(sala, bot) {
     return mejor;
 }
 
-module.exports = { objetivoVenganza,
+module.exports = { objetivoVenganza, planCorte,
     DIFICULTADES, COMPOSICION,
     probPerder, distribucionDesconocida, decidirBot, retrasoBot,
     recordarCambio, olvidarCarta, olvidarRonda,
