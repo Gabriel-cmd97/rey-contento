@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><radialGradient id="f" cx="50%" cy="40%"><stop offset="0" stop-color="#fdebd0"/><stop offset=".45" stop-color="#f39c12"/><stop offset="1" stop-color="#78281f"/></radialGradient>
+<linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4d03f"/><stop offset="1" stop-color="#e74c3c"/></linearGradient></defs>
+<circle cx="32" cy="32" r="32" fill="url(#f)"><animate attributeName="r" values="32;30.5;32" dur="2s" repeatCount="indefinite"/></circle>
+<g><animateTransform attributeName="transform" type="scale" values="1 1;1.04 .97;1 1" dur="1.2s" repeatCount="indefinite" additive="sum"/>
+<path d="M32 44C22 40 10 30 8 16c6 6 12 8 16 8-4-4-5-10-4-16 4 8 8 12 12 14 4-2 8-6 12-14 1 6 0 12-4 16 4 0 10-2 16-8-2 14-14 24-24 28z" fill="url(#a)"/></g>
+<path d="M32 22c4 0 6 3 6 7 0 5-3 9-6 11-3-2-6-6-6-11 0-4 2-7 6-7z" fill="#e67e22"/>
+<circle cx="29.5" cy="28" r="1.4" fill="#17202a"/><circle cx="34.5" cy="28" r="1.4" fill="#17202a"/>
+<path d="M30 31l2 3 2-3z" fill="#f4d03f"/>
+<path d="M32 40l-6 18 6-6 6 6z" fill="#c0392b"><animate attributeName="opacity" values="1;.6;1" dur=".8s" repeatCount="indefinite"/></path>
+<path d="M32 44l-3 12 3-3 3 3z" fill="#f4d03f"/>
+<g fill="#fff3b0"><circle cx="14" cy="44" r="1"><animate attributeName="cy" values="50;20" dur="2.4s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0" dur="2.4s" repeatCount="indefinite"/></circle>
+<circle cx="50" cy="46" r="1.2"><animate attributeName="cy" values="52;22" dur="3s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0" dur="3s" repeatCount="indefinite"/></circle></g></svg>
