@@ -32,3 +32,25 @@ test('premio diario: primera vez, racha que sigue, ya cobrado, falta un día y v
     assert.deepStrictEqual(p.estadoPremio('2026-09-24', 6, hoy), { disponible: true, racha: 7, premio: 150 });
     assert.strictEqual(p.estadoPremio('2026-09-24', 7, hoy).racha, 1);
 });
+
+test('doblones / blis por partida: jugar, ganar y bonificaciones', () => {
+    assert.strictEqual(p.blisDePartida({ gano: false }), 10);
+    assert.strictEqual(p.blisDePartida({ gano: true, bonus: 2 }), 50);
+    assert.strictEqual(p.doblonesDePartida({ gano: true, bonus: 2 }), 50);
+    assert.strictEqual(p.BLIS.diario.length, 7);
+    assert.strictEqual(p.LETIOS.campeonTorneo, 10);
+    assert.strictEqual(p.LETIOS.rachaSieteDias, 5);
+    assert.strictEqual(p.GAUDIOS.costoBlis, 100);
+    assert.strictEqual(p.GAUDIOS.costoGaudios, 1);
+});
+
+test('tienda: lo de la tienda solo si lo compraste; lo de logros no se vende', () => {
+    const c = require('../cosmeticos');
+    assert.strictEqual(c.disponible('avatar', 'fenix', ['rey_de_reyes'], 99, []), false);
+    assert.strictEqual(c.disponible('avatar', 'fenix', [], 1, ['avatar:fenix']), true);
+    assert.ok(c.articuloDeTienda('tapete', 'lava').precio > 0);
+    assert.strictEqual(c.articuloDeTienda('avatar', 'dragon'), null);
+    // Ningún artículo de tienda choca con otro del mismo tipo e id.
+    const claves = c.CATALOGO.map(x => x.tipo + ':' + x.id);
+    assert.strictEqual(new Set(claves).size, claves.length);
+});

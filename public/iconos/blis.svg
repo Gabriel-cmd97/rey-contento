@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <!-- Gradiente de la moneda de Blis -->
+    <radialGradient id="blisOro" cx="38%" cy="32%" r="65%">
+      <stop offset="0%" stop-color="#FFF4A3"/>
+      <stop offset="30%" stop-color="#FFD13B"/>
+      <stop offset="70%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </radialGradient>
+    <radialGradient id="blisBisel" cx="45%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#FEF08A"/>
+      <stop offset="60%" stop-color="#D97706"/>
+      <stop offset="100%" stop-color="#78350F"/>
+    </radialGradient>
+    <linearGradient id="blisRelieve" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFBEB" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#92400E" stop-opacity="0.9"/>
+    </linearGradient>
+    <filter id="blisGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Sombra base -->
+  <circle cx="64" cy="67" r="50" fill="#291305" opacity="0.35"/>
+
+  <!-- Borde exterior biselado irregular medieval -->
+  <path d="M64 12 C93 12 116 35 116 64 C116 93 93 116 64 116 C35 116 12 93 12 64 C12 35 35 12 64 12 Z" fill="url(#blisBisel)"/>
+
+  <!-- Disco central pulido -->
+  <circle cx="64" cy="64" r="46" fill="url(#blisOro)"/>
+  <circle cx="64" cy="64" r="41" fill="none" stroke="#D97706" stroke-width="2.5" stroke-dasharray="3 2" opacity="0.7"/>
+
+  <!-- Rostro sonriente y noble del Rey Contento (relieve) -->
+  <g fill="url(#blisRelieve)" stroke="#78350F" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">
+    <!-- Corona de 3 puntas -->
+    <path d="M48 48 L46 36 L56 42 L64 32 L72 42 L82 36 L80 48 Z" fill="#FEF08A"/>
+    <circle cx="46" cy="35" r="2.2" fill="#FFFBEB" stroke="#92400E"/>
+    <circle cx="64" cy="31" r="2.8" fill="#FFFBEB" stroke="#92400E"/>
+    <circle cx="82" cy="35" r="2.2" fill="#FFFBEB" stroke="#92400E"/>
+    <!-- Cabello y barba -->
+    <path d="M45 49 C40 55 40 68 44 74 C47 79 52 86 64 88 C76 86 81 79 84 74 C88 68 88 55 83 49 C78 52 74 50 64 50 C54 50 50 52 45 49 Z" fill="#FDE68A"/>
+    <!-- Ojos felices cerrados (sonrisa de júbilo) -->
+    <path d="M53 58 Q57 55 60 59" fill="none" stroke="#78350F" stroke-width="2.6"/>
+    <path d="M68 59 Q71 55 75 58" fill="none" stroke="#78350F" stroke-width="2.6"/>
+    <!-- Nariz bondadosa -->
+    <path d="M63 60 Q64 66 66 65 Q67 66 65 67" fill="none" stroke="#78350F" stroke-width="2.2"/>
+    <!-- Sonrisa ancha y alegre -->
+    <path d="M54 70 Q64 80 74 70" fill="none" stroke="#78350F" stroke-width="3"/>
+    <path d="M52 69 Q54 71 55 70" fill="none" stroke="#78350F" stroke-width="2.2"/>
+    <path d="M72 70 Q74 71 76 69" fill="none" stroke="#78350F" stroke-width="2.2"/>
+  </g>
+
+  <!-- Destello / brillo de Blis superior izquierdo -->
+  <g filter="url(#blisGlow)">
+    <path d="M26 28 Q33 30 35 37 Q37 30 44 28 Q37 26 35 19 Q33 26 26 28 Z" fill="#FFFBEB"/>
+    <circle cx="35" cy="28" r="3" fill="#FFFFFF"/>
+  </g>
+  <!-- Destello menor inferior derecho -->
+  <g opacity="0.85">
+    <path d="M96 88 Q100 89 101 93 Q102 89 106 88 Q102 87 101 83 Q100 87 96 88 Z" fill="#FFFBEB"/>
+  </g>
+</svg>

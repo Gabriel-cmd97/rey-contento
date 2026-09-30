@@ -641,9 +641,10 @@ function pintarVotacion(v) {
 }
 
 // Ícono del set propio (sprite SVG en index.html, símbolos "i-<nombre>").
-// Se usan en la interfaz fija en lugar de emojis, que cada celular dibuja distinto.
-function icono(nombre) {
-    return `<svg class="icono" aria-hidden="true"><use href="#i-${nombre}"/></svg>`;
+function icono(nombre, claseExtra = '') {
+    const extra = claseExtra ? ` ${claseExtra}` : (nombre === 'blis' || nombre === 'moneda' ? ' icono-blis' : nombre === 'letio' ? ' icono-letio' : nombre === 'gaudio' ? ' icono-gaudio' : '');
+    const id = (nombre === 'moneda') ? 'i-blis' : `i-${nombre}`;
+    return `<svg class="icono${extra}" aria-hidden="true"><use href="#${id}"/></svg>`;
 }
 
 // ==========================================
@@ -687,6 +688,7 @@ function aplicarTemaMesa() {
     else if (miLook?.tapete && miLook.tapete !== 'verde') t.classList.add(`tapete-${miLook.tapete}`);
 }
 
+let _pozoMesa = 0;
 function pintarInfoMesa() {
     aplicarTemaMesa();
     colorearCartas(document.getElementById('tapeteVistas') || document);
@@ -701,7 +703,8 @@ function pintarInfoMesa() {
     // Parejas (Diez): la meta y lo que suma tu equipo con lo que ves.
     const diez = _corte ? null : cuentaDiez();
     const extraCorte = _corte ? ` · <span class="info-diez">${_corte.soyRey ? `${icono('corona')} Eres el Rey` : `🛡️ Tu Rey: ${escapeHTML(_corte.miRey || '')}`}</span>` : '';
-    const extra = extraCorte || (diez ? ` · <span class="info-diez" title="Sumen lo más cerca de ${diez.meta} sin pasarse">${icono('diana')} Meta ${diez.meta} · tu equipo ${diez.suma}${diez.completa ? '' : '+?'}</span>` : '');
+    const extraPozo = _pozoMesa > 0 ? ` · <span class="chip-pozo" title="Pozo acumulado">${icono('blis')} Pozo: ${_pozoMesa}</span>` : '';
+    const extra = (extraCorte || (diez ? ` · <span class="info-diez" title="Sumen lo más cerca de ${diez.meta} sin pasarse">${icono('diana')} Meta ${diez.meta} · tu equipo ${diez.suma}${diez.completa ? '' : '+?'}</span>` : '')) + extraPozo;
     info.innerHTML = eventoActual
         ? `Ronda ${escapeHTML(ronda)} · <span class="info-evento" title="${escapeHTML(eventoActual.descripcion)}">${icono(eventoActual.icono)} ${escapeHTML(eventoActual.titulo)}</span>${extra}`
         : `Ronda ${escapeHTML(ronda)}${extra || ` · ${objetivo ? `<span class="info-objetivo">${objetivo}</span>` : modo}`}`;
@@ -1849,6 +1852,7 @@ function pintarComoSeraPartida(c, maxJugadores) {
         ['grupo', c.equipos ? `${c.equipos} contra ${c.equipos}${c.modoJuego === 'CORTE' ? '' : ': Diez'}` : `${maxJugadores || c.maxJugadores} jugadores`, c.modoJuego === 'CORTE' ? 'protege a tu Rey, acusa al rival' : c.equipos ? `sumen ${c.equipos * 5} sin pasarse` : 'si falta gente, entran bots'],
         ['rayo', fiesta ? 'Evento cada ronda' : 'Eventos a veces', fiesta ? 'la mesa vota el siguiente' : 'reglas sorpresa'],
         ['ojo', c.poderes ? 'Con poderes' : 'Sin poderes', c.poderes ? 'ganas uno al perder vida' : 'solo tus cartas'],
+        ...(c.pozoBlis ? [['blis', `Pozo: ${c.pozoBlis} Blis`, 'el ganador se lleva el pozo']] : []),
         ['reloj', `Turnos de ${c.tiempoTurno || 20} s`, 'para decidir'],
     ];
     caja.innerHTML = `<p class="lobby-section-label">Cómo será la partida</p><ul class="como-sera-chips">` + filas.map(([ic, v, nota]) =>
@@ -2666,8 +2670,9 @@ function pintarCosmeticosPerfil(datos, ganados, catalogoLogros, nivel = 1) {
         <div class="perfil-cosm-fila">${datos.catalogo.filter(c => c.tipo === tipo)
             .filter(c => !(c.tipo === 'avatar' && c.icono && c.id !== 'naipe' && c.id !== 'espadas' && datos.elegidos.avatar !== c.id)) // íconos viejos: solo si ya lo usas
             .sort((a, b) => (orden[a.rareza] ?? 0) - (orden[b.rareza] ?? 0)).map(c => {
-            const libre = (!c.logro || tengo.has(c.logro)) && (!c.nivel || nivel >= c.nivel);
-            const requisito = c.nivel && nivel < c.nivel ? `Nivel ${c.nivel}` : nombreLogro(c.logro);
+            const libre = c.precio ? (datos.comprados || []).includes(`${c.tipo}:${c.id}`)
+                : (!c.logro || tengo.has(c.logro)) && (!c.nivel || nivel >= c.nivel);
+            const requisito = c.precio ? `Tienda · ${c.precio}` : c.nivel && nivel < c.nivel ? `Nivel ${c.nivel}` : nombreLogro(c.logro);
             const elegido = datos.elegidos[tipo] === c.id;
             const rareza = c.rareza || 'comun';
             return `<button type="button" class="cosm-opcion rareza-${rareza}${elegido ? ' elegido' : ''}${libre ? '' : ' bloqueado'}"
@@ -2694,6 +2699,279 @@ function pintarCosmeticosPerfil(datos, ganados, catalogoLogros, nivel = 1) {
 }
 
 // ==========================================
+// TIENDA Y DOBLONES (servidor: POST /tienda/comprar; cosmeticos.js `precio`)
+// ==========================================
+const _tienda = { blis: 0, letios: 0, gaudios: 0, saldo: 0, comprados: [], nivel: 1 };
+var _colecciones = [];
+function pintarMonedas() {
+    const b = document.getElementById('numBlis');
+    if (b) b.textContent = _tienda.blis;
+    const l = document.getElementById('numLetios');
+    if (l) l.textContent = _tienda.letios;
+    const sb = document.getElementById('tiendaSaldoBlis');
+    if (sb) sb.textContent = _tienda.blis;
+    const sl = document.getElementById('tiendaSaldoLetios');
+    if (sl) sl.textContent = _tienda.letios;
+    const sg = document.getElementById('tiendaSaldoGaudios');
+    if (sg) sg.textContent = _tienda.gaudios || 0;
+    const n = document.getElementById('numMonedas');
+    if (n) n.textContent = _tienda.blis;
+    const s = document.getElementById('tiendaSaldo');
+    if (s) s.textContent = _tienda.blis;
+}
+// Divisas del reino
+const MONEDA = { singular: 'Blis', plural: 'Blis' };
+const RAREZA_TXT = { comun: 'Común', raro: 'Raro', epico: 'Épico', legendario: 'Legendario' };
+const TIPO_TXT = { avatar: 'Avatar', marco: 'Marco', dorso: 'Dorso de carta', tapete: 'Tapete' };
+let _tiendaTab = 'arcon', _colIdx = 0;
+
+function vistaArticulo(c, clase = 'tienda-muestra') {
+    if (c.tipo === 'avatar') return `<span class="avatar-cosm ${clase}"><img class="avatar-img" src="/avatares/${c.img}.svg" alt=""></span>`;
+    if (c.tipo === 'marco') return `<span class="avatar-cosm ${clase} marco-${c.id}">${contenidoAvatar(miLook, miNombreUsuario)}</span>`;
+    if (c.tipo === 'dorso') return `<span class="muestra-dorso tienda-dorso dorso-${c.id}"></span>`;
+    return `<span class="muestra-tapete tienda-tapete tapete-${c.id}"></span>`;
+}
+const tengoArt = (c) => _tienda.comprados.includes(`${c.tipo}:${c.id}`);
+
+function parsePrecio(p) {
+    if (typeof p === 'object' && p !== null) {
+        if (p.letios !== undefined) return { tipo: 'letio', cantidad: p.letios, etiqueta: 'Letios' };
+        return { tipo: 'blis', cantidad: p.blis ?? 0, etiqueta: 'Blis' };
+    }
+    return { tipo: 'blis', cantidad: p || 0, etiqueta: 'Blis' };
+}
+
+function botonPrecio(precioRaw, datos) {
+    const { tipo, cantidad } = parsePrecio(precioRaw);
+    const saldo = tipo === 'letio' ? _tienda.letios : _tienda.blis;
+    const alcanza = saldo >= cantidad;
+    return `<button type="button" class="tienda-btn comprar comprar-${tipo}${alcanza ? '' : ' no-alcanza'}" ${datos}>${icono(tipo)} ${cantidad}</button>`;
+}
+
+function portadaColeccion(col) {
+    const piezas = col.articulos.map(k => _catalogoCosm.find(c => `${c.tipo}:${c.id}` === k)).filter(Boolean);
+    const todas = piezas.every(tengoArt), alguna = piezas.some(tengoArt);
+    const { tipo, cantidad } = parsePrecio(col.precio);
+    const suma = parsePrecio(col.suma).cantidad;
+    return `<div class="col-portada col-${col.id}" data-col="${col.id}">
+        <span class="col-etiqueta">Colección · ${Math.round(col.descuento * 100)}% menos</span>
+        <p class="col-titulo">${escapeHTML(col.titulo)}</p><p class="col-lema">${escapeHTML(col.lema)}</p>
+        <div class="col-piezas">${piezas.map(c => vistaArticulo(c, '')).join('')}</div>
+        <div class="col-precio">${todas ? '<b>✓ Ya la tienes completa</b>' : alguna ? '<b style="font-size:13px">Ya tienes piezas: cómpralas sueltas abajo</b>'
+            : `<s>${icono(tipo)} ${suma}</s><b>${icono(tipo)} ${cantidad}</b><span class="col-ahorro">Ahorras ${suma - cantidad}</span>`}</div>
+    </div>`;
+}
+
+async function abrirTienda(refrescar = true) {
+    if (refrescar) await actualizarVictoriasBarra(); // saldo, compras y catálogo al día
+    const cols = _colecciones || [];
+    document.getElementById('tiendaAyuda').textContent =
+        `Gana Blis jugando partidas, con tu cofre diario y al subir de nivel. Los Letios se forjan en torneos de élite. Abre Arcones con Gaudios.`;
+    document.querySelectorAll('.nombre-moneda').forEach(e => { e.textContent = MONEDA.plural; });
+    const tabs = [['arcon', '✨ Arcón'], ['colecciones', 'Colecciones'], ['avatar', 'Avatares'], ['marco', 'Marcos'], ['dorso', 'Dorsos'], ['tapete', 'Tapetes']];
+    let cuerpo = '';
+    if (_tiendaTab === 'arcon') {
+        const puedeGaudio = (_tienda.gaudios || 0) >= 1;
+        const puedeBlis = (_tienda.blis || 0) >= 100;
+        cuerpo = `
+        <div class="arcon-contenedor">
+            <div class="arcon-grafico">
+                <div class="arcon-aura"></div>
+                <svg class="arcon-svg" aria-hidden="true"><use href="#i-gaudio"/></svg>
+            </div>
+            <h3 class="arcon-titulo medieval-font">El Arcón de Gaudios</h3>
+            <p class="arcon-subtitulo">Contenedor Real de Recompensas</p>
+            <p class="arcon-descripcion">
+                Abre el misterioso arcón del reino para conseguir prendas y estilos exclusivos para tu mesa, gemas Letios de prestigio o grandes bolsas de Blis.
+            </p>
+            <div class="arcon-precios">
+                <button type="button" class="boton-oro btn-abrir-gaudio ${puedeGaudio ? '' : 'no-alcanza'}" data-arcon="gaudio">
+                    <svg class="icono icono-gaudio" aria-hidden="true"><use href="#i-gaudio"/></svg> Abrir con 1 Gaudio <small>(${_tienda.gaudios || 0} disponibles)</small>
+                </button>
+                <button type="button" class="boton-medieval btn-abrir-gaudio ${puedeBlis ? '' : 'no-alcanza'}" data-arcon="blis">
+                    <svg class="icono icono-blis" aria-hidden="true"><use href="#i-blis"/></svg> Abrir por 100 Blis <small>(${_tienda.blis || 0} disponibles)</small>
+                </button>
+            </div>
+            <div class="arcon-probabilidades">
+                <span>✨ 55% Prenda o estilo sorpresa</span>
+                <span>💎 25% Letios de Prestigio</span>
+                <span>🪙 20% Bolsa de Blis</span>
+            </div>
+        </div>`;
+    } else if (_tiendaTab === 'colecciones' && cols.length) {
+        _colIdx = _colIdx % cols.length;
+        cuerpo = portadaColeccion(cols[_colIdx])
+            + `<div class="col-puntos">${cols.map((c, i) => `<button type="button" data-colidx="${i}" class="${i === _colIdx ? 'activo' : ''}" aria-label="${escapeHTML(c.titulo)}"></button>`).join('')}</div>`;
+    }
+    if (_tiendaTab !== 'arcon') {
+        const lista = _catalogoCosm.filter(c => c.precio && (_tiendaTab === 'colecciones' ? c.coleccion === cols[_colIdx]?.id : c.tipo === _tiendaTab));
+        const orden = { comun: 0, raro: 1, epico: 2, legendario: 3 };
+        cuerpo += `<div class="tienda-grid">` + lista.sort((a, b) => orden[b.rareza] - orden[a.rareza]).map(c => {
+            const enUso = miLook?.[c.tipo] === c.id;
+            return `<div class="tienda-art rareza-${c.rareza}" data-ver="${c.tipo}:${c.id}">
+                <span class="cosm-rareza">${RAREZA_TXT[c.rareza]}</span>${c.animado ? '<span class="etq-animado" title="Animado">✨</span>' : ''}
+                ${vistaArticulo(c)}
+                <b>${escapeHTML(c.titulo)}</b><small>${TIPO_TXT[c.tipo]}</small>
+                ${tengoArt(c) ? `<button type="button" class="tienda-btn ${enUso ? 'en-uso' : 'usar'}" data-usar="${c.tipo}:${c.id}" ${enUso ? 'disabled' : ''}>${enUso ? '✓ En uso' : 'Usar'}</button>`
+                              : botonPrecio(c.precio, `data-comprar="${c.tipo}:${c.id}"`)}
+            </div>`;
+        }).join('') + `</div>`;
+    }
+    document.getElementById('tiendaArticulos').innerHTML =
+        `<div class="tienda-tabs">${tabs.map(([k, t]) => `<button type="button" data-tab="${k}" class="${k === _tiendaTab ? 'activa' : ''}">${t}</button>`).join('')}</div>` + cuerpo;
+    pintarMonedas();
+    document.getElementById('modalTienda').classList.remove('hidden');
+}
+
+// Vista previa grande de un artículo (cómo se verá).
+function verArticulo(c) {
+    const escena = c.tipo === 'tapete' ? `<div class="vista-escena tapete-escena muestra-tapete tapete-${c.id}"></div>`
+        : c.tipo === 'dorso' ? `<div class="vista-escena"><span class="muestra-dorso dorso-${c.id}"></span></div>`
+        : `<div class="vista-escena">${vistaArticulo(c, '')}</div>`;
+    const enUso = miLook?.[c.tipo] === c.id;
+    document.getElementById('vistaCaja').innerHTML = `<button type="button" class="modal-cerrar-x" data-cierra="modalVista" aria-label="Cerrar">${icono('cerrar')}</button>
+        <span class="cosm-rareza" style="position:static;display:inline-block;transform:none" >${RAREZA_TXT[c.rareza]}</span>
+        ${escena}<h3>${escapeHTML(c.titulo)}</h3>
+        <p>${TIPO_TXT[c.tipo]}${c.animado ? ' · animado ✨' : ''}${c.tipo === 'tapete' ? ' · solo tú lo ves' : ' · lo ven todos en la mesa'}</p>
+        ${tengoArt(c) ? `<button type="button" class="tienda-btn ${enUso ? 'en-uso' : 'usar'}" data-usar="${c.tipo}:${c.id}" ${enUso ? 'disabled' : ''}>${enUso ? '✓ En uso' : 'Usar'}</button>`
+                      : botonPrecio(c.precio, `data-comprar="${c.tipo}:${c.id}"`)}`;
+    document.getElementById('modalVista').classList.remove('hidden');
+}
+
+async function usarCosmetico(tipo, id) {
+    const res = await fetch(`${URL_SERVIDOR}/cosmeticos`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${miToken}` },
+        body: JSON.stringify({ tipo, id }) });
+    const r = await res.json();
+    if (!res.ok) return mostrarToast(r.error || 'No se pudo usar.', 'danio', 2500);
+    miLook = r.elegidos; pintarMiLook();
+}
+
+async function abrirArconGaudio(metodo) {
+    if (metodo === 'gaudio' && (_tienda.gaudios || 0) < 1) {
+        return mostrarToast('No tienes suficientes Gaudios. Consíguelos completando tu racha de 7 días.', 'rey', 3500);
+    }
+    if (metodo === 'blis' && (_tienda.blis || 0) < 100) {
+        return mostrarToast('No te alcanzan los 100 Blis requeridos. ¡Gana más en las partidas!', 'danio', 3000);
+    }
+
+    try {
+        const res = await fetch(`${URL_SERVIDOR}/tienda/abrir-gaudio`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${miToken}` },
+            body: JSON.stringify({ metodo })
+        });
+        const r = await res.json();
+        if (!res.ok) return mostrarToast(r.error || 'No se pudo abrir el Arcón.', 'danio', 3000);
+
+        if (r.saldo !== undefined) _tienda.saldo = r.saldo;
+        if (r.blis !== undefined) _tienda.blis = r.blis;
+        if (r.letios !== undefined) _tienda.letios = r.letios;
+        if (r.gaudios !== undefined) _tienda.gaudios = r.gaudios;
+        if (r.premio?.tipo === 'cosmetico') {
+            _tienda.comprados.push(`${r.premio.articulo.tipo}:${r.premio.articulo.id}`);
+        }
+        pintarMonedas();
+
+        Sonidos.reaccion('💎');
+        vibrar([80, 50, 150]);
+        lanzarConfeti();
+
+        const modal = document.getElementById('modalArconPremio');
+        const graf = document.getElementById('arconPremioGrafico');
+        const tit = document.getElementById('arconPremioNombre');
+        const sub = document.getElementById('arconPremioSub');
+
+        if (r.premio.tipo === 'cosmetico') {
+            graf.innerHTML = vistaArticulo(r.premio.articulo, '');
+            tit.textContent = r.premio.titulo;
+            sub.textContent = `${TIPO_TXT[r.premio.articulo.tipo] || 'Estilo'} · ${RAREZA_TXT[r.premio.rareza] || r.premio.rareza}`;
+        } else if (r.premio.tipo === 'letios') {
+            graf.innerHTML = `<svg class="icono icono-letio" aria-hidden="true"><use href="#i-letio"/></svg>`;
+            tit.textContent = r.premio.titulo;
+            sub.textContent = r.premio.subtitulo;
+        } else {
+            graf.innerHTML = `<svg class="icono icono-blis" aria-hidden="true"><use href="#i-blis"/></svg>`;
+            tit.textContent = r.premio.titulo;
+            sub.textContent = r.premio.subtitulo;
+        }
+
+        modal?.classList.remove('hidden');
+        abrirTienda(false);
+    } catch {
+        mostrarToast('Error de conexión al abrir el Arcón.', 'danio', 2500);
+    }
+}
+
+// Confirmar y comprar un artículo ({ tipo, id }) o una colección ({ coleccion }).
+function confirmarCompra(que, titulo, precioRaw) {
+    const { tipo, cantidad, etiqueta } = parsePrecio(precioRaw);
+    const saldo = tipo === 'letio' ? _tienda.letios : _tienda.blis;
+    if (saldo < cantidad) return mostrarToast(`Te faltan ${cantidad - saldo} ${etiqueta}. ¡Gana más en la Corte!`, 'rey', 3500);
+    const modal = document.getElementById('modalComprar');
+    document.getElementById('textoComprar').innerHTML = `¿Compras <b>${escapeHTML(titulo)}</b> por <b>${cantidad} ${etiqueta}</b> ${icono(tipo)}?<br><small>Te quedarían ${saldo - cantidad} ${etiqueta}.</small>`;
+    modal.classList.remove('hidden');
+    document.getElementById('btnCancelarCompra').onclick = () => modal.classList.add('hidden');
+    document.getElementById('btnConfirmarCompra').onclick = async () => {
+        modal.classList.add('hidden');
+        try {
+            const res = await fetch(`${URL_SERVIDOR}/tienda/comprar`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${miToken}` },
+                body: JSON.stringify(que) });
+            const r = await res.json();
+            if (!res.ok) return mostrarToast(r.error || 'No se pudo comprar.', 'danio', 3000);
+            if (r.saldo !== undefined) _tienda.saldo = r.saldo;
+            if (r.blis !== undefined) _tienda.blis = r.blis;
+            if (r.letios !== undefined) _tienda.letios = r.letios;
+            if (r.gaudios !== undefined) _tienda.gaudios = r.gaudios;
+            _tienda.comprados.push(...r.articulos); pintarMonedas();
+            Sonidos.reaccion('💎'); vibrar([60, 40, 120]); lanzarConfeti();
+            mostrarToast(`🎉 ¡${titulo} es tuyo! Toca «Usar» para ponértelo.`, 'rey', 3500);
+            document.getElementById('modalVista').classList.add('hidden');
+            abrirTienda(false);
+        } catch { mostrarToast('Sin conexión: intenta de nuevo.', 'danio', 2500); }
+    };
+}
+
+document.getElementById('btnTienda')?.addEventListener('click', () => { Sonidos.boton(); abrirTienda(); });
+document.getElementById('btnCerrarArconPremio')?.addEventListener('click', () => {
+    document.getElementById('modalArconPremio')?.classList.add('hidden');
+});
+const clicTienda = async (e) => {
+    if (e.target.id === 'modalTienda' || e.target.id === 'modalVista' || e.target.id === 'modalArconPremio') return e.target.classList.add('hidden');
+    const x = e.target.closest('#modalVista [data-cierra], #modalArconPremio [data-cierra]');
+    if (x) {
+        document.getElementById('modalVista')?.classList.add('hidden');
+        document.getElementById('modalArconPremio')?.classList.add('hidden');
+        return;
+    }
+    const arcon = e.target.closest('[data-arcon]');
+    if (arcon) {
+        Sonidos.boton();
+        abrirArconGaudio(arcon.dataset.arcon);
+        return;
+    }
+    const tab = e.target.closest('[data-tab]');
+    if (tab) { _tiendaTab = tab.dataset.tab; Sonidos.boton(); return abrirTienda(false); }
+    const punto = e.target.closest('[data-colidx]');
+    if (punto) { _colIdx = Number(punto.dataset.colidx); return abrirTienda(false); }
+    const usar = e.target.closest('[data-usar]');
+    if (usar) { const [t, i] = usar.dataset.usar.split(':'); await usarCosmetico(t, i); Sonidos.boton(); document.getElementById('modalVista').classList.add('hidden'); return abrirTienda(false); }
+    const b = e.target.closest('[data-comprar]');
+    if (b) { const [tipo, id] = b.dataset.comprar.split(':'); const c = _catalogoCosm.find(x => x.tipo === tipo && x.id === id); return confirmarCompra({ tipo, id }, c.titulo, c.precio); }
+    const portada = e.target.closest('[data-col]');
+    if (portada) {
+        const col = (_colecciones || []).find(c => c.id === portada.dataset.col);
+        const piezas = col.articulos.map(k => _catalogoCosm.find(c => `${c.tipo}:${c.id}` === k));
+        if (!piezas.some(tengoArt)) return confirmarCompra({ coleccion: col.id }, col.titulo, col.precio);
+        return;
+    }
+    const ver = e.target.closest('[data-ver]');
+    if (ver) { const [t, i] = ver.dataset.ver.split(':'); verArticulo(_catalogoCosm.find(x => x.tipo === t && x.id === i)); }
+};
+document.getElementById('modalTienda')?.addEventListener('click', clicTienda);
+document.getElementById('modalVista')?.addEventListener('click', clicTienda);
+document.getElementById('modalArconPremio')?.addEventListener('click', clicTienda);
+
+// ==========================================
 // NIVELES Y RECOMPENSA DIARIA (progreso.js en el servidor)
 // ==========================================
 function barraXP(n, anima = null) {
@@ -2713,7 +2991,8 @@ function animarProgreso(caja, p) {
     const subio = p.ahora.nivel > p.antes.nivel;
     const pctAntes = Math.round(100 * p.antes.xpEnNivel / p.antes.xpDelNivel);
     const extras = (p.extras || []).map(e => `<li>+${e.xp} ${escapeHTML(e.motivo)}</li>`).join('');
-    caja.innerHTML = `<p class="xp-ganada">+${p.ganada} XP${p.motivo === 'premio' ? ' del cofre' : ''}</p>`
+    if (p.saldo !== undefined) { _tienda.saldo = p.saldo; pintarMonedas(); }
+    caja.innerHTML = `<p class="xp-ganada">+${p.ganada} XP${p.motivo === 'premio' ? ' del cofre' : ''}${p.monedas ? ` <span class="doblones-ganados" title="${MONEDA.plural}">${icono('moneda')} +${p.monedas}</span>` : ''}</p>`
         + (extras ? `<ul class="xp-extras"><li>+${p.base} por la partida</li>${extras}</ul>` : '') + barraXP(p.antes, pctAntes)
         + `<p class="xp-subio hidden"></p>`;
     caja.classList.remove('hidden');
@@ -2895,19 +3174,69 @@ document.getElementById('barraCorte')?.addEventListener('click', (e) => {
 // ==========================================
 // Si ya quedaste fuera, al empezar cada ronda eliges quién pierde; se cierra
 // en la primera jugada. Acertar da +15 XP (llega al final con la partida).
+let _montoApuesta = 0;
+let _tipoApuesta = 'ronda'; // 'ronda' | 'campeon'
+let _apuestaCampeon = null; // { objetivo, monto }
+
 function pintarApuesta(jugadores) {
     const caja = document.getElementById('panelApuesta');
     if (!caja) return;
     const yo = jugadores.find(j => j.nombre === miNombreUsuario);
     const vivos = jugadores.filter(j => j.vidas > 0);
     if (!yo || yo.vidas > 0 || _practica || vivos.length < 2) { caja.classList.add('hidden'); return; }
-    caja.innerHTML = `<p class="apuesta-titulo">🎲 ¿Quién pierde esta ronda? <small>Acierta y gana +15 XP</small></p>
+
+    const saldo = _tienda.blis || 0;
+    const montos = [0, 5, 10, 25].filter(m => m === 0 || saldo >= m);
+    if (!montos.includes(_montoApuesta)) _montoApuesta = 0;
+
+    const esRonda = _tipoApuesta === 'ronda';
+    const premioTexto = esRonda
+        ? (_montoApuesta > 0 ? `Acierta y gana <b>+${_montoApuesta * 2} Blis</b> (x2) y +15 XP` : 'Acierta y gana +15 XP')
+        : (_montoApuesta > 0 ? `Acierta al Campeón y gana <b>+${_montoApuesta * 3} Blis</b> (x3) y +50 XP` : 'Acierta al Campeón y gana +50 XP');
+
+    caja.innerHTML = `
+        <div class="apuesta-tabs">
+            <button type="button" class="apuesta-tab ${esRonda ? 'activa' : ''}" data-tipo-apuesta="ronda">⚡ Ronda (x2)</button>
+            <button type="button" class="apuesta-tab ${!esRonda ? 'activa' : ''}" data-tipo-apuesta="campeon">👑 Campeón (x3)</button>
+        </div>
+        <div class="apuesta-header">
+            <p class="apuesta-titulo">${esRonda ? '🎲 ¿Quién pierde esta ronda?' : '👑 ¿Quién ganará la partida?'}</p>
+            <div class="apuesta-montos">
+                ${montos.map(m => `<button type="button" class="btn-monto ${m === _montoApuesta ? 'activo' : ''}" data-monto="${m}">${m === 0 ? 'Gratis' : `${icono('blis')} ${m}`}</button>`).join('')}
+            </div>
+            <small class="apuesta-premio">${premioTexto}</small>
+            ${!esRonda && _apuestaCampeon ? `<div style="font-size:11px;color:#ffe27a;margin-top:3px;">Tu favorito: <b>${escapeHTML(_apuestaCampeon.objetivo)}</b> (${_apuestaCampeon.monto ? _apuestaCampeon.monto + ' Blis' : 'Gratis'})</div>` : ''}
+        </div>
         <div class="apuesta-opciones">${vivos.map(j => `<button type="button" data-nombre="${escapeHTML(j.nombre)}">${escapeHTML(j.nombre)}</button>`).join('')}</div>`;
     caja.classList.remove('hidden', 'cerrada');
     caja.onclick = (e) => {
+        const tab = e.target.closest('[data-tipo-apuesta]');
+        if (tab) {
+            _tipoApuesta = tab.dataset.tipoApuesta;
+            Sonidos.boton();
+            pintarApuesta(jugadores);
+            return;
+        }
+        const btnMonto = e.target.closest('.btn-monto');
+        if (btnMonto) {
+            _montoApuesta = Number(btnMonto.dataset.monto);
+            caja.querySelectorAll('.btn-monto').forEach(b => b.classList.toggle('activo', Number(b.dataset.monto) === _montoApuesta));
+            const p = caja.querySelector('.apuesta-premio');
+            if (p) {
+                p.innerHTML = _tipoApuesta === 'ronda'
+                    ? (_montoApuesta > 0 ? `Acierta y gana <b>+${_montoApuesta * 2} Blis</b> (x2) y +15 XP` : 'Acierta y gana +15 XP')
+                    : (_montoApuesta > 0 ? `Acierta al Campeón y gana <b>+${_montoApuesta * 3} Blis</b> (x3) y +50 XP` : 'Acierta al Campeón y gana +50 XP');
+            }
+            Sonidos.boton();
+            return;
+        }
         const b = e.target.closest('button[data-nombre]');
         if (!b || caja.classList.contains('cerrada')) return;
-        socket.emit('apostar', { idSala: miSalaActual, objetivo: b.dataset.nombre });
+        if (_tipoApuesta === 'ronda') {
+            socket.emit('apostar', { idSala: miSalaActual, objetivo: b.dataset.nombre, monto: _montoApuesta });
+        } else {
+            socket.emit('apostarCampeon', { idSala: miSalaActual, objetivo: b.dataset.nombre, monto: _montoApuesta });
+        }
     };
 }
 
@@ -2959,6 +3288,14 @@ async function actualizarVictoriasBarra() {
         document.getElementById('numVictoriasTop').textContent = n;
         if (data.cosmeticos) { _catalogoCosm = data.cosmeticos.catalogo; miLook = data.cosmeticos.elegidos; pintarMiLook(); }
         misLogros = (data.logros || []).map(l => l.logro);
+        _tienda.saldo = data.blis ?? data.monedas ?? 0;
+        _tienda.blis = data.blis ?? data.monedas ?? 0;
+        _tienda.letios = data.letios ?? 0;
+        _tienda.gaudios = data.gaudios ?? 0;
+        _tienda.comprados = data.cosmeticos?.comprados || [];
+        _tienda.nivel = data.nivel?.nivel || 1;
+        _colecciones = data.cosmeticos?.colecciones || [];
+        pintarMonedas();
         if (data.nivel) { const nv = document.getElementById('nivelTop'); nv.textContent = data.nivel.nivel; nv.classList.remove('hidden'); }
         pintarPanelReacciones();
         document.getElementById('victoriasTop').classList.toggle('hidden', data.victorias === undefined);
@@ -3901,6 +4238,7 @@ function conectarSocket() {
                 publica: document.getElementById('selectVisibilidad')?.value === 'PUBLICA',
                 equipos: parseInt(document.getElementById('selectEquipos').value || '0'),
                 modoJuego: document.getElementById('selectModoJuego')?.value || 'CLASICO', // el servidor valida la lista
+                pozoBlis: parseInt(document.getElementById('selectPozoBlis')?.value || '0', 10),
                 password: document.getElementById('inputPasswordSala').value.trim()
             }
         });
@@ -4162,6 +4500,7 @@ function conectarSocket() {
 
     socket.on('datosMesa', (datos) => {
         terminarEsperaRapida();
+        _pozoMesa = datos.pozo || 0;
         _espiado = null;
         _cartasCompaneros = {};
         if (datos.ronda === 1) { _turnosConGuiaGestos = 0; mostrarAvisoEquipo(datos.jugadores || []); mostrarModoNuevo(datos); }
@@ -4779,22 +5118,60 @@ function conectarSocket() {
         listaJugadoresGlobal = jugadores.map(j => j.nombre === miNombreUsuario ? { ...j, id: socket.id } : j);
         dibujarMesaCircular();
     });
-    socket.on('apuestaHecha', ({ objetivo }) => {
-        document.querySelectorAll('#panelApuesta button').forEach(b => b.classList.toggle('elegida', b.dataset.nombre === objetivo));
+    socket.on('apuestaHecha', ({ objetivo, monto, saldo }) => {
+        document.querySelectorAll('#panelApuesta .apuesta-opciones button').forEach(b => b.classList.toggle('elegida', b.dataset.nombre === objetivo));
+        if (saldo !== undefined) { _tienda.blis = saldo; _tienda.saldo = saldo; pintarMonedas(); }
         Sonidos.boton();
     });
     socket.on('apuestasCerradas', () => {
         const caja = document.getElementById('panelApuesta');
         if (!caja || caja.classList.contains('hidden')) return;
         caja.classList.add('cerrada');
-        const elegida = caja.querySelector('button.elegida')?.dataset.nombre;
+        const elegida = caja.querySelector('.apuesta-opciones button.elegida')?.dataset.nombre;
         if (!elegida) caja.classList.add('hidden');
-        else caja.querySelector('.apuesta-titulo').innerHTML = `🎲 Apostaste por <b>${escapeHTML(elegida)}</b>…`;
+        else {
+            const txtMonto = _montoApuesta > 0 ? ` <b>${_montoApuesta} Blis</b>` : '';
+            caja.querySelector('.apuesta-titulo').innerHTML = `🎲 Apostaste${txtMonto} por <b>${escapeHTML(elegida)}</b>…`;
+        }
     });
     socket.on('resultadoApuesta', (r) => {
         document.getElementById('panelApuesta')?.classList.add('hidden');
-        mostrarToast(r.acierto ? `🎲 ¡Acertaste! ${r.objetivo} perdió vida. +${r.xp} XP` : `🎲 Fallaste: ${r.objetivo} se salvó.`, r.acierto ? 'rey' : '', 3000);
-        if (r.acierto) Sonidos.reaccion('💎');
+        if (r.saldoBlis !== undefined) { _tienda.blis = r.saldoBlis; _tienda.saldo = r.saldoBlis; pintarMonedas(); }
+        if (r.acierto) {
+            const txt = r.ganancia > 0
+                ? `🎲✨ ¡Acertaste tu apuesta! ${r.objetivo} perdió vida. +${r.ganancia} Blis (+${r.xp} XP)`
+                : `🎲 ¡Acertaste! ${r.objetivo} perdió vida. +${r.xp} XP`;
+            mostrarToast(txt, 'rey', 3500);
+            Sonidos.reaccion('💎');
+            vibrar([60, 40, 120]);
+        } else {
+            const txt = r.monto > 0
+                ? `🎲 Fallaste: ${r.objetivo} se salvó. Perdiste ${r.monto} Blis.`
+                : `🎲 Fallaste: ${r.objetivo} se salvó.`;
+            mostrarToast(txt, r.monto > 0 ? 'danio' : '', 2800);
+        }
+    });
+
+    socket.on('apuestaCampeonHecha', (r) => {
+        _apuestaCampeon = { objetivo: r.objetivo, monto: r.monto };
+        if (r.saldo !== undefined) { _tienda.blis = r.saldo; _tienda.saldo = r.saldo; pintarMonedas(); }
+        mostrarToast(`🎯 Apostaste ${r.monto ? r.monto + ' Blis' : 'Gratis'} a que ${r.objetivo} será el Campeón.`, 'rey', 3000);
+        Sonidos.boton();
+    });
+
+    socket.on('resultadoApuestaCampeon', (r) => {
+        if (r.acierto) {
+            const txt = r.ganancia > 0
+                ? `🎯👑 ¡Acertaste al Campeón! ${r.objetivo} ganó la partida. +${r.ganancia} Blis (+${r.xp} XP)`
+                : `🎯👑 ¡Acertaste al Campeón! ${r.objetivo} ganó la partida. +${r.xp} XP`;
+            mostrarToast(txt, 'rey', 4000);
+            Sonidos.reaccion('💎');
+            vibrar([80, 50, 160]);
+            lanzarConfeti();
+        } else if (r.monto > 0) {
+            mostrarToast(`🎯 ${r.objetivo} no logró ser el Campeón. Perdiste tu apuesta de ${r.monto} Blis.`, 'danio', 3000);
+        }
+        _apuestaCampeon = null;
     });
 
     socket.on('reaccionJugador', (datos) => {

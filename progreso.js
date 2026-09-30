@@ -9,6 +9,27 @@
 
 const PREMIOS_DIARIOS = [20, 30, 40, 50, 60, 80, 150]; // día 1…7 (el 7 es el cofre grande)
 
+// Monedas del reino (Blis, Letios y Gaudios). 30/09/2026.
+const BLIS = {
+    jugar: 10, ganar: 30, porBonus: 5,     // por partida (+5 por cada bonus: apuesta, derrocar, corona)
+    subirNivel: 50, campeonTorneo: 150,
+    diario: [10, 15, 20, 25, 30, 40, 100], // día 1…7 del cofre
+};
+const LETIOS = {
+    campeonTorneo: 10,                      // Campeón absoluto del Torneo de la noche
+    rachaSieteDias: 5,                      // Cofre supremo del día 7
+};
+const GAUDIOS = {
+    costoBlis: 100,                         // Costo de abrir un Arcón de Gaudios con Blis
+    costoGaudios: 1,                        // Costo de abrir un Arcón con divisa Gaudio
+    rachaSieteDias: 1,                      // Gaudio obtenido al completar racha de 7 días
+};
+const DOBLONES = BLIS;                      // Alias retrocompatible
+function blisDePartida({ gano, bonus = 0 }) {
+    return BLIS.jugar + (gano ? BLIS.ganar : 0) + BLIS.porBonus * bonus;
+}
+const doblonesDePartida = blisDePartida;
+
 function xpDePartida({ gano, rondasAguantadas }) {
     const porRondas = Math.min(30, 3 * Math.max(0, rondasAguantadas || 0));
     return 20 + porRondas + (gano ? 40 : 0);
@@ -45,4 +66,4 @@ function estadoPremio(ultimoDia, racha, hoy = hoyCDMX()) {
     return { disponible: true, racha: nueva, premio: PREMIOS_DIARIOS[nueva - 1] };
 }
 
-module.exports = { PREMIOS_DIARIOS, xpDePartida, xpParaNivel, nivelDe, hoyCDMX, diaAnterior, estadoPremio };
+module.exports = { PREMIOS_DIARIOS, BLIS, LETIOS, GAUDIOS, blisDePartida, DOBLONES, doblonesDePartida, xpDePartida, xpParaNivel, nivelDe, hoyCDMX, diaAnterior, estadoPremio };

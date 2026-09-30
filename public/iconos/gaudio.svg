@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <!-- Gradientes de la madera del arcón -->
+    <linearGradient id="maderaCuerpo" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#78350F"/>
+      <stop offset="50%" stop-color="#542308"/>
+      <stop offset="100%" stop-color="#2D1104"/>
+    </linearGradient>
+    <linearGradient id="maderaTapa" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#92400E"/>
+      <stop offset="60%" stop-color="#78350F"/>
+      <stop offset="100%" stop-color="#451A03"/>
+    </linearGradient>
+    <!-- Gradiente de los herrajes dorados -->
+    <linearGradient id="herrajeOro" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FEF08A"/>
+      <stop offset="35%" stop-color="#F59E0B"/>
+      <stop offset="80%" stop-color="#B45309"/>
+      <stop offset="100%" stop-color="#78350F"/>
+    </linearGradient>
+    <!-- Haz de luz mágica interior -->
+    <linearGradient id="luzMagica" x1="50%" y1="100%" x2="50%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="25%" stop-color="#FEF08A"/>
+      <stop offset="70%" stop-color="#F59E0B" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#FDE047" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="gaudioGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Sombra del cofre -->
+  <ellipse cx="64" cy="114" rx="48" ry="8" fill="#1C0A02" opacity="0.5"/>
+
+  <!-- HAZ DE LUZ MÁGICA QUE BROTA DEL INTERIOR ENTREABIERTO -->
+  <polygon points="34,60 14,24 114,24 94,60" fill="url(#luzMagica)" filter="url(#gaudioGlow)" opacity="0.85"/>
+  <ellipse cx="64" cy="58" rx="34" ry="7" fill="#FFFBEB" filter="url(#gaudioGlow)" opacity="0.9"/>
+
+  <!-- CUERPO PRINCIPAL DEL ARCÓN (Base de madera) -->
+  <g stroke="#1F0B03" stroke-width="2" stroke-linejoin="round">
+    <rect x="22" y="60" width="84" height="46" rx="4" fill="url(#maderaCuerpo)"/>
+    <!-- Tablas de madera verticales tenues -->
+    <line x1="43" y1="60" x2="43" y2="106" stroke="#451A03" stroke-width="1.8"/>
+    <line x1="64" y1="60" x2="64" y2="106" stroke="#451A03" stroke-width="1.8"/>
+    <line x1="85" y1="60" x2="85" y2="106" stroke="#451A03" stroke-width="1.8"/>
+  </g>
+
+  <!-- TAPA CURVADA ENTREABIERTA (Perspectiva alzada) -->
+  <g stroke="#1F0B03" stroke-width="2" stroke-linejoin="round">
+    <!-- Cara interior en sombra -->
+    <polygon points="20,58 24,32 104,32 108,58" fill="#2D1104"/>
+    <!-- Tapa superior curvada levantada -->
+    <path d="M18 52 C18 36 28 22 64 22 C100 22 110 36 110 52 L106 58 C102 44 94 30 64 30 C34 30 26 44 22 58 Z" fill="url(#maderaTapa)"/>
+  </g>
+
+  <!-- HERRAJES DORADOS Y CANTONERAS -->
+  <g fill="url(#herrajeOro)" stroke="#78350F" stroke-width="1.6" stroke-linejoin="round">
+    <!-- Cantoneras inferiores (esquinas de la base) -->
+    <path d="M22 60 L33 60 L33 69 L29 69 L29 106 L22 106 Z"/>
+    <path d="M106 60 L95 60 L95 69 L99 69 L99 106 L106 106 Z"/>
+    <!-- Tiras doradas de refuerzo con remaches -->
+    <rect x="44" y="60" width="8" height="46" rx="1"/>
+    <rect x="76" y="60" width="8" height="46" rx="1"/>
+    
+    <!-- Tiras de refuerzo en la tapa alzada -->
+    <path d="M42 32 C43 27 45 24 48 23 L54 23 C51 24 49 27 48 32 Z"/>
+    <path d="M74 32 C75 27 77 24 80 23 L86 23 C83 24 81 27 80 32 Z"/>
+    <path d="M18 52 C20 40 24 33 27 32 L31 32 C28 34 24 41 22 54 Z"/>
+    <path d="M110 52 C108 40 104 33 101 32 L97 32 C100 34 104 41 106 54 Z"/>
+
+    <!-- Cerradura ornamental central con ojo de cerradura real -->
+    <path d="M57 60 L71 60 L71 74 C71 78 68 81 64 81 C60 81 57 78 57 74 Z"/>
+  </g>
+
+  <!-- Ojo de la cerradura -->
+  <circle cx="64" cy="68" r="2.5" fill="#1C0A02"/>
+  <polygon points="62.5,69 65.5,69 66,74 62,74" fill="#1C0A02"/>
+
+  <!-- Remaches dorados (puntos de luz) -->
+  <g fill="#FFFBEB" opacity="0.8">
+    <circle cx="26" cy="65" r="1.3"/>
+    <circle cx="26" cy="101" r="1.3"/>
+    <circle cx="102" cy="65" r="1.3"/>
+    <circle cx="102" cy="101" r="1.3"/>
+    <circle cx="48" cy="67" r="1.3"/>
+    <circle cx="48" cy="99" r="1.3"/>
+    <circle cx="80" cy="67" r="1.3"/>
+    <circle cx="80" cy="99" r="1.3"/>
+  </g>
+
+  <!-- Destellos y partículas mágicas de Gaudios brotando del arcón -->
+  <g filter="url(#gaudioGlow)">
+    <!-- Destello estrella central -->
+    <path d="M60 40 Q64 42 64 48 Q64 42 68 40 Q64 38 64 32 Q64 38 60 40 Z" fill="#FFFFFF"/>
+    <!-- Chispas mágicas flotando -->
+    <circle cx="40" cy="30" r="2.2" fill="#FEF08A"/>
+    <circle cx="88" cy="28" r="2.6" fill="#FEF08A"/>
+    <circle cx="50" cy="16" r="1.6" fill="#FFFBEB"/>
+    <circle cx="78" cy="18" r="1.8" fill="#FFFBEB"/>
+    <circle cx="28" cy="42" r="1.5" fill="#FEF08A"/>
+    <circle cx="100" cy="40" r="1.5" fill="#FEF08A"/>
+  </g>
+</svg>

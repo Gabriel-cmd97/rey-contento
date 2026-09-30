@@ -51,6 +51,11 @@
     <symbol id="i-flecha" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
     <symbol id="i-ojo" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
     <symbol id="i-pergamino" viewBox="0 0 24 24"><path d="M8 3h10a2 2 0 0 1 2 2v2h-4M8 3a2 2 0 0 0-2 2v12a3 3 0 0 1-3 3h11a3 3 0 0 0 3-3V5M10 9h4M10 13h4"/></symbol>
+    <symbol id="i-moneda" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.5"/><path d="M12 9.5v5M10.5 11h3"/></symbol>
+    <symbol id="i-blis" viewBox="0 0 24 24"><circle cx="11" cy="13" r="8"/><path d="M8 11.5l1.2-1.5 1.8 1 1.8-1 1.2 1.5M9 15a3 3 0 0 0 4 0M18 3v4M16 5h4"/></symbol>
+    <symbol id="i-letio" viewBox="0 0 24 24"><path d="M6 9 12 3l6 6-6 10L6 9z"/><path d="M6 9h12M9.5 3l2.5 6 2.5-6M12 9v10"/><path d="M3.5 18 6 21h12l2.5-3-4 1-4.5-2.5-4.5 2.5z"/></symbol>
+    <symbol id="i-gaudio" viewBox="0 0 24 24"><path d="M4 12h16v7.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19.5V12z"/><path d="M3.5 11 5.5 5a1 1 0 0 1 1-.7h11a1 1 0 0 1 1 .7l2 6"/><circle cx="12" cy="16" r="1.3"/><path d="M12 17.3v1.8"/><path d="M12 7.5V3.5M8 8.2 6.5 5.5M16 8.2 17.5 5.5"/></symbol>
+    <symbol id="i-tienda" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2"/></symbol>
     <symbol id="i-trofeo" viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4v4"/></symbol>
     <symbol id="i-rayo" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
     <symbol id="i-diana" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
@@ -111,6 +116,11 @@
                 <button id="btnVerReglas" class="btn-sonido-top" title="¿Cómo se juega?" aria-label="¿Cómo se juega?"><svg class="icono" aria-hidden="true"><use href="#i-libro"/></svg></button>
                 <button id="btnToggleGuias" class="btn-sonido-top" title="Guías"><svg class="icono" aria-hidden="true"><use href="#i-foco"/></svg> </button>
                 <button id="btnToggleSonido" class="btn-sonido-top" title="Silenciar / Activar sonido"><svg class="icono" aria-hidden="true"><use href="#i-altavoz"/></svg> </button>
+                <button id="btnTienda" class="btn-tienda-top" title="Tienda de la Corte" aria-label="Tienda de la Corte">
+                    <span class="chip-saldo saldo-blis" title="Tus Blis"><svg class="icono icono-blis" aria-hidden="true"><use href="#i-blis"/></svg><b id="numBlis">0</b></span>
+                    <span class="chip-saldo saldo-letios" title="Tus Letios"><svg class="icono icono-letio" aria-hidden="true"><use href="#i-letio"/></svg><b id="numLetios">0</b></span>
+                    <b id="numMonedas" class="hidden">0</b>
+                </button>
                 <button id="btnMiPerfil" class="btn-perfil-top" title="Mi perfil">
                     <span class="avatar-top"><span id="inicialUsuario">?</span><span class="punto-en-linea" title="En línea"></span><span id="nivelTop" class="nivel-top hidden" title="Tu nivel">1</span></span>
                     <span id="displayUsername">...</span>
@@ -234,6 +244,15 @@
                             <option value="SI">Sí</option>
                         </select>
                         </div>
+                            <div class="config-item-nuevo" title="Pozo del Rey: cada jugador aporta la entrada en Blis y el ganador se lleva todo">
+                                <span class="config-label-nuevo"><svg class="icono icono-blis" aria-hidden="true"><use href="#i-blis"/></svg> Pozo de Blis</span>
+                                <select id="selectPozoBlis" class="selector-medieval selector-compacto">
+                                    <option value="0" selected>Sin pozo (gratis)</option>
+                                    <option value="10">10 Blis</option>
+                                    <option value="25">25 Blis</option>
+                                    <option value="50">50 Blis</option>
+                                </select>
+                            </div>
                             <div class="config-item-nuevo" title="Privada: solo entran con el código, el enlace o el QR · Pública: aparece en Unirse para cualquiera">
                                 <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-globo"/></svg> Visibilidad</span>
                                 <select id="selectVisibilidad" class="selector-medieval selector-compacto">
@@ -562,8 +581,8 @@
                 <div class="perfil-stat-item"><span class="perfil-stat-val" id="pRachaActual">—</span><span class="perfil-stat-label">Racha actual</span></div>
                 <div class="perfil-stat-item perfil-stat-full"><span class="perfil-stat-val" id="pRachaMax">—</span><span class="perfil-stat-label"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Racha máxima</span></div>
             </div>
-            <h4 class="perfil-seccion">Mis cosméticos</h4>
-            <p class="perfil-cosm-ayuda">Se ven en la mesa. Los que tienen candado se ganan con logros.</p>
+            <h4 class="perfil-seccion">Mis prendas y estilos</h4>
+            <p class="perfil-cosm-ayuda">Se ven en la mesa. Los que tienen candado se ganan con logros o en la tienda.</p>
             <div id="pCosmeticos" class="perfil-cosmeticos"></div>
             <h4 class="perfil-seccion">Logros <span id="pLogrosCuenta"></span></h4>
             <ul id="pLogros" class="perfil-logros"></ul>
@@ -821,6 +840,44 @@
 
 <!-- Apuestas de los eliminados (pintarApuesta en main.js) -->
 <div id="panelApuesta" class="panel-apuesta hidden" role="group" aria-label="Apuesta de la ronda"></div>
+
+<!-- Tienda (abrirTienda en main.js) -->
+<div id="modalTienda" class="hidden modal-overlay" role="dialog" aria-modal="true" aria-labelledby="tituloTienda">
+    <div class="modal-caja tienda-caja">
+        <button type="button" class="modal-cerrar-x" data-cierra="modalTienda" aria-label="Cerrar"><svg class="icono" aria-hidden="true"><use href="#i-cerrar"/></svg></button>
+        <h3 id="tituloTienda" class="medieval-font tienda-titulo"><svg class="icono" aria-hidden="true"><use href="#i-tienda"/></svg> Tienda del Rey</h3>
+        <div class="tienda-saldos">
+            <span class="tienda-saldo-item saldo-blis" title="Tus Blis"><svg class="icono icono-blis" aria-hidden="true"><use href="#i-blis"/></svg> <b id="tiendaSaldoBlis">0</b> Blis</span>
+            <span class="tienda-saldo-item saldo-letios" title="Tus Letios"><svg class="icono icono-letio" aria-hidden="true"><use href="#i-letio"/></svg> <b id="tiendaSaldoLetios">0</b> Letios</span>
+            <span class="tienda-saldo-item saldo-gaudios" title="Tus Gaudios"><svg class="icono icono-gaudio" aria-hidden="true"><use href="#i-gaudio"/></svg> <b id="tiendaSaldoGaudios">0</b> Gaudios</span>
+        </div>
+        <p class="tienda-saldo hidden"><b id="tiendaSaldo">0</b> <span class="nombre-moneda">Blis</span></p>
+        <p class="tienda-ayuda" id="tiendaAyuda"></p>
+        <div id="tiendaArticulos"></div>
+    </div>
+</div>
+<!-- Modal Recompensa del Arcón de Gaudios -->
+<div id="modalArconPremio" class="hidden modal-overlay" role="dialog" aria-modal="true" aria-labelledby="tituloArconPremio">
+    <div class="arcon-premio-caja">
+        <button type="button" class="modal-cerrar-x" data-cierra="modalArconPremio" aria-label="Cerrar"><svg class="icono" aria-hidden="true"><use href="#i-cerrar"/></svg></button>
+        <h3 id="tituloArconPremio" class="medieval-font" style="margin:0 0 6px;color:#fde047;font-size:22px;">¡Arcón Abierto!</h3>
+        <div id="arconPremioGrafico" class="arcon-premio-icono"></div>
+        <h4 id="arconPremioNombre" class="arcon-premio-nombre">Recompensa</h4>
+        <p id="arconPremioSub" class="arcon-premio-tipo">Rareza</p>
+        <button type="button" id="btnCerrarArconPremio" class="boton-oro full-width">¡Excelente!</button>
+    </div>
+</div>
+<div id="modalVista" class="hidden" role="dialog" aria-modal="true"><div class="vista-caja" id="vistaCaja"></div></div>
+<div id="modalComprar" class="hidden" role="dialog" aria-modal="true" aria-labelledby="tituloComprar">
+    <div class="caja-salir">
+        <h2 id="tituloComprar" class="medieval-font">¿Comprar?</h2>
+        <p id="textoComprar"></p>
+        <div class="acciones-salir">
+            <button id="btnCancelarCompra" class="boton-madera">Ahora no</button>
+            <button id="btnConfirmarCompra" class="boton-oro">Comprar</button>
+        </div>
+    </div>
+</div>
 
 <!-- Sugerencia de reacción en el momento (sugerirReacciones en main.js) -->
 <div id="sugerenciaReaccion" class="sugerencia-reaccion hidden" aria-label="Reacción sugerida"></div>

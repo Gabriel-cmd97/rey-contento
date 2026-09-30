@@ -4462,13 +4462,20 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
     padding: 8px 10px; border-radius: 14px; background: rgba(20,12,8,.96); border: 1px solid rgba(241,196,15,.55);
     box-shadow: 0 8px 22px rgba(0,0,0,.6); text-align: center; animation: chip-entra .3s ease-out both; }
 .panel-apuesta.hidden { display: none; }
-.apuesta-titulo { margin: 0 0 6px; font-family: var(--fuente-medieval); color: #ffe27a; font-size: 15px; }
+.apuesta-titulo { margin: 0 0 4px; font-family: var(--fuente-medieval); color: #ffe27a; font-size: 15px; }
 .apuesta-titulo small { display: block; font: 11px Georgia, serif; color: var(--texto-suave); }
+.apuesta-header { margin-bottom: 6px; }
+.apuesta-montos { display: flex; justify-content: center; gap: 6px; margin: 4px 0 2px; }
+.btn-monto { padding: 3px 9px; border-radius: 999px; border: 1px solid rgba(243,230,200,.3); background: rgba(0,0,0,.4);
+    color: var(--pergamino); font: 12px Georgia, serif; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; }
+.btn-monto .icono { width: 13px; height: 13px; }
+.btn-monto.activo { border-color: #ffe27a; background: linear-gradient(180deg, rgba(241,196,15,.35), rgba(217,119,6,.45)); color: #fff; font-weight: bold; }
+.apuesta-premio { display: block; font: 11.5px Georgia, serif; color: #ffe27a; margin-top: 3px; }
 .apuesta-opciones { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; }
 .apuesta-opciones button { padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(243,230,200,.3); background: rgba(0,0,0,.35);
     color: var(--pergamino); font: 13px Georgia, serif; cursor: pointer; max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.apuesta-opciones button.elegida { border-color: #ffe27a; background: rgba(241,196,15,.25); color: #fff; }
-.panel-apuesta.cerrada .apuesta-opciones { display: none; }
+.apuesta-opciones button.elegida { border-color: #ffe27a; background: rgba(241,196,15,.25); color: #fff; font-weight: bold; }
+.panel-apuesta.cerrada .apuesta-opciones, .panel-apuesta.cerrada .apuesta-montos, .panel-apuesta.cerrada .apuesta-premio { display: none; }
 /* Desglose de XP en la victoria */
 .xp-extras { list-style: none; margin: 0 0 6px; padding: 0; font-size: 12px; color: var(--pergamino); text-align: center; }
 .xp-extras li:not(:first-child) { color: #ffe27a; }
@@ -4634,3 +4641,325 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
     linear-gradient(160deg, #0b1d3a, #1a2f5e) !important; }
 .tapete-virtual.tapete-oro { background: radial-gradient(ellipse at 50% 30%, #f7dc6f 0%, #d4ac0d 45%, #7d6608 100%) !important; }
 .muestra-tapete.tapete-oro { background: radial-gradient(ellipse at 50% 30%, #f7dc6f, #7d6608); }
+
+/* =========================================
+   TIENDA Y DOBLONES (30/09/2026)
+   ========================================= */
+/* Íconos de divisas del reino (Blis, Letios, Gaudios) */
+.icono-blis { color: #ffe27a; filter: drop-shadow(0 0 3px rgba(241,196,15,.6)); }
+.icono-letio { color: #60a5fa; filter: drop-shadow(0 0 4px rgba(96,165,250,.7)); }
+.icono-gaudio { color: #f59e0b; filter: drop-shadow(0 0 4px rgba(245,158,11,.7)); }
+
+.btn-tienda-top { display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 10px 0 8px; border-radius: 999px; cursor: pointer;
+    border: 1px solid rgba(241,196,15,.55); background: linear-gradient(180deg, rgba(241,196,15,.22), rgba(0,0,0,.35)); color: #ffe27a;
+    font: bold 12px Georgia, serif; font-variant-numeric: tabular-nums; }
+.btn-tienda-top .chip-saldo { display: inline-flex; align-items: center; gap: 3.5px; }
+.btn-tienda-top .chip-saldo.saldo-blis { color: #ffe27a; }
+.btn-tienda-top .chip-saldo.saldo-letios { color: #93c5fd; }
+.btn-tienda-top .saldo-blis .icono { width: 15px; height: 15px; }
+.btn-tienda-top .saldo-letios .icono { width: 14px; height: 14px; }
+#barraSuperior #btnToggleGuias { display: none; } /* en el lobby no hace falta (sigue en el menú de la mesa) */
+.doblones-ganados, .blis-ganados { color: #ffe27a; white-space: nowrap; }
+.doblones-ganados .icono, .blis-ganados .icono { width: 14px; height: 14px; vertical-align: -2px; }
+.letios-ganados { color: #93c5fd; white-space: nowrap; }
+.letios-ganados .icono { width: 14px; height: 14px; vertical-align: -2px; }
+.tienda-caja { max-width: 420px !important; max-height: 88vh; overflow-y: auto; }
+.tienda-titulo { margin: 0 0 4px; color: #ffe27a; font-size: 21px; text-align: center; }
+.tienda-titulo .icono { width: 20px; height: 20px; vertical-align: -3px; }
+.tienda-saldos { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 2px 0 6px; }
+.tienda-saldo-item { display: inline-flex; align-items: center; gap: 5px; font-size: 13.5px; color: var(--pergamino); }
+.tienda-saldo-item b { font-size: 19px; font-variant-numeric: tabular-nums; }
+.tienda-saldo-item.saldo-blis b { color: #ffe27a; }
+.tienda-saldo-item.saldo-letios b { color: #93c5fd; }
+.tienda-saldo-item .icono { width: 18px; height: 18px; vertical-align: -2px; }
+.tienda-saldo { margin: 0; text-align: center; font-size: 15px; color: var(--pergamino); }
+.tienda-saldo b { font-size: 20px; color: #ffe27a; font-variant-numeric: tabular-nums; }
+.tienda-saldo .icono { width: 18px; height: 18px; color: #ffe27a; vertical-align: -3px; }
+.tienda-ayuda { margin: 4px 0 10px; font-size: 11.5px; line-height: 1.35; color: var(--texto-suave); text-align: center; }
+.tienda-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+.tienda-art { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 18px 6px 8px; border-radius: 12px;
+    background: rgba(0,0,0,.3); border: 1px solid rgba(243,230,200,.2); text-align: center; }
+.tienda-art b { font-size: 12.5px; color: var(--pergamino); line-height: 1.15; }
+.tienda-art small { font-size: 10.5px; color: var(--texto-suave); }
+.tienda-muestra { width: 56px !important; height: 56px !important; font-size: 22px !important; }
+.tienda-dorso { width: 38px; height: 56px; }
+.tienda-tapete { width: 64px; height: 44px; }
+.tienda-btn { margin-top: 4px; width: 100%; padding: 6px 4px; border-radius: 999px; cursor: pointer; font: bold 12.5px Georgia, serif; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.tienda-btn .icono { width: 14px; height: 14px; }
+.tienda-btn.comprar { color: #2b1d1a; background: linear-gradient(180deg, #ffe27a, #e0b12a); border: 1px solid #b7770d; }
+.tienda-btn.comprar.no-alcanza { opacity: .55; }
+.tienda-btn.usar { color: #b8f5c9; background: rgba(46,204,113,.15); border: 1px solid rgba(46,204,113,.6); }
+.tienda-btn.en-uso { color: var(--texto-suave); background: none; border: 1px solid rgba(243,230,200,.25); }
+#modalComprar { position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0,0,0,.72); }
+#modalComprar.hidden { display: none; }
+#modalComprar .caja-salir { width: min(340px, 100%); background: var(--pergamino); color: var(--texto); border: 4px solid var(--oro-oscuro);
+    border-radius: 14px; padding: 18px; text-align: center; box-shadow: 0 0 40px #000; }
+#modalComprar h2 { margin: 0 0 8px; color: var(--oro-tinta, #8a6212); }
+#modalComprar p { margin: 0 0 14px; line-height: 1.45; }
+#modalComprar .acciones-salir { display: flex; gap: 10px; flex-wrap: wrap; }
+#modalComprar .acciones-salir button { flex: 1 1 120px; margin: 0; padding: 11px 8px; border-radius: 10px; font-size: 14px; }
+/* Cosméticos exclusivos de la tienda */
+.marco-obsidiana { box-shadow: 0 0 0 2px #1b1b1b, 0 0 0 3px #922b21, 0 0 14px rgba(146,43,33,.9) !important; animation: marco-obsidiana 2.4s ease-in-out infinite; }
+@keyframes marco-obsidiana { 50% { box-shadow: 0 0 0 2px #1b1b1b, 0 0 0 3px #e74c3c, 0 0 22px rgba(231,76,60,1); } }
+.marco-celestial { box-shadow: 0 0 0 2px #fdfefe, 0 0 0 4px #ffe27a, 0 0 22px rgba(255,255,255,.9) !important; animation: marco-celestial 3s ease-in-out infinite; }
+@keyframes marco-celestial { 50% { box-shadow: 0 0 0 2px #ffe27a, 0 0 0 4px #aee9ff, 0 0 30px rgba(174,233,255,1), 0 0 60px rgba(255,226,122,.5); } }
+@media (prefers-reduced-motion: reduce) { .marco-obsidiana, .marco-celestial { animation: none !important; } }
+.dorso-tablero { background: conic-gradient(#f3e6c4 25%, #3e2723 0 50%, #f3e6c4 0 75%, #3e2723 0) 0 0 / 10px 10px !important; }
+.dorso-fenix { background: radial-gradient(circle at 50% 70%, #f4d03f 0 18%, transparent 19%), linear-gradient(0deg, #e74c3c, #f39c12 55%, #78281f) !important; border-color: #f4d03f !important; }
+.tapete-virtual.tapete-marmol { background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.35), transparent 40%), linear-gradient(135deg, #d5d8dc 0%, #aab7b8 35%, #e5e8e8 55%, #99a3a4 100%) !important; }
+.tapete-virtual.tapete-lava { background: radial-gradient(ellipse at 50% 60%, #e74c3c 0%, #922b21 35%, #1b1b1b 80%) !important; }
+.muestra-tapete.tapete-marmol { background: linear-gradient(135deg, #d5d8dc, #99a3a4); }
+.muestra-tapete.tapete-lava { background: radial-gradient(ellipse at 50% 60%, #e74c3c, #1b1b1b); }
+
+/* =========================================
+   TIENDA 2 (30/09/2026): marcos con anillo que gira, dorsos ilustrados,
+   tapetes animados, colecciones y vista previa
+   ========================================= */
+@property --ang { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+.avatar-cosm, .jugador-avatar-lobby { position: relative; }
+/* Anillo: un conic-gradient recortado a un aro (sirve para círculos y para el recuadro del asiento) */
+:is(.marco-obsidiana, .marco-llamas, .marco-celestial)::before {
+    content: ''; position: absolute; inset: -4px; border-radius: inherit; padding: 3px; pointer-events: none; z-index: 2;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+    animation: gira-marco 3s linear infinite;
+}
+@keyframes gira-marco { to { --ang: 360deg; } }
+.marco-obsidiana::before { background: conic-gradient(from var(--ang), #0b0b0b, #922b21, #0b0b0b 30%, #e74c3c 45%, #0b0b0b 60%, #922b21 80%, #0b0b0b); }
+.marco-llamas::before { background: conic-gradient(from var(--ang), #f4d03f, #e67e22, #c0392b, #f39c12, #fdebd0, #e74c3c, #f4d03f); animation-duration: 1.6s; }
+.marco-llamas { box-shadow: 0 0 16px rgba(243,156,18,.9) !important; }
+.marco-celestial::before { background: conic-gradient(from var(--ang), #fff, #aee9ff, #ffe27a, #fff, #d2b4de, #aee9ff, #fff); animation-duration: 4s; }
+.marco-celestial { box-shadow: 0 0 22px rgba(174,233,255,.9), 0 0 40px rgba(255,226,122,.45) !important; animation: none !important; }
+.marco-obsidiana { animation: none !important; box-shadow: 0 0 14px rgba(231,76,60,.7) !important; }
+@media (prefers-reduced-motion: reduce) { :is(.marco-obsidiana, .marco-llamas, .marco-celestial)::before { animation: none; } }
+
+/* Dorsos ilustrados */
+:is(.dorso-fenix, .dorso-realeza, .dorso-runas) { background-size: 100% 100% !important; background-repeat: no-repeat !important; }
+.dorso-fenix { background: url('/dorsos/fenix.svg') center / 100% 100% no-repeat !important; border-color: #f4d03f !important; }
+.dorso-realeza { background: url('/dorsos/realeza.svg') center / 100% 100% no-repeat !important; border-color: #d4ac0d !important; }
+.dorso-runas { background: url('/dorsos/runas.svg') center / 100% 100% no-repeat !important; border-color: #922b21 !important; box-shadow: 0 0 8px rgba(231,76,60,.6); }
+
+/* Tapetes animados */
+.tapete-virtual.tapete-aurora, .muestra-tapete.tapete-aurora {
+    background: linear-gradient(120deg, #0b3d5c, #1abc9c, #5b2c83, #16a085, #0b3d5c) !important; background-size: 300% 300% !important;
+    animation: aurora 12s ease-in-out infinite; }
+@keyframes aurora { 50% { background-position: 100% 50%; } }
+.tapete-virtual.tapete-lava, .muestra-tapete.tapete-lava {
+    background: radial-gradient(ellipse at 30% 70%, rgba(255,120,40,.55), transparent 35%), radial-gradient(ellipse at 70% 30%, rgba(255,80,20,.5), transparent 30%),
+                radial-gradient(ellipse at 50% 50%, #641e16, #1b0f0a 80%) !important; background-size: 200% 200%, 180% 180%, 100% 100% !important;
+    animation: lava 7s ease-in-out infinite alternate; }
+@keyframes lava { to { background-position: 100% 0, 0 100%, 0 0; } }
+@media (prefers-reduced-motion: reduce) { .tapete-aurora, .tapete-lava { animation: none !important; } }
+
+/* Tienda: portada de colección, pestañas y tarjetas más vistosas */
+.tienda-caja { max-width: 440px !important; padding-top: 18px !important; }
+.col-portada { position: relative; overflow: hidden; margin: 6px 0 10px; padding: 12px; border-radius: 16px; cursor: pointer;
+    border: 2px solid #ffe27a; box-shadow: 0 0 24px rgba(255,226,122,.35); text-align: left; }
+.col-portada.col-fenix { background: linear-gradient(135deg, #78281f, #d35400 55%, #f39c12); }
+.col-portada.col-hechicera { background: linear-gradient(135deg, #1b0f24, #5b2c6f 55%, #16a085); }
+.col-portada.col-sombra { background: linear-gradient(135deg, #0b0b0b, #641e16 60%, #2c3e50); }
+.col-portada::after { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.25) 45%, transparent 60%);
+    background-size: 250% 100%; animation: brillo-portada 3.5s ease-in-out infinite; pointer-events: none; }
+@keyframes brillo-portada { from { background-position: 150% 0; } to { background-position: -100% 0; } }
+.col-etiqueta { display: inline-block; font: bold 9.5px/1.4 Georgia, serif; letter-spacing: .1em; text-transform: uppercase; color: #2b1d1a;
+    background: #ffe27a; border-radius: 4px; padding: 0 6px; }
+.col-titulo { margin: 4px 0 0; font-family: var(--fuente-medieval); font-size: 20px; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
+.col-lema { margin: 0 0 8px; font-size: 12px; color: rgba(255,255,255,.85); font-style: italic; }
+.col-piezas { display: flex; align-items: center; gap: 8px; }
+.col-piezas .avatar-cosm { width: 46px !important; height: 46px !important; }
+.col-piezas .muestra-dorso { width: 28px; height: 42px; }
+.col-piezas .muestra-tapete { width: 48px; height: 32px; }
+.col-precio { display: flex; align-items: baseline; gap: 8px; margin-top: 8px; }
+.col-precio s { color: rgba(255,255,255,.6); font-size: 13px; }
+.col-precio b { font-size: 20px; color: #ffe27a; text-shadow: 0 1px 4px rgba(0,0,0,.6); }
+.col-precio .col-ahorro { font: bold 11px Georgia, serif; color: #1b4d2c; background: #7ee2a8; border-radius: 999px; padding: 1px 8px; }
+.col-puntos { display: flex; justify-content: center; gap: 6px; margin: -4px 0 8px; }
+.col-puntos button { width: 8px; height: 8px; border-radius: 50%; border: 0; padding: 0; background: rgba(243,230,200,.3); cursor: pointer; }
+.col-puntos button.activo { background: #ffe27a; }
+.tienda-tabs { display: flex; gap: 4px; margin-bottom: 8px; overflow-x: auto; }
+.tienda-tabs button { flex: 1 0 auto; padding: 6px 10px; border-radius: 999px; cursor: pointer; font: bold 12px Georgia, serif;
+    color: var(--texto-suave); background: rgba(0,0,0,.3); border: 1px solid rgba(243,230,200,.2); }
+.tienda-tabs button.activa { color: #2b1d1a; background: #ffe27a; border-color: #ffe27a; }
+.tienda-art { cursor: pointer; transition: transform .15s; overflow: hidden; }
+.tienda-art:active { transform: scale(.97); }
+.tienda-art.rareza-legendario::before { content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(110deg, transparent 35%, rgba(255,226,122,.22) 50%, transparent 65%); background-size: 250% 100%; animation: brillo-portada 3s ease-in-out infinite; }
+.tienda-art .etq-animado { position: absolute; top: 3px; right: 4px; font-size: 10px; }
+.tienda-muestra { width: 60px !important; height: 60px !important; }
+/* Vista previa */
+#modalVista { position: fixed; inset: 0; z-index: 9990; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0,0,0,.8); }
+#modalVista.hidden { display: none; }
+.vista-caja { position: relative; width: min(340px, 100%); padding: 18px 16px 14px; border-radius: 18px; text-align: center; color: var(--pergamino);
+    background: radial-gradient(circle at 50% 30%, #3e2723, #140a05 75%); border: 2px solid rgba(241,196,15,.6); box-shadow: 0 0 40px rgba(0,0,0,.8); }
+.vista-escena { display: grid; place-items: center; height: 170px; margin: 6px 0 10px; border-radius: 14px; }
+.vista-escena .avatar-cosm { width: 110px !important; height: 110px !important; font-size: 44px !important; }
+.vista-escena .muestra-dorso { width: 84px; height: 126px; border-radius: 8px; }
+.vista-escena.tapete-escena { border: 6px solid #5d4037; border-radius: 40px; }
+.vista-caja h3 { margin: 0; font-family: var(--fuente-medieval); font-size: 22px; color: #ffe27a; }
+.vista-caja p { margin: 4px 0 12px; font-size: 12.5px; color: var(--texto-suave); }
+.vista-caja .tienda-btn { font-size: 15px; padding: 10px; }
+#modalVista { z-index: 10001 !important; } #modalComprar { z-index: 10002 !important; }
+
+/* Estilos de Arcón de Gaudios y Apuestas de Espectador */
+.tienda-saldo-item.saldo-gaudios b { color: #f59e0b; }
+.btn-tienda-top .chip-saldo.saldo-gaudios { color: #f59e0b; }
+
+.arcon-contenedor {
+    position: relative;
+    overflow: hidden;
+    margin: 8px 0 14px;
+    padding: 20px 16px;
+    border-radius: 18px;
+    text-align: center;
+    background: radial-gradient(circle at 50% 25%, #4a2511 0%, #1f0d05 70%, #0d0502 100%);
+    border: 2px solid #f59e0b;
+    box-shadow: 0 0 28px rgba(245, 158, 11, 0.3), inset 0 0 20px rgba(0,0,0,0.6);
+}
+.arcon-grafico {
+    position: relative;
+    display: inline-block;
+    margin: 0 auto 8px;
+}
+.arcon-aura {
+    position: absolute;
+    inset: -15px;
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.45) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: arcon-pulso 2.5s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+@keyframes arcon-pulso {
+    from { transform: scale(0.9); opacity: 0.5; }
+    to { transform: scale(1.15); opacity: 0.9; }
+}
+.arcon-svg {
+    width: 90px;
+    height: 90px;
+    filter: drop-shadow(0 6px 12px rgba(0,0,0,0.8));
+    animation: arcon-flotar 3s ease-in-out infinite;
+}
+@keyframes arcon-flotar {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+.arcon-titulo {
+    margin: 4px 0 2px;
+    font-size: 22px;
+    color: #fde047;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+}
+.arcon-subtitulo {
+    margin: 0 0 8px;
+    font-size: 12px;
+    color: #f59e0b;
+    font-family: Georgia, serif;
+    font-style: italic;
+    letter-spacing: 0.5px;
+}
+.arcon-descripcion {
+    margin: 0 0 14px;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--pergamino);
+    max-width: 340px;
+    margin-inline: auto;
+}
+.arcon-precios {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 280px;
+    margin: 0 auto 12px;
+}
+.btn-abrir-gaudio {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 9px 16px;
+    font-size: 13.5px;
+    font-weight: bold;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: transform 0.15s, opacity 0.15s;
+}
+.btn-abrir-gaudio:active { transform: scale(0.97); }
+.btn-abrir-gaudio.no-alcanza { opacity: 0.5; cursor: not-allowed; }
+.btn-abrir-gaudio .icono { width: 18px; height: 18px; }
+.arcon-probabilidades {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 11px;
+    color: rgba(246,231,193,0.75);
+    margin-top: 6px;
+}
+.arcon-probabilidades span {
+    background: rgba(0,0,0,0.35);
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* Modal Premio del Arcón */
+#modalArconPremio { z-index: 10005 !important; }
+.arcon-premio-caja {
+    position: relative;
+    width: min(340px, 92vw);
+    padding: 24px 18px 18px;
+    border-radius: 20px;
+    text-align: center;
+    color: var(--pergamino);
+    background: radial-gradient(circle at 50% 20%, #45210c, #1a0b04 80%);
+    border: 2px solid #f59e0b;
+    box-shadow: 0 0 50px rgba(245, 158, 11, 0.45);
+}
+.arcon-premio-icono {
+    display: inline-block;
+    margin: 8px auto 14px;
+    animation: arcon-premio-aparicion 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes arcon-premio-aparicion {
+    0% { transform: scale(0.2) rotate(-15deg); opacity: 0; }
+    70% { transform: scale(1.15) rotate(5deg); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.arcon-premio-icono .icono { width: 68px; height: 68px; }
+.arcon-premio-icono .avatar-cosm { width: 90px !important; height: 90px !important; }
+.arcon-premio-icono .muestra-dorso { width: 70px; height: 105px; }
+.arcon-premio-icono .muestra-tapete { width: 90px; height: 60px; }
+.arcon-premio-nombre {
+    margin: 0 0 4px;
+    font-size: 21px;
+    color: #ffe27a;
+    font-family: var(--fuente-medieval);
+}
+.arcon-premio-tipo {
+    margin: 0 0 16px;
+    font-size: 13px;
+    color: var(--texto-suave);
+}
+
+/* Pestañas de Apuestas en mesa */
+.apuesta-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 6px;
+    justify-content: center;
+}
+.apuesta-tab {
+    padding: 4px 10px;
+    font-size: 11px;
+    font-family: Georgia, serif;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--texto-suave);
+    cursor: pointer;
+}
+.apuesta-tab.activa {
+    background: rgba(241,196,15,0.25);
+    border-color: #ffe27a;
+    color: #ffe27a;
+    font-weight: bold;
+}

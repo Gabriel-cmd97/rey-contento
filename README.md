@@ -10,4 +10,5 @@ node --test tests/*.test.js   # pruebas de los bots (Node 18+)
 ```
 
 La guía completa (arquitectura, reglas, convenciones) está en `CLAUDE.md`.
+Sistema económico, apuestas y arcones: `ECONOMIA.md`.
 Cómo revivirlo desde el respaldo: `RESTAURAR.md`.

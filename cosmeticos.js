@@ -62,16 +62,54 @@ const CATALOGO = [
     { id: 'morado',    tipo: 'tapete', titulo: 'Real',       rareza: 'epico', logro: 'racha_real' },
     { id: 'madera',    tipo: 'tapete', titulo: 'Taberna',    rareza: 'epico', logro: 'veterano' },
     { id: 'oro',       tipo: 'tapete', titulo: 'Tesoro',     rareza: 'legendario', nivel: 7 },
+    // Tienda (30/09/2026): solo se consiguen con la moneda (`precio`). `coleccion`
+    // agrupa artículos que se venden juntos con descuento (COLECCIONES).
+    { id: 'pirata',    tipo: 'avatar', titulo: 'Pirata',          rareza: 'epico',      img: 'pirata', precio: 300 },
+    { id: 'sombra',    tipo: 'avatar', titulo: 'Caballero negro', rareza: 'epico',      img: 'sombra', precio: 350, coleccion: 'sombra', animado: true },
+    { id: 'calavera',  tipo: 'avatar', titulo: 'Rey esqueleto',   rareza: 'epico',      img: 'calavera', precio: 400, animado: true },
+    { id: 'hechicera', tipo: 'avatar', titulo: 'Hechicera',       rareza: 'legendario', img: 'hechicera', precio: 700, coleccion: 'hechicera', animado: true },
+    { id: 'fenix',     tipo: 'avatar', titulo: 'Fénix',           rareza: 'legendario', img: 'fenix',  precio: 800, coleccion: 'fenix', animado: true },
+    { id: 'obsidiana', tipo: 'marco',  titulo: 'Obsidiana',       rareza: 'epico',      precio: 250, coleccion: 'sombra', animado: true },
+    { id: 'llamas',    tipo: 'marco',  titulo: 'Anillo de llamas', rareza: 'legendario', precio: 550, coleccion: 'fenix', animado: true },
+    { id: 'celestial', tipo: 'marco',  titulo: 'Celestial',       rareza: 'legendario', precio: 600, coleccion: 'hechicera', animado: true },
+    { id: 'tablero',   tipo: 'dorso',  titulo: 'Tablero',         rareza: 'raro',       precio: 120 },
+    { id: 'runas',     tipo: 'dorso',  titulo: 'Runas',           rareza: 'epico',      precio: 300, coleccion: 'sombra', img: 'runas' },
+    { id: 'realeza',   tipo: 'dorso',  titulo: 'Realeza',         rareza: 'epico',      precio: 350, coleccion: 'hechicera', img: 'realeza' },
+    { id: 'fenix',     tipo: 'dorso',  titulo: 'Fénix',           rareza: 'legendario', precio: 500, coleccion: 'fenix', img: 'fenix' },
+    { id: 'marmol',    tipo: 'tapete', titulo: 'Mármol',          rareza: 'raro',       precio: 150 },
+    { id: 'aurora',    tipo: 'tapete', titulo: 'Aurora',          rareza: 'epico',      precio: 450, coleccion: 'hechicera', animado: true },
+    { id: 'lava',      tipo: 'tapete', titulo: 'Volcán',          rareza: 'epico',      precio: 400, coleccion: 'fenix', animado: true },
 ];
 
 const TIPOS = ['avatar', 'marco', 'dorso', 'tapete'];
+
+// Colecciones: todo lo que tenga `coleccion: id`, junto y con descuento.
+const COLECCIONES = [
+    { id: 'fenix',     titulo: 'Colección del Fénix',   lema: 'Renace de tus cenizas', descuento: 0.25 },
+    { id: 'hechicera', titulo: 'Colección Arcana',      lema: 'La magia está de tu lado', descuento: 0.25 },
+    { id: 'sombra',    titulo: 'Colección de la Sombra', lema: 'Nadie te ve venir', descuento: 0.2 },
+];
+function coleccion(id) {
+    const c = COLECCIONES.find(x => x.id === id);
+    if (!c) return null;
+    const articulos = CATALOGO.filter(x => x.coleccion === id);
+    const suma = articulos.reduce((t, x) => t + x.precio, 0);
+    return { ...c, articulos: articulos.map(x => `${x.tipo}:${x.id}`), suma, precio: Math.round(suma * (1 - c.descuento) / 10) * 10 };
+}
 const POR_ID = Object.fromEntries(CATALOGO.map(c => [`${c.tipo}:${c.id}`, c]));
 const PREDETERMINADOS = { avatar: 'inicial', marco: 'ninguno', dorso: 'clasico', tapete: 'verde' };
 
-// ¿Puede usarlo quien tiene estos logros (ids) y este nivel?
-function disponible(tipo, id, logrosIds, nivel = 1) {
+// ¿Puede usarlo quien tiene estos logros (ids), este nivel y estas compras
+// ('tipo:id')? Lo de la tienda solo si lo compró.
+function disponible(tipo, id, logrosIds, nivel = 1, comprados = []) {
     const c = POR_ID[`${tipo}:${id}`];
-    return !!c && (!c.logro || logrosIds.includes(c.logro)) && (!c.nivel || nivel >= c.nivel);
+    if (!c) return false;
+    if (c.precio) return comprados.includes(`${tipo}:${id}`);
+    return (!c.logro || logrosIds.includes(c.logro)) && (!c.nivel || nivel >= c.nivel);
+}
+function articuloDeTienda(tipo, id) {
+    const c = POR_ID[`${tipo}:${id}`];
+    return c && c.precio ? c : null;
 }
 
 // Cosméticos que se abren al pasar del nivel `antes` al `ahora`.
@@ -89,4 +127,10 @@ function leer(texto) {
     return r;
 }
 
-module.exports = { CATALOGO, TIPOS, PREDETERMINADOS, disponible, desbloqueadosPorNivel, leer };
+// Arcón de Gaudios: contenedor de recompensas y cosméticos
+const ARCON_GAUDIO = {
+    costoBlis: 100,
+    costoGaudios: 1,
+};
+
+module.exports = { CATALOGO, TIPOS, PREDETERMINADOS, COLECCIONES, ARCON_GAUDIO, coleccion, disponible, articuloDeTienda, desbloqueadosPorNivel, leer };
