@@ -1,10 +1,88 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><radialGradient id="f" cx="50%" cy="35%"><stop offset="0" stop-color="#7b241c"/><stop offset="1" stop-color="#17202a"/></radialGradient></defs>
-<circle cx="32" cy="32" r="32" fill="url(#f)"/>
-<path d="M40 8c8 2 12 8 10 16-3-6-8-8-13-8z" fill="#922b21"/>
-<path d="M18 30c0-10 6-17 14-17s14 7 14 17v12c0 5-6 9-14 9s-14-4-14-9z" fill="#212f3d"/>
-<path d="M18 30c0-10 6-17 14-17s14 7 14 17" fill="#2c3e50"/>
-<rect x="20" y="30" width="24" height="4" rx="2" fill="#0b0f14"/>
-<g fill="#ff4d3a"><animate attributeName="opacity" values="1;.35;1;1;.2;1" dur="3s" repeatCount="indefinite"/>
-<rect x="24" y="31" width="6" height="2" rx="1"/><rect x="34" y="31" width="6" height="2" rx="1"/></g>
-<path d="M32 34v14" stroke="#566573" stroke-width="2"/>
-<path d="M14 60c2-7 9-10 18-10s16 3 18 10" fill="#1c2833"/><path d="M26 50l6 5 6-5" fill="#922b21"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="bgSombra" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#2a0a0a"/>
+      <stop offset="50%" stop-color="#140505"/>
+      <stop offset="100%" stop-color="#050101"/>
+    </radialGradient>
+    <linearGradient id="aceroSombra" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="40%" stop-color="#1e293b"/>
+      <stop offset="85%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="capuchaNegra" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e232a"/>
+      <stop offset="50%" stop-color="#111418"/>
+      <stop offset="100%" stop-color="#080a0c"/>
+    </linearGradient>
+    <radialGradient id="ojoCarmesí" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#ff3838"/>
+      <stop offset="75%" stop-color="#c0392b"/>
+      <stop offset="100%" stop-color="#4a0e0e"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Fondo de abismo de sombras -->
+  <circle cx="32" cy="32" r="32" fill="url(#bgSombra)"/>
+
+  <!-- Bruma y zarcillos de oscuridad espectral -->
+  <circle cx="32" cy="32" r="26" fill="#e74c3c" opacity="0.12">
+    <animate attributeName="opacity" values="0.08;0.22;0.08" dur="2.4s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Partículas de ceniza sangrienta en suspensión -->
+  <circle cx="14" cy="22" r="0.8" fill="#e74c3c" opacity="0.75">
+    <animate attributeName="cy" values="22;12;22" dur="2.2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="50" cy="26" r="0.9" fill="#ff4d4d" opacity="0.7">
+    <animate attributeName="cy" values="26;16;26" dur="1.8s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="48" cy="46" r="0.7" fill="#c0392b" opacity="0.6"/>
+
+  <!-- Hombreras y armadura de placas de hierro negro -->
+  <path d="M12 64 C12 50, 18 43, 25 41 L32 46 L39 41 C46 43, 52 50, 52 64 Z" fill="url(#aceroSombra)"/>
+  <!-- Púas en las hombreras -->
+  <polygon points="12,50 8,42 16,46" fill="#0f172a" stroke="#334155" stroke-width="0.5"/>
+  <polygon points="52,50 56,42 48,46" fill="#0f172a" stroke="#334155" stroke-width="0.5"/>
+
+  <!-- Gorguera / Cuello de placas de acero con remaches -->
+  <path d="M24 42 L32 48 L40 42 L32 38 Z" fill="#0f172a" stroke="#334155" stroke-width="0.6"/>
+  <circle cx="32" cy="43.5" r="1.2" fill="#c0392b" stroke="#ff4d4d" stroke-width="0.3"/>
+
+  <!-- Capucha negra siniestra que oculta el rostro -->
+  <path d="M18 30 C18 14, 23 8, 32 8 C41 8, 46 14, 46 30 C46 42, 42 46, 39 48 C37 42, 38 36, 37 30 C36 21, 35 15, 32 15 C29 15, 28 21, 27 30 C26 36, 27 42, 25 48 C22 46, 18 42, 18 30 Z" fill="url(#capuchaNegra)" stroke="#020617" stroke-width="0.8"/>
+
+  <!-- Interior del rostro: Abismo total donde nada se ve salvo el visor/mirada -->
+  <path d="M21 30 C21 16, 25 15, 32 15 C39 15, 43 16, 43 30 C43 39, 39 44, 32 46 C25 44, 21 39, 21 30 Z" fill="#020305"/>
+
+  <!-- Máscara / Placa facial de acero oscuro angular -->
+  <path d="M24 34 L32 38 L40 34 L38 43 L32 46 L26 43 Z" fill="url(#aceroSombra)" stroke="#090d13" stroke-width="0.6"/>
+
+  <!-- Hendidura horizontal del visor amenazante (ranura de combate) -->
+  <path d="M23 29 L31 31 L32 31 L33 31 L41 29 L41 31 L33 33 L32 33 L31 33 L23 31 Z" fill="#000000"/>
+
+  <!-- Mirada / Fulgor carmesí espectral que arde a través de la hendidura -->
+  <g>
+    <!-- Resplandor carmesí pulsante -->
+    <ellipse cx="28" cy="30.5" rx="3.5" ry="1.2" fill="url(#ojoCarmesí)">
+      <animate attributeName="opacity" values="0.8;1;0.8" dur="1.6s" repeatCount="indefinite"/>
+    </ellipse>
+    <circle cx="28" cy="30.5" r="0.7" fill="#ffffff"/>
+
+    <ellipse cx="36" cy="30.5" rx="3.5" ry="1.2" fill="url(#ojoCarmesí)">
+      <animate attributeName="opacity" values="0.8;1;0.8" dur="1.6s" repeatCount="indefinite"/>
+    </ellipse>
+    <circle cx="36" cy="30.5" r="0.7" fill="#ffffff"/>
+
+    <!-- Haz de luz sangrienta proyectada -->
+    <path d="M25 30.5 L20 30" stroke="#ff3838" stroke-width="0.6" stroke-linecap="round" opacity="0.7"/>
+    <path d="M39 30.5 L44 30" stroke="#ff3838" stroke-width="0.6" stroke-linecap="round" opacity="0.7"/>
+  </g>
+
+  <!-- Remaches en la máscara de hierro -->
+  <circle cx="27" cy="37" r="0.6" fill="#64748b"/>
+  <circle cx="37" cy="37" r="0.6" fill="#64748b"/>
+  <circle cx="32" cy="41" r="0.6" fill="#64748b"/>
+</svg>

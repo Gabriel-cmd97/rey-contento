@@ -1,9 +1,95 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><radialGradient id="f" cx="50%" cy="35%"><stop offset="0" stop-color="#48c9b0"/><stop offset="1" stop-color="#0e6251"/></radialGradient></defs>
-<circle cx="32" cy="32" r="32" fill="url(#f)"/>
-<path d="M16 22l4-12 8 8h8l8-8 4 12v16c0 10-7 16-16 16s-16-6-16-16z" fill="#e67e22"/>
-<path d="M19 13l6 6h-6zM45 13l-6 6h6z" fill="#fad7a0"/>
-<path d="M24 8l3 5 5-6 5 6 3-5-1 7H25z" fill="#f4d03f"/>
-<ellipse cx="26" cy="32" rx="3" ry="4" fill="#abebc6"/><ellipse cx="38" cy="32" rx="3" ry="4" fill="#abebc6"/>
-<ellipse cx="26" cy="33" rx="1.2" ry="3" fill="#17202a"/><ellipse cx="38" cy="33" rx="1.2" ry="3" fill="#17202a"/>
-<path d="M30 40h4l-2 2z" fill="#f1948a"/><path d="M32 42c-2 3-5 3-6 1M32 42c2 3 5 3 6 1" stroke="#6e2c00" stroke-width="1.2" fill="none"/>
-<path d="M14 40h8M14 44h8M42 40h8M42 44h8" stroke="#fdebd0" stroke-width="1"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="bgGatoReal" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#14362b"/>
+      <stop offset="55%" stop-color="#081e17"/>
+      <stop offset="100%" stop-color="#020a07"/>
+    </radialGradient>
+    <linearGradient id="pelajePantera" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="40%" stop-color="#1e293b"/>
+      <stop offset="75%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <radialGradient id="ojoEsmeralda" cx="45%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#e8f8f5"/>
+      <stop offset="35%" stop-color="#2ecc71"/>
+      <stop offset="75%" stop-color="#117a65"/>
+      <stop offset="100%" stop-color="#0e6251"/>
+    </radialGradient>
+    <linearGradient id="oroCollar" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffeaa7"/>
+      <stop offset="45%" stop-color="#f1c40f"/>
+      <stop offset="85%" stop-color="#b7950b"/>
+      <stop offset="100%" stop-color="#7d6608"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fondo de cámara real nocturna -->
+  <circle cx="32" cy="32" r="32" fill="url(#bgGatoReal)"/>
+
+  <!-- Halo de mirada hipnótica -->
+  <circle cx="32" cy="28" r="22" fill="#2ecc71" opacity="0.12">
+    <animate attributeName="opacity" values="0.08;0.2;0.08" dur="2.4s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Destellos y polvo de terciopelo real -->
+  <circle cx="12" cy="20" r="0.8" fill="#a3e4d7" opacity="0.75"/>
+  <circle cx="52" cy="18" r="0.9" fill="#f9e79f" opacity="0.8"/>
+  <circle cx="48" cy="48" r="0.7" fill="#2ecc71" opacity="0.6"/>
+
+  <!-- Pecho y lomo de pelaje aterciopelado negro azabache -->
+  <path d="M14 64 C14 50, 20 44, 26 42 L32 46 L38 42 C44 44, 50 50, 50 64 Z" fill="url(#pelajePantera)"/>
+
+  <!-- Collar Real de Oro puro trenzado -->
+  <path d="M20 44 Q32 49 44 44 L45 47 Q32 52 19 47 Z" fill="url(#oroCollar)" stroke="#7d6608" stroke-width="0.5"/>
+  <!-- Dije / Medallón de la Corona con rubí ceremonial -->
+  <circle cx="32" cy="52" r="3.2" fill="url(#oroCollar)" stroke="#7d6608" stroke-width="0.4"/>
+  <circle cx="32" cy="52" r="1.8" fill="#c0392b" stroke="#e74c3c" stroke-width="0.3"/>
+  <!-- Mini corona sobre el medallón -->
+  <polygon points="30,48 31,46 32,47.5 33,46 34,48" fill="url(#oroCollar)"/>
+
+  <!-- Orejas felinas puntiagudas y alertas -->
+  <!-- Oreja izquierda -->
+  <polygon points="19,25 13,8 27,18" fill="#1e293b" stroke="#020617" stroke-width="0.7"/>
+  <polygon points="18,22 15,11 25,18" fill="#475569"/>
+  <polygon points="18,21 16,14 23,18" fill="#94a3b8" opacity="0.6"/>
+
+  <!-- Oreja derecha -->
+  <polygon points="45,25 51,8 37,18" fill="#1e293b" stroke="#020617" stroke-width="0.7"/>
+  <polygon points="46,22 49,11 39,18" fill="#475569"/>
+  <polygon points="46,21 48,14 41,18" fill="#94a3b8" opacity="0.6"/>
+
+  <!-- Cabeza aristocrática del Gato Real (Perfil frontal noble) -->
+  <path d="M22 19 C26 17, 38 17, 42 19 C47 23, 50 28, 51 34 L45 36 L48 42 L42 43 L38 46 L32 47 L26 46 L22 43 L16 42 L19 36 L13 34 C14 28, 17 23, 22 19 Z" fill="url(#pelajePantera)" stroke="#020617" stroke-width="0.8"/>
+
+  <!-- Frente y puente de la nariz estilizada -->
+  <path d="M27 21 C29 25, 30 28, 29 33 L32 36 L35 33 C34 28, 35 25, 37 21 Z" fill="#334155" opacity="0.5"/>
+
+  <!-- Ojos felinos de Esmeralda mística (con pupila vertical de depredador) -->
+  <!-- Ojo izquierdo -->
+  <path d="M20 27 Q25 24 29 28 Q25 31 20 27 Z" fill="#020617"/>
+  <ellipse cx="24.5" cy="27.5" rx="3.2" ry="2.2" fill="url(#ojoEsmeralda)" transform="rotate(-6 24.5 27.5)"/>
+  <!-- Pupila vertical felina afilada -->
+  <ellipse cx="24.5" cy="27.5" rx="0.8" ry="2" fill="#020617"/>
+  <circle cx="25.2" cy="26.6" r="0.5" fill="#ffffff"/>
+
+  <!-- Ojo derecho -->
+  <path d="M44 27 Q39 24 35 28 Q39 31 44 27 Z" fill="#020617"/>
+  <ellipse cx="39.5" cy="27.5" rx="3.2" ry="2.2" fill="url(#ojoEsmeralda)" transform="rotate(6 39.5 27.5)"/>
+  <!-- Pupila vertical felina afilada -->
+  <ellipse cx="39.5" cy="27.5" rx="0.8" ry="2" fill="#020617"/>
+  <circle cx="38.8" cy="26.6" r="0.5" fill="#ffffff"/>
+
+  <!-- Trufa / Nariz felina pequeña y noble -->
+  <polygon points="30,36 34,36 32,38.5" fill="#020617"/>
+  <path d="M32 38.5 L32 40.5" stroke="#020617" stroke-width="0.8"/>
+
+  <!-- Almohadillas de los bigotes y hocico -->
+  <path d="M32 40.5 Q29 42 27 41" stroke="#334155" stroke-width="0.8" fill="none"/>
+  <path d="M32 40.5 Q35 42 37 41" stroke="#334155" stroke-width="0.8" fill="none"/>
+
+  <!-- Bigotes finos aristocráticos plateados -->
+  <path d="M26 39 L12 37 M26 40.5 L10 41 M26 42 L13 45" stroke="#cbd5e1" stroke-width="0.6" stroke-linecap="round" opacity="0.85"/>
+  <path d="M38 39 L52 37 M38 40.5 L54 41 M38 42 L51 45" stroke="#cbd5e1" stroke-width="0.6" stroke-linecap="round" opacity="0.85"/>
+</svg>

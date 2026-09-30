@@ -1,12 +1,87 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><radialGradient id="f" cx="50%" cy="40%"><stop offset="0" stop-color="#fdebd0"/><stop offset=".45" stop-color="#f39c12"/><stop offset="1" stop-color="#78281f"/></radialGradient>
-<linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4d03f"/><stop offset="1" stop-color="#e74c3c"/></linearGradient></defs>
-<circle cx="32" cy="32" r="32" fill="url(#f)"><animate attributeName="r" values="32;30.5;32" dur="2s" repeatCount="indefinite"/></circle>
-<g><animateTransform attributeName="transform" type="scale" values="1 1;1.04 .97;1 1" dur="1.2s" repeatCount="indefinite" additive="sum"/>
-<path d="M32 44C22 40 10 30 8 16c6 6 12 8 16 8-4-4-5-10-4-16 4 8 8 12 12 14 4-2 8-6 12-14 1 6 0 12-4 16 4 0 10-2 16-8-2 14-14 24-24 28z" fill="url(#a)"/></g>
-<path d="M32 22c4 0 6 3 6 7 0 5-3 9-6 11-3-2-6-6-6-11 0-4 2-7 6-7z" fill="#e67e22"/>
-<circle cx="29.5" cy="28" r="1.4" fill="#17202a"/><circle cx="34.5" cy="28" r="1.4" fill="#17202a"/>
-<path d="M30 31l2 3 2-3z" fill="#f4d03f"/>
-<path d="M32 40l-6 18 6-6 6 6z" fill="#c0392b"><animate attributeName="opacity" values="1;.6;1" dur=".8s" repeatCount="indefinite"/></path>
-<path d="M32 44l-3 12 3-3 3 3z" fill="#f4d03f"/>
-<g fill="#fff3b0"><circle cx="14" cy="44" r="1"><animate attributeName="cy" values="50;20" dur="2.4s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0" dur="2.4s" repeatCount="indefinite"/></circle>
-<circle cx="50" cy="46" r="1.2"><animate attributeName="cy" values="52;22" dur="3s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0" dur="3s" repeatCount="indefinite"/></circle></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="bgFenix" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#4a0f05"/>
+      <stop offset="55%" stop-color="#240502"/>
+      <stop offset="100%" stop-color="#080101"/>
+    </radialGradient>
+    <linearGradient id="plumaFuego" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#78281f"/>
+      <stop offset="35%" stop-color="#c0392b"/>
+      <stop offset="70%" stop-color="#f39c12"/>
+      <stop offset="100%" stop-color="#fff176"/>
+    </linearGradient>
+    <linearGradient id="picoOro" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffeaa7"/>
+      <stop offset="50%" stop-color="#f39c12"/>
+      <stop offset="100%" stop-color="#d35400"/>
+    </linearGradient>
+    <radialGradient id="ojoSolar" cx="45%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#ffeb3b"/>
+      <stop offset="80%" stop-color="#ff5722"/>
+      <stop offset="100%" stop-color="#b71c1c"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Fondo de ceniza y ascensión solar -->
+  <circle cx="32" cy="32" r="32" fill="url(#bgFenix)"/>
+
+  <!-- Halo de resurrección / fuego solar -->
+  <circle cx="32" cy="30" r="24" fill="#e74c3c" opacity="0.2">
+    <animate attributeName="opacity" values="0.15;0.35;0.15" dur="1.8s" repeatCount="indefinite"/>
+    <animate attributeName="r" values="22;25;22" dur="1.8s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Chispas doradas y cenizas sagradas que ascienden -->
+  <circle cx="12" cy="40" r="0.9" fill="#f39c12" opacity="0.85">
+    <animate attributeName="cy" values="40;18;40" dur="2.3s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="52" cy="36" r="0.8" fill="#ffeaa7" opacity="0.9">
+    <animate attributeName="cy" values="36;14;36" dur="1.9s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="20" cy="16" r="0.7" fill="#ff7675" opacity="0.75"/>
+  <circle cx="48" cy="18" r="1.1" fill="#f1c40f" opacity="0.7"/>
+
+  <!-- Plumaje del cuello y pecho en llamas vivas -->
+  <path d="M18 64 C20 50, 24 44, 30 42 L34 46 L38 42 C44 44, 48 50, 50 64 Z" fill="#78281f"/>
+  <path d="M22 64 C24 53, 27 46, 32 44 L30 64 Z" fill="url(#plumaFuego)"/>
+  <path d="M46 64 C44 53, 41 46, 36 44 L38 64 Z" fill="url(#plumaFuego)"/>
+
+  <!-- Cresta de plumas solares llameantes traseras -->
+  <path d="M30 18 C26 10, 18 4, 10 3 C17 9, 23 16, 27 23 Z" fill="url(#plumaFuego)"/>
+  <path d="M33 16 C33 7, 28 2, 21 0 C26 6, 30 12, 32 20 Z" fill="url(#plumaFuego)"/>
+  <path d="M36 17 C40 9, 46 4, 54 3 C47 9, 42 16, 38 23 Z" fill="url(#plumaFuego)"/>
+  <path d="M38 22 C45 16, 52 12, 59 13 C52 18, 47 23, 41 27 Z" fill="url(#plumaFuego)"/>
+
+  <!-- Cabeza noble de ave rapaz divina / Fénix ancestral (Perfil 3/4) -->
+  <path d="M22 30 C20 22, 25 18, 33 18 C40 18, 44 22, 44 30 C44 38, 40 43, 34 45 C28 43, 23 38, 22 30 Z" fill="url(#plumaFuego)" stroke="#78281f" stroke-width="0.7"/>
+
+  <!-- Corona de plumas sobre la frente -->
+  <polygon points="26,18 29,12 32,18" fill="#ffeaa7"/>
+  <polygon points="32,18 35,11 38,18" fill="#ffeaa7"/>
+
+  <!-- Pico formidable de rapaz rapaz curvado en oro ardiente -->
+  <path d="M34 29 L46 32 C49 33, 51 35, 48 37 C44 39, 39 37, 34 37 Z" fill="url(#picoOro)" stroke="#935116" stroke-width="0.6"/>
+  <!-- Punta curvada hacia abajo del pico -->
+  <path d="M46 32 C50 33, 51 37, 47 38 C45 37, 43 35, 39 35" fill="url(#picoOro)"/>
+  <!-- Mandíbula inferior del pico -->
+  <path d="M34 36 L43 37 C41 39, 37 40, 34 40 Z" fill="#d35400"/>
+
+  <!-- Fosa nasal del ave rapaz -->
+  <ellipse cx="37" cy="33" rx="1.2" ry="0.6" fill="#78281f" transform="rotate(-10 37 33)"/>
+
+  <!-- Ojo solar abrasador con llamarada interna -->
+  <!-- Cuenca del ojo -->
+  <path d="M26 27 Q30 25 33 27 Q30 30 26 27 Z" fill="#240502"/>
+  <circle cx="29.5" cy="27.5" r="2.3" fill="url(#ojoSolar)"/>
+  <circle cx="29.5" cy="27.5" r="0.9" fill="#0d0201"/>
+  <circle cx="30.2" cy="26.8" r="0.4" fill="#ffffff"/>
+
+  <!-- Ceja de plumas llameantes afiladas -->
+  <path d="M24 25 Q29 23 35 25" stroke="#ffeaa7" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+
+  <!-- Llamas vivas que brotan de la base de la cabeza -->
+  <path d="M20 34 Q15 36 12 32 Q16 38 21 38" fill="url(#plumaFuego)"/>
+  <path d="M42 34 Q47 36 51 32 Q47 38 41 38" fill="url(#plumaFuego)"/>
+</svg>

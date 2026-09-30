@@ -5201,3 +5201,61 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
 /* Desbloqueos por nivel: lo bloqueado no se muestra en el lobby */
 .tarjeta-aprender.bloqueado-nivel, .banner-torneo.bloqueado-nivel { display: none !important; }
 .aprender-fila:has(.bloqueado-nivel) { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important; }
+
+/* =========================================
+   ESCRITORIO (30/09/2026): computadora y pantallas grandes
+   Aprovecha el ancho: lobby en 3 columnas sin pestañas (Crear + Unirse a la
+   vez, Más opciones abierto), sala de espera en columnas y mesa horizontal
+   ancha con la bitácora a un lado. main.js: ajustarEscritorio().
+   ========================================= */
+@media (min-width: 1100px) and (min-height: 620px) {
+    /* --- Lobby --- */
+    #seccion-lobby.main-seccion-centro { max-width: 1320px !important; width: calc(100% - 48px) !important; padding: 18px 24px 0 !important; }
+    #seccion-lobby:has(#lobbyTabs:not(.hidden)) { display: grid !important; grid-template-columns: minmax(0, 2.1fr) minmax(300px, 1fr); column-gap: 24px; align-content: start; }
+    #seccion-lobby:has(#lobbyTabs:not(.hidden)) > #lobbyTabs { display: none !important; }
+    #seccion-lobby:has(#lobbyTabs:not(.hidden)) > #panelConfiguracion { display: grid !important; }
+    #seccion-lobby:has(#lobbyTabs:not(.hidden)) > #panelUnirse { display: flex !important; }
+    #seccion-lobby:has(#lobbyTabs:not(.hidden)) > #panelConfiguracion { grid-column: 1; }
+    #seccion-lobby:has(#lobbyTabs:not(.hidden)) > #panelUnirse { grid-column: 2; flex-direction: column; padding: 16px; border-radius: 16px;
+        background: rgba(0,0,0,.22); border: 1px solid rgba(241,196,15,.25); align-self: start; }
+    #seccion-lobby:has(#lobbyTabs:not(.hidden)) > #panelUnirse::before { content: 'Unirse a una mesa'; font-family: var(--fuente-medieval); font-size: 18px; color: #ffe27a; margin-bottom: 8px; }
+    /* Crear: rápida y aprender | crear mesa (dos columnas dentro de su columna) */
+    #panelConfiguracion { grid-template-columns: 1fr 1fr; column-gap: 20px; align-items: start; }
+    #panelConfiguracion > :nth-child(1) { grid-column: 1; grid-row: 1; }
+    #panelConfiguracion > :nth-child(2) { grid-column: 1; grid-row: 2; }
+    #panelConfiguracion > :nth-child(3) { grid-column: 2; grid-row: 1 / span 2; }
+    #panelConfiguracion > .lobby-acciones-fijas { grid-column: 2; grid-row: 3; position: static; margin: 0; padding: 8px 0 16px; background: none; }
+    .aprender-fila { grid-template-columns: 1fr 1fr !important; }
+    .aprender-fila .tarjeta-aprender { padding: 12px !important; }
+    /* Más opciones siempre abierto (el JS lo abre); sin el renglón para desplegar */
+    #masOpciones > summary { display: none; }
+    #masOpciones { border: 0 !important; background: none !important; padding: 0 !important; }
+    #masOpciones .config-grid-nuevo { padding: 0 !important; }
+    #listaSalasAbiertas { max-height: calc(100dvh - 330px); overflow-y: auto; }
+    /* --- Sala de espera: invitar y jugadores | cómo será y botones --- */
+    #panelJugadores:not(.hidden) { display: grid !important; grid-template-columns: 1fr 1fr; column-gap: 28px; align-items: start; max-width: 1100px; margin: 0 auto; width: 100%; }
+    #panelJugadores > * { grid-column: 1; }
+    #panelJugadores > #comoSeraPartida { grid-column: 2; grid-row: 1 / span 3; margin-top: 0; }
+    #panelJugadores > .lobby-acciones-fijas { grid-column: 2; grid-row: 4 / span 2; position: static; margin: 12px 0 0; padding: 0; background: none; }
+    #panelJugadores .contenedor-jugadores { max-height: calc(100dvh - 330px) !important; }
+    #panelJugadores:has(#mostrarCodigo:not(.hidden)) #seccion-lobby .lobby-blason { display: none; }
+
+    /* --- Mesa: horizontal y ancha --- */
+    body.en-mesa .tapete-virtual {
+        width: min(1150px, calc(100vw - 340px)) !important; max-width: none !important;
+        height: calc(100dvh - var(--alto-pie, 90px) - 40px) !important; max-height: 760px;
+        margin: 16px auto 0 !important; border-radius: 160px / 120px !important; }
+    body.en-mesa .centro-mesa-wrapper { top: 46% !important; }
+    /* Bitácora de la ronda a la derecha, siempre visible */
+    body.en-mesa #miniFeedJugadas:not(:empty) { display: flex !important; position: fixed !important; right: 18px; top: 80px; width: 250px;
+        max-height: calc(100dvh - 200px); overflow-y: auto; margin: 0; z-index: 30; }
+    body.en-mesa #btnBitacoraMesa { display: none !important; }
+    body.en-mesa .panel-acciones-fijo { width: min(620px, 100%) !important; }
+}
+@media (min-width: 1100px) and (min-height: 620px) {
+    /* Sala de espera: filas pegadas arriba (el grid estiraba las filas y dejaba huecos) */
+    #panelJugadores:not(.hidden) { align-content: start !important; grid-auto-rows: min-content; }
+    /* Mesa: se recorre a la izquierda para dejarle su columna a la bitácora */
+    body.en-mesa .tapete-virtual { margin-left: max(20px, calc((100vw - 290px - min(1150px, 100vw - 340px)) / 2)) !important; margin-right: auto !important; }
+    body.en-mesa .panel-acciones-fijo { left: calc((100vw - 290px) / 2) !important; }
+}

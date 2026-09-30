@@ -1490,7 +1490,8 @@ let _sondeoSalas = null;
 
 function unirseVisible() {
     const panel = document.getElementById('panelUnirse');
-    return panel && !panel.classList.contains('hidden')
+    // En computadora se ve aunque tenga .hidden (CSS de ESCRITORIO): se mide si se ve de verdad.
+    return panel && panel.getClientRects().length > 0
         && !document.getElementById('seccion-lobby')?.classList.contains('hidden')
         && document.getElementById('pantallaJuego') && !document.getElementById('pantallaJuego').classList.contains('hidden')
         && document.visibilityState === 'visible';
@@ -3021,6 +3022,21 @@ function animarProgreso(caja, p) {
 }
 
 // ==========================================
+// ESCRITORIO (bloque ESCRITORIO de style.css)
+// ==========================================
+// En pantallas grandes el lobby muestra Crear y Unirse a la vez y "Más
+// opciones" abierto: aquí se abre el desplegable y arranca la lista de mesas.
+const esEscritorio = () => matchMedia('(min-width: 1100px) and (min-height: 620px)').matches;
+function ajustarEscritorio() {
+    document.body.classList.toggle('escritorio', esEscritorio());
+    const mas = document.getElementById('masOpciones');
+    if (mas && esEscritorio()) mas.open = true;
+    if (esEscritorio() && typeof unirseVisible === 'function' && unirseVisible() && socket?.connected) window.alAbrirUnirse?.();
+}
+matchMedia('(min-width: 1100px) and (min-height: 620px)').addEventListener?.('change', ajustarEscritorio);
+setInterval(() => { if (esEscritorio() && !_sondeoSalas) ajustarEscritorio(); }, 5000); // al volver al lobby
+
+// ==========================================
 // DESBLOQUEOS POR NIVEL (progreso.DESBLOQUEOS en el servidor)
 // ==========================================
 // Quien empieza ve solo el Clásico: Fiesta y el torneo (nivel 2), poderes (3),
@@ -3314,6 +3330,7 @@ async function revisarPremioDiario() {
 // Barra de arriba: inicial en el avatar (con el punto de "en línea"), nombre
 // y victorias. Las victorias se piden al entrar y al terminar cada partida.
 function pintarUsuarioBarra() {
+    setTimeout(ajustarEscritorio, 800);
     setTimeout(revisarPremioDiario, 1200); // el cofre de hoy, ya con el lobby a la vista
     document.getElementById('displayUsername').innerText = miNombreUsuario;
     document.getElementById('inicialUsuario').innerText = (miNombreUsuario || '?').charAt(0).toUpperCase();
