@@ -3910,14 +3910,13 @@ body.venganza-activa .silla:not(.hidden) .perfil-oponente {
 .btn-perfil-top {
     gap: 6px; margin-left: 4px; padding: 3px 10px 3px 3px; border-radius: 999px;
     border: 1px solid rgba(241,196,15,0.35); background: rgba(241,196,15,0.08);
-    font-size: 12px; letter-spacing: 0; text-transform: none; max-width: 190px;
+    font-size: 12px; letter-spacing: 0; text-transform: none; max-width: 220px;
 }
 .avatar-top {
     position: relative; flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%;
     display: grid; place-items: center; background: #c0392b; color: #fff; font-size: 13px;
 }
-.avatar-top .punto-en-linea { position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border: 2px solid #140a05; box-sizing: content-box; }
-#displayUsername { max-width: 78px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#displayUsername { max-width: 82px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .victorias-top { display: flex; align-items: center; gap: 2px; color: #ffe27a; font-variant-numeric: tabular-nums; }
 .victorias-top .icono { width: 14px; height: 14px; }
 
@@ -4420,9 +4419,27 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
 /* =========================================
    NIVELES Y RECOMPENSA DIARIA (25/09/2026)
    ========================================= */
-.nivel-top { position: absolute; left: -5px; bottom: -4px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px;
-    display: grid; place-items: center; font: bold 9.5px/1 Georgia, serif; color: #2b1d1a; background: #ffe27a; border: 1.5px solid #140a05; }
-.nivel-top.hidden { display: none; }
+.nivel-top {
+    position: static;
+    display: inline-flex;
+    align-items: center;
+    font: bold 10px/1.2 Georgia, serif;
+    color: #ffe27a;
+    background: rgba(241, 196, 15, 0.16);
+    border: 1px solid rgba(241, 196, 15, 0.45);
+    border-radius: 999px;
+    padding: 1px 6px;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+}
+.nivel-top::before {
+    content: 'Niv. ';
+    font-size: 9px;
+    color: rgba(255, 226, 122, 0.85);
+    font-weight: normal;
+    margin-right: 1px;
+}
+.nivel-top.hidden { display: none !important; }
 .perfil-nivel { margin: -6px 0 12px; }
 .xp-fila { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; color: var(--texto-suave); margin-bottom: 4px; }
 .xp-nivel { font-family: var(--fuente-medieval); font-size: 15px; color: #ffe27a; }
