@@ -1,3 +1,5 @@
+> **Actualización 30/09/2026 (limpieza):** los **Gaudios se retiraron** (el Arcón se abre solo con 100 Blis y la racha de 7 días ya no da Gaudios). Regla de monedas: **Blis = gratis** (se ganan jugando, nunca se venden; son las únicas que se apuestan en el Pozo y las apuestas). **Letios = moneda de pago** (se comprarán con dinero real; solo cosméticos legendarios y colecciones, nunca se cambian por Blis ni se apuestan; también se ganan en el torneo, la racha de 7 días y el Arcón). Los precios legendarios y de colecciones ahora son en Letios (≈ 25 Blis por Letio). Las secciones sobre Gaudios de abajo quedan como historia.
+
 # Economía de Rey Contento: Blis, Letios y Gaudios
 
 Documento oficial de especificación, arquitectura y reglas de juego del sistema económico de tres divisas, apuestas y arcones de recompensas introducido el **30 de septiembre de 2026**.

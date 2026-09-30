@@ -66,4 +66,16 @@ function estadoPremio(ultimoDia, racha, hoy = hoyCDMX()) {
     return { disponible: true, racha: nueva, premio: PREMIOS_DIARIOS[nueva - 1] };
 }
 
-module.exports = { PREMIOS_DIARIOS, BLIS, LETIOS, GAUDIOS, blisDePartida, DOBLONES, doblonesDePartida, xpDePartida, xpParaNivel, nivelDe, hoyCDMX, diaAnterior, estadoPremio };
+// Lo que se abre al subir de nivel (30/09/2026): quien empieza ve solo el
+// Clásico; los modos extra llegan como premio. El cliente lo aplica en el lobby
+// (aplicarDesbloqueos) y el servidor lo anuncia al subir (sumarXp).
+const DESBLOQUEOS = [
+    { nivel: 2, id: 'fiesta',  titulo: 'Modo Fiesta' },
+    { nivel: 2, id: 'torneo',  titulo: 'Torneo de la noche' },
+    { nivel: 3, id: 'poderes', titulo: 'Poderes' },
+    { nivel: 4, id: 'parejas', titulo: 'Parejas (Diez)' },
+    { nivel: 5, id: 'corte',   titulo: 'La Corte' },
+];
+function desbloqueosEntre(antes, ahora) { return DESBLOQUEOS.filter(d => d.nivel > antes && d.nivel <= ahora); }
+
+module.exports = { DESBLOQUEOS, desbloqueosEntre, PREMIOS_DIARIOS, BLIS, LETIOS, GAUDIOS, blisDePartida, DOBLONES, doblonesDePartida, xpDePartida, xpParaNivel, nivelDe, hoyCDMX, diaAnterior, estadoPremio };

@@ -62,29 +62,33 @@ const CATALOGO = [
     { id: 'morado',    tipo: 'tapete', titulo: 'Real',       rareza: 'epico', logro: 'racha_real' },
     { id: 'madera',    tipo: 'tapete', titulo: 'Taberna',    rareza: 'epico', logro: 'veterano' },
     { id: 'oro',       tipo: 'tapete', titulo: 'Tesoro',     rareza: 'legendario', nivel: 7 },
-    // Tienda (30/09/2026): solo se consiguen con la moneda (`precio`). `coleccion`
+    // Tienda (30/09/2026): solo se consiguen con moneda (`precio`): número = Blis
+    // (gratis); { letios } = Letios (se comprarán con dinero real; solo legendarios
+    // y colecciones). Blis y Letios no se cambian entre sí. `coleccion`
     // agrupa artículos que se venden juntos con descuento (COLECCIONES).
     { id: 'sombra',       tipo: 'avatar', titulo: 'Caballero negro',   rareza: 'epico',      img: 'sombra',       precio: 350, coleccion: 'sombra', animado: true },
     { id: 'calavera',     tipo: 'avatar', titulo: 'Rey esqueleto',     rareza: 'epico',      img: 'calavera',     precio: 400, animado: true },
     { id: 'senor_hierro', tipo: 'avatar', titulo: 'Guardián de Hierro', rareza: 'epico',      img: 'senor_hierro', precio: 320, animado: false },
     { id: 'archimago',    tipo: 'avatar', titulo: 'Archimago Antiguo', rareza: 'epico',      img: 'archimago',    precio: 380, animado: true },
     { id: 'sacerdotisa',  tipo: 'avatar', titulo: 'Sacerdotisa Roja',  rareza: 'epico',      img: 'sacerdotisa',  precio: 360, animado: true },
-    { id: 'caminante',    tipo: 'avatar', titulo: 'Rey del Invierno',  rareza: 'legendario', img: 'caminante',    precio: 650, coleccion: 'invernal', animado: true },
-    { id: 'nigromante',   tipo: 'avatar', titulo: 'Soberano de Huesos', rareza: 'legendario', img: 'nigromante',   precio: 750, coleccion: 'ultratumba', animado: true },
-    { id: 'hechicera',    tipo: 'avatar', titulo: 'Hechicera',         rareza: 'legendario', img: 'hechicera',    precio: 700, coleccion: 'hechicera', animado: true },
-    { id: 'fenix',        tipo: 'avatar', titulo: 'Fénix',             rareza: 'legendario', img: 'fenix',        precio: 800, coleccion: 'fenix', animado: true },
+    { id: 'caminante',    tipo: 'avatar', titulo: 'Rey del Invierno',  rareza: 'legendario', img: 'caminante',    precio: { letios: 26 }, coleccion: 'invernal', animado: true },
+    { id: 'nigromante',   tipo: 'avatar', titulo: 'Soberano de Huesos', rareza: 'legendario', img: 'nigromante',   precio: { letios: 30 }, coleccion: 'ultratumba', animado: true },
+    { id: 'hechicera',    tipo: 'avatar', titulo: 'Hechicera',         rareza: 'legendario', img: 'hechicera',    precio: { letios: 28 }, coleccion: 'hechicera', animado: true },
+    { id: 'fenix',        tipo: 'avatar', titulo: 'Fénix',             rareza: 'legendario', img: 'fenix',        precio: { letios: 32 }, coleccion: 'fenix', animado: true },
     { id: 'obsidiana',     tipo: 'marco',  titulo: 'Obsidiana',         rareza: 'epico',      precio: 250, coleccion: 'sombra', animado: true },
     { id: 'trono_hierro',  tipo: 'marco',  titulo: 'Trono de Hierro',   rareza: 'epico',      precio: 300, animado: true },
     { id: 'huesos',        tipo: 'marco',  titulo: 'Corona de Huesos',  rareza: 'epico',      precio: 280, coleccion: 'ultratumba', animado: true },
-    { id: 'llamas',        tipo: 'marco',  titulo: 'Anillo de llamas',  rareza: 'legendario', precio: 550, coleccion: 'fenix', animado: true },
-    { id: 'fuego_valyrio', tipo: 'marco',  titulo: 'Fuego Valyrio',     rareza: 'legendario', precio: 550, animado: true },
-    { id: 'celestial',     tipo: 'marco',  titulo: 'Celestial',         rareza: 'legendario', precio: 600, coleccion: 'hechicera', animado: true },
-    { id: 'hielo_eterno',  tipo: 'marco',  titulo: 'Invierno Eterno',   rareza: 'legendario', precio: 500, coleccion: 'invernal', animado: true },
-    { id: 'nigromancia',   tipo: 'marco',  titulo: 'Aura de Nazarick',  rareza: 'legendario', precio: 600, coleccion: 'ultratumba', animado: true },
+    { id: 'llamas',        tipo: 'marco',  titulo: 'Anillo de llamas',  rareza: 'legendario', precio: { letios: 22 }, coleccion: 'fenix', animado: true },
+    { id: 'fuego_valyrio', tipo: 'marco',  titulo: 'Fuego Valyrio',     rareza: 'legendario', precio: { letios: 22 }, animado: true },
+    { id: 'celestial',     tipo: 'marco',  titulo: 'Celestial',         rareza: 'legendario', precio: { letios: 24 }, coleccion: 'hechicera', animado: true },
+    { id: 'hielo_eterno',  tipo: 'marco',  titulo: 'Invierno Eterno',   rareza: 'legendario', precio: { letios: 20 }, coleccion: 'invernal', animado: true },
+    { id: 'nigromancia',   tipo: 'marco',  titulo: 'Aura de Nazarick',  rareza: 'legendario', precio: { letios: 24 }, coleccion: 'ultratumba', animado: true },
     { id: 'tablero',   tipo: 'dorso',  titulo: 'Tablero',         rareza: 'raro',       precio: 120 },
     { id: 'runas',     tipo: 'dorso',  titulo: 'Runas',           rareza: 'epico',      precio: 300, coleccion: 'sombra', img: 'runas' },
     { id: 'realeza',   tipo: 'dorso',  titulo: 'Realeza',         rareza: 'epico',      precio: 350, coleccion: 'hechicera', img: 'realeza' },
-    { id: 'fenix',     tipo: 'dorso',  titulo: 'Fénix',           rareza: 'legendario', precio: 500, coleccion: 'fenix', img: 'fenix' },
+    { id: 'lobo',      tipo: 'dorso',  titulo: 'Lobo Huargo',     rareza: 'epico',      precio: 350, coleccion: 'invernal', img: 'lobo' },
+    { id: 'dragon',    tipo: 'dorso',  titulo: 'Fuego de Dragón', rareza: 'legendario', precio: { letios: 20 }, img: 'dragon' },
+    { id: 'fenix',     tipo: 'dorso',  titulo: 'Fénix',           rareza: 'legendario', precio: { letios: 20 }, coleccion: 'fenix', img: 'fenix' },
     { id: 'marmol',    tipo: 'tapete', titulo: 'Mármol',          rareza: 'raro',       precio: 150 },
     { id: 'aurora',    tipo: 'tapete', titulo: 'Aurora',          rareza: 'epico',      precio: 450, coleccion: 'hechicera', animado: true },
     { id: 'lava',      tipo: 'tapete', titulo: 'Volcán',          rareza: 'epico',      precio: 400, coleccion: 'fenix', animado: true },
@@ -104,8 +108,12 @@ function coleccion(id) {
     const c = COLECCIONES.find(x => x.id === id);
     if (!c) return null;
     const articulos = CATALOGO.filter(x => x.coleccion === id);
-    const suma = articulos.reduce((t, x) => t + x.precio, 0);
-    return { ...c, articulos: articulos.map(x => `${x.tipo}:${x.id}`), suma, precio: Math.round(suma * (1 - c.descuento) / 10) * 10 };
+    // Colecciones se venden en Letios (moneda de pago). Lo que cuesta Blis se
+    // cuenta a 25 Blis por Letio.
+    const enLetios = (x) => typeof x.precio === 'object' ? (x.precio.letios ?? (x.precio.blis || 0) / 25) : x.precio / 25;
+    const suma = Math.round(articulos.reduce((t, x) => t + enLetios(x), 0));
+    return { ...c, articulos: articulos.map(x => `${x.tipo}:${x.id}`), suma: { letios: suma },
+             precio: { letios: Math.max(1, Math.round(suma * (1 - c.descuento))) } };
 }
 const POR_ID = Object.fromEntries(CATALOGO.map(c => [`${c.tipo}:${c.id}`, c]));
 const PREDETERMINADOS = { avatar: 'inicial', marco: 'ninguno', dorso: 'clasico', tapete: 'verde' };

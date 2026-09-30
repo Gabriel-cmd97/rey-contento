@@ -1,7 +1,81 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><radialGradient id="f" cx="50%" cy="35%"><stop offset="0" stop-color="#1f618d"/><stop offset="1" stop-color="#0b2b40"/></radialGradient></defs>
-<circle cx="32" cy="32" r="32" fill="url(#f)"/><circle cx="48" cy="15" r="5" fill="#fdfefe" opacity=".9"/>
-<path d="M14 14l10 14h16l10-14-4 22-14 22-14-22z" fill="#839192"/>
-<path d="M18 18l6 10h-3zM46 18l-6 10h3z" fill="#f5b7b1"/>
-<path d="M24 36l8 22 8-22-8 6z" fill="#d5dbdb"/>
-<path d="M22 32l6 2-6 2zM42 32l-6 2 6 2z" fill="#f4d03f"/>
-<ellipse cx="32" cy="50" rx="3" ry="2.5" fill="#1b2631"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="bgLobo" cx="50%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#1b3a57"/>
+      <stop offset="60%" stop-color="#0b1d30"/>
+      <stop offset="100%" stop-color="#030a12"/>
+    </radialGradient>
+    <linearGradient id="pelajeLobo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="40%" stop-color="#cbd5e1"/>
+      <stop offset="75%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+    <radialGradient id="ojoLobo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff59d"/>
+      <stop offset="50%" stop-color="#fbc02d"/>
+      <stop offset="100%" stop-color="#f57f17"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Fondo nocturno nevado -->
+  <circle cx="32" cy="32" r="32" fill="url(#bgLobo)"/>
+
+  <!-- Luna llena ártica detrás de la cabeza -->
+  <circle cx="32" cy="24" r="16" fill="#e2e8f0" opacity="0.18"/>
+
+  <!-- Partículas de nieve en la ventisca -->
+  <circle cx="14" cy="18" r="0.8" fill="#ffffff" opacity="0.8"/>
+  <circle cx="48" cy="14" r="1" fill="#e2e8f0" opacity="0.7"/>
+  <circle cx="50" cy="42" r="0.7" fill="#ffffff" opacity="0.7"/>
+  <circle cx="16" cy="46" r="0.9" fill="#e2e8f0" opacity="0.6"/>
+
+  <!-- Melena y pelaje del cuello -->
+  <path d="M12 64 C12 48, 18 40, 24 38 L32 44 L40 38 C46 40, 52 48, 52 64 Z" fill="#1e293b"/>
+  <path d="M16 64 C18 52, 22 44, 28 42 L26 64 Z" fill="#334155"/>
+  <path d="M48 64 C46 52, 42 44, 36 42 L38 64 Z" fill="#334155"/>
+
+  <!-- Orejas erguidas y puntiagudas -->
+  <polygon points="21,26 15,10 27,20" fill="#475569" stroke="#1e293b" stroke-width="0.8"/>
+  <polygon points="19,23 16,13 24,19" fill="#f1f5f9"/>
+  <polygon points="43,26 49,10 37,20" fill="#475569" stroke="#1e293b" stroke-width="0.8"/>
+  <polygon points="45,23 48,13 40,19" fill="#f1f5f9"/>
+
+  <!-- Cabeza formidable del Lobo Huargo -->
+  <path d="M21 27 C21 18, 25 15, 32 15 C39 15, 43 18, 43 27 C43 36, 38 43, 32 45 C26 43, 21 36, 21 27 Z" fill="url(#pelajeLobo)"/>
+
+  <!-- Pómulos y mechones de pelaje en las mejillas -->
+  <polygon points="21,28 14,34 23,35" fill="#94a3b8"/>
+  <polygon points="22,34 16,39 25,39" fill="#64748b"/>
+  <polygon points="43,28 50,34 41,35" fill="#94a3b8"/>
+  <polygon points="42,34 48,39 39,39" fill="#64748b"/>
+
+  <!-- Hocico potente y mandíbula -->
+  <path d="M27 28 C28 24, 36 24, 37 28 L36 39 C34 42, 30 42, 28 39 Z" fill="#f8fafc"/>
+  <polygon points="32,27 29,32 35,32" fill="#475569"/>
+  <!-- Nariz oscura con fosas nasales -->
+  <path d="M29 37 C29 35, 35 35, 35 37 C35 39, 33 40, 32 40 C31 40, 29 39, 29 37 Z" fill="#0f172a"/>
+
+  <!-- Colmillos asomando sutilmente -->
+  <polygon points="29,41 28,44 30,42" fill="#ffffff"/>
+  <polygon points="35,41 36,44 34,42" fill="#ffffff"/>
+
+  <!-- Ojos ambarinos incandescentes de Lobo Huargo (con sutil animación) -->
+  <g>
+    <!-- Ojo izquierdo -->
+    <ellipse cx="27" cy="27" rx="2.5" ry="1.8" fill="#0f172a"/>
+    <ellipse cx="27" cy="27" rx="1.8" ry="1.4" fill="url(#ojoLobo)">
+      <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite"/>
+    </ellipse>
+    <circle cx="27" cy="27" r="0.8" fill="#0f172a"/>
+    <circle cx="27.3" cy="26.6" r="0.4" fill="#ffffff"/>
+
+    <!-- Ojo derecho -->
+    <ellipse cx="37" cy="27" rx="2.5" ry="1.8" fill="#0f172a"/>
+    <ellipse cx="37" cy="27" rx="1.8" ry="1.4" fill="url(#ojoLobo)">
+      <animate attributeName="opacity" values="1;0.8;1" dur="2s" repeatCount="indefinite"/>
+    </ellipse>
+    <circle cx="37" cy="27" r="0.8" fill="#0f172a"/>
+    <circle cx="37.3" cy="26.6" r="0.4" fill="#ffffff"/>
+  </g>
+</svg>

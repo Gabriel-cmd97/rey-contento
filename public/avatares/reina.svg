@@ -1,9 +1,72 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><radialGradient id="f" cx="50%" cy="35%"><stop offset="0" stop-color="#f1948a"/><stop offset="1" stop-color="#922b21"/></radialGradient></defs>
-<circle cx="32" cy="32" r="32" fill="url(#f)"/>
-<path d="M16 50c-2-16 4-30 16-30s18 14 16 30z" fill="#6e2c00"/>
-<ellipse cx="32" cy="34" rx="11" ry="12" fill="#fde2c8"/>
-<path d="M20 18l4 7 4-8 4 8 4-8 4 8 4-7-2 10H22z" fill="#f4d03f" stroke="#b7950b" stroke-width="1"/>
-<circle cx="32" cy="17" r="2" fill="#e74c3c"/>
-<circle cx="27" cy="34" r="1.7" fill="#2c3e50"/><circle cx="37" cy="34" r="1.7" fill="#2c3e50"/>
-<path d="M28 40c2 2 6 2 8 0" stroke="#c0392b" stroke-width="2" fill="none" stroke-linecap="round"/>
-<path d="M14 64c2-9 9-13 18-13s16 4 18 13" fill="#8e44ad"/><path d="M26 51l6 6 6-6" fill="#f4d03f"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="bgReina" cx="50%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#4a154b"/>
+      <stop offset="60%" stop-color="#240726"/>
+      <stop offset="100%" stop-color="#0a020b"/>
+    </radialGradient>
+    <linearGradient id="oroReina" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff59d"/>
+      <stop offset="45%" stop-color="#fbc02d"/>
+      <stop offset="85%" stop-color="#d4ac0d"/>
+      <stop offset="100%" stop-color="#7d6608"/>
+    </linearGradient>
+    <linearGradient id="pielReina" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fdfefe"/>
+      <stop offset="50%" stop-color="#fce4ec"/>
+      <stop offset="100%" stop-color="#f8bbd0"/>
+    </linearGradient>
+    <linearGradient id="cabelloOro" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe082"/>
+      <stop offset="50%" stop-color="#ffb74d"/>
+      <stop offset="100%" stop-color="#b26a00"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fondo imperial de terciopelo -->
+  <circle cx="32" cy="32" r="32" fill="url(#bgReina)"/>
+
+  <!-- Resplandor áureo imperial -->
+  <circle cx="32" cy="26" r="20" fill="#f1c40f" opacity="0.12"/>
+
+  <!-- Manto real de terciopelo morado y cuello de armiño blanco con motas negras -->
+  <path d="M12 64 C13 50, 18 42, 24 41 L32 46 L40 41 C46 42, 51 50, 52 64 Z" fill="#2d0b30"/>
+  <path d="M25 42 L32 48 L39 42 L32 38 Z" fill="url(#oroReina)"/>
+  <!-- Collar con zafiro imperial -->
+  <circle cx="32" cy="43.5" r="1.8" fill="#2980b9" stroke="#f1c40f" stroke-width="0.5"/>
+  <!-- Cuello de armiño -->
+  <path d="M14 64 C16 52, 20 46, 26 44 L23 64 Z" fill="#f8fafc"/>
+  <circle cx="19" cy="54" r="0.7" fill="#0f172a"/><circle cx="21" cy="60" r="0.7" fill="#0f172a"/>
+  <path d="M50 64 C48 52, 44 46, 38 44 L41 64 Z" fill="#f8fafc"/>
+  <circle cx="45" cy="54" r="0.7" fill="#0f172a"/><circle cx="43" cy="60" r="0.7" fill="#0f172a"/>
+
+  <!-- Cabello dorado noble y trenzas reales -->
+  <path d="M19 28 C19 18, 24 13, 32 13 C40 13, 45 18, 45 28 C45 38, 43 45, 41 49 L38 43 C39 36, 40 28, 40 25 C40 18, 36 17, 32 17 C28 17, 24 18, 24 25 C24 28, 25 36, 26 43 L23 49 C21 45, 19 38, 19 28 Z" fill="url(#cabelloOro)"/>
+
+  <!-- Rostro sereno y regio -->
+  <path d="M24 25 C24 19, 27 18, 32 18 C37 18, 40 19, 40 25 C40 33, 38 39, 32 42 C26 39, 24 33, 24 25 Z" fill="url(#pielReina)"/>
+
+  <!-- Corona Real Imperial de la Reina con esmeraldas y perlas -->
+  <path d="M19 18 L22 10 L26 16 L32 7 L38 16 L42 10 L45 18 L44 21 L20 21 Z" fill="url(#oroReina)" stroke="#7d6608" stroke-width="0.5"/>
+  <!-- Esmeralda central y perlas -->
+  <polygon points="32,10 34,13 32,16 30,13" fill="#2ecc71" stroke="#f1c40f" stroke-width="0.4"/>
+  <circle cx="22" cy="12" r="1.1" fill="#ecf0f1"/>
+  <circle cx="42" cy="12" r="1.1" fill="#ecf0f1"/>
+  <circle cx="26" cy="17" r="0.8" fill="#e74c3c"/>
+  <circle cx="38" cy="17" r="0.8" fill="#e74c3c"/>
+
+  <!-- Cejas nobles y mirada fija -->
+  <path d="M26 26 C28 25, 30 26, 30 27" stroke="#b26a00" stroke-width="0.8" fill="none"/>
+  <path d="M38 26 C36 25, 34 26, 34 27" stroke="#b26a00" stroke-width="0.8" fill="none"/>
+  <!-- Ojos verde esmeralda inteligentes -->
+  <ellipse cx="28.5" cy="28.5" rx="1.4" ry="1.2" fill="#27ae60"/>
+  <circle cx="28.5" cy="28.5" r="0.6" fill="#0b2e13"/>
+  <circle cx="28.8" cy="28.2" r="0.3" fill="#ffffff"/>
+
+  <ellipse cx="35.5" cy="28.5" rx="1.4" ry="1.2" fill="#27ae60"/>
+  <circle cx="35.5" cy="28.5" r="0.6" fill="#0b2e13"/>
+  <circle cx="35.8" cy="28.2" r="0.3" fill="#ffffff"/>
+
+  <!-- Labios de reina -->
+  <path d="M30 36 C31 35, 33 35, 34 36 C33 37.5, 31 37.5, 30 36 Z" fill="#b03a2e"/>
+</svg>

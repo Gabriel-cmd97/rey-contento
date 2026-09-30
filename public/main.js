@@ -2766,12 +2766,11 @@ async function abrirTienda(refrescar = true) {
     if (refrescar) await actualizarVictoriasBarra(); // saldo, compras y catálogo al día
     const cols = _colecciones || [];
     document.getElementById('tiendaAyuda').textContent =
-        `Gana Blis jugando partidas, con tu cofre diario y al subir de nivel. Los Letios se forjan en torneos de élite. Abre Arcones con Gaudios.`;
+        `Blis: gratis, se ganan jugando y con el cofre diario. Letios: para lo legendario; se ganan en el torneo, la racha de 7 días y el Arcón.`;
     document.querySelectorAll('.nombre-moneda').forEach(e => { e.textContent = MONEDA.plural; });
     const tabs = [['arcon', '✨ Arcón'], ['colecciones', 'Colecciones'], ['avatar', 'Avatares'], ['marco', 'Marcos'], ['dorso', 'Dorsos'], ['tapete', 'Tapetes']];
     let cuerpo = '';
     if (_tiendaTab === 'arcon') {
-        const puedeGaudio = (_tienda.gaudios || 0) >= 1;
         const puedeBlis = (_tienda.blis || 0) >= 100;
         cuerpo = `
         <div class="arcon-contenedor">
@@ -2779,16 +2778,13 @@ async function abrirTienda(refrescar = true) {
                 <div class="arcon-aura"></div>
                 <svg class="arcon-svg" aria-hidden="true"><use href="#i-gaudio"/></svg>
             </div>
-            <h3 class="arcon-titulo medieval-font">El Arcón de Gaudios</h3>
+            <h3 class="arcon-titulo medieval-font">El Arcón del Rey</h3>
             <p class="arcon-subtitulo">Contenedor Real de Recompensas</p>
             <p class="arcon-descripcion">
                 Abre el misterioso arcón del reino para conseguir prendas y estilos exclusivos para tu mesa, gemas Letios de prestigio o grandes bolsas de Blis.
             </p>
             <div class="arcon-precios">
-                <button type="button" class="boton-oro btn-abrir-gaudio ${puedeGaudio ? '' : 'no-alcanza'}" data-arcon="gaudio">
-                    <svg class="icono icono-gaudio" aria-hidden="true"><use href="#i-gaudio"/></svg> Abrir con 1 Gaudio <small>(${_tienda.gaudios || 0} disponibles)</small>
-                </button>
-                <button type="button" class="boton-medieval btn-abrir-gaudio ${puedeBlis ? '' : 'no-alcanza'}" data-arcon="blis">
+                <button type="button" class="boton-oro btn-abrir-gaudio ${puedeBlis ? '' : 'no-alcanza'}" data-arcon="blis">
                     <svg class="icono icono-blis" aria-hidden="true"><use href="#i-blis"/></svg> Abrir por 100 Blis <small>(${_tienda.blis || 0} disponibles)</small>
                 </button>
             </div>
@@ -3013,6 +3009,40 @@ function animarProgreso(caja, p) {
             const nv = document.getElementById('nivelTop'); if (nv) { nv.textContent = p.ahora.nivel; nv.classList.remove('hidden'); }
         }, 900);
     }, 500);
+}
+
+// ==========================================
+// DESBLOQUEOS POR NIVEL (progreso.DESBLOQUEOS en el servidor)
+// ==========================================
+// Quien empieza ve solo el Clásico: Fiesta y el torneo (nivel 2), poderes (3),
+// parejas (4) y La Corte (5) se abren al subir. Lo bloqueado se ve con
+// candado y "Nivel N" en el selector; sus prácticas y el aviso del torneo se ocultan.
+var _desbloqueado = { fiesta: true, torneo: true, poderes: true, parejas: true, corte: true };
+function aplicarDesbloqueos(nivel, lista) {
+    if (!Array.isArray(lista)) return;
+    const abierto = {}; const nivelDe = {};
+    lista.forEach(d => { abierto[d.id] = nivel >= d.nivel; nivelDe[d.id] = d.nivel; });
+    _desbloqueado = abierto;
+    const opcion = (sel, valor, id, texto) => {
+        const o = document.querySelector(`#${sel} option[value="${valor}"]`);
+        if (!o) return;
+        o.dataset.texto ||= o.textContent;
+        o.disabled = !abierto[id];
+        o.textContent = abierto[id] ? o.dataset.texto : `🔒 ${texto || o.dataset.texto} · Nivel ${nivelDe[id]}`;
+    };
+    opcion('selectModoJuego', 'FIESTA', 'fiesta', 'Fiesta');
+    opcion('selectModoJuego', 'CORTE', 'corte', 'La Corte');
+    opcion('selectEquipos', '2', 'parejas', '2 contra 2');
+    opcion('selectEquipos', '3', 'parejas', '3 contra 3');
+    opcion('selectPoderes', 'SI', 'poderes', 'Sí');
+    // Si algo quedó elegido y está bloqueado, vuelve a lo básico.
+    [['selectModoJuego', 'CLASICO'], ['selectEquipos', '0'], ['selectPoderes', 'NO']].forEach(([id, def]) => {
+        const s = document.getElementById(id);
+        if (s && s.selectedOptions[0]?.disabled) { s.value = def; s.dispatchEvent(new Event('change')); }
+    });
+    const ver = (id, clave) => document.getElementById(id)?.classList.toggle('bloqueado-nivel', !abierto[clave]);
+    ver('btnPracticaFiesta', 'fiesta'); ver('btnPracticaPoderes', 'poderes'); ver('btnPracticaCorte', 'corte');
+    ver('bannerTorneo', 'torneo');
 }
 
 // ==========================================
@@ -3296,6 +3326,7 @@ async function actualizarVictoriasBarra() {
         _tienda.nivel = data.nivel?.nivel || 1;
         _colecciones = data.cosmeticos?.colecciones || [];
         pintarMonedas();
+        if (data.nivel) aplicarDesbloqueos(data.nivel.nivel, data.desbloqueosNivel);
         if (data.nivel) { const nv = document.getElementById('nivelTop'); nv.textContent = data.nivel.nivel; nv.classList.remove('hidden'); }
         pintarPanelReacciones();
         document.getElementById('victoriasTop').classList.toggle('hidden', data.victorias === undefined);

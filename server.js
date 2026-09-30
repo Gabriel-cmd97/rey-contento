@@ -349,9 +349,37 @@ function contarSalasDelUsuario(username) {
 // Centraliza el borrado de salas: cancela timers de turno y de desconexión
 // asociados antes de quitar la sala del registro. Llamar a este helper en lugar
 // de `delete estadoSalas[id]` evita timers fantasma sobre estado ya borrado.
+// Apuestas: cobra (delta > 0) o devuelve (delta < 0) Blis en un solo movimiento.
+// Devuelve false si no alcanza el saldo (y no toca nada).
+const apostandoAhora = new Set(); // quien tiene un cambio de apuesta en curso
+async function moverApuesta(username, delta) {
+    if (!delta) return true;
+    if (delta < 0) { await pool.execute('UPDATE usuarios SET monedas = monedas + ? WHERE username = ?', [-delta, username]); return true; }
+    const [r] = await pool.execute('UPDATE usuarios SET monedas = monedas - ? WHERE username = ? AND monedas >= ?', [delta, username, delta]);
+    return r.affectedRows === 1;
+}
+
+// Una sala que se cierra sin terminar (todos se fueron, sweeper, reinicio
+// viejo) devuelve lo que tenía en juego: entrada del Pozo a quien la pagó y
+// apuestas sin resolver. Lo ya pagado o repartido quedó en 0/vacío antes.
+function devolverDineroPendiente(sala) {
+    const devolver = {};
+    const suma = (n, m) => { if (m > 0) devolver[n] = (devolver[n] || 0) + m; };
+    if (sala.pozoTotal > 0) Object.entries(sala.aportesPozo || {}).forEach(([n, m]) => suma(n, m));
+    Object.entries(sala.apuestas || {}).forEach(([n, a]) => suma(n, a && typeof a === 'object' ? a.monto : 0));
+    Object.entries(sala.apuestasCampeon || {}).forEach(([n, a]) => suma(n, a?.monto || 0));
+    sala.pozoTotal = 0; sala.aportesPozo = {}; sala.apuestas = {}; sala.apuestasCampeon = {};
+    for (const [n, m] of Object.entries(devolver)) {
+        pool.execute('UPDATE usuarios SET monedas = monedas + ? WHERE username = ?', [m, n])
+            .then(() => log.info('Blis devueltos al cerrar la sala', { idSala: sala.idSala, username: n, blis: m }))
+            .catch(e => log.error('No se pudieron devolver Blis', { error: e.message, username: n, blis: m }));
+    }
+}
+
 function limpiarSala(idSala) {
     const sala = estadoSalas[idSala];
     if (!sala) return;
+    devolverDineroPendiente(sala);
     if (temporizadores[idSala]) {
         clearTimeout(temporizadores[idSala]);
         delete temporizadores[idSala];
@@ -592,7 +620,7 @@ app.post('/tienda/abrir-gaudio', limitarLectura, async (req, res) => {
     let datos;
     try { datos = jwt.verify(token, JWT_SECRET); } catch { return res.status(401).json({ error: 'Tu sesión expiró. Vuelve a iniciar sesión.' }); }
 
-    const metodo = req.body?.metodo; // 'gaudio' | 'blis'
+    const metodo = 'blis'; // Gaudios retirados (30/09/2026): el Arcón se abre solo con Blis (moneda gratis)
     let conn;
     try {
         conn = await pool.getConnection();
@@ -884,7 +912,7 @@ app.get('/mis-stats/:username', limitarLectura, async (req, res) => {
             cosmeticos: { catalogo: cosmeticos.CATALOGO, elegidos: cosmeticos.leer(cosm),
                           colecciones: cosmeticos.COLECCIONES.map(c => cosmeticos.coleccion(c.id)),
                           comprados: (await pool.execute('SELECT articulo FROM compras WHERE username = ?', [username]))[0].map(r => r.articulo) },
-            nivel: progreso.nivelDe(u.xp || 0) });
+            nivel: progreso.nivelDe(u.xp || 0), desbloqueosNivel: progreso.DESBLOQUEOS });
     } catch (error) {
         log.error('mis-stats falló', { error: error.message, codigo: error.code, username });
         res.status(500).json({ error: 'Error al cargar stats' });
@@ -967,21 +995,24 @@ async function registrarFinPartida(sala, ganador) {
     }
 
     // Pago o reembolso del Pozo del Rey
-    if (sala.pozoTotal > 0) {
+    if (pozo > 0) {
+        // Se toma y vacía antes de pagar (hay await): si la sala se cerrara a la mitad, no se devuelve también.
+        const pozo = sala.pozoTotal;
+        sala.pozoTotal = 0; sala.aportesPozo = {};
         if (ganadoresNombres.length > 0) {
-            const premioPorGanador = Math.floor(sala.pozoTotal / ganadoresNombres.length);
+            const premioPorGanador = Math.floor(pozo / ganadoresNombres.length);
             for (const g of ganadoresNombres) {
                 await conRetry(
                     () => pool.execute('UPDATE usuarios SET monedas = monedas + ? WHERE username = ?', [premioPorGanador, g]),
                     { op: 'pago_pozo', ganador: g }
                 ).catch(err => log.error('Fallo pagar pozo al ganador', { error: err.message, ganador: g }));
             }
-            io.to(sala.idSala).emit('mensajeGlobal', `🏆 ¡${ganadoresNombres.join(', ')} se lleva el Pozo del Rey de ${sala.pozoTotal} Blis!`);
-            io.to(sala.idSala).emit('accionMesa', { tipo: 'POZO', icono: '🪙', texto: `¡Pozo del Rey: ${sala.pozoTotal} Blis para ${ganadoresNombres.join(', ')}!` });
+            io.to(sala.idSala).emit('mensajeGlobal', `🏆 ¡${ganadoresNombres.join(', ')} se lleva el Pozo del Rey de ${pozo} Blis!`);
+            io.to(sala.idSala).emit('accionMesa', { tipo: 'POZO', icono: '🪙', texto: `¡Pozo del Rey: ${pozo} Blis para ${ganadoresNombres.join(', ')}!` });
         } else {
             // Ganó un bot o nadie: ¡se lo queda la casa (la Corona)!
-            io.to(sala.idSala).emit('mensajeGlobal', `🏰 ¡Un bot ha ganado la partida! El Pozo del Rey de ${sala.pozoTotal} Blis se lo queda la Corona.`);
-            io.to(sala.idSala).emit('accionMesa', { tipo: 'POZO', icono: '🏰', texto: `¡El Pozo del Rey (${sala.pozoTotal} Blis) pasa a las arcas reales!` });
+            io.to(sala.idSala).emit('mensajeGlobal', `🏰 ¡Un bot ha ganado la partida! El Pozo del Rey de ${pozo} Blis se lo queda la Corona.`);
+            io.to(sala.idSala).emit('accionMesa', { tipo: 'POZO', icono: '🏰', texto: `¡El Pozo del Rey (${pozo} Blis) pasa a las arcas reales!` });
         }
         sala.pozoTotal = 0;
         sala.aportesPozo = {};
@@ -989,7 +1020,9 @@ async function registrarFinPartida(sala, ganador) {
 
     // Resolver apuestas al Campeón de espectadores / eliminados
     if (sala.apuestasCampeon) {
-        for (const [apostadorNombre, datos] of Object.entries(sala.apuestasCampeon)) {
+        const apuestasCampeon = sala.apuestasCampeon; // tomadas y vaciadas antes de pagar (ver resolverApuestasYCorona)
+        sala.apuestasCampeon = {};
+        for (const [apostadorNombre, datos] of Object.entries(apuestasCampeon)) {
             const { objetivo, monto } = datos;
             const acertado = ganadoresNombres.includes(objetivo);
             let ganancia = 0;
@@ -1048,7 +1081,7 @@ async function sumarXp(username, ganada, blis = 0, letios = 0) {
     await pool.execute('UPDATE usuarios SET xp = xp + ?, monedas = monedas + ?, letios = letios + ? WHERE username = ?', [ganada, monedas, letios, username]);
     const [saldo] = await pool.execute('SELECT monedas, letios, gaudios FROM usuarios WHERE username = ?', [username]);
     return { ganada, xpAntes, xpAhora, antes: a, ahora: b, monedas, blis: monedas, letios: saldo[0]?.letios ?? 0, saldo: saldo[0]?.monedas ?? 0,
-             desbloqueos: cosmeticos.desbloqueadosPorNivel(a.nivel, b.nivel).map(c => c.titulo) };
+             desbloqueos: [...progreso.desbloqueosEntre(a.nivel, b.nivel).map(d => d.titulo), ...cosmeticos.desbloqueadosPorNivel(a.nivel, b.nivel).map(c => c.titulo)] };
 }
 
 // ==========================================
@@ -1239,11 +1272,9 @@ app.post('/premio-diario', limitarLectura, async (req, res) => {
         const [r] = await pool.execute(
             'UPDATE usuarios SET racha_diaria = ?, dia_premio = ? WHERE username = ? AND (dia_premio <=> ?)',
             [e.racha, hoy, username, rows[0].dia_premio]);
+        if (r.affectedRows !== 1) return res.status(409).json({ error: 'Ya cobraste el premio de hoy.' }); // dos pestañas a la vez
         const letiosPremio = (e.racha === 7) ? progreso.LETIOS.rachaSieteDias : 0;
-        const gaudiosPremio = (e.racha === 7) ? (progreso.GAUDIOS?.rachaSieteDias || 1) : 0;
-        if (gaudiosPremio > 0) {
-            await pool.execute('UPDATE usuarios SET gaudios = gaudios + ? WHERE username = ?', [gaudiosPremio, username]);
-        }
+        const gaudiosPremio = 0; // Gaudios retirados el 30/09/2026: el Arcón se abre con Blis
         const aviso = await sumarXp(username, e.premio, progreso.BLIS.diario[e.racha - 1] || 0, letiosPremio);
         res.json({ racha: e.racha, premio: e.premio, letios: letiosPremio, gaudios: gaudiosPremio, progreso: { ...aviso, motivo: 'premio', letios: letiosPremio, gaudios: gaudiosPremio } });
     } catch (e) { log.error('Premio diario (cobrar) falló', { error: e.message }); res.status(500).json({ error: 'Error en el servidor.' }); }
@@ -1312,8 +1343,13 @@ function darBonus(sala, nombre, xp, motivo) {
 // derrocaron al Rey de la mesa y, al terminar, corona al ganador.
 async function resolverApuestasYCorona(sala, perdedores, juegoTerminado, sobrevivientes) {
     const idSala = sala.idSala;
+    // Se toman y vacían antes de pagar (con await de por medio): si la sala se
+    // cerrara a la mitad, devolverDineroPendiente ya no las ve y no se paga doble.
+    const apuestasRonda = sala.apuestas || {};
+    sala.apuestas = {};
+    sala.apuestasAbiertas = false;
     // Apuestas de los eliminados (+15 XP si acertó, y si apostó Blis se le paga x2)
-    for (const [quien, datosApuesta] of Object.entries(sala.apuestas || {})) {
+    for (const [quien, datosApuesta] of Object.entries(apuestasRonda)) {
         const objetivo = typeof datosApuesta === 'object' ? datosApuesta.objetivo : datosApuesta;
         const monto = typeof datosApuesta === 'object' ? (datosApuesta.monto || 0) : 0;
         const obj = sala.jugadores.find(j => j.nombre === objetivo);
@@ -2022,7 +2058,8 @@ async function empezarPartida(sala) {
                 const saldo = u[0]?.monedas || 0;
                 const montoCobrar = Math.min(saldo, pozoConfig);
                 if (montoCobrar > 0) {
-                    await pool.execute('UPDATE usuarios SET monedas = monedas - ? WHERE username = ? AND monedas >= ?', [montoCobrar, j.nombre, montoCobrar]);
+                    const [cobro] = await pool.execute('UPDATE usuarios SET monedas = monedas - ? WHERE username = ? AND monedas >= ?', [montoCobrar, j.nombre, montoCobrar]);
+                    if (cobro.affectedRows !== 1) continue; // el saldo cambió: no se cobró, no entra al pozo
                     sala.pozoTotal += montoCobrar;
                     sala.aportesPozo[j.nombre] = montoCobrar;
                 }
@@ -2488,7 +2525,8 @@ async function iniciarRevancha(sala, io) {
                     const saldo = u[0]?.monedas || 0;
                     const montoCobrar = Math.min(saldo, pozoConfig);
                     if (montoCobrar > 0) {
-                        await pool.execute('UPDATE usuarios SET monedas = monedas - ? WHERE username = ? AND monedas >= ?', [montoCobrar, j.nombre, montoCobrar]);
+                        const [cobro] = await pool.execute('UPDATE usuarios SET monedas = monedas - ? WHERE username = ? AND monedas >= ?', [montoCobrar, j.nombre, montoCobrar]);
+                        if (cobro.affectedRows !== 1) continue; // el saldo cambió: no se cobró, no entra al pozo
                         sala.pozoTotal += montoCobrar;
                         sala.aportesPozo[j.nombre] = montoCobrar;
                     }
@@ -2952,26 +2990,29 @@ io.on('connection', (socket) => {
 
         const monto = [0, 5, 10, 25].includes(Number(rawMonto)) ? Number(rawMonto) : 0;
         let saldoActual = 0;
+        if (apostandoAhora.has(nombreUsuarioLogueado)) return;
+        apostandoAhora.add(nombreUsuarioLogueado);
         try {
             // Reembolsar apuesta anterior de esta ronda si existía
             const previa = sala.apuestas[nombreUsuarioLogueado];
-            if (previa && typeof previa === 'object' && previa.monto > 0) {
-                await pool.execute('UPDATE usuarios SET monedas = monedas + ? WHERE username = ?', [previa.monto, nombreUsuarioLogueado]);
-            }
-            if (monto > 0) {
-                const [r] = await pool.execute('UPDATE usuarios SET monedas = monedas - ? WHERE username = ? AND monedas >= ?', [monto, nombreUsuarioLogueado, monto]);
-                if (r.affectedRows !== 1) {
-                    socket.emit('errorToast', 'No te alcanzan los Blis para esa apuesta.');
-                    return;
-                }
+            const pagado = previa && typeof previa === 'object' ? (previa.monto || 0) : 0;
+            if (!await moverApuesta(nombreUsuarioLogueado, monto - pagado)) {
+                socket.emit('errorToast', 'No te alcanzan los Blis para esa apuesta.');
+                return; // la apuesta anterior sigue igual (no se devolvió nada)
             }
             const [s] = await pool.execute('SELECT monedas FROM usuarios WHERE username = ?', [nombreUsuarioLogueado]);
             saldoActual = s[0]?.monedas ?? 0;
         } catch (e) {
             log.error('Error al procesar apuesta de Blis', { error: e.message, username: nombreUsuarioLogueado });
             return;
-        }
+        } finally { apostandoAhora.delete(nombreUsuarioLogueado); }
 
+        if (!sala.apuestasAbiertas || !estadoSalas[idSala]) {
+            // La ronda se cerró mientras se cobraba: esta apuesta ya no cuenta, se devuelve la diferencia.
+            const previa = sala.apuestas[nombreUsuarioLogueado];
+            await moverApuesta(nombreUsuarioLogueado, ((previa && previa.monto) || 0) - monto).catch(() => {});
+            return;
+        }
         sala.apuestas[nombreUsuarioLogueado] = { objetivo, monto };
         socket.emit('apuestaHecha', { objetivo, monto, saldo: saldoActual });
     });
@@ -2991,24 +3032,20 @@ io.on('connection', (socket) => {
         if (!sala.apuestasCampeon) sala.apuestasCampeon = {};
         const monto = [0, 5, 10, 25].includes(Number(rawMonto)) ? Number(rawMonto) : 0;
         let saldoActual = 0;
+        if (apostandoAhora.has(nombreUsuarioLogueado)) return;
+        apostandoAhora.add(nombreUsuarioLogueado);
         try {
-            const previa = sala.apuestasCampeon[nombreUsuarioLogueado];
-            if (previa && previa.monto > 0) {
-                await pool.execute('UPDATE usuarios SET monedas = monedas + ? WHERE username = ?', [previa.monto, nombreUsuarioLogueado]);
-            }
-            if (monto > 0) {
-                const [r] = await pool.execute('UPDATE usuarios SET monedas = monedas - ? WHERE username = ? AND monedas >= ?', [monto, nombreUsuarioLogueado, monto]);
-                if (r.affectedRows !== 1) {
-                    socket.emit('errorToast', 'No te alcanzan los Blis para apostar al Campeón.');
-                    return;
-                }
+            const pagado = sala.apuestasCampeon[nombreUsuarioLogueado]?.monto || 0;
+            if (!await moverApuesta(nombreUsuarioLogueado, monto - pagado)) {
+                socket.emit('errorToast', 'No te alcanzan los Blis para apostar al Campeón.');
+                return; // la apuesta anterior sigue igual
             }
             const [s] = await pool.execute('SELECT monedas FROM usuarios WHERE username = ?', [nombreUsuarioLogueado]);
             saldoActual = s[0]?.monedas ?? 0;
         } catch (e) {
             log.error('Error al procesar apuesta al Campeón', { error: e.message, username: nombreUsuarioLogueado });
             return;
-        }
+        } finally { apostandoAhora.delete(nombreUsuarioLogueado); }
 
         sala.apuestasCampeon[nombreUsuarioLogueado] = { objetivo, monto };
         socket.emit('apuestaCampeonHecha', { objetivo, monto, saldo: saldoActual });
@@ -3309,7 +3346,11 @@ function restaurarSalas() {
     } catch (err) {
         return log.error('No se pudo leer el estado guardado de las salas', { error: err.message });
     }
-    if (!datos || !Array.isArray(datos.salas) || Date.now() - datos.guardado > MAX_ANTIGUEDAD_MS) return;
+    if (!datos || !Array.isArray(datos.salas)) return;
+    if (Date.now() - datos.guardado > MAX_ANTIGUEDAD_MS) {
+        // Demasiado viejas para seguir: al menos se devuelve lo que tenían en juego.
+        return datos.salas.forEach(sl => sl && devolverDineroPendiente(sl));
+    }
 
     let restauradas = 0;
     for (const sala of datos.salas) {

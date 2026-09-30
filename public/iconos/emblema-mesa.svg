@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" fill="none">
+  <defs>
+    <radialGradient id="haloCentro" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffe27a" stop-opacity="0.35"/>
+      <stop offset="60%" stop-color="#f39c12" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#d4ac0d" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="oroEmblema" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff176"/>
+      <stop offset="50%" stop-color="#f1c40f"/>
+      <stop offset="100%" stop-color="#9a7d0a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Halo de resplandor ambiental central -->
+  <circle cx="250" cy="250" r="230" fill="url(#haloCentro)"/>
+
+  <!-- Anillos circulares de brújula / runas medievales -->
+  <circle cx="250" cy="250" r="225" stroke="url(#oroEmblema)" stroke-width="1.8" opacity="0.6"/>
+  <circle cx="250" cy="250" r="215" stroke="url(#oroEmblema)" stroke-width="0.9" stroke-dasharray="4,6" opacity="0.75"/>
+  <circle cx="250" cy="250" r="190" stroke="url(#oroEmblema)" stroke-width="1.2" opacity="0.5"/>
+  <circle cx="250" cy="250" r="140" stroke="url(#oroEmblema)" stroke-width="0.8" stroke-dasharray="2,5" opacity="0.4"/>
+
+  <!-- Estrellas / Puntos cardinales de la Corte -->
+  <polygon points="250,15 254,32 250,28 246,32" fill="#ffe27a"/>
+  <polygon points="250,485 254,468 250,472 246,468" fill="#ffe27a"/>
+  <polygon points="15,250 32,246 28,250 32,254" fill="#ffe27a"/>
+  <polygon points="485,250 468,246 472,250 468,254" fill="#ffe27a"/>
+
+  <!-- Flores de Lis en los cuadrantes -->
+  <g fill="url(#oroEmblema)" opacity="0.7">
+    <!-- Top-Right -->
+    <path d="M380 120 C380 110, 385 105, 385 95 C385 105, 390 110, 390 120 C397 115, 405 118, 400 126 C393 126, 388 122, 385 125 C382 122, 377 126, 370 126 C365 118, 373 115, 380 120 Z"/>
+    <!-- Top-Left -->
+    <path d="M120 120 C120 110, 115 105, 115 95 C115 105, 110 110, 110 120 C103 115, 95 118, 100 126 C107 126, 112 122, 115 125 C118 122, 123 126, 130 126 C135 118, 127 115, 120 120 Z"/>
+    <!-- Bottom-Left -->
+    <path d="M120 380 C120 390, 115 395, 115 405 C115 395, 110 390, 110 380 C103 385, 95 382, 100 374 C107 374, 112 378, 115 375 C118 378, 123 374, 130 374 C135 382, 127 385, 120 380 Z"/>
+    <!-- Bottom-Right -->
+    <path d="M380 380 C380 390, 385 395, 385 405 C385 395, 390 390, 390 380 C397 385, 405 382, 400 374 C393 374, 388 378, 385 375 C382 378, 377 374, 370 374 C365 382, 373 385, 380 380 Z"/>
+  </g>
+
+  <!-- Espadas medievales cruzadas de fondo -->
+  <g stroke="url(#oroEmblema)" stroke-width="3" stroke-linecap="round" opacity="0.6">
+    <!-- Espada 1 (Diagonal principal \) -->
+    <line x1="80" y1="80" x2="420" y2="420"/>
+    <line x1="100" y1="60" x2="60" y2="100"/>
+    <circle cx="70" cy="70" r="5" fill="#f1c40f"/>
+    <!-- Espada 2 (Diagonal secundaria /) -->
+    <line x1="420" y1="80" x2="80" y2="420"/>
+    <line x1="400" y1="60" x2="440" y2="100"/>
+    <circle cx="430" cy="70" r="5" fill="#f1c40f"/>
+  </g>
+
+  <!-- ==================== DRAGÓN MEDIEVAL (LADO IZQUIERDO) ==================== -->
+  <g stroke="url(#oroEmblema)" stroke-width="1.8" fill="none" opacity="0.85">
+    <!-- Cabeza y cuernos del dragón -->
+    <path d="M175 160 C155 145, 135 155, 120 170 C105 185, 100 205, 115 210 C125 215, 140 205, 150 195 C140 215, 145 225, 160 220 C175 215, 170 195, 180 185 Z"/>
+    <path d="M125 165 C110 145, 95 140, 80 145 C95 155, 105 165, 115 170"/>
+    <!-- Cuello con escamas y alas desplegadas -->
+    <path d="M165 215 C150 250, 145 285, 160 320 C170 340, 190 355, 205 365"/>
+    <path d="M145 235 C120 230, 90 240, 75 270 C85 265, 105 265, 120 275 C95 285, 80 310, 85 335 C100 320, 120 315, 140 320"/>
+    <!-- Aliento de fuego / filigrana -->
+    <path d="M110 205 C95 210, 80 200, 65 205 C75 215, 90 220, 105 215" stroke-dasharray="2,3"/>
+    <!-- Ojo del dragón -->
+    <circle cx="135" cy="180" r="2.5" fill="#f1c40f"/>
+  </g>
+
+  <!-- ==================== LOBO HUARGO (LADO DERECHO) ==================== -->
+  <g stroke="url(#oroEmblema)" stroke-width="1.8" fill="none" opacity="0.85">
+    <!-- Cabeza aullando y hocico -->
+    <path d="M325 160 C345 145, 365 155, 380 170 C395 185, 400 205, 385 210 C375 215, 360 205, 350 195 C360 215, 355 225, 340 220 C325 215, 330 195, 320 185 Z"/>
+    <!-- Orejas erguidas -->
+    <path d="M375 165 C390 145, 405 140, 420 145 C405 155, 395 165, 385 170"/>
+    <!-- Cuello con pelaje norteño / melena -->
+    <path d="M335 215 C350 250, 355 285, 340 320 C330 340, 310 355, 295 365"/>
+    <path d="M355 235 C380 230, 410 240, 425 270 C415 265, 395 265, 380 275 C405 285, 420 310, 415 335 C400 320, 380 315, 360 320"/>
+    <!-- Ojo del lobo -->
+    <circle cx="365" cy="180" r="2.5" fill="#f1c40f"/>
+  </g>
+
+  <!-- ==================== ESCUDO Y CORONA CENTRAL ==================== -->
+  <g fill="none" stroke="url(#oroEmblema)">
+    <!-- Escudo heráldico central -->
+    <path d="M210 210 L290 210 C290 270, 270 310, 250 330 C230 310, 210 270, 210 210 Z" stroke-width="2.5" fill="rgba(241,196,15,0.06)"/>
+    <path d="M220 220 L280 220 C280 265, 265 295, 250 312 C235 295, 220 265, 220 220 Z" stroke-width="1.2" stroke-dasharray="3,3"/>
+    
+    <!-- Gran Corona Real en la cima del escudo -->
+    <path d="M215 200 L225 170 L240 185 L250 155 L260 185 L275 170 L285 200 Z" stroke-width="2" fill="rgba(255,241,118,0.15)"/>
+    <circle cx="250" cy="155" r="3" fill="#ffe27a"/>
+    <circle cx="225" cy="170" r="2.2" fill="#ffe27a"/>
+    <circle cx="275" cy="170" r="2.2" fill="#ffe27a"/>
+
+    <!-- Yelmo de caballero dentro del escudo -->
+    <path d="M235 240 C235 230, 242 225, 250 225 C258 225, 265 230, 265 240 C265 255, 260 265, 250 270 C240 265, 235 255, 235 240 Z" stroke-width="1.6"/>
+    <!-- Visor de hendidura en cruz -->
+    <line x1="240" y1="242" x2="260" y2="242" stroke-width="1.8"/>
+    <line x1="250" y1="237" x2="250" y2="252" stroke-width="1.8"/>
+    
+    <!-- Corazón / Flor Real del Rey Contento -->
+    <path d="M245 285 C245 280, 250 278, 250 283 C250 278, 255 280, 255 285 C255 290, 250 294, 250 297 C250 294, 245 290, 245 285 Z" fill="#ffe27a" stroke-width="0.8"/>
+  </g>
+
+  <!-- Lema en cinta curvada inferior -->
+  <path d="M180 375 Q250 405 320 375 Q325 390 315 395 Q250 425 185 395 Z" stroke="url(#oroEmblema)" stroke-width="1.5" fill="rgba(20,10,5,0.3)"/>
+</svg>

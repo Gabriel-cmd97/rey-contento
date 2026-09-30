@@ -1,9 +1,88 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><radialGradient id="f" cx="50%" cy="35%"><stop offset="0" stop-color="#f5b041"/><stop offset="1" stop-color="#922b21"/></radialGradient>
-<linearGradient id="d" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#58d68d"/><stop offset="1" stop-color="#1e8449"/></linearGradient></defs>
-<circle cx="32" cy="32" r="32" fill="url(#f)"/>
-<path d="M20 20L14 6l12 10zM44 20l6-14-12 10z" fill="#f4f6f7"/>
-<path d="M16 30c0-10 7-16 16-16s16 6 16 16v6c0 8-4 14-10 16H26c-6-2-10-8-10-16z" fill="url(#d)"/>
-<path d="M22 22l3 4-4 1zM42 22l-3 4 4 1z" fill="#145a32"/>
-<path d="M20 30l9 3-9 3zM44 30l-9 3 9 3z" fill="#f4d03f"/><path d="M22 32h3M42 32h-3" stroke="#17202a" stroke-width="1.6"/>
-<ellipse cx="32" cy="46" rx="9" ry="6" fill="#82e0aa"/><circle cx="28" cy="45" r="1.4" fill="#145a32"/><circle cx="36" cy="45" r="1.4" fill="#145a32"/>
-<path d="M29 52l-3 7 4-4 2 6 2-6 4 4-3-7" fill="#f39c12"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="bgDragon" cx="50%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#4a0e0e"/>
+      <stop offset="50%" stop-color="#240505"/>
+      <stop offset="100%" stop-color="#0a0101"/>
+    </radialGradient>
+    <linearGradient id="escamaNegra" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="35%" stop-color="#1e293b"/>
+      <stop offset="70%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="cuernoOro" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#78281f"/>
+      <stop offset="60%" stop-color="#c0392b"/>
+      <stop offset="100%" stop-color="#f39c12"/>
+    </linearGradient>
+    <radialGradient id="ojoReptil" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff176"/>
+      <stop offset="40%" stop-color="#f1c40f"/>
+      <stop offset="85%" stop-color="#d35400"/>
+      <stop offset="100%" stop-color="#922b21"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Fondo de abismo volcánico -->
+  <circle cx="32" cy="32" r="32" fill="url(#bgDragon)"/>
+
+  <!-- Resplandor de magma infernal -->
+  <circle cx="32" cy="32" r="26" fill="#e74c3c" opacity="0.15">
+    <animate attributeName="opacity" values="0.1;0.25;0.1" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Chispas y pavesas incandescentes ascendentes -->
+  <circle cx="15" cy="22" r="0.8" fill="#f39c12" opacity="0.8">
+    <animate attributeName="cy" values="22;14;22" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="49" cy="18" r="1.1" fill="#e74c3c" opacity="0.9">
+    <animate attributeName="cy" values="18;10;18" dur="1.8s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="51" cy="40" r="0.7" fill="#f1c40f" opacity="0.7"/>
+
+  <!-- Cuello masivo y crestas espinosas dorsales -->
+  <path d="M12 64 C12 48, 18 42, 24 40 L32 46 L40 40 C46 42, 52 48, 52 64 Z" fill="#0f172a"/>
+  <!-- Espinas dorsales -->
+  <polygon points="32,46 30,52 32,58 34,52" fill="url(#cuernoOro)"/>
+  <polygon points="32,56 30,60 32,64 34,60" fill="url(#cuernoOro)"/>
+
+  <!-- Grandes cuernos curvados de dragón ancestral -->
+  <!-- Cuerno izquierdo principal -->
+  <path d="M21 21 C15 14, 9 6, 4 9 C7 16, 12 21, 20 25 Z" fill="url(#cuernoOro)" stroke="#4a0e0e" stroke-width="0.6"/>
+  <path d="M22 25 C17 22, 13 18, 9 20 C12 24, 16 27, 21 28 Z" fill="url(#cuernoOro)"/>
+  <!-- Cuerno derecho principal -->
+  <path d="M43 21 C49 14, 55 6, 60 9 C57 16, 52 21, 44 25 Z" fill="url(#cuernoOro)" stroke="#4a0e0e" stroke-width="0.6"/>
+  <path d="M42 25 C47 22, 51 18, 55 20 C52 24, 48 27, 43 28 Z" fill="url(#cuernoOro)"/>
+
+  <!-- Cabeza de escamas de basalto y dragón anciano -->
+  <path d="M20 28 C20 18, 24 15, 32 15 C40 15, 44 18, 44 28 C44 38, 38 45, 32 47 C26 45, 20 38, 20 28 Z" fill="url(#escamaNegra)" stroke="#1e293b" stroke-width="0.8"/>
+
+  <!-- Crestas óseas sobre las cejas -->
+  <path d="M22 23 C26 21, 29 22, 31 24 L29 26 L23 25 Z" fill="#334155"/>
+  <path d="M42 23 C38 21, 35 22, 33 24 L35 26 L41 25 Z" fill="#334155"/>
+
+  <!-- Hocico y mandíbula con fosas que humean -->
+  <path d="M26 30 C27 26, 35 26, 36 30 L35 43 C33 45, 29 45, 27 43 Z" fill="#1e293b"/>
+  <!-- Fosas nasales de reptil con fuego interior -->
+  <ellipse cx="28.5" cy="38" rx="1.5" ry="1.2" fill="#78281f"/>
+  <circle cx="28.5" cy="38" r="0.8" fill="#e67e22"/>
+  <ellipse cx="33.5" cy="38" rx="1.5" ry="1.2" fill="#78281f"/>
+  <circle cx="33.5" cy="38" r="0.8" fill="#e67e22"/>
+
+  <!-- Resplandor de fragua ardiente en las comisuras de las fauces -->
+  <path d="M27 41 Q31 43 35 41" stroke="#ff793f" stroke-width="1.2" fill="none">
+    <animate attributeName="stroke" values="#ff793f;#f1c40f;#ff793f" dur="1.8s" repeatCount="indefinite"/>
+  </path>
+
+  <!-- Ojos de reptil / dragón dorado con pupila vertical afilada -->
+  <!-- Ojo izquierdo -->
+  <ellipse cx="26" cy="27" rx="2.8" ry="2" fill="url(#ojoReptil)"/>
+  <line x1="26" y1="25.2" x2="26" y2="28.8" stroke="#0a0101" stroke-width="1.2" stroke-linecap="round"/>
+  <circle cx="26.8" cy="26.3" r="0.5" fill="#ffffff"/>
+
+  <!-- Ojo derecho -->
+  <ellipse cx="36" cy="27" rx="2.8" ry="2" fill="url(#ojoReptil)"/>
+  <line x1="36" y1="25.2" x2="36" y2="28.8" stroke="#0a0101" stroke-width="1.2" stroke-linecap="round"/>
+  <circle cx="36.8" cy="26.3" r="0.5" fill="#ffffff"/>
+</svg>

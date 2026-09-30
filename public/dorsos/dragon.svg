@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180">
+  <defs>
+    <radialGradient id="fuegoDragon" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#78281f"/>
+      <stop offset="50%" stop-color="#4a0e0e"/>
+      <stop offset="100%" stop-color="#140404"/>
+    </radialGradient>
+    <linearGradient id="oroBordeDorso" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffeaa7"/>
+      <stop offset="40%" stop-color="#f1c40f"/>
+      <stop offset="80%" stop-color="#b7950b"/>
+      <stop offset="100%" stop-color="#7d6608"/>
+    </linearGradient>
+    <linearGradient id="llamaDragon" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#c0392b"/>
+      <stop offset="60%" stop-color="#e67e22"/>
+      <stop offset="100%" stop-color="#f1c40f"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fondo de magma oscuro -->
+  <rect width="120" height="180" rx="8" fill="url(#fuegoDragon)"/>
+
+  <!-- Trama de escamas de dragón -->
+  <g stroke="#922b21" stroke-width="0.6" opacity="0.3" fill="none">
+    <path d="M10 20 Q20 30 30 20 Q40 30 50 20 Q60 30 70 20 Q80 30 90 20 Q100 30 110 20"/>
+    <path d="M10 40 Q20 50 30 40 Q40 50 50 40 Q60 50 70 40 Q80 50 90 40 Q100 50 110 40"/>
+    <path d="M10 60 Q20 70 30 60 Q40 70 50 60 Q60 70 70 60 Q80 70 90 60 Q100 70 110 60"/>
+    <path d="M10 120 Q20 130 30 120 Q40 130 50 120 Q60 130 70 120 Q80 130 90 120 Q100 130 110 120"/>
+    <path d="M10 140 Q20 150 30 140 Q40 150 50 140 Q60 150 70 140 Q80 150 90 140 Q100 150 110 140"/>
+    <path d="M10 160 Q20 170 30 160 Q40 170 50 160 Q60 170 70 160 Q80 170 90 160 Q100 170 110 160"/>
+  </g>
+
+  <!-- Marco dorado exterior e interior -->
+  <rect x="5" y="5" width="110" height="170" rx="6" fill="none" stroke="url(#oroBordeDorso)" stroke-width="1.8"/>
+  <rect x="8" y="8" width="104" height="164" rx="4" fill="none" stroke="url(#oroBordeDorso)" stroke-width="0.8" stroke-dasharray="3,3" opacity="0.8"/>
+
+  <!-- Esquineras góticas -->
+  <g fill="url(#oroBordeDorso)">
+    <polygon points="6,6 16,6 6,16"/>
+    <polygon points="114,6 104,6 114,16"/>
+    <polygon points="6,174 16,174 6,164"/>
+    <polygon points="114,174 104,174 114,164"/>
+  </g>
+
+  <!-- Resplandor central -->
+  <circle cx="60" cy="90" r="38" fill="#e74c3c" opacity="0.2">
+    <animate attributeName="opacity" values="0.15;0.35;0.15" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Anillo solar de fuego rúnico -->
+  <circle cx="60" cy="90" r="32" fill="none" stroke="url(#oroBordeDorso)" stroke-width="1.2"/>
+  <circle cx="60" cy="90" r="35" fill="none" stroke="url(#oroBordeDorso)" stroke-width="0.6" stroke-dasharray="2,4"/>
+
+  <!-- ==================== INSIGNIA CENTRAL DEL DRAGÓN ==================== -->
+  <g fill="url(#llamaDragon)" stroke="#f1c40f" stroke-width="0.5">
+    <!-- Cabeza central -->
+    <path d="M60 62 C55 68, 52 75, 54 82 C56 86, 60 88, 60 92 C60 88, 64 86, 66 82 C68 75, 65 68, 60 62 Z"/>
+    <polygon points="60,56 57,63 63,63"/>
+    <polygon points="54,60 52,67 57,66"/>
+    <polygon points="66,60 68,67 63,66"/>
+
+    <!-- Gran ala izquierda desplegada -->
+    <path d="M52 82 C42 74, 30 78, 22 88 C30 88, 38 94, 40 102 C30 100, 24 106, 22 114 C32 110, 42 112, 48 116 C48 106, 50 94, 52 82 Z"/>
+    
+    <!-- Gran ala derecha desplegada -->
+    <path d="M68 82 C78 74, 90 78, 98 88 C90 88, 82 94, 80 102 C90 100, 96 106, 98 114 C88 110, 78 112, 72 116 C72 106, 70 94, 68 82 Z"/>
+
+    <!-- Cola enroscada de dragón con púa -->
+    <path d="M58 105 C54 115, 52 125, 60 130 C68 135, 74 125, 66 118 C62 115, 60 120, 60 125" fill="none" stroke="url(#llamaDragon)" stroke-width="2.5"/>
+    <polygon points="60,128 56,134 64,134"/>
+
+    <!-- Ojos llameantes -->
+    <circle cx="58" cy="74" r="1.2" fill="#fff"/>
+    <circle cx="62" cy="74" r="1.2" fill="#fff"/>
+  </g>
+</svg>

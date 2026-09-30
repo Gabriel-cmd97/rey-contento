@@ -5025,3 +5025,7 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
     color: #ffe27a;
     font-weight: bold;
 }
+
+/* Desbloqueos por nivel: lo bloqueado no se muestra en el lobby */
+.tarjeta-aprender.bloqueado-nivel, .banner-torneo.bloqueado-nivel { display: none !important; }
+.aprender-fila:has(.bloqueado-nivel) { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important; }
