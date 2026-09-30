@@ -3031,6 +3031,13 @@ function ajustarEscritorio() {
     document.body.classList.toggle('escritorio', esEscritorio());
     const mas = document.getElementById('masOpciones');
     if (mas && esEscritorio()) mas.open = true;
+    // La bitácora va en su propia columna a la derecha: fuera de la mesa (dentro, un
+    // contenedor con transform la deja 'fixed' respecto a él y tapa un asiento).
+    const feed = document.getElementById('miniFeedJugadas');
+    if (feed) {
+        if (esEscritorio() && feed.parentElement !== document.body) { feed._casa = feed._casa || feed.parentElement; document.body.appendChild(feed); }
+        else if (!esEscritorio() && feed._casa && feed.parentElement === document.body) feed._casa.appendChild(feed);
+    }
     if (esEscritorio() && typeof unirseVisible === 'function' && unirseVisible() && socket?.connected) window.alAbrirUnirse?.();
 }
 matchMedia('(min-width: 1100px) and (min-height: 620px)').addEventListener?.('change', ajustarEscritorio);
@@ -3250,10 +3257,6 @@ function pintarApuesta(jugadores) {
         : (_montoApuesta > 0 ? `Acierta al Campeón y gana <b>+${_montoApuesta * 3} Blis</b> (x3) y +50 XP` : 'Acierta al Campeón y gana +50 XP');
 
     caja.innerHTML = `
-        <div class="apuesta-tabs">
-            <button type="button" class="apuesta-tab ${esRonda ? 'activa' : ''}" data-tipo-apuesta="ronda">⚡ Ronda (x2)</button>
-            <button type="button" class="apuesta-tab ${!esRonda ? 'activa' : ''}" data-tipo-apuesta="campeon">👑 Campeón (x3)</button>
-        </div>
         <div class="apuesta-header">
             <p class="apuesta-titulo">${esRonda ? '🎲 ¿Quién pierde esta ronda?' : '👑 ¿Quién ganará la partida?'}</p>
             <div class="apuesta-montos">

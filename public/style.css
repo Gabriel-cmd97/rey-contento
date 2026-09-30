@@ -1809,21 +1809,22 @@ select,
 .lista-jugadores-nuevo li:nth-child(7) { animation-delay: 360ms; }
 .lista-jugadores-nuevo li:nth-child(8) { animation-delay: 420ms; }
 
-/* ── MESA DE JUEGO: anillo decorativo interior + textura feltro ── */
+/* ── MESA DE JUEGO: anillo decorativo interior + textura fieltro PRO ── */
 .tapete-virtual {
     overflow: hidden;
 }
-/* Anillo decorativo interior */
+/* Anillo decorativo interior: filete de oro cincelado y bisel de paño */
 .tapete-virtual::before {
     content: '';
     position: absolute;
-    inset: 18px;
-    border: 1.5px solid rgba(255,255,255,0.07);
-    border-radius: 80px;
+    inset: 12px;
+    border: 2px solid rgba(241,196,15,0.42);
+    box-shadow: inset 0 0 0 3px rgba(0,0,0,0.5), 0 0 16px rgba(241,196,15,0.22);
+    border-radius: inherit;
     pointer-events: none;
     z-index: 1;
 }
-/* Textura feltro: tramado diagonal muy tenue */
+/* Textura fieltro: tramado fino de paño de casino de alta gama */
 .tapete-virtual::after {
     content: '';
     position: absolute;
@@ -1835,14 +1836,13 @@ select,
     pointer-events: none;
     z-index: 0;
 }
-/* Los hijos de tapete-virtual ya apilan encima del ::after por defecto;
-   solo especificamos los que necesitan orden preciso entre sí */
+/* Los hijos de tapete-virtual ya apilan encima del ::after por defecto */
 .tapete-virtual > .tapete-emblema-fondo { z-index: 2; }
 .tapete-virtual > .centro-mesa-wrapper { z-index: 10; }
 .tapete-virtual > #mazoFlotante        { z-index: 8; }
 .tapete-virtual > #miSilla             { z-index: 20; }
 
-/* Marca de agua heráldica medieval central en el tapete de la mesa (Dragón, Lobo y Caballero) */
+/* Gran Ilustración Heráldica Widescreen en la Mesa (Dragón, Lobo Huargo, Corona y Espadas) */
 .tapete-emblema-fondo {
     position: absolute;
     inset: 0;
@@ -1852,23 +1852,27 @@ select,
     overflow: hidden;
 }
 .tapete-emblema-img {
-    width: min(85vw, 420px);
-    height: min(85vw, 420px);
-    opacity: 0.22;
-    filter: drop-shadow(0 0 14px rgba(241,196,15,0.45));
+    width: min(95%, 960px);
+    height: min(92%, 560px);
+    max-height: 560px;
+    object-fit: contain;
+    opacity: 0.44;
+    filter: drop-shadow(0 0 18px rgba(241,196,15,0.55));
     animation: emblema-pulso-mesa 7.5s ease-in-out infinite alternate;
     user-select: none;
 }
 @keyframes emblema-pulso-mesa {
-    0% { transform: scale(0.97) rotate(0deg); opacity: 0.17; filter: drop-shadow(0 0 8px rgba(241,196,15,0.25)); }
-    50% { transform: scale(1.025) rotate(1deg); opacity: 0.28; filter: drop-shadow(0 0 20px rgba(241,196,15,0.6)); }
-    100% { transform: scale(0.99) rotate(-1deg); opacity: 0.20; filter: drop-shadow(0 0 12px rgba(241,196,15,0.35)); }
+    0% { transform: scale(0.985); opacity: 0.40; filter: drop-shadow(0 0 12px rgba(241,196,15,0.4)); }
+    50% { transform: scale(1.015); opacity: 0.52; filter: drop-shadow(0 0 28px rgba(241,196,15,0.75)); }
+    100% { transform: scale(0.995); opacity: 0.42; filter: drop-shadow(0 0 16px rgba(241,196,15,0.48)); }
 }
 /* Tintes temáticos del emblema según el tapete activo */
-.emb-azul .tapete-emblema-img, .emb-noche .tapete-emblema-img { filter: hue-rotate(170deg) drop-shadow(0 0 16px rgba(56,189,248,0.5)) !important; }
-.emb-rojo .tapete-emblema-img, .emb-lava .tapete-emblema-img { filter: hue-rotate(330deg) drop-shadow(0 0 16px rgba(239,68,68,0.5)) !important; }
-.emb-morado .tapete-emblema-img, .emb-aurora .tapete-emblema-img { filter: hue-rotate(240deg) drop-shadow(0 0 16px rgba(168,85,247,0.5)) !important; }
-.emb-marmol .tapete-emblema-img { filter: grayscale(0.6) brightness(1.3) drop-shadow(0 0 16px rgba(255,255,255,0.4)) !important; }
+.emb-azul .tapete-emblema-img, .emb-noche .tapete-emblema-img { filter: hue-rotate(170deg) drop-shadow(0 0 18px rgba(56,189,248,0.65)) !important; }
+.emb-rojo .tapete-emblema-img, .emb-lava .tapete-emblema-img { filter: hue-rotate(330deg) drop-shadow(0 0 18px rgba(239,68,68,0.65)) !important; }
+.emb-morado .tapete-emblema-img, .emb-aurora .tapete-emblema-img { filter: hue-rotate(240deg) drop-shadow(0 0 18px rgba(168,85,247,0.65)) !important; }
+.emb-marmol .tapete-emblema-img { filter: grayscale(0.5) brightness(1.3) drop-shadow(0 0 18px rgba(255,255,255,0.5)) !important; }
+.emb-madera .tapete-emblema-img { filter: sepia(0.85) brightness(1.15) contrast(1.15) drop-shadow(0 0 18px rgba(146,64,14,0.7)) !important; }
+.emb-oro .tapete-emblema-img { filter: drop-shadow(0 0 26px rgba(255,215,0,0.85)) brightness(1.15) !important; }
 
 /* Animación y movimiento ambiental en el tapete de la mesa */
 .tapete-virtual {

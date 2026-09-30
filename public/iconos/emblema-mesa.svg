@@ -1,105 +1,234 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" fill="none">
   <defs>
-    <radialGradient id="haloCentro" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ffe27a" stop-opacity="0.35"/>
-      <stop offset="60%" stop-color="#f39c12" stop-opacity="0.15"/>
-      <stop offset="100%" stop-color="#d4ac0d" stop-opacity="0"/>
+    <!-- Gradiente de oro imperial para líneas y relieves -->
+    <linearGradient id="oroMesa" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff9c4"/>
+      <stop offset="25%" stop-color="#fdd835"/>
+      <stop offset="55%" stop-color="#f39c12"/>
+      <stop offset="85%" stop-color="#b7950b"/>
+      <stop offset="100%" stop-color="#7d6608"/>
+    </linearGradient>
+
+    <!-- Gradiente de halo luminoso central -->
+    <radialGradient id="haloMesa" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffe27a" stop-opacity="0.32"/>
+      <stop offset="45%" stop-color="#f39c12" stop-opacity="0.16"/>
+      <stop offset="85%" stop-color="#d4ac0d" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#7d6608" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="oroEmblema" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#fff176"/>
-      <stop offset="50%" stop-color="#f1c40f"/>
-      <stop offset="100%" stop-color="#9a7d0a"/>
+
+    <!-- Brillo dorado suave de relleno para escudos y figuras -->
+    <linearGradient id="rellenoOro" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff9c4" stop-opacity="0.22"/>
+      <stop offset="50%" stop-color="#f1c40f" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#b7950b" stop-opacity="0.04"/>
+    </linearGradient>
+
+    <!-- Fuego del dragón -->
+    <linearGradient id="fuegoDragonMesa" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f39c12"/>
+      <stop offset="50%" stop-color="#e74c3c"/>
+      <stop offset="100%" stop-color="#fff176" stop-opacity="0.1"/>
     </linearGradient>
   </defs>
 
-  <!-- Halo de resplandor ambiental central -->
-  <circle cx="250" cy="250" r="230" fill="url(#haloCentro)"/>
+  <!-- ==================== HALO Y RESPLANDOR DE FONDO ==================== -->
+  <ellipse cx="500" cy="300" rx="460" ry="260" fill="url(#haloMesa)"/>
 
-  <!-- Anillos circulares de brújula / runas medievales -->
-  <circle cx="250" cy="250" r="225" stroke="url(#oroEmblema)" stroke-width="1.8" opacity="0.6"/>
-  <circle cx="250" cy="250" r="215" stroke="url(#oroEmblema)" stroke-width="0.9" stroke-dasharray="4,6" opacity="0.75"/>
-  <circle cx="250" cy="250" r="190" stroke="url(#oroEmblema)" stroke-width="1.2" opacity="0.5"/>
-  <circle cx="250" cy="250" r="140" stroke="url(#oroEmblema)" stroke-width="0.8" stroke-dasharray="2,5" opacity="0.4"/>
+  <!-- ==================== ORLA Y GRECAS EXTERIORES ==================== -->
+  <!-- Borde elíptico exterior doble con nudo celta -->
+  <ellipse cx="500" cy="300" rx="470" ry="270" stroke="url(#oroMesa)" stroke-width="2.5" opacity="0.7"/>
+  <ellipse cx="500" cy="300" rx="458" ry="258" stroke="url(#oroMesa)" stroke-width="1.2" stroke-dasharray="6,8" opacity="0.6"/>
+  <ellipse cx="500" cy="300" rx="448" ry="248" stroke="url(#oroMesa)" stroke-width="0.8" opacity="0.5"/>
 
-  <!-- Estrellas / Puntos cardinales de la Corte -->
-  <polygon points="250,15 254,32 250,28 246,32" fill="#ffe27a"/>
-  <polygon points="250,485 254,468 250,472 246,468" fill="#ffe27a"/>
-  <polygon points="15,250 32,246 28,250 32,254" fill="#ffe27a"/>
-  <polygon points="485,250 468,246 472,250 468,254" fill="#ffe27a"/>
-
-  <!-- Flores de Lis en los cuadrantes -->
-  <g fill="url(#oroEmblema)" opacity="0.7">
-    <!-- Top-Right -->
-    <path d="M380 120 C380 110, 385 105, 385 95 C385 105, 390 110, 390 120 C397 115, 405 118, 400 126 C393 126, 388 122, 385 125 C382 122, 377 126, 370 126 C365 118, 373 115, 380 120 Z"/>
-    <!-- Top-Left -->
-    <path d="M120 120 C120 110, 115 105, 115 95 C115 105, 110 110, 110 120 C103 115, 95 118, 100 126 C107 126, 112 122, 115 125 C118 122, 123 126, 130 126 C135 118, 127 115, 120 120 Z"/>
-    <!-- Bottom-Left -->
-    <path d="M120 380 C120 390, 115 395, 115 405 C115 395, 110 390, 110 380 C103 385, 95 382, 100 374 C107 374, 112 378, 115 375 C118 378, 123 374, 130 374 C135 382, 127 385, 120 380 Z"/>
-    <!-- Bottom-Right -->
-    <path d="M380 380 C380 390, 385 395, 385 405 C385 395, 390 390, 390 380 C397 385, 405 382, 400 374 C393 374, 388 378, 385 375 C382 378, 377 374, 370 374 C365 382, 373 385, 380 380 Z"/>
+  <!-- Flores de Lis y sellos heráldicos en los ejes cardinales -->
+  <!-- Norte -->
+  <g transform="translate(500, 38)" fill="url(#oroMesa)" stroke="url(#oroMesa)" stroke-width="0.8">
+    <path d="M0 -18 C-3 -9, -9 -6, -9 0 C-4 2, -2 -1, 0 3 C2 -1, 4 2, 9 0 C9 -6, 3 -9, 0 -18 Z"/>
+    <path d="M-8 3 Q0 1 8 3 L7 5 Q0 3 -7 5 Z"/>
+    <polygon points="0,-22 -3,-18 3,-18"/>
+  </g>
+  <!-- Sur -->
+  <g transform="translate(500, 562)" fill="url(#oroMesa)" stroke="url(#oroMesa)" stroke-width="0.8">
+    <path d="M0 18 C-3 9, -9 6, -9 0 C-4 -2, -2 1, 0 -3 C2 1, 4 -2, 9 0 C9 6, 3 9, 0 18 Z"/>
+    <path d="M-8 -3 Q0 -1 8 -3 L7 -5 Q0 -3 -7 -5 Z"/>
+  </g>
+  <!-- Oeste -->
+  <g transform="translate(36, 300)" fill="url(#oroMesa)">
+    <polygon points="0,-10 12,0 0,10 -3,0"/>
+    <circle cx="16" cy="0" r="3"/>
+  </g>
+  <!-- Este -->
+  <g transform="translate(964, 300)" fill="url(#oroMesa)">
+    <polygon points="0,-10 -12,0 0,10 3,0"/>
+    <circle cx="-16" cy="0" r="3"/>
   </g>
 
-  <!-- Espadas medievales cruzadas de fondo -->
-  <g stroke="url(#oroEmblema)" stroke-width="3" stroke-linecap="round" opacity="0.6">
-    <!-- Espada 1 (Diagonal principal \) -->
-    <line x1="80" y1="80" x2="420" y2="420"/>
-    <line x1="100" y1="60" x2="60" y2="100"/>
-    <circle cx="70" cy="70" r="5" fill="#f1c40f"/>
-    <!-- Espada 2 (Diagonal secundaria /) -->
-    <line x1="420" y1="80" x2="80" y2="420"/>
-    <line x1="400" y1="60" x2="440" y2="100"/>
-    <circle cx="430" cy="70" r="5" fill="#f1c40f"/>
+  <!-- ==================== CÍRCULOS DE LA CORTE Y ASTROLABIO CENTRAL ==================== -->
+  <circle cx="500" cy="300" r="185" stroke="url(#oroMesa)" stroke-width="1.8" opacity="0.55"/>
+  <circle cx="500" cy="300" r="175" stroke="url(#oroMesa)" stroke-width="1" stroke-dasharray="4,6" opacity="0.65"/>
+  <circle cx="500" cy="300" r="150" stroke="url(#oroMesa)" stroke-width="0.7" opacity="0.4"/>
+
+  <!-- Puntos cardinales con estrellas de ocho puntas -->
+  <g stroke="url(#oroMesa)" stroke-width="1" opacity="0.6">
+    <line x1="500" y1="115" x2="500" y2="135"/>
+    <line x1="500" y1="465" x2="500" y2="485"/>
+    <line x1="315" y1="300" x2="335" y2="300"/>
+    <line x1="665" y1="300" x2="685" y2="300"/>
   </g>
 
-  <!-- ==================== DRAGÓN MEDIEVAL (LADO IZQUIERDO) ==================== -->
-  <g stroke="url(#oroEmblema)" stroke-width="1.8" fill="none" opacity="0.85">
-    <!-- Cabeza y cuernos del dragón -->
-    <path d="M175 160 C155 145, 135 155, 120 170 C105 185, 100 205, 115 210 C125 215, 140 205, 150 195 C140 215, 145 225, 160 220 C175 215, 170 195, 180 185 Z"/>
-    <path d="M125 165 C110 145, 95 140, 80 145 C95 155, 105 165, 115 170"/>
-    <!-- Cuello con escamas y alas desplegadas -->
-    <path d="M165 215 C150 250, 145 285, 160 320 C170 340, 190 355, 205 365"/>
-    <path d="M145 235 C120 230, 90 240, 75 270 C85 265, 105 265, 120 275 C95 285, 80 310, 85 335 C100 320, 120 315, 140 320"/>
-    <!-- Aliento de fuego / filigrana -->
-    <path d="M110 205 C95 210, 80 200, 65 205 C75 215, 90 220, 105 215" stroke-dasharray="2,3"/>
-    <!-- Ojo del dragón -->
-    <circle cx="135" cy="180" r="2.5" fill="#f1c40f"/>
+  <!-- ==================== ESPADAS BASTARDAS CRUZADAS (FONDO) ==================== -->
+  <g stroke="url(#oroMesa)" stroke-width="3.5" stroke-linecap="round" opacity="0.65">
+    <!-- Espada 1 (Diagonal /) -->
+    <line x1="280" y1="450" x2="720" y2="150"/>
+    <!-- Empuñadura y pomo espada 1 -->
+    <line x1="260" y1="464" x2="280" y2="450"/>
+    <circle cx="250" cy="471" r="7" fill="url(#oroMesa)"/>
+    <line x1="295" y1="462" x2="265" y2="438" stroke-width="4"/>
+
+    <!-- Espada 2 (Diagonal \) -->
+    <line x1="720" y1="450" x2="280" y2="150"/>
+    <!-- Empuñadura y pomo espada 2 -->
+    <line x1="740" y1="464" x2="720" y2="450"/>
+    <circle cx="750" cy="471" r="7" fill="url(#oroMesa)"/>
+    <line x1="705" y1="462" x2="735" y2="438" stroke-width="4"/>
   </g>
 
-  <!-- ==================== LOBO HUARGO (LADO DERECHO) ==================== -->
-  <g stroke="url(#oroEmblema)" stroke-width="1.8" fill="none" opacity="0.85">
-    <!-- Cabeza aullando y hocico -->
-    <path d="M325 160 C345 145, 365 155, 380 170 C395 185, 400 205, 385 210 C375 215, 360 205, 350 195 C360 215, 355 225, 340 220 C325 215, 330 195, 320 185 Z"/>
-    <!-- Orejas erguidas -->
-    <path d="M375 165 C390 145, 405 140, 420 145 C405 155, 395 165, 385 170"/>
-    <!-- Cuello con pelaje norteño / melena -->
-    <path d="M335 215 C350 250, 355 285, 340 320 C330 340, 310 355, 295 365"/>
-    <path d="M355 235 C380 230, 410 240, 425 270 C415 265, 395 265, 380 275 C405 285, 420 310, 415 335 C400 320, 380 315, 360 320"/>
-    <!-- Ojo del lobo -->
-    <circle cx="365" cy="180" r="2.5" fill="#f1c40f"/>
+  <!-- ==================== FLANCO IZQUIERDO: EL GRAN DRAGÓN IMPERIAL ==================== -->
+  <g stroke="url(#oroMesa)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.9">
+    <!-- Cabeza y cuernos del Dragón Rampante -->
+    <path d="M250 160 C230 135, 195 130, 160 145 C145 152, 130 165, 120 185 C115 198, 120 208, 135 210 C155 212, 175 195, 195 190" stroke-width="2.6"/>
+    <!-- Cuerno principal curvado hacia atrás -->
+    <path d="M165 145 C150 115, 120 95, 80 90 C105 110, 125 135, 145 152" fill="url(#rellenoOro)"/>
+    <!-- Cuerno secundario -->
+    <path d="M150 155 C130 130, 105 120, 75 120 C95 135, 115 150, 135 160"/>
+    <!-- Mandíbula abierta y colmillos temibles -->
+    <path d="M120 185 L95 190 C90 198, 95 208, 110 210 L140 215"/>
+    <polygon points="105,188 102,198 112,190" fill="#ffe27a"/>
+    <polygon points="120,186 118,196 128,188" fill="#ffe27a"/>
+    <!-- Lengua bífida / llamarada heráldica -->
+    <path d="M95 198 Q70 200 50 190 Q65 205 85 205" stroke="url(#fuegoDragonMesa)" stroke-width="2" fill="url(#rellenoOro)"/>
+    <!-- Ojo del Dragón con resplandor -->
+    <circle cx="150" cy="172" r="3.5" fill="#f1c40f"/>
+
+    <!-- Cuello serpentino escamado y pecho poderoso -->
+    <path d="M195 190 C180 230, 170 270, 185 310 C195 335, 215 355, 240 375" stroke-width="2.6"/>
+    <path d="M140 215 C130 255, 125 295, 145 330 C165 365, 195 390, 230 405" stroke-width="2"/>
+    <!-- Placas acanaladas del pecho -->
+    <line x1="165" y1="250" x2="140" y2="265"/>
+    <line x1="172" y1="285" x2="142" y2="305"/>
+    <line x1="185" y1="320" x2="155" y2="345"/>
+
+    <!-- Gran Ala de Dragón desplegada con garras -->
+    <path d="M190 230 C165 190, 125 150, 70 140 C85 175, 105 210, 115 245" fill="url(#rellenoOro)" stroke-width="2.2"/>
+    <path d="M70 140 C95 180, 100 230, 95 275 C115 260, 135 255, 155 250"/>
+    <path d="M95 275 C110 300, 115 330, 105 360 C125 335, 145 325, 165 315"/>
+    <!-- Espolones y garras del ala -->
+    <polygon points="70,140 62,130 75,135" fill="#ffe27a"/>
+
+    <!-- Garra delantera rapaz extendida -->
+    <path d="M185 310 C160 325, 130 335, 110 340 L100 355 M110 340 L95 342 M110 340 L102 330"/>
+
+    <!-- Cola serpentina con púa que se enrosca en el borde -->
+    <path d="M230 405 C200 425, 155 435, 120 410 C90 385, 95 340, 75 315 C60 295, 45 310, 48 335 C52 375, 90 435, 150 455 C200 470, 255 460, 280 435" stroke-dasharray="8,4" stroke-width="1.8"/>
+    <!-- Punta de lanza en la cola -->
+    <polygon points="48,335 40,320 56,325" fill="#ffe27a"/>
   </g>
 
-  <!-- ==================== ESCUDO Y CORONA CENTRAL ==================== -->
-  <g fill="none" stroke="url(#oroEmblema)">
-    <!-- Escudo heráldico central -->
-    <path d="M210 210 L290 210 C290 270, 270 310, 250 330 C230 310, 210 270, 210 210 Z" stroke-width="2.5" fill="rgba(241,196,15,0.06)"/>
-    <path d="M220 220 L280 220 C280 265, 265 295, 250 312 C235 295, 220 265, 220 220 Z" stroke-width="1.2" stroke-dasharray="3,3"/>
-    
-    <!-- Gran Corona Real en la cima del escudo -->
-    <path d="M215 200 L225 170 L240 185 L250 155 L260 185 L275 170 L285 200 Z" stroke-width="2" fill="rgba(255,241,118,0.15)"/>
-    <circle cx="250" cy="155" r="3" fill="#ffe27a"/>
-    <circle cx="225" cy="170" r="2.2" fill="#ffe27a"/>
-    <circle cx="275" cy="170" r="2.2" fill="#ffe27a"/>
+  <!-- ==================== FLANCO DERECHO: EL GRAN LOBO HUARGO DEL NORTE ==================== -->
+  <g stroke="url(#oroMesa)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.9">
+    <!-- Cabeza aullante y fauces feroces del Lobo Huargo Rampante -->
+    <path d="M750 160 C770 135, 805 130, 840 145 C855 152, 870 165, 880 185 C885 198, 880 208, 865 210 C845 212, 825 195, 805 190" stroke-width="2.6"/>
+    <!-- Orejas erectas y puntiagudas -->
+    <path d="M835 145 C850 115, 880 95, 920 90 C895 110, 875 135, 855 152" fill="url(#rellenoOro)"/>
+    <path d="M850 155 C870 130, 895 120, 925 120 C905 135, 885 150, 865 160"/>
+    <!-- Hocico y colmillos desgarradores -->
+    <path d="M880 185 L905 190 C910 198, 905 208, 890 210 L860 215"/>
+    <polygon points="895,188 898,198 888,190" fill="#ffe27a"/>
+    <polygon points="880,186 882,196 872,188" fill="#ffe27a"/>
+    <!-- Aliento gélido / filigrana nórdica -->
+    <path d="M905 198 Q930 200 950 190 Q935 205 915 205" stroke="url(#oroMesa)" stroke-width="1.8"/>
+    <!-- Ojo del Lobo -->
+    <circle cx="850" cy="172" r="3.5" fill="#f1c40f"/>
 
-    <!-- Yelmo de caballero dentro del escudo -->
-    <path d="M235 240 C235 230, 242 225, 250 225 C258 225, 265 230, 265 240 C265 255, 260 265, 250 270 C240 265, 235 255, 235 240 Z" stroke-width="1.6"/>
-    <!-- Visor de hendidura en cruz -->
-    <line x1="240" y1="242" x2="260" y2="242" stroke-width="1.8"/>
-    <line x1="250" y1="237" x2="250" y2="252" stroke-width="1.8"/>
-    
-    <!-- Corazón / Flor Real del Rey Contento -->
-    <path d="M245 285 C245 280, 250 278, 250 283 C250 278, 255 280, 255 285 C255 290, 250 294, 250 297 C250 294, 245 290, 245 285 Z" fill="#ffe27a" stroke-width="0.8"/>
+    <!-- Cuello con melena hirsuta de invierno -->
+    <path d="M805 190 C820 230, 830 270, 815 310 C805 335, 785 355, 760 375" stroke-width="2.6"/>
+    <path d="M860 215 C870 255, 875 295, 855 330 C835 365, 805 390, 770 405" stroke-width="2"/>
+    <!-- Mechones de pelaje invernal -->
+    <path d="M835 230 L865 240 L840 255 L875 270 L845 285 L880 305 L850 320" fill="url(#rellenoOro)"/>
+
+    <!-- Garras delanteras de fiera listas para atacar -->
+    <path d="M815 310 C840 325, 870 335, 890 340 L900 355 M890 340 L905 342 M890 340 L898 330"/>
+
+    <!-- Lomo y patas traseras del lobo -->
+    <path d="M760 375 C790 395, 825 410, 855 435 L870 470" stroke-width="2"/>
+    <!-- Cola espesa de lobo huargo ondeando -->
+    <path d="M855 435 C895 440, 930 420, 945 385 C955 360, 940 345, 935 370 C925 410, 885 450, 840 455" stroke-width="2" fill="url(#rellenoOro)"/>
   </g>
 
-  <!-- Lema en cinta curvada inferior -->
-  <path d="M180 375 Q250 405 320 375 Q325 390 315 395 Q250 425 185 395 Z" stroke="url(#oroEmblema)" stroke-width="1.5" fill="rgba(20,10,5,0.3)"/>
+  <!-- ==================== CENTRO: ESCUDO REAL, CORONA Y ESPADA ==================== -->
+  <!-- Escudo heráldico central de gran tamaño -->
+  <g stroke="url(#oroMesa)" fill="none">
+    <!-- Contorno del Escudo de la Corona -->
+    <path d="M430 230 L570 230 C570 330, 540 390, 500 420 C460 390, 430 330, 430 230 Z" stroke-width="3.5" fill="url(#rellenoOro)"/>
+    <path d="M444 244 L556 244 C556 325, 532 372, 500 398 C468 372, 444 325, 444 244 Z" stroke-width="1.6" stroke-dasharray="4,4"/>
+
+    <!-- Gran Espada Bastarda Real atravesando el centro del escudo -->
+    <!-- Hoja de la espada vertical -->
+    <line x1="500" y1="130" x2="500" y2="445" stroke-width="4.5" stroke-linecap="round"/>
+    <line x1="500" y1="130" x2="500" y2="445" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>
+    <!-- Punta afilada que emerge bajo el escudo -->
+    <polygon points="500,458 493,440 507,440" fill="url(#oroMesa)"/>
+
+    <!-- Gran Corona Imperial en la cúspide del escudo -->
+    <g stroke="url(#oroMesa)" stroke-width="2.5" fill="url(#oroMesa)">
+      <!-- Base de la corona con gemas -->
+      <path d="M435 220 L565 220 L560 235 L440 235 Z" fill="#7d6608" stroke-width="2"/>
+      <circle cx="455" cy="227" r="3" fill="#e74c3c"/>
+      <circle cx="485" cy="227" r="3.5" fill="#2ecc71"/>
+      <circle cx="500" cy="227" r="4" fill="#f1c40f"/>
+      <circle cx="515" cy="227" r="3.5" fill="#2ecc71"/>
+      <circle cx="545" cy="227" r="3" fill="#e74c3c"/>
+
+      <!-- Florones y puntas de la corona real -->
+      <path d="M435 220 L445 175 L468 198 L500 155 L532 198 L555 175 L565 220 Z" fill="url(#rellenoOro)"/>
+      <circle cx="500" cy="155" r="5" fill="#ffe27a"/>
+      <circle cx="445" cy="175" r="4" fill="#ffe27a"/>
+      <circle cx="555" cy="175" r="4" fill="#ffe27a"/>
+      <circle cx="468" cy="198" r="3" fill="#ffe27a"/>
+      <circle cx="532" cy="198" r="3" fill="#ffe27a"/>
+    </g>
+
+    <!-- Guardia de la espada justo bajo la corona -->
+    <path d="M460 210 L540 210" stroke-width="5" stroke-linecap="round"/>
+    <!-- Pomo y empuñadura de la espada -->
+    <circle cx="500" cy="120" r="8" fill="url(#oroMesa)"/>
+    <circle cx="500" cy="120" r="4" fill="#7d6608"/>
+
+    <!-- Dentro del escudo: Yelmo de caballero medieval -->
+    <g transform="translate(500, 310)" stroke="url(#oroMesa)" stroke-width="2" fill="none">
+      <path d="M-28 -20 C-28 -40, -15 -48, 0 -48 C15 -48, 28 -40, 28 -20 C28 5, 20 22, 0 30 C-20 22, -28 5, -28 -20 Z" fill="rgba(0,0,0,0.3)"/>
+      <!-- Visor de ranura en cruz templaria -->
+      <line x1="-20" y1="-18" x2="20" y2="-18" stroke-width="2.6"/>
+      <line x1="0" y1="-28" x2="0" y2="-5" stroke-width="2.6"/>
+      <!-- Respiraderos del yelmo -->
+      <circle cx="-10" cy="2" r="1.2" fill="#ffe27a"/>
+      <circle cx="10" cy="2" r="1.2" fill="#ffe27a"/>
+      <circle cx="-6" cy="8" r="1.2" fill="#ffe27a"/>
+      <circle cx="6" cy="8" r="1.2" fill="#ffe27a"/>
+    </g>
+  </g>
+
+  <!-- ==================== CINTA Y LEMA DE LA CORONA ==================== -->
+  <g stroke="url(#oroMesa)">
+    <!-- Pergamino heráldico curvado -->
+    <path d="M300 480 Q500 525 700 480 Q715 505 690 515 Q500 555 310 515 Q285 505 300 480 Z" stroke-width="2.2" fill="rgba(15,8,3,0.7)"/>
+    <!-- Plegado de las esquinas del pergamino -->
+    <path d="M300 480 L280 495 L310 515 Z" fill="url(#oroMesa)" opacity="0.6"/>
+    <path d="M700 480 L720 495 L690 515 Z" fill="url(#oroMesa)" opacity="0.6"/>
+
+    <!-- Texto tallado en el pergamino: REY CONTENTO -->
+    <text x="500" y="508" font-family="Cinzel, Georgia, serif" font-size="19" font-weight="900" letter-spacing="8" fill="url(#oroMesa)" text-anchor="middle" stroke="none">REY CONTENTO</text>
+    <text x="500" y="525" font-family="Georgia, serif" font-size="9" font-weight="bold" letter-spacing="3" fill="#ffe27a" text-anchor="middle" stroke="none" opacity="0.8">QUE NO TE TOQUE LA CARTA MÁS BAJA</text>
+  </g>
 </svg>

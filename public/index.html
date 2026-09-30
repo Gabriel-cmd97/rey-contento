@@ -166,6 +166,11 @@
                             <strong>Aprender a jugar</strong>
                             <span>3 rondas guiadas</span>
                         </button>
+                        <button id="btnPracticaFiesta" class="tarjeta-aprender">
+                            <svg class="icono" aria-hidden="true"><use href="#i-grupo"/></svg>
+                            <strong>Modo Fiesta</strong>
+                            <span>3 rondas guiadas</span>
+                        </button>
                         <button id="btnPracticaPoderes" class="tarjeta-aprender">
                             <svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg>
                             <strong>Eventos y poderes</strong>
@@ -175,11 +180,6 @@
                             <svg class="icono" aria-hidden="true"><use href="#i-corona"/></svg>
                             <strong>La Corte</strong>
                             <span>2 rondas guiadas</span>
-                        </button>
-                        <button id="btnPracticaFiesta" class="tarjeta-aprender">
-                            <svg class="icono" aria-hidden="true"><use href="#i-grupo"/></svg>
-                            <strong>Modo Fiesta</strong>
-                            <span>3 rondas guiadas</span>
                         </button>
                     </div>
                 </div>
@@ -193,7 +193,7 @@
                             <select id="selectModoJuego" class="selector-medieval selector-compacto">
                             <option value="CLASICO">Clásico</option>
                             <option value="FIESTA">Fiesta: evento en cada ronda</option>
-                            <option value="CORTE">La Corte: Rey secreto (equipos)</option>
+                            <optgroup label="Avanzado"><option value="CORTE">La Corte: Rey secreto (equipos)</option></optgroup>
                         </select>
                         </div>
                         <div class="config-item-nuevo">
@@ -216,6 +216,13 @@
                             <option value="8" selected>8 jugadores</option>
                         </select>
                         </div>
+                    </div>
+                    <details class="mas-opciones" id="masOpciones">
+                        <summary>
+                            <span><svg class="icono" aria-hidden="true"><use href="#i-ajustes"/></svg> Más opciones</span>
+                            <span id="resumenMasOpciones" class="resumen-mas-opciones"></span>
+                        </summary>
+                        <div class="config-grid-nuevo">
                         <div class="config-item-nuevo" title="Parejas: equipos Oro y Plata">
                             <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-grupo"/></svg> Parejas</span>
                             <select id="selectEquipos" class="selector-medieval selector-compacto">
@@ -224,13 +231,6 @@
                                 <option value="3">3 contra 3</option>
                             </select>
                         </div>
-                    </div>
-                    <details class="mas-opciones" id="masOpciones">
-                        <summary>
-                            <span><svg class="icono" aria-hidden="true"><use href="#i-ajustes"/></svg> Más opciones</span>
-                            <span id="resumenMasOpciones" class="resumen-mas-opciones"></span>
-                        </summary>
-                        <div class="config-grid-nuevo">
                             <div class="config-item-nuevo" title="Sorpresa: el 9 va oculto · Declarado: todos saben quién lo tiene">
                             <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-mascara"/></svg> Modo Rey</span>
                             <select id="selectModo" class="selector-medieval selector-compacto">

@@ -1,87 +1,116 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <radialGradient id="bgFenix" cx="50%" cy="40%" r="65%">
-      <stop offset="0%" stop-color="#4a0f05"/>
-      <stop offset="55%" stop-color="#240502"/>
-      <stop offset="100%" stop-color="#080101"/>
+    <!-- Fondo de abismo de cenizas y amanecer solar -->
+    <radialGradient id="bgFenixReal" cx="50%" cy="42%" r="62%">
+      <stop offset="0%" stop-color="#fff3b0"/>
+      <stop offset="25%" stop-color="#f39c12"/>
+      <stop offset="65%" stop-color="#78281f"/>
+      <stop offset="100%" stop-color="#240502"/>
     </radialGradient>
-    <linearGradient id="plumaFuego" x1="0" y1="1" x2="1" y2="0">
+
+    <!-- Gradiente de alas y plumas de fuego sagrado -->
+    <linearGradient id="fuegoAlas" x1="0" y1="1" x2="0" y2="0">
       <stop offset="0%" stop-color="#78281f"/>
-      <stop offset="35%" stop-color="#c0392b"/>
-      <stop offset="70%" stop-color="#f39c12"/>
-      <stop offset="100%" stop-color="#fff176"/>
+      <stop offset="30%" stop-color="#c0392b"/>
+      <stop offset="65%" stop-color="#f39c12"/>
+      <stop offset="90%" stop-color="#f1c40f"/>
+      <stop offset="100%" stop-color="#ffffff"/>
     </linearGradient>
-    <linearGradient id="picoOro" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#ffeaa7"/>
-      <stop offset="50%" stop-color="#f39c12"/>
-      <stop offset="100%" stop-color="#d35400"/>
+
+    <!-- Gradiente del torso y pecho ardiente -->
+    <linearGradient id="pechoFenix" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff9c4"/>
+      <stop offset="35%" stop-color="#f39c12"/>
+      <stop offset="80%" stop-color="#c0392b"/>
+      <stop offset="100%" stop-color="#501814"/>
     </linearGradient>
-    <radialGradient id="ojoSolar" cx="45%" cy="45%" r="55%">
+
+    <!-- Gradiente para el pico de oro forjado -->
+    <linearGradient id="picoFenix" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="40%" stop-color="#ffeb3b"/>
-      <stop offset="80%" stop-color="#ff5722"/>
-      <stop offset="100%" stop-color="#b71c1c"/>
+      <stop offset="50%" stop-color="#f1c40f"/>
+      <stop offset="100%" stop-color="#b7950b"/>
+    </linearGradient>
+
+    <!-- Ojo solar abrasador -->
+    <radialGradient id="ojoSolarFenix" cx="45%" cy="45%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="45%" stop-color="#ffeb3b"/>
+      <stop offset="85%" stop-color="#e67e22"/>
+      <stop offset="100%" stop-color="#900c3f"/>
     </radialGradient>
   </defs>
 
-  <!-- Fondo de ceniza y ascensión solar -->
-  <circle cx="32" cy="32" r="32" fill="url(#bgFenix)"/>
+  <!-- Fondo circular del avatar -->
+  <circle cx="32" cy="32" r="32" fill="url(#bgFenixReal)"/>
 
-  <!-- Halo de resurrección / fuego solar -->
-  <circle cx="32" cy="30" r="24" fill="#e74c3c" opacity="0.2">
-    <animate attributeName="opacity" values="0.15;0.35;0.15" dur="1.8s" repeatCount="indefinite"/>
-    <animate attributeName="r" values="22;25;22" dur="1.8s" repeatCount="indefinite"/>
+  <!-- Halo de resplandor pulsante del Fénix -->
+  <circle cx="32" cy="30" r="26" fill="#f39c12" opacity="0.25">
+    <animate attributeName="r" values="24;28;24" dur="2s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.18;0.35;0.18" dur="2s" repeatCount="indefinite"/>
   </circle>
 
-  <!-- Chispas doradas y cenizas sagradas que ascienden -->
-  <circle cx="12" cy="40" r="0.9" fill="#f39c12" opacity="0.85">
-    <animate attributeName="cy" values="40;18;40" dur="2.3s" repeatCount="indefinite"/>
+  <!-- Chispas y brasas que ascienden hacia los cielos -->
+  <circle cx="10" cy="46" r="0.9" fill="#fff9c4">
+    <animate attributeName="cy" values="46;14" dur="2.4s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;0" dur="2.4s" repeatCount="indefinite"/>
   </circle>
-  <circle cx="52" cy="36" r="0.8" fill="#ffeaa7" opacity="0.9">
-    <animate attributeName="cy" values="36;14;36" dur="1.9s" repeatCount="indefinite"/>
+  <circle cx="54" cy="48" r="1.1" fill="#fff176">
+    <animate attributeName="cy" values="48;12" dur="2.8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;0" dur="2.8s" repeatCount="indefinite"/>
   </circle>
-  <circle cx="20" cy="16" r="0.7" fill="#ff7675" opacity="0.75"/>
-  <circle cx="48" cy="18" r="1.1" fill="#f1c40f" opacity="0.7"/>
+  <circle cx="24" cy="52" r="0.8" fill="#f39c12">
+    <animate attributeName="cy" values="52;22" dur="2.1s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;0" dur="2.1s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="40" cy="54" r="0.7" fill="#f39c12">
+    <animate attributeName="cy" values="54;26" dur="2.3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;0" dur="2.3s" repeatCount="indefinite"/>
+  </circle>
 
-  <!-- Plumaje del cuello y pecho en llamas vivas -->
-  <path d="M18 64 C20 50, 24 44, 30 42 L34 46 L38 42 C44 44, 48 50, 50 64 Z" fill="#78281f"/>
-  <path d="M22 64 C24 53, 27 46, 32 44 L30 64 Z" fill="url(#plumaFuego)"/>
-  <path d="M46 64 C44 53, 41 46, 36 44 L38 64 Z" fill="url(#plumaFuego)"/>
+  <!-- Grupo central del Fénix con animación de vuelo / aleteo majestuoso -->
+  <g>
+    <animateTransform attributeName="transform" type="translate" values="0,1; 0,-1.5; 0,1" dur="2.2s" repeatCount="indefinite" additive="sum"/>
 
-  <!-- Cresta de plumas solares llameantes traseras -->
-  <path d="M30 18 C26 10, 18 4, 10 3 C17 9, 23 16, 27 23 Z" fill="url(#plumaFuego)"/>
-  <path d="M33 16 C33 7, 28 2, 21 0 C26 6, 30 12, 32 20 Z" fill="url(#plumaFuego)"/>
-  <path d="M36 17 C40 9, 46 4, 54 3 C47 9, 42 16, 38 23 Z" fill="url(#plumaFuego)"/>
-  <path d="M38 22 C45 16, 52 12, 59 13 C52 18, 47 23, 41 27 Z" fill="url(#plumaFuego)"/>
+    <!-- Cola sagrada de fuego: 3 largas cintas que caen ondulando -->
+    <path d="M32 44 Q28 54 22 64 Q26 56 31 46 Z" fill="url(#fuegoAlas)" opacity="0.85"/>
+    <path d="M32 44 Q36 54 42 64 Q38 56 33 46 Z" fill="url(#fuegoAlas)" opacity="0.85"/>
+    <path d="M32 45 Q30 55 32 64 Q34 55 32 45 Z" fill="#f1c40f"/>
 
-  <!-- Cabeza noble de ave rapaz divina / Fénix ancestral (Perfil 3/4) -->
-  <path d="M22 30 C20 22, 25 18, 33 18 C40 18, 44 22, 44 30 C44 38, 40 43, 34 45 C28 43, 23 38, 22 30 Z" fill="url(#plumaFuego)" stroke="#78281f" stroke-width="0.7"/>
+    <!-- ALA IZQUIERDA DESPLEGADA (Grandes plumas de fuego ascendente) -->
+    <!-- Capa de plumas exteriores / primarias -->
+    <path d="M32 38 C22 36, 11 26, 4 10 C8 17, 14 22, 19 22 C13 16, 9 9, 8 3 C13 11, 19 16, 25 18 C20 12, 18 6, 17 1 C22 8, 27 15, 32 20 Z" fill="url(#fuegoAlas)"/>
+    <!-- Plumas secundarias interiores del ala izquierda -->
+    <path d="M30 38 C22 34, 15 28, 12 20 C16 24, 22 26, 27 24 C23 20, 20 15, 20 10 C24 16, 28 20, 31 22 Z" fill="#fff176" opacity="0.9"/>
 
-  <!-- Corona de plumas sobre la frente -->
-  <polygon points="26,18 29,12 32,18" fill="#ffeaa7"/>
-  <polygon points="32,18 35,11 38,18" fill="#ffeaa7"/>
+    <!-- ALA DERECHA DESPLEGADA (Simétrica, fuego ardiente) -->
+    <!-- Capa de plumas exteriores / primarias -->
+    <path d="M32 38 C42 36, 53 26, 60 10 C56 17, 50 22, 45 22 C51 16, 55 9, 56 3 C51 11, 45 16, 39 18 C44 12, 46 6, 47 1 C42 8, 37 15, 32 20 Z" fill="url(#fuegoAlas)"/>
+    <!-- Plumas secundarias interiores del ala derecha -->
+    <path d="M34 38 C42 34, 49 28, 52 20 C48 24, 42 26, 37 24 C41 20, 44 15, 44 10 C40 16, 36 20, 33 22 Z" fill="#fff176" opacity="0.9"/>
 
-  <!-- Pico formidable de rapaz rapaz curvado en oro ardiente -->
-  <path d="M34 29 L46 32 C49 33, 51 35, 48 37 C44 39, 39 37, 34 37 Z" fill="url(#picoOro)" stroke="#935116" stroke-width="0.6"/>
-  <!-- Punta curvada hacia abajo del pico -->
-  <path d="M46 32 C50 33, 51 37, 47 38 C45 37, 43 35, 39 35" fill="url(#picoOro)"/>
-  <!-- Mandíbula inferior del pico -->
-  <path d="M34 36 L43 37 C41 39, 37 40, 34 40 Z" fill="#d35400"/>
+    <!-- Torso elegante del Fénix -->
+    <path d="M32 21 C28 21, 26 26, 26 33 C26 40, 29 45, 32 46 C35 45, 38 40, 38 33 C38 26, 36 21, 32 21 Z" fill="url(#pechoFenix)"/>
+    <!-- Brillo dorado en el centro del pecho -->
+    <ellipse cx="32" cy="32" rx="3.5" ry="7" fill="#fff9c4" opacity="0.6"/>
 
-  <!-- Fosa nasal del ave rapaz -->
-  <ellipse cx="37" cy="33" rx="1.2" ry="0.6" fill="#78281f" transform="rotate(-10 37 33)"/>
+    <!-- Cuello y cabeza orgullosa del Fénix mirando al frente / cielo -->
+    <path d="M30 22 C30 16, 31 13, 32 11 C33 13, 34 16, 34 22 Z" fill="#ffeaa7"/>
+    <ellipse cx="32" cy="14" rx="4.5" ry="5.5" fill="#f39c12"/>
 
-  <!-- Ojo solar abrasador con llamarada interna -->
-  <!-- Cuenca del ojo -->
-  <path d="M26 27 Q30 25 33 27 Q30 30 26 27 Z" fill="#240502"/>
-  <circle cx="29.5" cy="27.5" r="2.3" fill="url(#ojoSolar)"/>
-  <circle cx="29.5" cy="27.5" r="0.9" fill="#0d0201"/>
-  <circle cx="30.2" cy="26.8" r="0.4" fill="#ffffff"/>
+    <!-- Corona / Cresta Real de Fuego con 3 plumas erguidas -->
+    <path d="M32 11 Q32 3 32 0 Q34 4 33 11 Z" fill="#ffffff"/>
+    <path d="M31 11 Q28 5 24 2 Q27 7 30 11 Z" fill="#fff176"/>
+    <path d="M33 11 Q36 5 40 2 Q37 7 34 11 Z" fill="#fff176"/>
 
-  <!-- Ceja de plumas llameantes afiladas -->
-  <path d="M24 25 Q29 23 35 25" stroke="#ffeaa7" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <!-- Pico regio curvado de halcón solar -->
+    <polygon points="32,13 30,16 34,16" fill="url(#picoFenix)"/>
+    <path d="M30 16 Q32 19 32 21 Q32 19 34 16 Z" fill="url(#picoFenix)"/>
 
-  <!-- Llamas vivas que brotan de la base de la cabeza -->
-  <path d="M20 34 Q15 36 12 32 Q16 38 21 38" fill="url(#plumaFuego)"/>
-  <path d="M42 34 Q47 36 51 32 Q47 38 41 38" fill="url(#plumaFuego)"/>
+    <!-- Ojos solares gemelos abrasadores -->
+    <circle cx="29.5" cy="14" r="1.3" fill="url(#ojoSolarFenix)"/>
+    <circle cx="29.2" cy="13.7" r="0.4" fill="#ffffff"/>
+    <circle cx="34.5" cy="14" r="1.3" fill="url(#ojoSolarFenix)"/>
+    <circle cx="34.2" cy="13.7" r="0.4" fill="#ffffff"/>
+  </g>
 </svg>
