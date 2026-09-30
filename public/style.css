@@ -4032,12 +4032,28 @@ button.chip-visibilidad:not(:disabled):active { transform: scale(.96); }
 /* =========================================
    COSMÉTICOS (25/09/2026): marcos de avatar y dorsos de carta
    ========================================= */
-.marco-bronce { box-shadow: 0 0 0 2px #cd7f32, 0 0 8px rgba(205,127,50,.6) !important; }
-.marco-plata  { box-shadow: 0 0 0 2px #dfe6ee, 0 0 9px rgba(223,230,238,.7) !important; }
-.marco-oro    { box-shadow: 0 0 0 2px #ffd54a, 0 0 12px rgba(255,213,74,.85) !important; }
-.marco-fuego  { box-shadow: 0 0 0 2px #ff7a2f, 0 0 12px rgba(255,90,20,.85) !important; animation: marco-fuego 1.6s ease-in-out infinite; }
-@keyframes marco-fuego { 50% { box-shadow: 0 0 0 2px #ffd54a, 0 0 18px rgba(255,160,40,.95); } }
-@media (prefers-reduced-motion: reduce) { .marco-fuego { animation: none; } }
+.marco-bronce {
+    box-shadow: 0 0 0 2px #5d3314, 0 0 0 3.5px #cd7f32, 0 0 10px rgba(205,127,50,.7), inset 0 0 4px rgba(60,25,5,.6) !important;
+    border-color: #cd7f32 !important;
+}
+.marco-plata {
+    box-shadow: 0 0 0 2px #475569, 0 0 0 3.5px #e2e8f0, 0 0 14px rgba(226,232,240,.85), inset 0 0 5px rgba(255,255,255,.5) !important;
+    border-color: #e2e8f0 !important;
+    animation: brillo-plata 3s ease-in-out infinite;
+}
+@keyframes brillo-plata { 50% { box-shadow: 0 0 0 2px #64748b, 0 0 0 4px #ffffff, 0 0 20px rgba(255,255,255,.9), inset 0 0 8px rgba(255,255,255,.7); } }
+.marco-oro {
+    box-shadow: 0 0 0 2px #7d6608, 0 0 0 3.5px #f4d03f, 0 0 0 5px #b7950b, 0 0 18px rgba(244,208,63,.9), inset 0 0 6px rgba(255,235,59,.5) !important;
+    border-color: #f4d03f !important;
+    animation: brillo-oro 2.4s ease-in-out infinite;
+}
+@keyframes brillo-oro { 50% { box-shadow: 0 0 0 2px #9a7d0a, 0 0 0 4px #fff176, 0 0 0 5.5px #d4ac0d, 0 0 26px rgba(255,215,0,1), inset 0 0 8px rgba(255,255,255,.7); } }
+.marco-fuego {
+    box-shadow: 0 0 0 2px #78281f, 0 0 0 3.5px #ff7a2f, 0 0 16px rgba(255,90,20,.95), inset 0 0 5px rgba(255,160,40,.5) !important;
+    animation: marco-fuego 1.6s ease-in-out infinite;
+}
+@keyframes marco-fuego { 50% { box-shadow: 0 0 0 2px #922b21, 0 0 0 4px #ffd54a, 0 0 24px rgba(255,160,40,1), inset 0 0 8px rgba(255,255,255,.6); } }
+@media (prefers-reduced-motion: reduce) { .marco-plata, .marco-oro, .marco-fuego { animation: none; } }
 
 .dorso-carmesi { background: repeating-linear-gradient(-45deg, #5c0f16, #5c0f16 3px, #8e1b25 3px, #8e1b25 6px) !important; }
 .dorso-real    { background: repeating-linear-gradient(-45deg, #0d2a5c, #0d2a5c 3px, #1c4a94 3px, #1c4a94 6px) !important; }
@@ -4616,8 +4632,13 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
 .vitrina-datos small { font-size: 11.5px; color: var(--texto-suave); }
 .vitrina-cartas { display: flex; gap: 6px; align-items: center; margin-top: 2px; }
 
-/* Marcos nuevos (y los que faltaban) */
-.marco-esmeralda { box-shadow: 0 0 0 2px #2ecc71, 0 0 10px rgba(46,204,113,.75) !important; }
+/* Marcos nuevos y de temática medieval */
+.marco-esmeralda {
+    box-shadow: 0 0 0 2px #0e6251, 0 0 0 3.5px #2ecc71, 0 0 16px rgba(46,204,113,.85), inset 0 0 5px rgba(163,228,215,.4) !important;
+    border-color: #2ecc71 !important;
+    animation: pulso-esmeralda 2.5s ease-in-out infinite;
+}
+@keyframes pulso-esmeralda { 50% { box-shadow: 0 0 0 2px #117a65, 0 0 0 4px #58d68d, 0 0 24px rgba(46,204,113,1), inset 0 0 8px rgba(255,255,255,.5); } }
 .marco-hielo { box-shadow: 0 0 0 2px #aee9ff, 0 0 12px rgba(120,210,255,.85) !important; animation: marco-hielo 2.2s ease-in-out infinite; }
 @keyframes marco-hielo { 50% { box-shadow: 0 0 0 2px #ffffff, 0 0 20px rgba(170,235,255,1), 0 0 4px 3px rgba(255,255,255,.35) inset; } }
 .marco-relampago { box-shadow: 0 0 0 2px #a569bd, 0 0 12px rgba(165,105,189,.9) !important; animation: marco-relampago 1.4s steps(1) infinite; }
@@ -4632,7 +4653,12 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
 .marco-gemas { box-shadow: 0 0 0 2px #ffd54a, 0 0 0 4px #7d3c98, 0 0 0 5px #ffd54a, 0 0 18px rgba(255,213,74,.9) !important;
     animation: marco-gemas 2.6s ease-in-out infinite; }
 @keyframes marco-gemas { 50% { box-shadow: 0 0 0 2px #fff3b0, 0 0 0 4px #c0392b, 0 0 0 5px #fff3b0, 0 0 26px rgba(255,213,74,1); } }
-@media (prefers-reduced-motion: reduce) { .marco-hielo, .marco-relampago, .marco-arcoiris, .marco-gemas { animation: none !important; } }
+.marco-huesos {
+    box-shadow: 0 0 0 2px #18181b, 0 0 0 3.5px #f4f4f5, 0 0 0 5px #881337, 0 0 16px rgba(244,244,245,.8), inset 0 0 4px rgba(136,19,55,.6) !important;
+    animation: pulso-huesos 2.8s ease-in-out infinite;
+}
+@keyframes pulso-huesos { 50% { box-shadow: 0 0 0 2px #27272a, 0 0 0 4px #ffffff, 0 0 0 5.5px #be123c, 0 0 24px rgba(255,255,255,.95), inset 0 0 6px rgba(225,29,72,.7); } }
+@media (prefers-reduced-motion: reduce) { .marco-esmeralda, .marco-hielo, .marco-relampago, .marco-arcoiris, .marco-gemas, .marco-huesos { animation: none !important; } }
 
 /* Dorsos y tapete que faltaban */
 .dorso-esmeralda { background: repeating-linear-gradient(-45deg, #0e5a36, #0e5a36 3px, #1e8449 3px, #1e8449 6px) !important; }
@@ -4716,9 +4742,9 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
    tapetes animados, colecciones y vista previa
    ========================================= */
 @property --ang { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
-.avatar-cosm, .jugador-avatar-lobby { position: relative; }
+.avatar-cosm, .jugador-avatar-lobby, .avatar-top, .vitrina-avatar { position: relative; }
 /* Anillo: un conic-gradient recortado a un aro (sirve para círculos y para el recuadro del asiento) */
-:is(.marco-obsidiana, .marco-llamas, .marco-celestial)::before {
+:is(.marco-obsidiana, .marco-llamas, .marco-celestial, .marco-trono_hierro, .marco-fuego_valyrio, .marco-nigromancia, .marco-hielo_eterno)::before {
     content: ''; position: absolute; inset: -4px; border-radius: inherit; padding: 3px; pointer-events: none; z-index: 2;
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
     animation: gira-marco 3s linear infinite;
@@ -4730,7 +4756,24 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
 .marco-celestial::before { background: conic-gradient(from var(--ang), #fff, #aee9ff, #ffe27a, #fff, #d2b4de, #aee9ff, #fff); animation-duration: 4s; }
 .marco-celestial { box-shadow: 0 0 22px rgba(174,233,255,.9), 0 0 40px rgba(255,226,122,.45) !important; animation: none !important; }
 .marco-obsidiana { animation: none !important; box-shadow: 0 0 14px rgba(231,76,60,.7) !important; }
-@media (prefers-reduced-motion: reduce) { :is(.marco-obsidiana, .marco-llamas, .marco-celestial)::before { animation: none; } }
+
+/* Trono de Hierro (Juego de Tronos): Acero Valyrio templado y ceniza */
+.marco-trono_hierro::before { background: conic-gradient(from var(--ang), #0f172a, #64748b, #1e293b 35%, #cbd5e1 50%, #0f172a 65%, #94a3b8 85%, #0f172a); animation-duration: 3.5s; }
+.marco-trono_hierro { box-shadow: 0 0 0 2px #0f172a, 0 0 16px rgba(100,116,139,.9) !important; }
+
+/* Fuego Valyrio (Juego de Tronos): Llamas esmeralda alquímicas ardientes */
+.marco-fuego_valyrio::before { background: conic-gradient(from var(--ang), #064e3b, #10b981, #047857 30%, #6ee7b7 48%, #022c22 65%, #34d195 82%, #064e3b); animation-duration: 1.8s; }
+.marco-fuego_valyrio { box-shadow: 0 0 0 2px #064e3b, 0 0 20px rgba(16,185,129,.95), 0 0 35px rgba(52,211,153,.5) !important; }
+
+/* Invierno Eterno (Juego de Tronos / Caminantes Blancos): Ventisca glacial */
+.marco-hielo_eterno::before { background: conic-gradient(from var(--ang), #082f49, #38bdf8, #0c4a6e 35%, #e0f2fe 50%, #0369a1 70%, #7dd3fc 85%, #082f49); animation-duration: 2.8s; }
+.marco-hielo_eterno { box-shadow: 0 0 0 2px #082f49, 0 0 22px rgba(56,189,248,.95), 0 0 45px rgba(186,230,253,.6) !important; }
+
+/* Aura de Nazarick (Overlord): Círculo de muerte y almas nigrománticas */
+.marco-nigromancia::before { background: conic-gradient(from var(--ang), #1e0338, #9333ea, #4c0519 30%, #e11d48 45%, #a855f7 60%, #581c87 75%, #f43f5e 90%, #1e0338); animation-duration: 2.2s; }
+.marco-nigromancia { box-shadow: 0 0 0 2px #3b0764, 0 0 20px rgba(168,85,247,.95), 0 0 38px rgba(225,29,72,.5) !important; }
+
+@media (prefers-reduced-motion: reduce) { :is(.marco-obsidiana, .marco-llamas, .marco-celestial, .marco-trono_hierro, .marco-fuego_valyrio, .marco-nigromancia, .marco-hielo_eterno)::before { animation: none; } }
 
 /* Dorsos ilustrados */
 :is(.dorso-fenix, .dorso-realeza, .dorso-runas) { background-size: 100% 100% !important; background-repeat: no-repeat !important; }
@@ -4757,6 +4800,8 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
 .col-portada.col-fenix { background: linear-gradient(135deg, #78281f, #d35400 55%, #f39c12); }
 .col-portada.col-hechicera { background: linear-gradient(135deg, #1b0f24, #5b2c6f 55%, #16a085); }
 .col-portada.col-sombra { background: linear-gradient(135deg, #0b0b0b, #641e16 60%, #2c3e50); }
+.col-portada.col-invernal { background: linear-gradient(135deg, #082f49, #0369a1 55%, #38bdf8); }
+.col-portada.col-ultratumba { background: linear-gradient(135deg, #1e0338, #581c87 55%, #881337); }
 .col-portada::after { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.25) 45%, transparent 60%);
     background-size: 250% 100%; animation: brillo-portada 3.5s ease-in-out infinite; pointer-events: none; }
 @keyframes brillo-portada { from { background-position: 150% 0; } to { background-position: -100% 0; } }

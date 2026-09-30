@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="bgHielo" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#102e48"/>
+      <stop offset="60%" stop-color="#071725"/>
+      <stop offset="100%" stop-color="#02080d"/>
+    </radialGradient>
+    <linearGradient id="pielHielo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e8f4fa"/>
+      <stop offset="45%" stop-color="#b6d5e8"/>
+      <stop offset="100%" stop-color="#6992ad"/>
+    </linearGradient>
+    <linearGradient id="cuernoHielo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#d4f1f9"/>
+      <stop offset="40%" stop-color="#5dade2"/>
+      <stop offset="100%" stop-color="#1b4f72"/>
+    </linearGradient>
+    <radialGradient id="ojoZafiro" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#00e5ff"/>
+      <stop offset="80%" stop-color="#0077c2"/>
+      <stop offset="100%" stop-color="#002d59"/>
+    </radialGradient>
+    <radialGradient id="auraGlacial" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#0984e3" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Fondo ártico invernal -->
+  <circle cx="32" cy="32" r="32" fill="url(#bgHielo)"/>
+
+  <!-- Halo de ventisca y escarcha -->
+  <circle cx="32" cy="32" r="28" fill="url(#auraGlacial)">
+    <animate attributeName="opacity" values="0.4;0.9;0.4" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Partículas de hielo suspendidas en la ventisca -->
+  <circle cx="16" cy="18" r="0.8" fill="#d4f1f9" opacity="0.7"/>
+  <circle cx="48" cy="14" r="1.1" fill="#00e5ff" opacity="0.6"/>
+  <circle cx="14" cy="42" r="0.9" fill="#e8f4fa" opacity="0.8"/>
+  <circle cx="50" cy="46" r="0.7" fill="#d4f1f9" opacity="0.7"/>
+
+  <!-- Armadura de cuero oscuro y acero valyrio helado -->
+  <path d="M12 64 C14 51, 20 45, 26 44 L32 49 L38 44 C44 45, 50 51, 52 64 Z" fill="#0e1b26"/>
+  <path d="M18 52 L32 60 L46 52" stroke="#2c3e50" stroke-width="1.5" fill="none"/>
+  <!-- Pieles escarchadas en los hombros -->
+  <path d="M12 64 C15 54, 18 48, 24 46 L21 64 Z" fill="#1b2a38"/>
+  <path d="M52 64 C49 54, 46 48, 40 46 L43 64 Z" fill="#1b2a38"/>
+  <!-- Cuello de obsidiana con escarcha -->
+  <polygon points="32,44 26,45 28,49 32,48 36,49 38,45" fill="#152634" stroke="#5dade2" stroke-width="0.5"/>
+
+  <!-- Corona natural de cuernos de hielo / Rey de la Noche -->
+  <polygon points="19,20 15,10 21,17" fill="url(#cuernoHielo)"/>
+  <polygon points="23,17 21,7 26,15" fill="url(#cuernoHielo)"/>
+  <polygon points="28,15 28,5 32,13" fill="url(#cuernoHielo)"/>
+  <polygon points="36,15 36,5 32,13" fill="url(#cuernoHielo)"/>
+  <polygon points="41,17 43,7 38,15" fill="url(#cuernoHielo)"/>
+  <polygon points="45,20 49,10 43,17" fill="url(#cuernoHielo)"/>
+
+  <!-- Rostro ancestral esculpido en frío -->
+  <path d="M21 27 C21 17, 25 15, 32 15 C39 15, 43 17, 43 27 C43 35, 41 40, 36 43 L32 46 L28 43 C23 40, 21 35, 21 27 Z" fill="url(#pielHielo)"/>
+
+  <!-- Rasgos angulosos y sombras glaciales -->
+  <path d="M23 23 C26 21, 29 21, 31 23 L32 26 L29 25 Z" fill="#4d728c" opacity="0.6"/>
+  <path d="M41 23 C38 21, 35 21, 33 23 L32 26 L35 25 Z" fill="#4d728c" opacity="0.6"/>
+  <!-- Pómulos afilados de caminante blanco -->
+  <path d="M22 32 C25 36, 28 38, 29 42" stroke="#4d728c" stroke-width="0.8" fill="none" opacity="0.7"/>
+  <path d="M42 32 C39 36, 36 38, 35 42" stroke="#4d728c" stroke-width="0.8" fill="none" opacity="0.7"/>
+  <!-- Nariz recta y gélida -->
+  <polygon points="32,27 30.5,35 33.5,35" fill="#587f9d" opacity="0.5"/>
+  <!-- Boca impasible sin emociones -->
+  <line x1="28" y1="39" x2="36" y2="39" stroke="#314e63" stroke-width="1.2" stroke-linecap="round"/>
+
+  <!-- Cuencas oscuras glaciales -->
+  <ellipse cx="26.5" cy="28.5" rx="3.5" ry="2.5" fill="#04121d"/>
+  <ellipse cx="37.5" cy="28.5" rx="3.5" ry="2.5" fill="#04121d"/>
+
+  <!-- Ojos de zafiro estelar (brillo penetrante de White Walker) animado -->
+  <circle cx="26.5" cy="28.5" r="2.2" fill="url(#ojoZafiro)">
+    <animate attributeName="r" values="1.8;2.4;1.8" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="26.5" cy="28.5" r="0.9" fill="#ffffff">
+    <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite"/>
+  </circle>
+
+  <circle cx="37.5" cy="28.5" r="2.2" fill="url(#ojoZafiro)">
+    <animate attributeName="r" values="2.4;1.8;2.4" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="37.5" cy="28.5" r="0.9" fill="#ffffff">
+    <animate attributeName="opacity" values="1;0.8;1" dur="2s" repeatCount="indefinite"/>
+  </circle>
+</svg>

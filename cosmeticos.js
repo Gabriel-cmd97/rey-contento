@@ -64,14 +64,23 @@ const CATALOGO = [
     { id: 'oro',       tipo: 'tapete', titulo: 'Tesoro',     rareza: 'legendario', nivel: 7 },
     // Tienda (30/09/2026): solo se consiguen con la moneda (`precio`). `coleccion`
     // agrupa artículos que se venden juntos con descuento (COLECCIONES).
-    { id: 'pirata',    tipo: 'avatar', titulo: 'Pirata',          rareza: 'epico',      img: 'pirata', precio: 300 },
-    { id: 'sombra',    tipo: 'avatar', titulo: 'Caballero negro', rareza: 'epico',      img: 'sombra', precio: 350, coleccion: 'sombra', animado: true },
-    { id: 'calavera',  tipo: 'avatar', titulo: 'Rey esqueleto',   rareza: 'epico',      img: 'calavera', precio: 400, animado: true },
-    { id: 'hechicera', tipo: 'avatar', titulo: 'Hechicera',       rareza: 'legendario', img: 'hechicera', precio: 700, coleccion: 'hechicera', animado: true },
-    { id: 'fenix',     tipo: 'avatar', titulo: 'Fénix',           rareza: 'legendario', img: 'fenix',  precio: 800, coleccion: 'fenix', animado: true },
-    { id: 'obsidiana', tipo: 'marco',  titulo: 'Obsidiana',       rareza: 'epico',      precio: 250, coleccion: 'sombra', animado: true },
-    { id: 'llamas',    tipo: 'marco',  titulo: 'Anillo de llamas', rareza: 'legendario', precio: 550, coleccion: 'fenix', animado: true },
-    { id: 'celestial', tipo: 'marco',  titulo: 'Celestial',       rareza: 'legendario', precio: 600, coleccion: 'hechicera', animado: true },
+    { id: 'sombra',       tipo: 'avatar', titulo: 'Caballero negro',   rareza: 'epico',      img: 'sombra',       precio: 350, coleccion: 'sombra', animado: true },
+    { id: 'calavera',     tipo: 'avatar', titulo: 'Rey esqueleto',     rareza: 'epico',      img: 'calavera',     precio: 400, animado: true },
+    { id: 'senor_hierro', tipo: 'avatar', titulo: 'Guardián de Hierro', rareza: 'epico',      img: 'senor_hierro', precio: 320, animado: false },
+    { id: 'archimago',    tipo: 'avatar', titulo: 'Archimago Antiguo', rareza: 'epico',      img: 'archimago',    precio: 380, animado: true },
+    { id: 'sacerdotisa',  tipo: 'avatar', titulo: 'Sacerdotisa Roja',  rareza: 'epico',      img: 'sacerdotisa',  precio: 360, animado: true },
+    { id: 'caminante',    tipo: 'avatar', titulo: 'Rey del Invierno',  rareza: 'legendario', img: 'caminante',    precio: 650, coleccion: 'invernal', animado: true },
+    { id: 'nigromante',   tipo: 'avatar', titulo: 'Soberano de Huesos', rareza: 'legendario', img: 'nigromante',   precio: 750, coleccion: 'ultratumba', animado: true },
+    { id: 'hechicera',    tipo: 'avatar', titulo: 'Hechicera',         rareza: 'legendario', img: 'hechicera',    precio: 700, coleccion: 'hechicera', animado: true },
+    { id: 'fenix',        tipo: 'avatar', titulo: 'Fénix',             rareza: 'legendario', img: 'fenix',        precio: 800, coleccion: 'fenix', animado: true },
+    { id: 'obsidiana',     tipo: 'marco',  titulo: 'Obsidiana',         rareza: 'epico',      precio: 250, coleccion: 'sombra', animado: true },
+    { id: 'trono_hierro',  tipo: 'marco',  titulo: 'Trono de Hierro',   rareza: 'epico',      precio: 300, animado: true },
+    { id: 'huesos',        tipo: 'marco',  titulo: 'Corona de Huesos',  rareza: 'epico',      precio: 280, coleccion: 'ultratumba', animado: true },
+    { id: 'llamas',        tipo: 'marco',  titulo: 'Anillo de llamas',  rareza: 'legendario', precio: 550, coleccion: 'fenix', animado: true },
+    { id: 'fuego_valyrio', tipo: 'marco',  titulo: 'Fuego Valyrio',     rareza: 'legendario', precio: 550, animado: true },
+    { id: 'celestial',     tipo: 'marco',  titulo: 'Celestial',         rareza: 'legendario', precio: 600, coleccion: 'hechicera', animado: true },
+    { id: 'hielo_eterno',  tipo: 'marco',  titulo: 'Invierno Eterno',   rareza: 'legendario', precio: 500, coleccion: 'invernal', animado: true },
+    { id: 'nigromancia',   tipo: 'marco',  titulo: 'Aura de Nazarick',  rareza: 'legendario', precio: 600, coleccion: 'ultratumba', animado: true },
     { id: 'tablero',   tipo: 'dorso',  titulo: 'Tablero',         rareza: 'raro',       precio: 120 },
     { id: 'runas',     tipo: 'dorso',  titulo: 'Runas',           rareza: 'epico',      precio: 300, coleccion: 'sombra', img: 'runas' },
     { id: 'realeza',   tipo: 'dorso',  titulo: 'Realeza',         rareza: 'epico',      precio: 350, coleccion: 'hechicera', img: 'realeza' },
@@ -85,9 +94,11 @@ const TIPOS = ['avatar', 'marco', 'dorso', 'tapete'];
 
 // Colecciones: todo lo que tenga `coleccion: id`, junto y con descuento.
 const COLECCIONES = [
-    { id: 'fenix',     titulo: 'Colección del Fénix',   lema: 'Renace de tus cenizas', descuento: 0.25 },
-    { id: 'hechicera', titulo: 'Colección Arcana',      lema: 'La magia está de tu lado', descuento: 0.25 },
-    { id: 'sombra',    titulo: 'Colección de la Sombra', lema: 'Nadie te ve venir', descuento: 0.2 },
+    { id: 'ultratumba', titulo: 'Colección de Ultratumba',  lema: 'Soberanía sobre la muerte', descuento: 0.25 },
+    { id: 'invernal',   titulo: 'Colección del Invierno',   lema: 'El invierno ha llegado',    descuento: 0.25 },
+    { id: 'fenix',      titulo: 'Colección del Fénix',      lema: 'Renace de tus cenizas',     descuento: 0.25 },
+    { id: 'hechicera',  titulo: 'Colección Arcana',         lema: 'La magia está de tu lado',  descuento: 0.25 },
+    { id: 'sombra',     titulo: 'Colección de la Sombra',   lema: 'Nadie te ve venir',         descuento: 0.2 },
 ];
 function coleccion(id) {
     const c = COLECCIONES.find(x => x.id === id);

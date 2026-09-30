@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="bgArchi" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#2a0845"/>
+      <stop offset="60%" stop-color="#120324"/>
+      <stop offset="100%" stop-color="#05010a"/>
+    </radialGradient>
+    <linearGradient id="oroMago" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffeaa7"/>
+      <stop offset="50%" stop-color="#fdcb6e"/>
+      <stop offset="100%" stop-color="#d35400"/>
+    </linearGradient>
+    <radialGradient id="orbeMagico" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#e056fd"/>
+      <stop offset="70%" stop-color="#be2edd"/>
+      <stop offset="100%" stop-color="#4834d4"/>
+    </radialGradient>
+    <radialGradient id="ojoArcano" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#e056fd"/>
+      <stop offset="100%" stop-color="#6807f9"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Fondo arcano -->
+  <circle cx="32" cy="32" r="32" fill="url(#bgArchi)"/>
+
+  <!-- Destellos mágicos de fondo -->
+  <circle cx="15" cy="18" r="0.7" fill="#e056fd" opacity="0.6"/>
+  <circle cx="48" cy="16" r="0.9" fill="#fdcb6e" opacity="0.7"/>
+  <circle cx="50" cy="40" r="0.8" fill="#e056fd" opacity="0.5"/>
+
+  <!-- Túnica ceremonial arcana -->
+  <path d="M12 64 C14 50, 20 44, 26 43 L32 48 L38 43 C44 44, 50 50, 52 64 Z" fill="#180b2b"/>
+  <path d="M26 43 L32 48 L38 43 L32 40 Z" fill="url(#oroMago)"/>
+  <path d="M30 48 L34 48 L35 64 L29 64 Z" fill="#2d1354"/>
+
+  <!-- Barba anciana sabia y trenzada -->
+  <path d="M24 37 C24 49, 29 57, 32 60 C35 57, 40 49, 40 37 C37 38, 34 38, 32 38 C30 38, 27 38, 24 37 Z" fill="#dfe6e9"/>
+  <path d="M27 41 C29 49, 31 54, 32 58 C33 54, 35 49, 37 41" stroke="#b2bec3" stroke-width="0.8" fill="none"/>
+  <!-- Anillo de barba dorada -->
+  <rect x="30" y="52" width="4" height="2" rx="0.5" fill="url(#oroMago)"/>
+
+  <!-- Capucha medieval mística profunda -->
+  <path d="M16 35 C15 16, 21 8, 32 7 C43 8, 49 16, 48 35 C44 38, 41 38, 40 37 C40 22, 37 14, 32 14 C27 14, 24 22, 24 37 C23 38, 20 38, 16 35 Z" fill="#2c1445"/>
+  <!-- Ribete rúnico dorado en el borde de la capucha -->
+  <path d="M16 35 C15 16, 21 8, 32 7 C43 8, 49 16, 48 35" stroke="url(#oroMago)" stroke-width="1.4" fill="none"/>
+  <circle cx="32" cy="8" r="1.3" fill="#ffeaa7"/>
+  <circle cx="23" cy="14" r="0.9" fill="#ffeaa7"/>
+  <circle cx="41" cy="14" r="0.9" fill="#ffeaa7"/>
+
+  <!-- Rostro en penumbras bajo la capucha -->
+  <path d="M24 22 C24 16, 27 15, 32 15 C37 15, 40 16, 40 22 C40 32, 38 37, 32 37 C26 37, 24 32, 24 22 Z" fill="#080310"/>
+
+  <!-- Ojos arcanos resplandecientes en la sombra (animados) -->
+  <ellipse cx="28" cy="27" rx="2.5" ry="1.8" fill="url(#ojoArcano)">
+    <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite"/>
+  </ellipse>
+  <circle cx="28" cy="27" r="0.8" fill="#ffffff"/>
+
+  <ellipse cx="36" cy="27" rx="2.5" ry="1.8" fill="url(#ojoArcano)">
+    <animate attributeName="opacity" values="1;0.7;1" dur="2s" repeatCount="indefinite"/>
+  </ellipse>
+  <circle cx="36" cy="27" r="0.8" fill="#ffffff"/>
+
+  <!-- Orbe arcano místico flotando con aura -->
+  <g>
+    <circle cx="49" cy="46" r="6.5" fill="url(#orbeMagico)">
+      <animate attributeName="r" values="5.5;7.2;5.5" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    <!-- Anillo orbital giratorio -->
+    <ellipse cx="49" cy="46" rx="8" ry="3" fill="none" stroke="#ffeaa7" stroke-width="0.8" transform="rotate(-25 49 46)">
+      <animateTransform attributeName="transform" type="rotate" from="0 49 46" to="360 49 46" dur="6s" repeatCount="indefinite"/>
+    </ellipse>
+  </g>
+</svg>

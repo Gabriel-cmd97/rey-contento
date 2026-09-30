@@ -1,9 +1,57 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><radialGradient id="f" cx="50%" cy="35%"><stop offset="0" stop-color="#5dade2"/><stop offset="1" stop-color="#1b4f72"/></radialGradient></defs>
-<circle cx="32" cy="32" r="32" fill="url(#f)"/>
-<path d="M44 12c6 2 9 7 8 13-3-5-8-7-12-7z" fill="#c0392b"/>
-<path d="M18 30c0-10 6-17 14-17s14 7 14 17v12c0 5-6 9-14 9s-14-4-14-9z" fill="#aab7b8"/>
-<path d="M18 30c0-10 6-17 14-17s14 7 14 17" fill="#d5dbdb"/>
-<rect x="20" y="30" width="24" height="4" rx="2" fill="#2c3e50"/>
-<path d="M32 34v14" stroke="#7f8c8d" stroke-width="2"/>
-<g fill="#2c3e50"><circle cx="26" cy="40" r="1.3"/><circle cx="38" cy="40" r="1.3"/><circle cx="26" cy="45" r="1.3"/><circle cx="38" cy="45" r="1.3"/></g>
-<path d="M14 60c2-7 9-10 18-10s16 3 18 10" fill="#7f8c8d"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="bgCaballero" cx="50%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#2c3e50"/>
+      <stop offset="60%" stop-color="#17202a"/>
+      <stop offset="100%" stop-color="#0b0f14"/>
+    </radialGradient>
+    <linearGradient id="aceroPlata" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fdfefe"/>
+      <stop offset="40%" stop-color="#bdc3c7"/>
+      <stop offset="80%" stop-color="#7f8c8d"/>
+      <stop offset="100%" stop-color="#34495e"/>
+    </linearGradient>
+    <linearGradient id="oroCruz" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffeaa7"/>
+      <stop offset="50%" stop-color="#f1c40f"/>
+      <stop offset="100%" stop-color="#b7950b"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fondo solemne de fortaleza -->
+  <circle cx="32" cy="32" r="32" fill="url(#bgCaballero)"/>
+
+  <!-- Plumas / penacho heráldico carmesí en el yelmo -->
+  <path d="M32 14 C36 6, 44 4, 48 8 C44 11, 40 12, 34 16 Z" fill="#c0392b"/>
+  <path d="M30 15 C34 9, 41 8, 45 11 C41 13, 37 14, 32 17 Z" fill="#e74c3c"/>
+
+  <!-- Cota de malla y sobreveste real -->
+  <path d="M12 64 C13 50, 18 43, 25 42 L32 47 L39 42 C46 43, 51 50, 52 64 Z" fill="#2c3e50"/>
+  <path d="M25 43 L32 49 L39 43 L32 39 Z" fill="url(#oroCruz)"/>
+  <path d="M14 64 C16 54, 21 47, 28 45 L25 64 Z" fill="#1b2631"/>
+  <path d="M50 64 C48 54, 43 47, 36 45 L39 64 Z" fill="#1b2631"/>
+
+  <!-- Gran Yelmo medieval de acero pulido -->
+  <path d="M20 28 C20 16, 24 14, 32 14 C40 14, 44 16, 44 28 C44 38, 41 44, 32 46 C23 44, 20 38, 20 28 Z" fill="url(#aceroPlata)" stroke="#1a252f" stroke-width="0.8"/>
+
+  <!-- Refuerzo frontal en cruz dorada templaria -->
+  <path d="M30.5 15 L33.5 15 L33.5 45 L30.5 45 Z" fill="url(#oroCruz)"/>
+  <path d="M21 28 L43 28 L43 32 L21 32 Z" fill="url(#oroCruz)"/>
+
+  <!-- Visor en hendiduras oscuras -->
+  <rect x="22.5" y="29" width="8" height="2" rx="0.5" fill="#0b0f14"/>
+  <rect x="33.5" y="29" width="8" height="2" rx="0.5" fill="#0b0f14"/>
+
+  <!-- Remaches de forja en el acero -->
+  <circle cx="23" cy="22" r="0.7" fill="#fdfefe"/>
+  <circle cx="41" cy="22" r="0.7" fill="#fdfefe"/>
+  <circle cx="23" cy="38" r="0.7" fill="#fdfefe"/>
+  <circle cx="41" cy="38" r="0.7" fill="#fdfefe"/>
+
+  <!-- Orificios de ventilación en la placa inferior -->
+  <g fill="#1a252f">
+    <circle cx="26" cy="36" r="0.7"/><circle cx="38" cy="36" r="0.7"/>
+    <circle cx="28" cy="38" r="0.7"/><circle cx="36" cy="38" r="0.7"/>
+    <circle cx="27" cy="41" r="0.7"/><circle cx="37" cy="41" r="0.7"/>
+  </g>
+</svg>
