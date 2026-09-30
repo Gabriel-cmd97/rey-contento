@@ -684,8 +684,17 @@ function aplicarTemaMesa() {
     if (!t) return;
     // Ojo: la clase base se llama "tapete-virtual"; no quitarla.
     [...t.classList].filter(c => c.startsWith('tema-') || (c.startsWith('tapete-') && c !== 'tapete-virtual')).forEach(c => t.classList.remove(c));
-    if (eventoActual) t.classList.add(`tema-${eventoActual.id}`);
-    else if (miLook?.tapete && miLook.tapete !== 'verde') t.classList.add(`tapete-${miLook.tapete}`);
+    const emb = document.getElementById('tapeteEmblemaFondo');
+    if (emb) {
+        [...emb.classList].filter(c => c.startsWith('emb-')).forEach(c => emb.classList.remove(c));
+    }
+    if (eventoActual) {
+        t.classList.add(`tema-${eventoActual.id}`);
+        if (emb) emb.classList.add(`emb-${eventoActual.id}`);
+    } else if (miLook?.tapete && miLook.tapete !== 'verde') {
+        t.classList.add(`tapete-${miLook.tapete}`);
+        if (emb) emb.classList.add(`emb-${miLook.tapete}`);
+    }
 }
 
 let _pozoMesa = 0;

@@ -995,10 +995,11 @@ async function registrarFinPartida(sala, ganador) {
     }
 
     // Pago o reembolso del Pozo del Rey
+    const pozo = sala.pozoTotal || 0;
     if (pozo > 0) {
         // Se toma y vacía antes de pagar (hay await): si la sala se cerrara a la mitad, no se devuelve también.
-        const pozo = sala.pozoTotal;
-        sala.pozoTotal = 0; sala.aportesPozo = {};
+        sala.pozoTotal = 0;
+        sala.aportesPozo = {};
         if (ganadoresNombres.length > 0) {
             const premioPorGanador = Math.floor(pozo / ganadoresNombres.length);
             for (const g of ganadoresNombres) {
@@ -1014,8 +1015,6 @@ async function registrarFinPartida(sala, ganador) {
             io.to(sala.idSala).emit('mensajeGlobal', `🏰 ¡Un bot ha ganado la partida! El Pozo del Rey de ${pozo} Blis se lo queda la Corona.`);
             io.to(sala.idSala).emit('accionMesa', { tipo: 'POZO', icono: '🏰', texto: `¡El Pozo del Rey (${pozo} Blis) pasa a las arcas reales!` });
         }
-        sala.pozoTotal = 0;
-        sala.aportesPozo = {};
     }
 
     // Resolver apuestas al Campeón de espectadores / eliminados
