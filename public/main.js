@@ -1041,6 +1041,12 @@ function explicacionRonda(datos) {
     if (enJuego.length > 1 && enJuego.every(j => j.cartaActual === datos.cartaMortal)) {
         return '🤝 Empate total: todos tenían la misma carta, nadie pierde.';
     }
+    if (datos.jefe) {
+        const f = datos.jefe;
+        if (f.cayoRey) return `⚔️ ${f.golpes} de ustedes le ganaron al ${f.carta} del Tirano (hacían falta ${f.necesarios}): ¡pierde una vida! Le quedan ${f.vidasRey}.`;
+        const yoPerdi = datos.perdedores.includes(yo.id);
+        return `👑 Solo ${f.golpes} le ganaron al ${f.carta} del Tirano (hacían falta ${f.necesarios}). ${yoPerdi ? 'Tu carta fue la más baja: pierdes una vida.' : 'Pierde la carta más baja del pueblo.'}`;
+    }
     if (datos.corte && _corte) {
         const perdimos = datos.corte.perdedores.map(Number).includes(_corte.miEquipo);
         if (!datos.corte.perdedores.length) return '🤝 Los Reyes empataron: nadie pierde por cartas.';
@@ -1855,6 +1861,7 @@ function pintarComoSeraPartida(c, maxJugadores) {
                     ALTA: ['Muchos reyes', 'más 9 al inicio'],
                     LOCURA: ['Lluvia de reyes', 'muchísimos 9 al inicio'] }[c.frecuenciaReyes] || ['Reyes normales', ''];
     const filas = [
+        c.modoJuego === 'JEFE' ? ['corona', 'Todos contra el Rey', 'venzan juntos al Rey Tirano'] :
         ['espadas', c.modoJuego === 'CORTE' ? 'La Corte' : c.equipos ? 'Parejas: Diez' : fiesta ? 'Modo Fiesta' : 'Modo clásico', c.modoJuego === 'CORTE' ? 'Rey secreto: solo cuentan los Reyes' : c.equipos ? 'se suman las cartas del equipo' : 'pierde la carta más baja'],
         ['mascara', c.modoRey === 'DECLARADO' ? 'Rey declarado' : 'Rey sorpresa', c.modoRey === 'DECLARADO' ? 'se ve quién tiene el 9' : 'el 9 va oculto'],
         ['llama', reyes[0], reyes[1]],
@@ -2110,6 +2117,7 @@ function pintarFinalPartida(ganador) {
         rondas ? `Fin de la partida · ${rondas} ${rondas === 1 ? 'ronda' : 'rondas'}` : 'Fin de la partida';
     document.getElementById('victoriaTitulo').textContent = !hayGanador
         ? 'Nadie se queda con la corona'
+        : ganador.contraRey ? (ganador.esEquipo ? '¡Derrocaron al Tirano!' : 'El Tirano sigue en el trono')
         : ganador.esEquipo ? (gane ? '¡Tu equipo ganó!' : `¡Ganó el ${ganador.nombre}!`)
         : gane ? '¡Eres el Rey Contento!' : '¡Tenemos un Rey!';
     document.getElementById('pantallaVictoria').classList.toggle('victoria-propia', gane);
@@ -2121,7 +2129,7 @@ function pintarFinalPartida(ganador) {
         const ganadores = ganador.integrantes || [];
         const otros = listaJugadoresGlobal.map(j => j.nombre).filter(n => !ganadores.includes(n));
         ganadores.forEach(n => filas.push({ lugar: 1, nombre: n, detalle: ganador.nombre, esYo: n === miNombreUsuario }));
-        otros.forEach(n => filas.push({ lugar: 2, nombre: n, detalle: `Equipo ${NOMBRE_EQUIPO[1 - ganador.equipo]}`, esYo: n === miNombreUsuario }));
+        otros.forEach(n => filas.push({ lugar: 2, nombre: n, detalle: ganador.contraRey ? 'Derrocado' : `Equipo ${NOMBRE_EQUIPO[1 - ganador.equipo]}`, esYo: n === miNombreUsuario }));
         _caidasPartida = [];
     }
     if (hayGanador && !ganador.esEquipo) {
@@ -2326,7 +2334,11 @@ function mostrarResumenRonda(datos) {
 
     // Parejas (Diez): en lugar de la carta mortal, la meta y la suma de cada equipo.
     const cabecera = mortal.parentElement;
-    if (datos.corte) {
+    if (datos.jefe) {
+        cabecera.innerHTML = `${icono('corona')} FIN DE RONDA — Tirano ${datos.jefe.carta}: ` + (datos.jefe.cayoRey
+            ? `<span class="suma-equipo perdio">¡pierde una vida! (${datos.jefe.golpes} le ganaron)</span>`
+            : `<span class="suma-equipo">resiste (${datos.jefe.golpes} de ${datos.jefe.necesarios})</span>`) + '<span id="resumenCartaMortal" class="hidden"></span>';
+    } else if (datos.corte) {
         cabecera.innerHTML = `${icono('corona')} FIN DE RONDA — ` + (datos.corte.perdedores.length
             ? datos.corte.perdedores.map(e => `<span class="suma-equipo equipo-${e} perdio">Pierde el Rey de ${NOMBRE_EQUIPO[e]}</span>`).join(' ')
             : 'Los Reyes empataron') + '<span id="resumenCartaMortal" class="hidden"></span>';
@@ -2338,7 +2350,7 @@ function mostrarResumenRonda(datos) {
         cabecera.innerHTML = `${icono('espadas')} FIN DE RONDA — Carta mortal: <span id="resumenCartaMortal" class="resumen-mortal-num">—</span>`;
     }
     const mortalAhora = document.getElementById('resumenCartaMortal');
-    if (!datos.diez && !datos.corte) mortalAhora.textContent = datos.cartaMortal;
+    if (!datos.diez && !datos.corte && !datos.jefe) mortalAhora.textContent = datos.cartaMortal;
     grid.innerHTML = '';
 
     datos.jugadores.forEach(j => {
@@ -3063,7 +3075,7 @@ function aplicarDesbloqueos(nivel, lista) {
         o.textContent = abierto[id] ? o.dataset.texto : `🔒 ${texto || o.dataset.texto} · Nivel ${nivelDe[id]}`;
     };
     opcion('selectModoJuego', 'FIESTA', 'fiesta', 'Fiesta');
-    opcion('selectModoJuego', 'CORTE', 'corte', 'La Corte');
+    opcion('selectModoJuego', 'JEFE', 'jefe', 'Todos contra el Rey');
     opcion('selectEquipos', '2', 'parejas', '2 contra 2');
     opcion('selectEquipos', '3', 'parejas', '3 contra 3');
     opcion('selectPoderes', 'SI', 'poderes', 'Sí');
@@ -3073,7 +3085,7 @@ function aplicarDesbloqueos(nivel, lista) {
         if (s && s.selectedOptions[0]?.disabled) { s.value = def; s.dispatchEvent(new Event('change')); }
     });
     const ver = (id, clave) => document.getElementById(id)?.classList.toggle('bloqueado-nivel', !abierto[clave]);
-    ver('btnPracticaFiesta', 'fiesta'); ver('btnPracticaPoderes', 'poderes'); ver('btnPracticaCorte', 'corte');
+    ver('btnPracticaFiesta', 'fiesta'); ver('btnPracticaPoderes', 'poderes');
     ver('bannerTorneo', 'torneo');
 }
 
@@ -3135,13 +3147,15 @@ const EXPLICA_MODO = {
     FIESTA: ['🎉 Modo Fiesta', 'Cada ronda trae un <b>evento</b> que cambia la regla (lo ves bajo el reloj).', 'Al terminar la ronda, la mesa <b>vota</b> el evento de la siguiente.', 'Sigue perdiendo la carta más baja.'],
     DIEZ: ['🎯 Parejas: Diez', 'Se <b>suman las cartas de tu equipo</b>: la meta es 10 (15 en 3 contra 3).', 'Pierde el equipo que <b>se pasa</b>, o el que queda más lejos.', 'Ves la carta de tu compañero; bajo el reloj va la cuenta.'],
     CORTE: ['👑 La Corte', 'Cada equipo tiene un <b>Rey secreto</b>; solo cuentan las cartas de los Reyes.', '🛡️ <b>Proteger</b>: le das tu carta a tu Rey (una vez por ronda), pero te delatas.', '⚔️ <b>Acusar</b>: una vez por partida. Si fallas, pierde tu equipo.'],
+    JEFE: ['👑 Todos contra el Rey', 'Todos juntos contra el <b>Rey Tirano</b>, que tiene muchas vidas.', 'Si <b>más de la mitad</b> tiene una carta más alta que la suya, el Tirano pierde una vida.', 'Si no, pierde quien tenga la <b>carta más baja</b>. Pásenle las cartas bajas al Tirano.'],
     PODERES: ['✨ Con poderes', 'Cada vez que pierdes una vida ganas un <b>poder</b> de un solo uso.', 'Tus poderes salen arriba de tus botones: Espiar, Oráculo, Salto y Escudo.'],
 };
 function mostrarModoNuevo(datos) {
     if (_practica) return;
     const cfg = _configSala || {};
     const modos = [];
-    if (datos.modoJuego === 'CORTE') modos.push('CORTE');
+    if (datos.modoJuego === 'JEFE') modos.push('JEFE');
+    else if (datos.modoJuego === 'CORTE') modos.push('CORTE');
     else if ((datos.jugadores || []).some(j => j.equipo !== undefined && j.equipo !== null)) modos.push('DIEZ');
     if (datos.modoJuego === 'FIESTA') modos.push('FIESTA');
     if (cfg.poderes) modos.push('PODERES');
@@ -4110,10 +4124,11 @@ function dibujarMesaCircular() {
         let claseEstado = estaMuerto ? 'jugador-eliminado' : '';
 
         divSilla.innerHTML = `
-            <div class="perfil-oponente${claseMarco(op.look)} ${claseEstado} ${animReparto} ${claseDanio} ${op.escudo && !estaMuerto ? 'con-escudo' : ''} ${op.equipo !== undefined && op.equipo !== null ? `equipo-${op.equipo}` : ''}">
+            <div class="perfil-oponente${claseMarco(op.look)} ${op.esJefe ? 'asiento-tirano' : ''} ${claseEstado} ${animReparto} ${claseDanio} ${op.escudo && !estaMuerto ? 'con-escudo' : ''} ${op.equipo !== undefined && op.equipo !== null ? `equipo-${op.equipo}` : ''}">
                 <div style="font-size:13px;font-weight:bold;line-height:1.2;word-wrap:break-word;">${iconoAsiento} ${escapeHTML(op.nombre)}</div>
                 ${_corte && op.nombre === _corte.miRey ? `<span class="rey-corte" title="Tu Rey (los rivales no lo saben)">${icono('corona')} Tu Rey</span>` : ''}
                 ${op.reyCorteRevelado ? `<span class="rey-corte descubierto" title="Rey descubierto por una acusación">${icono('corona')} Rey descubierto</span>` : ''}
+                ${op.esJefe ? `<span class="rey-tirano" title="Todos juntos contra él">${icono('corona')} El jefe</span>` : ''}
                 ${op.reyNoche ? `<span class="rey-noche" title="Ganó el torneo de la noche">${icono('trofeo')} Rey de la noche</span>` : ''}
                 ${op.reyMesa ? `<span class="rey-mesa" title="Rey de la mesa: ganó la partida anterior">${icono('corona')} Rey${op.reyMesa > 1 ? ' ×' + op.reyMesa : ''}</span>` : ''}
                 ${op.automatico && !estaMuerto ? '<span class="marca-auto" title="Ausente: un bot juega por él">Auto</span>' : ''}
@@ -5035,7 +5050,8 @@ function conectarSocket() {
         registrarJugadaFeed({
             tipo: 'FIN_RONDA',
             icono: '💀',
-            texto: datos.diez ? `Fin de ronda · Meta ${datos.diez.objetivo}: ${Object.entries(datos.diez.sumas).map(([e, n]) => `${NOMBRE_EQUIPO[e]} ${n}`).join(' · ')}`
+            texto: datos.jefe ? `Fin de ronda · Tirano ${datos.jefe.carta}: ${datos.jefe.cayoRey ? '¡pierde una vida!' : 'resiste'}`
+                : datos.diez ? `Fin de ronda · Meta ${datos.diez.objetivo}: ${Object.entries(datos.diez.sumas).map(([e, n]) => `${NOMBRE_EQUIPO[e]} ${n}`).join(' · ')}`
                 : `Fin de ronda · Carta mortal: ${datos.cartaMortal}`
         });
 

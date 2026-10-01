@@ -145,3 +145,28 @@ test('corte con mundo al revés y doble castigo', () => {
     resolverCartas(d);
     assert.deepStrictEqual(vidas(d), [3, 1, 3, 1]);
 });
+
+// Todos contra el Rey (30/09/2026)
+test('contra el Rey: si más de la mitad del pueblo le gana, el Tirano pierde una vida', () => {
+    const { resolverJefe } = require('../reglas');
+    const sala = { config: { modoJuego: 'JEFE' }, jugadores: [
+        { id: 'a', nombre: 'a', vidas: 3, cartaActual: 7 }, { id: 'b', nombre: 'b', vidas: 3, cartaActual: 6 },
+        { id: 'c', nombre: 'c', vidas: 3, cartaActual: 1 }, { id: 'r', nombre: 'Rey Tirano', vidas: 6, cartaActual: 5, esJefe: true }] };
+    const r = resolverJefe(sala);
+    assert.strictEqual(r.jefe.cayoRey, true);
+    assert.strictEqual(sala.jugadores[3].vidas, 5);
+    assert.deepStrictEqual(r.perdedores, ['r']);
+});
+
+test('contra el Rey: si no, pierde la carta más baja del pueblo (empates incluidos); el 9 del Tirano no se vence', () => {
+    const { resolverJefe, vidasDelJefe } = require('../reglas');
+    const sala = { config: { modoJuego: 'JEFE' }, jugadores: [
+        { id: 'a', nombre: 'a', vidas: 3, cartaActual: 8 }, { id: 'b', nombre: 'b', vidas: 3, cartaActual: 2 },
+        { id: 'c', nombre: 'c', vidas: 3, cartaActual: 2 }, { id: 'r', nombre: 'Rey Tirano', vidas: 6, cartaActual: 9, esJefe: true }] };
+    const r = resolverJefe(sala);
+    assert.strictEqual(r.jefe.cayoRey, false);
+    assert.deepStrictEqual(r.perdedores.sort(), ['b', 'c']);
+    assert.strictEqual(sala.jugadores[3].vidas, 6);
+    assert.strictEqual(vidasDelJefe(4), 6);
+    assert.strictEqual(vidasDelJefe(20), 11);
+});

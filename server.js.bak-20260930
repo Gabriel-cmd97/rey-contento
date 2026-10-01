@@ -16,7 +16,7 @@ const poderes = require('./poderes');
 const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
-const { barajar, crearMazo, siguienteVivo, resolverCartas, rotarCartas, vidasDelJefe } = require('./reglas');
+const { barajar, crearMazo, siguienteVivo, resolverCartas, rotarCartas } = require('./reglas');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
@@ -246,9 +246,8 @@ function sanitizarConfig(raw) {
     const vidas         = enteroEnRango(raw.vidas, 1, 10, 3);
     const maxJugadores  = enteroEnRango(raw.maxJugadores, 2, 8, 6);
     // CLASICO o FIESTA (evento en cada ronda y la mesa vota el siguiente). Campana se quitó el 24/09/2026.
-    // JEFE (Todos contra el Rey, 30/09/2026): el pueblo contra un Rey bot.
-    // La Corte (CORTE) se quitó del menú el 30/09/2026: su código sigue, pero ya no se crea.
-    const modoJuego     = enLista(raw.modoJuego, ['CLASICO', 'FIESTA', 'JEFE'], 'CLASICO');
+    // CORTE (La Corte: Rey secreto por equipo) siempre va en equipos.
+    const modoJuego     = enLista(raw.modoJuego, ['CLASICO', 'FIESTA', 'CORTE'], 'CLASICO');
     const modoRey       = enLista(raw.modoRey, ['SORPRESA', 'DECLARADO'], 'SORPRESA');
     // Reyes: se sortea al crear la sala (ya no se elige); la sala de espera lo muestra.
     const frecuenciaReyes = ['NORMAL', 'ALTA', 'LOCURA'][Math.floor(Math.random() * 3)];
@@ -261,7 +260,7 @@ function sanitizarConfig(raw) {
     // Tres guiones (practica.js): 'basica', 'poderes' (eventos y poderes) y
     // 'fiesta' (eventos de amigos: Confesión, Venganza y Carrusel).
     const tipoPractica = raw.practica === true || raw.practica === 'basica' ? 'basica'
-        : ['poderes', 'fiesta'].includes(raw.practica) ? raw.practica : null;
+        : ['poderes', 'fiesta', 'corte'].includes(raw.practica) ? raw.practica : null;
     if (tipoPractica === 'corte') {
         // La Corte guiada: 2 contra 2 con 3 bots y 4 vidas (nadie queda fuera en las 2 rondas).
         return { vidas: 4, maxJugadores: 4, numBots: 3, modoJuego: 'CORTE', equipos: 2, modoRey: 'SORPRESA',
@@ -283,7 +282,7 @@ function sanitizarConfig(raw) {
     }
 
     const conEventos = true; // eventos de ronda siempre (solo afectan al modo clásico); ya no se apagan al crear sala
-    const conPoderes = raw.poderes === true && modoJuego !== 'JEFE';  // modo "Con poderes" (opcional; no contra el Rey)
+    const conPoderes = raw.poderes === true;  // modo "Con poderes" (opcional)
     // Pública: aparece en "Mesas abiertas" (pestaña Unirse). Por defecto las
     // mesas creadas son privadas (solo con código/enlace/QR); las rápidas
     // siempre salen en la lista.
@@ -291,9 +290,8 @@ function sanitizarConfig(raw) {
     // Parejas: 0 = sin equipos, 2 = 2 contra 2, 3 = 3 contra 3. La mesa queda
     // de 4 o 6 y al empezar se completa con bots.
     let equipos = enLista(Number.parseInt(raw.equipos, 10), [0, 2, 3], 0);
-    if (modoJuego === 'JEFE') equipos = 0;
-    // Contra el Rey, el Rey ocupa un lugar: al menos 3 (2 del pueblo + el Rey).
-    const maxMesa = equipos ? equipos * 2 : modoJuego === 'JEFE' ? Math.max(3, maxJugadores) : maxJugadores;
+    if (modoJuego === 'CORTE' && !equipos) equipos = 2;
+    const maxMesa = equipos ? equipos * 2 : maxJugadores;
     const pozoBlis = enLista(Number(raw.pozoBlis), [0, 10, 25, 50, 100], 0);
     // En parejas los bots no ocupan lugares desde el lobby (dejarían fuera a
     // los amigos): entran al empezar, solo en los lugares que quedaron libres.
@@ -970,7 +968,7 @@ async function registrarFinPartida(sala, ganador) {
     // reinicia la racha de los humanos, abajo.)
     // Quiénes ganan: el humano ganador o, en parejas, los humanos del equipo.
     const ganadoresNombres = ganador.esEquipo
-        ? humanos.filter(j => (ganador.integrantes || []).includes(j.nombre) || j.equipo === ganador.equipo).map(j => j.nombre)
+        ? humanos.filter(j => j.equipo === ganador.equipo).map(j => j.nombre)
         : (!!ganador.id && !ganador.esBot ? [ganador.nombre] : []);
     for (const nombreGanador of ganadoresNombres) await conRetry(
         () => pool.execute(
@@ -1392,7 +1390,7 @@ async function resolverApuestasYCorona(sala, perdedores, juegoTerminado, sobrevi
 
     // Fin de partida: el ganador es el nuevo Rey de la mesa (no en parejas).
     if (juegoTerminado) {
-        const ganador = !sala.config.equipos && sala.config.modoJuego !== 'JEFE' && sobrevivientes.length === 1 ? sobrevivientes[0] : null;
+        const ganador = !sala.config.equipos && sobrevivientes.length === 1 ? sobrevivientes[0] : null;
         if (!ganador) { sala.reyDeMesa = null; sala.coronasSeguidas = 0; return; }
         if (ganador.nombre === sala.reyDeMesa) {
             sala.coronasSeguidas = (sala.coronasSeguidas || 1) + 1;
@@ -1412,7 +1410,7 @@ async function resolverApuestasYCorona(sala, perdedores, juegoTerminado, sobrevi
 // en caer al primero y al final quienes salieron de la partida.
 function datosFin(sala, ganador) {
     const { id, nombre, vidas, esEquipo, equipo, integrantes } = ganador;
-    const datos = { id, nombre, vidas, esEquipo, equipo, integrantes, esJefe: !!ganador.esJefe, contraRey: sala.config.modoJuego === 'JEFE', torneo: sala.config.torneo || null };
+    const datos = { id, nombre, vidas, esEquipo, equipo, integrantes, torneo: sala.config.torneo || null };
     if (esEquipo) return datos;
     const caidas = sala.caidas || [];
     const tabla = [];
@@ -1454,7 +1452,7 @@ function resolverRonda(sala, io) {
         }
     }
 
-    const { valorCritico, perdedores, culpables, castigados, mensajes, diez, corte, jefe } = resolverCartas(sala);
+    const { valorCritico, perdedores, culpables, castigados, mensajes, diez, corte } = resolverCartas(sala);
     // Venganza: quien perdió vida y sigue vivo puede vengarse la ronda siguiente.
     sala.vengadores = sala.jugadores.filter(j => perdedores.includes(j.id) && j.vidas > 0).map(j => j.nombre);
     // Amnistía: quien tenía la carta mortal pierde su turno en la ronda siguiente.
@@ -1486,10 +1484,7 @@ function resolverRonda(sala, io) {
     let sobrevivientes = sala.jugadores.filter(j => j.vidas > 0);
     const humanosVivos = sobrevivientes.filter(j => !j.esBot);
     const equiposVivos = new Set(sobrevivientes.map(j => j.equipo));
-    const contraRey = sala.config.modoJuego === 'JEFE';
-    let juegoTerminado = contraRey
-        ? !sobrevivientes.some(j => j.esJefe) || !sobrevivientes.some(j => !j.esJefe && !j.esBot)
-        : sala.config.equipos
+    let juegoTerminado = sala.config.equipos
         ? equiposVivos.size <= 1 || humanosVivos.length === 0
         : sobrevivientes.length <= 1 || humanosVivos.length === 0;
 
@@ -1540,7 +1535,6 @@ function resolverRonda(sala, io) {
         perdedores: perdedores,
         cartaMortal: valorCritico,
         diez: diez || null, // Parejas: { objetivo, sumas por equipo, perdedores }
-        jefe: jefe || null, // Todos contra el Rey: { carta, golpes, necesarios, cayoRey, vidasRey }
         corte: corte || null, // La Corte: { perdedores (equipos), castigo } (sin nombres ni cartas de los Reyes)
         dealerId: sala.jugadores[sala.dealerIndex].id,
         juegoTerminado: juegoTerminado,
@@ -1554,7 +1548,6 @@ function resolverRonda(sala, io) {
         tipo: 'FIN_RONDA',
         icono: '💀',
         texto: corte ? (corte.perdedores.length ? `Fin de ronda — pierde el Rey de ${corte.perdedores.map(e => NOMBRE_EQUIPO[e]).join(' y ')}` : 'Fin de ronda — los Reyes empataron')
-            : jefe ? (jefe.cayoRey ? `Fin de ronda — ¡el Tirano pierde una vida! (${jefe.golpes} le ganaron a su ${jefe.carta})` : `Fin de ronda — el Tirano resiste con su ${jefe.carta}`)
             : diez ? `Fin de ronda — Meta ${diez.objetivo}: ${Object.entries(diez.sumas).map(([e, n]) => `${NOMBRE_EQUIPO[e]} ${n}`).join(' · ')}`
             : `Fin de ronda — Carta mortal: ${valorCritico}`
     });
@@ -1578,13 +1571,7 @@ function resolverRonda(sala, io) {
 
     if (juegoTerminado) {
         let ganador = sobrevivientes[0] || { nombre: "Nadie (Empate total)", vidas: 0 };
-        if (contraRey) {
-            // Cayó el Rey: gana todo el pueblo (también quien quedó fuera). Si no, gana el Rey.
-            const rey = sala.jugadores.find(j => j.esJefe);
-            ganador = rey && rey.vidas > 0 ? rey
-                : { esEquipo: true, equipo: 'pueblo', nombre: 'El pueblo', vidas: 0, id: 'equipo-pueblo',
-                    integrantes: sala.jugadores.filter(j => !j.esJefe).map(j => j.nombre) };
-        } else if (sala.config.equipos && sobrevivientes.length) {
+        if (sala.config.equipos && sobrevivientes.length) {
             // Gana el equipo: la victoria es de todos sus integrantes.
             const e = sobrevivientes[0].equipo;
             ganador = { esEquipo: true, equipo: e, nombre: `Equipo ${NOMBRE_EQUIPO[e]}`, vidas: sobrevivientes[0].vidas,
@@ -1861,7 +1848,6 @@ function iniciarRonda(sala, io) {
     sala.castigadosSiguiente = [];
     if (sala.rondaActual === 1) {
         prepararEquipos(sala);
-        prepararJefe(sala);
         if (sala.config.modoJuego === 'CORTE') repartirReyesCorte(sala);
         sala.caidas = []; sala.vidasPerdidas = {}; sala.primeraPerdida = {};
         sala.dueloAnunciado = false; sala.rondasSinEvento = 0; sala.ultimoEvento = null; sala.castigados = [];
@@ -1966,11 +1952,11 @@ function iniciarRonda(sala, io) {
 
     // Duelo final: quedan 2 en una partida que empezó con más. Se presenta una
     // vez con su pantalla de "versus"; los eventos no aplican en el duelo.
-    sala.enDuelo = vivos.length === 2 && sala.jugadores.length > 2 && !sala.config.equipos && sala.config.modoJuego !== 'JEFE';
+    sala.enDuelo = vivos.length === 2 && sala.jugadores.length > 2 && !sala.config.equipos;
     const anunciarDuelo = sala.enDuelo && !sala.dueloAnunciado;
     if (anunciarDuelo) sala.dueloAnunciado = true;
     // En la práctica el evento lo pone el guion; si no, se sortea.
-    sala.evento = sala.config.practica ? practica.eventoDeRonda(sala) : sala.config.modoJuego === 'JEFE' ? null : eventos.elegirEvento(sala, vivos.length);
+    sala.evento = sala.config.practica ? practica.eventoDeRonda(sala) : eventos.elegirEvento(sala, vivos.length);
     // Poderes que el guion de práctica regala al empezar la ronda.
     if (sala.config.practica) {
         practica.poderesDeRonda(sala).forEach(({ indice, poder }) => {
@@ -2219,23 +2205,6 @@ function prepararEquipos(sala) {
         sala.jugadores.push({ id: 'bot_eq_' + i, nombre, vidas: sala.config.vidas, yaJugo: false, online: true, esBot: true });
     }
     sala.jugadores.forEach((j, i) => { j.equipo = i % 2; });
-}
-
-// TODOS CONTRA EL REY (config.modoJuego 'JEFE'; reglas.resolverJefe)
-// Al empezar (y en la revancha) sienta al Rey: un bot con j.esJefe y vidas
-// según cuántos del pueblo hay. Si la mesa está llena, toma el lugar de un bot.
-function prepararJefe(sala) {
-    if (sala.config.modoJuego !== 'JEFE') return;
-    let rey = sala.jugadores.find(j => j.esJefe);
-    if (!rey) {
-        if (sala.jugadores.length >= sala.config.maxJugadores) {
-            const i = sala.jugadores.map(j => !!j.esBot).lastIndexOf(true);
-            if (i >= 0) sala.jugadores.splice(i, 1);
-        }
-        rey = { id: 'bot_jefe', nombre: 'Rey Tirano', vidas: 1, yaJugo: false, online: true, esBot: true, esJefe: true };
-        sala.jugadores.push(rey);
-    }
-    rey.vidas = vidasDelJefe(sala.jugadores.filter(j => !j.esJefe).length);
 }
 
 function companeros(sala, jugador) {

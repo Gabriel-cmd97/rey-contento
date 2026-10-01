@@ -74,7 +74,7 @@ const DESBLOQUEOS = [
     { nivel: 2, id: 'torneo',  titulo: 'Torneo de la noche' },
     { nivel: 3, id: 'poderes', titulo: 'Poderes' },
     { nivel: 4, id: 'parejas', titulo: 'Parejas (Diez)' },
-    { nivel: 5, id: 'corte',   titulo: 'La Corte' },
+    { nivel: 3, id: 'jefe',    titulo: 'Todos contra el Rey' },
 ];
 function desbloqueosEntre(antes, ahora) { return DESBLOQUEOS.filter(d => d.nivel > antes && d.nivel <= ahora); }
 

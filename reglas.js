@@ -61,7 +61,8 @@ function siguienteVivo(jugadores, indice) {
 // una vida (sin pasar de config.vidas) a la carta más alta: `premiados`.
 // `mensajes` va en el orden en que se deben anunciar a la mesa.
 function resolverCartas(sala) {
-    if (sala.config.modoJuego === 'CORTE') return resolverCorte(sala); // La Corte: solo cuentan los Reyes
+    if (sala.config.modoJuego === 'JEFE') return resolverJefe(sala); // Todos contra el Rey
+    if (sala.config.modoJuego === 'CORTE') return resolverCorte(sala); // La Corte (retirada del menú el 30/09/2026)
     if (sala.config.equipos) return resolverDiez(sala); // Parejas se juega a "Diez"
     const vivos = sala.jugadores.filter(j => j.vidas > 0);
     const pierdeLaMasAlta = sala.evento === 'MUNDO_AL_REVES';
@@ -213,6 +214,40 @@ function resolverCorte(sala) {
              corte: { perdedores: perdedoresEq, castigo } };
 }
 
+// Todos contra el Rey (30/09/2026): el pueblo (todos) contra un Rey bot con
+// muchas vidas (j.esJefe). Si más de la mitad del pueblo vivo tiene una carta
+// MÁS ALTA que la del Rey, el Rey pierde una vida; si no, pierde una vida quien
+// tenga la carta más baja del pueblo. Sin eventos ni poderes.
+// Vidas del Rey según cuántos del pueblo empiezan: con eso el pueblo gana ~55 %
+// jugando al azar (simulado); jugando bien, más.
+const VIDAS_JEFE = { 1: 2, 2: 3, 3: 5, 4: 6, 5: 8, 6: 9, 7: 11 };
+function vidasDelJefe(pueblo) { return VIDAS_JEFE[Math.max(1, Math.min(7, pueblo))]; }
+function resolverJefe(sala) {
+    const vivos = sala.jugadores.filter(j => j.vidas > 0);
+    const rey = vivos.find(j => j.esJefe);
+    const pueblo = vivos.filter(j => !j.esJefe);
+    const perdedores = [], culpables = [], mensajes = [];
+    if (!rey || !pueblo.length) return { vivos, valorCritico: null, empateTotal: true, perdedores, culpables, castigados: [], premiados: [], mensajes, jefe: null };
+    const golpes = pueblo.filter(j => j.cartaActual > rey.cartaActual).length;
+    const necesarios = Math.floor(pueblo.length / 2) + 1;
+    const cayoRey = golpes >= necesarios;
+    let valorCritico = rey.cartaActual;
+    if (cayoRey) {
+        rey.vidas = Math.max(0, rey.vidas - 1);
+        perdedores.push(rey.id); culpables.push(rey.id);
+        mensajes.push(`⚔️ ¡${golpes} de ${pueblo.length} le ganaron al ${rey.cartaActual} del Tirano! El Tirano pierde una vida.`);
+    } else {
+        valorCritico = Math.min(...pueblo.map(j => j.cartaActual));
+        pueblo.filter(j => j.cartaActual === valorCritico).forEach(j => {
+            j.vidas = Math.max(0, j.vidas - 1);
+            perdedores.push(j.id); culpables.push(j.id);
+        });
+        mensajes.push(`👑 Solo ${golpes} de ${pueblo.length} le ganaron al ${rey.cartaActual} del Tirano (hacían falta ${necesarios}). Pierde quien tenía el ${valorCritico}.`);
+    }
+    return { vivos, valorCritico, empateTotal: false, perdedores, culpables, castigados: [], premiados: [], mensajes,
+             jefe: { carta: rey.cartaActual, golpes, necesarios, cayoRey, vidasRey: rey.vidas } };
+}
+
 // Evento Carrusel: cada jugador vivo pasa su carta al siguiente vivo de su
 // derecha, todos a la vez. Quien cumple `retiene(j)` (el Rey protegido) no
 // entra en la vuelta: conserva su carta y los demás se la saltan.
@@ -230,4 +265,4 @@ function rotarCartas(jugadores, retiene = () => false) {
     return pases;
 }
 
-module.exports = { barajar, crearMazo, siguienteVivo, resolverCartas, resolverDiez, resolverCorte, rotarCartas };
+module.exports = { barajar, crearMazo, siguienteVivo, resolverCartas, resolverDiez, resolverCorte, resolverJefe, vidasDelJefe, rotarCartas };

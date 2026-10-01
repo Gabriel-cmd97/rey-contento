@@ -5263,3 +5263,8 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
     body.en-mesa .tapete-virtual { margin-left: max(20px, calc((100vw - 290px - min(1150px, 100vw - 340px)) / 2)) !important; margin-right: auto !important; }
     body.en-mesa .panel-acciones-fijo { left: calc((100vw - 290px) / 2) !important; }
 }
+
+/* TODOS CONTRA EL REY (30/09/2026): el asiento del Rey Tirano se distingue */
+.perfil-oponente.asiento-tirano { border-color: #d4a017 !important; box-shadow: 0 0 0 2px rgba(212,160,23,.55), 0 0 18px rgba(180,40,40,.55) !important; background: linear-gradient(160deg, #4a1414, #22090a) !important; }
+.rey-tirano { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; color: #ffd76a; background: rgba(120,20,20,.85); border: 1px solid #d4a017; border-radius: 8px; padding: 1px 6px; margin: 2px auto 0; }
+.rey-tirano .icono { width: 11px; height: 11px; }
