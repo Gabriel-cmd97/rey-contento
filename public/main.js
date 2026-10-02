@@ -708,7 +708,7 @@ function pintarInfoMesa() {
     const modo = rey;
     // Con guías, la línea recuerda el objetivo (antes era un banner que chocaba con el reloj).
     const objetivo = guiasActivas() && !_practica
-        ? 'pierde la carta más baja' : null;
+        ? (_configSala?.modoJuego === 'JEFE' ? 'más de la mitad, más alto que el Tirano' : 'pierde la carta más baja') : null;
     // Parejas (Diez): la meta y lo que suma tu equipo con lo que ves.
     const diez = _corte ? null : cuentaDiez();
     const extraCorte = _corte ? ` · <span class="info-diez">${_corte.soyRey ? `${icono('corona')} Eres el Rey` : `🛡️ Tu Rey: ${escapeHTML(_corte.miRey || '')}`}</span>` : '';
@@ -1038,14 +1038,14 @@ function explicacionRonda(datos) {
     }
     const enJuego = datos.jugadores.filter(j =>
         j.cartaActual !== undefined && (j.vidas > 0 || datos.perdedores.includes(j.id)));
-    if (enJuego.length > 1 && enJuego.every(j => j.cartaActual === datos.cartaMortal)) {
-        return '🤝 Empate total: todos tenían la misma carta, nadie pierde.';
-    }
     if (datos.jefe) {
         const f = datos.jefe;
         if (f.cayoRey) return `⚔️ ${f.golpes} de ustedes le ganaron al ${f.carta} del Tirano (hacían falta ${f.necesarios}): ¡pierde una vida! Le quedan ${f.vidasRey}.`;
         const yoPerdi = datos.perdedores.includes(yo.id);
         return `👑 Solo ${f.golpes} le ganaron al ${f.carta} del Tirano (hacían falta ${f.necesarios}). ${yoPerdi ? 'Tu carta fue la más baja: pierdes una vida.' : 'Pierde la carta más baja del pueblo.'}`;
+    }
+    if (enJuego.length > 1 && enJuego.every(j => j.cartaActual === datos.cartaMortal)) {
+        return '🤝 Empate total: todos tenían la misma carta, nadie pierde.';
     }
     if (datos.corte && _corte) {
         const perdimos = datos.corte.perdedores.map(Number).includes(_corte.miEquipo);
@@ -1866,7 +1866,9 @@ function pintarComoSeraPartida(c, maxJugadores) {
         ['mascara', c.modoRey === 'DECLARADO' ? 'Rey declarado' : 'Rey sorpresa', c.modoRey === 'DECLARADO' ? 'se ve quién tiene el 9' : 'el 9 va oculto'],
         ['llama', reyes[0], reyes[1]],
         ['corazon', `${c.vidas} ${c.vidas === 1 ? 'vida' : 'vidas'}`, c.equipos ? 'las comparte el equipo' : 'cada quien'],
+        c.modoJuego === 'JEFE' ? ['grupo', `${Math.max(3, maxJugadores || c.maxJugadores) - 1} + el Tirano`, 'si falta gente, entran bots'] :
         ['grupo', c.equipos ? `${c.equipos} contra ${c.equipos}${c.modoJuego === 'CORTE' ? '' : ': Diez'}` : `${maxJugadores || c.maxJugadores} jugadores`, c.modoJuego === 'CORTE' ? 'protege a tu Rey, acusa al rival' : c.equipos ? `sumen ${c.equipos * 5} sin pasarse` : 'si falta gente, entran bots'],
+        c.modoJuego === 'JEFE' ? ['rayo', 'Sin eventos', 'solo ustedes y el Tirano'] :
         ['rayo', fiesta ? 'Evento cada ronda' : 'Eventos a veces', fiesta ? 'la mesa vota el siguiente' : 'reglas sorpresa'],
         ['ojo', c.poderes ? 'Con poderes' : 'Sin poderes', c.poderes ? 'ganas uno al perder vida' : 'solo tus cartas'],
         ...(c.pozoBlis ? [['blis', `Pozo: ${c.pozoBlis} Blis`, 'el ganador se lleva el pozo']] : []),
