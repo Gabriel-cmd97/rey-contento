@@ -226,11 +226,11 @@ function nombreBotAleatorio(usados = []) {
     return candidatos[Math.floor(Math.random() * candidatos.length)];
 }
 
-// Segundos por turno que se pueden elegir al crear la sala.
 // Tiempo por turno fijo para todos los modos (ya no se elige al crear sala):
 // con eventos, poderes y parejas hace falta tiempo para ver la mesa. La
 // práctica guiada usa 60 s y un jugador desconectado tiene al menos 30 s.
 const TIEMPO_TURNO = 20;
+const TIEMPO_TURNO_CONSPIRACION = 35; // 35 segundos para conspirar, leer dossier y activar tácticas con calma
 
 // Valida y acota la configuración que viene del cliente.
 // Devuelve un nuevo objeto sanitizado, o null si algo es inválido.
@@ -299,8 +299,9 @@ function sanitizarConfig(raw) {
     // En parejas los bots no ocupan lugares desde el lobby (dejarían fuera a
     // los amigos): entran al empezar, solo en los lugares que quedaron libres.
     // Los bots ya no se eligen: al empezar, completarConBots() llena los lugares libres.
+    const tiempoTurno = modoJuego === 'CONSPIRACION' ? TIEMPO_TURNO_CONSPIRACION : TIEMPO_TURNO;
     return { vidas, maxJugadores: maxMesa, numBots: 0, modoJuego, modoRey, frecuenciaReyes,
-             dificultadBots, tiempoTurno: TIEMPO_TURNO, eventos: conEventos, poderes: conPoderes, equipos, publica, pozoBlis, password };
+             dificultadBots, tiempoTurno, eventos: conEventos, poderes: conPoderes, equipos, publica, pozoBlis, password };
 }
 
 // Formato del idSala: 5 caracteres alfanuméricos. El alfabeto real es
@@ -2019,7 +2020,8 @@ function iniciarRonda(sala, io) {
     // Presentaciones antes de jugar (el cliente las muestra con estos tiempos).
     // El evento se muestra MS_CARTA_EVENTO en el cliente (4 s para leerlo con calma) + 400 ms de salida.
     const MS_INTRO_DUELO = 2800, MS_INTRO_EVENTO = 4400;
-    const introMs = (anunciarDuelo ? MS_INTRO_DUELO : 0) + (sala.evento ? MS_INTRO_EVENTO : 0);
+    const MS_INTRO_CONSPIRACION = (sala.rondaActual === 1 && sala.config.modoJuego === 'CONSPIRACION') ? 4500 : 0;
+    const introMs = (anunciarDuelo ? MS_INTRO_DUELO : 0) + (sala.evento ? MS_INTRO_EVENTO : 0) + MS_INTRO_CONSPIRACION;
     if (sala.evento) {
         const ev = eventos.CATALOGO[sala.evento];
         io.to(sala.idSala).emit('accionMesa', { tipo: 'EVENTO', icono: '✨', texto: `Evento: ${ev.titulo}` });
