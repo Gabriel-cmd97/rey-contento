@@ -107,7 +107,7 @@ function decidirBot(sala, bot, ctx, azar = Math.random) {
     // "Mundo al revés": pierde la más alta.
     const pierdeAlta = sala.evento === 'MUNDO_AL_REVES';
     const reyProtege = !pierdeAlta; // el Rey solo bloquea cuando pierde la más baja
-    const c = bot.cartaActual;
+    const c = bot.cartaEfectiva !== undefined ? bot.cartaEfectiva : bot.cartaActual;
     const nOtros = sala.jugadores.filter(j => j !== bot && j.vidas > 0).length;
     const dist = distribucionDesconocida(sala, bot, dificultad);
 
@@ -119,9 +119,9 @@ function decidirBot(sala, bot, ctx, azar = Math.random) {
     if (robaDelMazo) {
         pCambiar = probPerderSiCambia(dist, nOtros, pierdeAlta);
     } else {
-        const conocida = dificultad === 'DIFICIL' || ctx.derecha.cartaRevelada
+        const conocida = dificultad === 'DIFICIL' || ctx.derecha?.cartaRevelada
             ? cartaConocida(sala, bot, ctx.derecha) : null;
-        if (reyProtege && conocida === 9) return 'MANTENER'; // el Rey bloquea el cambio
+        if (reyProtege && conocida === 9 && !bot.conspiracion?.fuerzaIntercambio) return 'MANTENER'; // el Rey bloquea el cambio
         pCambiar = conocida !== null
             ? probPerder(conocida, dist, nOtros, pierdeAlta)
             : probPerderSiCambia(dist, nOtros, pierdeAlta);
@@ -206,7 +206,68 @@ function objetivoVenganza(sala, bot) {
     return mejor;
 }
 
-module.exports = { objetivoVenganza, planCorte,
+// Conspiración en la Corte: decisión táctica de roles secretos para bots.
+function planConspiracion(sala, bot, ctx) {
+    if (!bot.conspiracion || bot.conspiracion.habilidadUsada || bot.vidas <= 0) return null;
+    const rol = bot.conspiracion.id;
+    const c = bot.cartaActual;
+    const derecha = ctx?.derecha;
+    const esDealer = ctx?.esDealer;
+    const pierdeAlta = sala.evento === 'MUNDO_AL_REVES';
+
+    if (rol === 'BUFON') {
+        // Truco del Espejo: invierte su carta (0 -> 9, 1 -> 8, 2 -> 7).
+        // Si tiene carta mortal (0, 1 o 2 en normal, o 7, 8, 9 en Mundo al Revés), la invierte y mantiene.
+        const esMortal = pierdeAlta ? c >= 7 : c <= 2;
+        if (esMortal) {
+            return { habilidad: 'TRUCO_ESPEJO', accionSiguiente: 'MANTENER' };
+        }
+    }
+
+    if (rol === 'CAMPEON') {
+        // Intervención Real: fuerza el cambio ignorando bloqueos del Rey (9) o escudos.
+        if (!esDealer && derecha) {
+            const conocida = derecha.cartaRevelada || (bot.memoria && bot.memoria[derecha.id]);
+            const tiene9 = conocida === 9 && !pierdeAlta;
+            const tieneEscudo = (sala.escudos || []).includes(derecha.nombre);
+            const quiereCambiar = c <= 4;
+            if ((tiene9 || tieneEscudo) && quiereCambiar) {
+                return { habilidad: 'INTERVENCION', accionSiguiente: 'CAMBIAR' };
+            }
+        }
+    }
+
+    if (rol === 'USURPADOR') {
+        // Golpe de Estado: roba directo del mazo real saltando al vecino.
+        // Si no es dealer y su carta es baja (<= 3), roba del mazo para salvarse o buscar al Rey.
+        if (!esDealer && c <= 3) {
+            return { habilidad: 'GOLPE_ESTADO' };
+        }
+    }
+
+    if (rol === 'ASESINO') {
+        // Daga Envenenada: al cambiar, envenena la carta para quitarle 1 vida extra al perdedor.
+        // Si va a entregar una carta mortal (0, 1 o 2) a su vecino derecho:
+        if (!esDealer && c <= 2 && derecha && derecha.vidas > 0) {
+            return { habilidad: 'DAGA_ENVENENADA', accionSiguiente: 'CAMBIAR' };
+        }
+    }
+
+    if (rol === 'INQUISIDOR') {
+        // Juicio del Inquisidor: revela en secreto el rol de un cortesano vivo.
+        // Elige a un objetivo no interrogado previamente (prioriza humanos o rivales con más vidas).
+        const yaInterrogados = bot.conspiracion.interrogados || [];
+        const candidatos = (sala.jugadores || []).filter(j => j !== bot && j.vidas > 0 && !yaInterrogados.includes(j.id));
+        if (candidatos.length > 0) {
+            candidatos.sort((a, b) => (b.esBot ? 0 : 1) - (a.esBot ? 0 : 1) || b.vidas - a.vidas);
+            return { habilidad: 'INTERROGATORIO', objetivoId: candidatos[0].id };
+        }
+    }
+
+    return null;
+}
+
+module.exports = { objetivoVenganza, planCorte, planConspiracion,
     DIFICULTADES, COMPOSICION,
     probPerder, distribucionDesconocida, decidirBot, retrasoBot,
     recordarCambio, olvidarCarta, olvidarRonda,
