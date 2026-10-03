@@ -710,12 +710,14 @@ function pintarInfoMesa() {
     const modo = rey;
     // Con guías, la línea recuerda el objetivo (antes era un banner que chocaba con el reloj).
     const objetivo = guiasActivas() && !_practica
-        ? (_configSala?.modoJuego === 'JEFE' ? 'más de la mitad, más alto que el Tirano' : 'pierde la carta más baja') : null;
+        ? (_configSala?.modoJuego === 'JEFE' ? 'más de la mitad, más alto que el Tirano' : (modoJuegoActual === 'CONSPIRACION' && _miRolConspiracion ? `misión: ${_miRolConspiracion.mision}` : 'pierde la carta más baja')) : null;
     // Parejas (Diez): la meta y lo que suma tu equipo con lo que ves.
     const diez = _corte ? null : cuentaDiez();
     const extraCorte = _corte ? ` · <span class="info-diez">${_corte.soyRey ? `${icono('corona')} Eres el Rey` : `🛡️ Tu Rey: ${escapeHTML(_corte.miRey || '')}`}</span>` : '';
+    const extraConspiracion = (modoJuegoActual === 'CONSPIRACION' && _miRolConspiracion)
+        ? ` · <span class="info-diez" style="color:${_miRolConspiracion.color || 'var(--oro)'}" title="${escapeHTML(_miRolConspiracion.mision)}">${icono(_miRolConspiracion.icono || 'pergamino')} ${escapeHTML(_miRolConspiracion.titulo)}</span>` : '';
     const extraPozo = _pozoMesa > 0 ? ` · <span class="chip-pozo" title="Pozo acumulado">${icono('blis')} Pozo: ${_pozoMesa}</span>` : '';
-    const extra = (extraCorte || (diez ? ` · <span class="info-diez" title="Sumen lo más cerca de ${diez.meta} sin pasarse">${icono('diana')} Meta ${diez.meta} · tu equipo ${diez.suma}${diez.completa ? '' : '+?'}</span>` : '')) + extraPozo;
+    const extra = (extraCorte || extraConspiracion || (diez ? ` · <span class="info-diez" title="Sumen lo más cerca de ${diez.meta} sin pasarse">${icono('diana')} Meta ${diez.meta} · tu equipo ${diez.suma}${diez.completa ? '' : '+?'}</span>` : '')) + extraPozo;
     info.innerHTML = eventoActual
         ? `Ronda ${escapeHTML(ronda)} · <span class="info-evento" title="${escapeHTML(eventoActual.descripcion)}">${icono(eventoActual.icono)} ${escapeHTML(eventoActual.titulo)}</span>${extra}`
         : `Ronda ${escapeHTML(ronda)}${extra || ` · ${objetivo ? `<span class="info-objetivo">${objetivo}</span>` : modo}`}`;
@@ -951,7 +953,10 @@ function actualizarGuiaTurno(esMio, redibujar = false) {
         const reyALaVista = eventoActual?.id !== 'MUNDO_AL_REVES' && vecino.cartaRevelada && vecino.cartaActual === 9;
         // En parejas tu vecino de la derecha siempre es rival.
         const rival = (miEquipo() !== undefined && miEquipo() !== null) ? ' (rival)' : '';
-        textoCambiar = vecino.escudo
+        const fuerzaCampeon = _miRolConspiracion?.id === 'CAMPEON' && yo?.conspiracion?.fuerzaIntercambio;
+        textoCambiar = fuerzaCampeon
+            ? `🛡️ ¡Intervención Real activa! Tu cambio con ${vecino.nombre} ignorará cualquier bloqueo o escudo`
+            : vecino.escudo
             ? `🛡️ ${vecino.nombre} tiene escudo: si cambias, rebota y te quedas con tu carta`
             : reyALaVista
             ? `👑 ${vecino.nombre} tiene al Rey: si cambias, se bloquea`
@@ -986,6 +991,16 @@ function actualizarGuiaTurno(esMio, redibujar = false) {
     if (_corte) lineas.push(_corte.soyRey
         ? '👑 Eres el Rey: solo cuenta tu carta entre los Reyes. No te delates'
         : `🛡️ Solo cuenta la carta de tu Rey (${_corte.miRey}). Protegerlo le da tu carta, pero te delata`);
+    if (modoJuegoActual === 'CONSPIRACION' && _miRolConspiracion) {
+        const r = _miRolConspiracion;
+        lineas.push(`📜 Eres ${r.titulo} (${r.faccion}): «${r.mision}»`);
+        if (!_habilidadConspiracionUsada) {
+            lineas.push(`⚡ Táctica lista: ${r.habilidad.nombre} — ${r.habilidad.descripcion}`);
+            lineas.push('💡 Actívala sobre tus cartas o abre tu dossier (botón 📜 Rol)');
+        } else {
+            lineas.push(`⚡ Ya empleaste tu habilidad táctica única (${r.habilidad.nombre})`);
+        }
+    }
     if (eventoActual?.id === 'CARRUSEL') lineas.push('🎠 Carrusel: al final le pasas tu carta al de tu derecha y recibes la del de tu izquierda');
     if (eventoActual?.id === 'PREMIO') lineas.push('👑 Premio real: quien termine con la carta más alta gana una vida');
     if (puedoVengarme()) lineas.push('😈 Venganza: toca el asiento de cualquier jugador para cambiar con él');
@@ -1071,6 +1086,11 @@ function explicacionRonda(datos) {
         return pierdo
             ? `💔 ${tuEquipo} pierde${eventoActual?.id === 'DOBLE_CASTIGO' ? ' 2 vidas' : ' una vida'}: ${quien} ${quien === 'tú' ? 'tenías' : 'tenía'} la carta ${extremo} (${datos.cartaMortal}).`
             : `✅ ${tuEquipo} se salvó. La carta ${extremo} fue el ${datos.cartaMortal}${quien ? ` (${quien})` : ''}.`;
+    }
+    if (modoJuegoActual === 'CONSPIRACION' && _miRolConspiracion) {
+        if (yo.venenoRonda && pierdo) {
+            return `💔 Perdiste la ronda y sufriste 1 vida adicional por la Daga Envenenada (☠️). Tu misión: «${_miRolConspiracion.mision}».`;
+        }
     }
     if (pierdo) {
         return `💔 Perdiste${eventoActual?.id === 'DOBLE_CASTIGO' ? ' 2 vidas (doble castigo)' : ''}: tu ${yo.cartaActual} era la carta ${extremo}.`;
@@ -3273,6 +3293,7 @@ function alRecibirRolConspiracion(rol, anunciar = true) {
             Sonidos.reaccion('💎');
             setTimeout(() => { carta.classList.add('saliendo'); setTimeout(() => carta.classList.add('hidden'), 400); }, 5000);
         }
+        mostrarToast(`📜 Tu rol: ${rol.titulo}. Pulsa "📜 Rol" abajo para ver tu dossier y activar tu táctica.`, 'rey', 5500);
     }
     actualizarBotonDossier();
     pintarBarraConspiracion();
