@@ -542,6 +542,7 @@ function actualizarBotonesTurno(esMio) {
     }
     document.body.classList.toggle('puedo-jugar', !!esMio);
     setTimeout(pintarBarraCorte, 0);
+    setTimeout(pintarBarraConspiracion, 0);
     document.getElementById('btnCambiar').innerText = 'CAMBIAR';
     pintarBarraPoderes();
     actualizarGuiaTurno(esMio);
@@ -598,6 +599,7 @@ function puedoVengarme() {
 function terminarMiJugada() {
     document.body.classList.remove('puedo-jugar');
     document.getElementById('barraCorte')?.classList.add('hidden');
+    document.getElementById('barraConspiracion')?.classList.add('hidden');
     quitarVenganza();
 }
 
@@ -3149,6 +3151,7 @@ const EXPLICA_MODO = {
     FIESTA: ['🎉 Modo Fiesta', 'Cada ronda trae un <b>evento</b> que cambia la regla (lo ves bajo el reloj).', 'Al terminar la ronda, la mesa <b>vota</b> el evento de la siguiente.', 'Sigue perdiendo la carta más baja.'],
     DIEZ: ['🎯 Parejas: Diez', 'Se <b>suman las cartas de tu equipo</b>: la meta es 10 (15 en 3 contra 3).', 'Pierde el equipo que <b>se pasa</b>, o el que queda más lejos.', 'Ves la carta de tu compañero; bajo el reloj va la cuenta.'],
     CORTE: ['👑 La Corte', 'Cada equipo tiene un <b>Rey secreto</b>; solo cuentan las cartas de los Reyes.', '🛡️ <b>Proteger</b>: le das tu carta a tu Rey (una vez por ronda), pero te delatas.', '⚔️ <b>Acusar</b>: una vez por partida. Si fallas, pierde tu equipo.'],
+    CONSPIRACION: ['📜 Conspiración en la Corte', 'Cada cortesano recibe un <b>Rol Secreto</b> sellado con cera roja.', 'Tienes una <b>habilidad táctica</b> única (1 por partida) para sabotear o protegerte.', 'Cumple tu <b>misión clandestina</b> para ganar Blis de recompensa al finalizar.'],
     JEFE: ['👑 Todos contra el Rey', 'Todos juntos contra el <b>Rey Tirano</b>, que tiene muchas vidas.', 'Si <b>más de la mitad</b> tiene una carta más alta que la suya, el Tirano pierde una vida.', 'Si no, pierde quien tenga la <b>carta más baja</b>. Pásenle las cartas bajas al Tirano.'],
     PODERES: ['✨ Con poderes', 'Cada vez que pierdes una vida ganas un <b>poder</b> de un solo uso.', 'Tus poderes salen arriba de tus botones: Espiar, Oráculo, Salto y Escudo.'],
 };
@@ -3157,6 +3160,7 @@ function mostrarModoNuevo(datos) {
     const cfg = _configSala || {};
     const modos = [];
     if (datos.modoJuego === 'JEFE') modos.push('JEFE');
+    else if (datos.modoJuego === 'CONSPIRACION') modos.push('CONSPIRACION');
     else if (datos.modoJuego === 'CORTE') modos.push('CORTE');
     else if ((datos.jugadores || []).some(j => j.equipo !== undefined && j.equipo !== null)) modos.push('DIEZ');
     if (datos.modoJuego === 'FIESTA') modos.push('FIESTA');
@@ -3245,6 +3249,200 @@ document.getElementById('barraCorte')?.addEventListener('click', (e) => {
     if (_practica?.tipo === 'corte') marcarAsientoSugerido(_practica.nombreC);
     mostrarToast('⚔️ Toca al rival que crees que es su Rey. Si fallas, tu equipo pierde una vida.', 'rey', 4000);
     setTimeout(() => { if (_apuntando === 'ACUSAR') cancelarApuntar(); }, 10000);
+});
+
+// ==========================================
+// CONSPIRACIÓN EN LA CORTE (Roles secretos y habilidades tácticas)
+// ==========================================
+let _miRolConspiracion = null;
+let _habilidadConspiracionUsada = false;
+
+function alRecibirRolConspiracion(rol, anunciar = true) {
+    const nuevo = !_miRolConspiracion || _miRolConspiracion.id !== rol.id;
+    _miRolConspiracion = rol;
+    if (anunciar && nuevo) {
+        const carta = document.getElementById('cartaRol');
+        if (carta) {
+            carta.innerHTML = `<span class="rol-icono">${icono(rol.icono || 'pergamino')}</span>
+                <b style="color:${rol.color || 'var(--oro)'}">${escapeHTML(rol.titulo)}</b>
+                <small>${escapeHTML(rol.faccion)}</small>
+                <p>«${escapeHTML(rol.lema)}»</p>
+                <p style="font-size:12px;opacity:0.9;margin-top:4px;"><b>Misión:</b> ${escapeHTML(rol.mision)}</p>`;
+            carta.classList.remove('hidden', 'saliendo');
+            vibrar([80, 40, 80]);
+            Sonidos.reaccion('💎');
+            setTimeout(() => { carta.classList.add('saliendo'); setTimeout(() => carta.classList.add('hidden'), 400); }, 5000);
+        }
+    }
+    actualizarBotonDossier();
+    pintarBarraConspiracion();
+    dibujarMesaCircular();
+}
+
+function actualizarBotonDossier() {
+    const btn = document.getElementById('btnDossierCorte');
+    if (!btn) return;
+    const esConspiracion = modoJuegoActual === 'CONSPIRACION';
+    btn.classList.toggle('hidden', !esConspiracion);
+}
+
+function abrirDossierCorte() {
+    if (!_miRolConspiracion) return;
+    const modal = document.getElementById('modalDossierCorte');
+    if (!modal) return;
+
+    const r = _miRolConspiracion;
+    const fEl = document.getElementById('dossierFaccion');
+    if (fEl) {
+        fEl.textContent = r.faccion;
+        let faccionClase = 'faccion-leales';
+        if (r.faccion === 'CONSPIRADORES') faccionClase = 'faccion-conspiradores';
+        else if (r.faccion === 'CAOS') faccionClase = 'faccion-caos';
+        else if (r.faccion === 'LA LEY') faccionClase = 'faccion-ley';
+        fEl.className = `dossier-faccion-pill ${faccionClase}`;
+    }
+    const icEl = document.getElementById('dossierIcono');
+    if (icEl) icEl.innerHTML = icono(r.icono || 'escudo');
+    const tEl = document.getElementById('tituloDossierCorte');
+    if (tEl) {
+        tEl.textContent = r.titulo;
+        tEl.style.color = r.color || 'var(--oro)';
+    }
+    const lEl = document.getElementById('dossierLema');
+    if (lEl) lEl.textContent = `«${r.lema || ''}»`;
+    const mEl = document.getElementById('dossierMision');
+    if (mEl) mEl.textContent = r.mision || '';
+    const hN = document.getElementById('dossierHabilidadNombre');
+    if (hN) hN.innerHTML = `${icono(r.habilidad?.icono || 'rayo')} ${escapeHTML(r.habilidad?.nombre || '')}`;
+    const hD = document.getElementById('dossierHabilidadDesc');
+    if (hD) hD.textContent = r.habilidad?.descripcion || '';
+
+    const btnU = document.getElementById('btnUsarHabilidadDossier');
+    if (btnU) {
+        const miTurno = document.body.classList.contains('puedo-jugar');
+        if (_habilidadConspiracionUsada) {
+            btnU.textContent = 'HABILIDAD YA USADA';
+            btnU.disabled = true;
+            btnU.style.opacity = '0.5';
+        } else if (!miTurno) {
+            btnU.textContent = 'DISPONIBLE EN TU TURNO';
+            btnU.disabled = true;
+            btnU.style.opacity = '0.7';
+        } else {
+            btnU.textContent = `ACTIVAR: ${r.habilidad?.nombre || 'HABILIDAD'}`;
+            btnU.disabled = false;
+            btnU.style.opacity = '1';
+        }
+    }
+
+    modal.classList.remove('hidden');
+}
+
+function usarHabilidadConspiracion() {
+    if (!_miRolConspiracion || _habilidadConspiracionUsada) return;
+    const miTurno = document.body.classList.contains('puedo-jugar');
+    if (!miTurno) {
+        mostrarToast('Solo puedes usar tu habilidad táctica en tu turno.', 'danio', 2500);
+        return;
+    }
+
+    document.getElementById('modalDossierCorte')?.classList.add('hidden');
+
+    if (_miRolConspiracion.id === 'INQUISIDOR') {
+        _apuntando = 'INQUISICION';
+        document.body.classList.add('apuntando');
+        mostrarToast('⚖️ Toca a un cortesano de la mesa para someterlo a juicio.', 'rey', 5000);
+        setTimeout(() => { if (_apuntando === 'INQUISICION') cancelarApuntar(); }, 10000);
+        return;
+    }
+
+    Sonidos.boton();
+    socket.emit('usarHabilidadRol', { idSala: miSalaActual });
+    _habilidadConspiracionUsada = true;
+    pintarBarraConspiracion();
+    mostrarToast(`⚡ ¡Activaste ${escapeHTML(_miRolConspiracion.habilidad?.nombre)}!`, 'rey', 3000);
+}
+
+function pintarBarraConspiracion() {
+    const barra = document.getElementById('barraConspiracion');
+    if (!barra) return;
+    const esConspiracion = modoJuegoActual === 'CONSPIRACION';
+    const miTurno = document.body.classList.contains('puedo-jugar');
+    const yo = listaJugadoresGlobal.find(j => j.id === socket?.id);
+    if (!esConspiracion || !_miRolConspiracion || !miTurno || !yo || yo.vidas <= 0) {
+        barra.classList.add('hidden');
+        return;
+    }
+
+    if (_habilidadConspiracionUsada) {
+        barra.innerHTML = `<span class="conspiracion-badge-usada">${icono(_miRolConspiracion.icono || 'escudo')} ${_miRolConspiracion.titulo} (Habilidad usada)</span>`;
+        barra.classList.remove('hidden');
+        return;
+    }
+
+    const hab = _miRolConspiracion.habilidad;
+    barra.innerHTML = `
+        <button type="button" class="btn-habilidad-corte" id="btnHabilidadConspiracion" title="${escapeHTML(hab?.descripcion || '')}">
+            <span class="icono-hab">${icono(hab?.icono || 'rayo')}</span>
+            <span class="texto-hab"><b>${escapeHTML(hab?.nombre || 'Habilidad')}</b><small>Táctica única</small></span>
+        </button>
+    `;
+    barra.classList.remove('hidden');
+}
+
+function pintarRevelacionConspiracion(revelaciones) {
+    const lista = document.getElementById('revelacionLista');
+    const modal = document.getElementById('modalRevelacionConspiracion');
+    if (!lista || !modal || !Array.isArray(revelaciones)) return;
+
+    lista.innerHTML = revelaciones.map(rev => {
+        const cumplida = rev.misionCumplida;
+        const faccionTxt = rev.rol?.faccion || '';
+        const premioTxt = rev.recompensaBlis > 0 ? ` (+${rev.recompensaBlis} Blis)` : '';
+        return `
+            <div class="revelacion-item ${cumplida ? 'cumplida' : ''}">
+                <div class="revelacion-jugador">
+                    <span style="font-size:18px;">${icono(rev.rol?.icono || 'pergamino')}</span>
+                    <div style="text-align:left;">
+                        <div>${escapeHTML(rev.nombre)}</div>
+                        <div class="revelacion-rol-nombre" style="color:${rev.rol?.color || '#fff'}">${escapeHTML(rev.rol?.titulo || '')} <small>(${escapeHTML(faccionTxt)})</small></div>
+                    </div>
+                </div>
+                <div class="revelacion-estado ${cumplida ? 'exito' : 'fallo'}">
+                    ${cumplida ? `✓ Misión cumplida${premioTxt}` : '✗ Sin completar'}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    setTimeout(() => {
+        modal.classList.remove('hidden');
+        Sonidos.reaccion('💎');
+    }, 1800);
+}
+
+document.getElementById('btnDossierCorte')?.addEventListener('click', () => {
+    Sonidos.boton();
+    abrirDossierCorte();
+});
+document.getElementById('barraConspiracion')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('#btnHabilidadConspiracion');
+    if (!btn) return;
+    usarHabilidadConspiracion();
+});
+document.getElementById('btnUsarHabilidadDossier')?.addEventListener('click', () => {
+    usarHabilidadConspiracion();
+});
+document.querySelectorAll('#modalDossierCorte [data-cierra], #modalRevelacionConspiracion [data-cierra]').forEach(b => {
+    b.addEventListener('click', () => {
+        const id = b.dataset.cierra;
+        if (id) document.getElementById(id)?.classList.add('hidden');
+    });
+});
+['modalDossierCorte', 'modalRevelacionConspiracion'].forEach(id => {
+    document.getElementById(id)?.addEventListener('click', (e) => {
+        if (e.target.id === id) e.currentTarget.classList.add('hidden');
+    });
 });
 
 // ==========================================
@@ -3934,7 +4132,8 @@ function dibujarMesaCircular() {
     ['equipo-0', 'equipo-1'].forEach(c => document.getElementById('miPerfil')?.classList.toggle(c, `equipo-${miJugador.equipo}` === c));
     pintarMarcadorEquipos();
     if (nombreMesa) nombreMesa.innerHTML = icono(miJugador.dealer ? 'corona' : 'persona') + ' ' + escapeHTML(miJugador.nombre)
-        + (miJugador.equipo !== undefined && miJugador.equipo !== null ? ` <span class="rol-equipo equipo-${miJugador.equipo}">Tú · ${NOMBRE_EQUIPO[miJugador.equipo]}</span>` : '');
+        + (miJugador.equipo !== undefined && miJugador.equipo !== null ? ` <span class="rol-equipo equipo-${miJugador.equipo}">Tú · ${NOMBRE_EQUIPO[miJugador.equipo]}</span>` : '')
+        + (_miRolConspiracion ? ` <span class="conspiracion-rol-mio" style="color:${_miRolConspiracion.color || 'var(--oro)'};font-size:11px;font-weight:bold;">${icono(_miRolConspiracion.icono || 'pergamino')} ${escapeHTML(_miRolConspiracion.titulo)}</span>` : '');
     if (vidasMesa) vidasMesa.innerHTML = miJugador.vidas > 0 ? icono('corazon') + ' ' + miJugador.vidas : icono('calavera') + ' 0';
 
     if (miJugador.vidas <= 0) {
@@ -4130,6 +4329,7 @@ function dibujarMesaCircular() {
                 <div style="font-size:13px;font-weight:bold;line-height:1.2;word-wrap:break-word;">${iconoAsiento} ${escapeHTML(op.nombre)}</div>
                 ${_corte && op.nombre === _corte.miRey ? `<span class="rey-corte" title="Tu Rey (los rivales no lo saben)">${icono('corona')} Tu Rey</span>` : ''}
                 ${op.reyCorteRevelado ? `<span class="rey-corte descubierto" title="Rey descubierto por una acusación">${icono('corona')} Rey descubierto</span>` : ''}
+                ${op.conspiracion?.rol ? `<span class="conspiracion-rol-revelado" style="color:${op.conspiracion.rol.color};font-size:10px;font-weight:bold;">${icono(op.conspiracion.rol.icono)} ${escapeHTML(op.conspiracion.rol.titulo)}</span>` : ''}
                 ${op.esJefe ? `<span class="rey-tirano" title="Todos juntos contra él">${icono('corona')} El jefe</span>` : ''}
                 ${op.reyNoche ? `<span class="rey-noche" title="Ganó el torneo de la noche">${icono('trofeo')} Rey de la noche</span>` : ''}
                 ${op.reyMesa ? `<span class="rey-mesa" title="Rey de la mesa: ganó la partida anterior">${icono('corona')} Rey${op.reyMesa > 1 ? ' ×' + op.reyMesa : ''}</span>` : ''}
@@ -4585,7 +4785,14 @@ function conectarSocket() {
         vengadoresRonda = datos.vengadores || [];
         pintarApuesta(datos.jugadores || []);
         _protegiEstaRonda = false;
+        if (datos.ronda === 1) _habilidadConspiracionUsada = false;
         if (datos.modoJuego !== 'CORTE') _corte = null; // otro modo: sin papel de La Corte
+        if (datos.modoJuego !== 'CONSPIRACION') {
+            _miRolConspiracion = null;
+            _habilidadConspiracionUsada = false;
+        }
+        actualizarBotonDossier();
+        pintarBarraConspiracion();
         ocultarEvento();
         marcarDuelo(datos.duelo);
         if (datos.anunciarDuelo) mostrarPresentacionDuelo(datos.duelistas);
@@ -4903,6 +5110,20 @@ function conectarSocket() {
     };
     // Venganza: tocar un asiento = cambiar con esa persona.
     document.getElementById('tapeteVistas').onclick = (e) => {
+        if (_apuntando === 'INQUISICION') {
+            const s = e.target.closest('.silla[data-jugador-id]');
+            const j = s && listaJugadoresGlobal.find(x => x.id === s.dataset.jugadorId);
+            cancelarApuntar();
+            if (!j || j.id === socket.id || j.vidas <= 0) {
+                mostrarToast('Elige a otro cortesano con vida.', '', 2000);
+                return;
+            }
+            Sonidos.boton();
+            socket.emit('usarHabilidadRol', { idSala: miSalaActual, objetivo: j.nombre });
+            _habilidadConspiracionUsada = true;
+            pintarBarraConspiracion();
+            return;
+        }
         if (_apuntando === 'ACUSAR') {
             const s = e.target.closest('.silla[data-jugador-id]');
             const j = s && listaJugadoresGlobal.find(x => x.id === s.dataset.jugadorId);
@@ -5192,6 +5413,13 @@ function conectarSocket() {
         mostrarToast(a.acierto ? `⚔️ ¡Regicidio! ${a.acusador} descubrió al Rey: ${a.objetivo}` : `⚔️ ${a.acusador} acusó a ${a.objetivo}… ¡no era el Rey!`, a.acierto ? 'rey' : 'danio', 4500);
         Sonidos.reaccion(a.acierto ? '🐉' : '😡'); vibrar([100, 50, 100]);
     });
+    socket.on('rolConspiracion', (rol) => alRecibirRolConspiracion(rol, true));
+    socket.on('resultadoInquisicion', ({ objetivo, rol }) => {
+        mostrarToast(`📜 Interrogatorio: ${objetivo} es ${rol.titulo} (${rol.faccion})`, 'rey', 6000);
+        Sonidos.reaccion('💎');
+        vibrar([60, 40, 100]);
+    });
+    socket.on('revelacionConspiracion', (revelaciones) => pintarRevelacionConspiracion(revelaciones));
     socket.on('actualizarJugadores', (jugadores) => {
         listaJugadoresGlobal = jugadores.map(j => j.nombre === miNombreUsuario ? { ...j, id: socket.id } : j);
         dibujarMesaCircular();

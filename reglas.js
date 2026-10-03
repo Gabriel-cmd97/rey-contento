@@ -69,10 +69,11 @@ function resolverCartas(sala) {
     const vidasPorPerder = sala.evento === 'DOBLE_CASTIGO' ? 2 : 1;
     const amnistia = sala.evento === 'AMNISTIA';
 
+    const valorDe = (j) => j.cartaEfectiva !== undefined ? j.cartaEfectiva : j.cartaActual;
     const valorCritico = pierdeLaMasAlta
-        ? Math.max(...vivos.map(j => j.cartaActual))
-        : Math.min(...vivos.map(j => j.cartaActual));
-    const empateTotal = vivos.every(j => j.cartaActual === valorCritico);
+        ? Math.max(...vivos.map(valorDe))
+        : Math.min(...vivos.map(valorDe));
+    const empateTotal = vivos.every(j => valorDe(j) === valorCritico);
     const perdedores = [];
     const castigados = [];
     const culpables = []; // quienes tenían la carta mortal
@@ -94,15 +95,22 @@ function resolverCartas(sala) {
     };
 
     if (!empateTotal && amnistia) {
-        sala.jugadores.forEach(j => { if (j.vidas > 0 && j.cartaActual === valorCritico) castigados.push(j.id); });
+        sala.jugadores.forEach(j => { if (j.vidas > 0 && valorDe(j) === valorCritico) castigados.push(j.id); });
         mensajes.push(`🕊️ Amnistía: nadie pierde vida, pero quien tenía el ${valorCritico} pierde su próximo turno.`);
     } else if (!empateTotal) {
         sala.jugadores.forEach(j => {
-            if (j.vidas > 0 && j.cartaActual === valorCritico) pierde(j, vidasPorPerder);
+            if (j.vidas > 0 && valorDe(j) === valorCritico) {
+                const vidasExtra = j.venenoRonda ? 1 : 0;
+                pierde(j, vidasPorPerder + vidasExtra);
+                if (vidasExtra > 0) mensajes.push(`☠️ ¡El veneno hace efecto en ${j.nombre}! Pierde 1 vida adicional.`);
+            }
+            delete j.cartaEfectiva;
+            delete j.venenoRonda;
         });
         if (vidasPorPerder > 1) mensajes.push(`⚔️ Doble castigo: quien tenía el ${valorCritico} pierde ${vidasPorPerder} vidas.`);
     } else {
         mensajes.push(`🤝 ¡Empate total! Todos tienen ${valorCritico} — nadie pierde vida esta ronda.`);
+        sala.jugadores.forEach(j => { delete j.cartaEfectiva; delete j.venenoRonda; });
     }
 
     const premiados = [];

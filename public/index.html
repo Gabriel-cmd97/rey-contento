@@ -189,6 +189,7 @@
                             <option value="CLASICO">Clásico</option>
                             <option value="FIESTA">Fiesta: evento en cada ronda</option>
                             <option value="JEFE">Todos contra el Rey</option>
+                            <option value="CONSPIRACION">Conspiración en la Corte</option>
                         </select>
                         </div>
                         <div class="config-item-nuevo">
@@ -540,7 +541,10 @@
             <div id="barraPoderes" class="barra-poderes hidden" aria-label="Tus poderes"></div>
             <!-- La Corte: proteger al Rey y acusar (pintarBarraCorte en main.js) -->
             <div id="barraCorte" class="barra-corte hidden"></div>
+            <!-- Conspiración: rol secreto y habilidad (pintarBarraConspiracion en main.js) -->
+            <div id="barraConspiracion" class="barra-conspiracion hidden" aria-label="Rol secreto de la Corte"></div>
             <div class="acciones-row">
+                <button id="btnDossierCorte" class="btn-dossier-corte hidden" title="Ver tu Rol Secreto de la Corte" aria-label="Rol Secreto de la Corte">📜 <span class="dossier-btn-texto">Rol</span></button>
                 <button id="btnReacciones" class="btn-abrir-reacciones" aria-expanded="false" aria-controls="barraReacciones" title="Reacciones y frases">😀</button>
                 <button id="btnMantener" class="boton-medieval full-width" data-tecla="M" disabled>MANTENER</button>
                 
@@ -891,6 +895,48 @@
             <button id="btnConfirmarSalir" class="boton-madera">Sí, salir</button>
             <button id="btnCancelarSalir" class="boton-oro">Seguir jugando</button>
         </div>
+    </div>
+</div>
+
+<!-- Modal Dossier Secreto de la Corte (Modo Conspiración) -->
+<div id="modalDossierCorte" class="hidden modal-overlay" role="dialog" aria-modal="true" aria-labelledby="tituloDossierCorte">
+    <div class="modal-caja dossier-caja">
+        <button type="button" class="modal-cerrar-x" data-cierra="modalDossierCorte" aria-label="Cerrar"><svg class="icono" aria-hidden="true"><use href="#i-cerrar"/></svg></button>
+        <div class="dossier-cabecera">
+            <div class="sello-cera-emblema">
+                <span class="sello-cera-circulo"></span>
+                <span id="dossierIcono" class="dossier-icono-faccion"><svg class="icono" aria-hidden="true"><use href="#i-escudo"/></svg></span>
+            </div>
+            <div class="dossier-faccion-pill" id="dossierFaccion">LEALES A LA CORONA</div>
+        </div>
+        <h3 id="tituloDossierCorte" class="dossier-titulo">Campeón de la Corona</h3>
+        <p id="dossierLema" class="dossier-lema">«La Corona jamás caerá»</p>
+        <div class="dossier-bloque">
+            <h4 class="dossier-subtitulo"><svg class="icono" aria-hidden="true"><use href="#i-pergamino"/></svg> Misión Secreta</h4>
+            <p id="dossierMision" class="dossier-texto"></p>
+        </div>
+        <div class="dossier-bloque">
+            <h4 class="dossier-subtitulo"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Habilidad Táctica (1 por partida)</h4>
+            <strong id="dossierHabilidadNombre" class="dossier-habilidad-nombre"></strong>
+            <p id="dossierHabilidadDesc" class="dossier-texto"></p>
+            <div id="dossierHabilidadAccion" style="margin-top:10px;">
+                <button id="btnUsarHabilidadDossier" class="boton-oro full-width">ACTIVAR HABILIDAD</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Revelación de la Conspiración al final de la partida -->
+<div id="modalRevelacionConspiracion" class="hidden modal-overlay" role="dialog" aria-modal="true" aria-labelledby="tituloRevelacion">
+    <div class="modal-caja revelacion-caja">
+        <button type="button" class="modal-cerrar-x" data-cierra="modalRevelacionConspiracion" aria-label="Cerrar"><svg class="icono" aria-hidden="true"><use href="#i-cerrar"/></svg></button>
+        <div class="revelacion-header">
+            <span class="revelacion-sello-roto">📜</span>
+            <h3 id="tituloRevelacion" class="revelacion-titulo">La Conspiración al Descubierto</h3>
+            <p class="revelacion-subtitulo">Se han roto los sellos de cera roja en la corte</p>
+        </div>
+        <div id="revelacionLista" class="revelacion-lista"></div>
+        <button type="button" class="boton-medieval full-width" data-cierra="modalRevelacionConspiracion" style="margin-top:14px;">CONTINUAR</button>
     </div>
 </div>
 

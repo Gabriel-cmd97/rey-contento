@@ -13,6 +13,7 @@ const progreso = require('./progreso');
 const torneoReglas = require('./torneo');
 const eventos = require('./eventos');
 const poderes = require('./poderes');
+const conspiracion = require('./conspiracion');
 const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
@@ -247,8 +248,8 @@ function sanitizarConfig(raw) {
     const maxJugadores  = enteroEnRango(raw.maxJugadores, 2, 8, 6);
     // CLASICO o FIESTA (evento en cada ronda y la mesa vota el siguiente). Campana se quitó el 24/09/2026.
     // JEFE (Todos contra el Rey, 30/09/2026): el pueblo contra un Rey bot.
-    // La Corte (CORTE) se quitó del menú el 30/09/2026: su código sigue, pero ya no se crea.
-    const modoJuego     = enLista(raw.modoJuego, ['CLASICO', 'FIESTA', 'JEFE'], 'CLASICO');
+    // CONSPIRACION (Roles secretos e intriga en la corte, 03/10/2026).
+    const modoJuego     = enLista(raw.modoJuego, ['CLASICO', 'FIESTA', 'JEFE', 'CONSPIRACION'], 'CLASICO');
     const modoRey       = enLista(raw.modoRey, ['SORPRESA', 'DECLARADO'], 'SORPRESA');
     // Reyes: se sortea al crear la sala (ya no se elige); la sala de espera lo muestra.
     const frecuenciaReyes = ['NORMAL', 'ALTA', 'LOCURA'][Math.floor(Math.random() * 3)];
@@ -414,6 +415,13 @@ function jugadoresPublicos(sala) {
         const esReyVisible = cartaActual === 9 && (reyDeclarado || reyDescubierto);
         if (rondaRevelada || esReyVisible) publico.cartaActual = cartaActual;
         publico.cartaRevelada = esReyVisible;
+        if (sala.config.modoJuego === 'CONSPIRACION' && publico.conspiracion) {
+            publico.conspiracion = {
+                tieneRol: true,
+                habilidadUsada: publico.conspiracion.habilidadUsada || false,
+                rol: (rondaRevelada && sala.estadoActual === 'FINALIZADO') || publico.vidas <= 0 ? publico.conspiracion.rol : null
+            };
+        }
         return publico;
     });
 }
@@ -1052,6 +1060,18 @@ async function registrarFinPartida(sala, ganador) {
         sala.apuestasCampeon = {};
     }
 
+    // Revelación y recompensas de Conspiración en la Corte
+    if (sala.config.modoJuego === 'CONSPIRACION') {
+        const revelaciones = conspiracion.evaluarFinPartida(sala, ganador);
+        io.to(sala.idSala).emit('revelacionConspiracion', revelaciones);
+        for (const rev of revelaciones) {
+            if (rev.misionCumplida && rev.recompensaBlis > 0) {
+                await conRetry(() => pool.execute('UPDATE usuarios SET monedas = monedas + ? WHERE username = ?', [rev.recompensaBlis, rev.nombre]), { op: 'premio_conspiracion' })
+                    .catch(err => log.error('Fallo premiar conspiracion', { error: err.message, user: rev.nombre }));
+            }
+        }
+    }
+
     await registrarHistorialYLogros(sala, ganador, humanos);
     await sumarXpDePartida(sala, ganadoresNombres, humanos);
 }
@@ -1461,6 +1481,14 @@ function resolverRonda(sala, io) {
     sala.castigadosSiguiente = sala.jugadores.filter(j => castigados.includes(j.id)).map(j => j.nombre);
     mensajes.forEach(m => io.to(sala.idSala).emit('mensajeGlobal', m));
 
+    if (sala.config.modoJuego === 'CONSPIRACION') {
+        const eventosConspiracion = conspiracion.evaluarRonda(sala);
+        eventosConspiracion.forEach(ev => {
+            io.to(sala.idSala).emit('mensajeGlobal', ev.mensaje);
+            io.to(sala.idSala).emit('accionMesa', { tipo: 'CONSPIRACION', icono: '📜', texto: ev.mensaje });
+        });
+    }
+
     // Historial y logros: quién perdió vidas y quién quedó fuera en esta ronda.
     sala.caidas ||= []; sala.vidasPerdidas ||= {};
     sala.primeraPerdida ||= {}; // ronda en que perdió su primera vida (desempata a quienes caen juntos)
@@ -1863,6 +1891,14 @@ function iniciarRonda(sala, io) {
         prepararEquipos(sala);
         prepararJefe(sala);
         if (sala.config.modoJuego === 'CORTE') repartirReyesCorte(sala);
+        if (sala.config.modoJuego === 'CONSPIRACION') {
+            conspiracion.asignarRoles(sala.jugadores);
+            sala.jugadores.forEach(j => {
+                if (j.conspiracion && !j.esBot) io.to(j.id).emit('rolConspiracion', j.conspiracion.rol);
+            });
+            io.to(sala.idSala).emit('mensajeGlobal', '📜 ¡Conspiración en la Corte! Cada cortesano ha recibido su Rol Secreto lacrado en cera roja.');
+            io.to(sala.idSala).emit('accionMesa', { tipo: 'CONSPIRACION', icono: '📜', texto: 'Se han repartido los Roles Secretos de la Corte' });
+        }
         sala.caidas = []; sala.vidasPerdidas = {}; sala.primeraPerdida = {};
         sala.dueloAnunciado = false; sala.rondasSinEvento = 0; sala.ultimoEvento = null; sala.castigados = [];
         sala.idPartida = `${sala.idSala}-${Date.now().toString(36)}`; // agrupa el historial por partida
@@ -2308,6 +2344,9 @@ function enviarCarta(sala, jugador) {
         if (t.esBot) (t.memoria ||= {})[jugador.id] = jugador.cartaActual;
         else io.to(t.id).emit('cartaCompanero', { id: jugador.id, carta: jugador.cartaActual });
     });
+    if (sala.config.modoJuego === 'CONSPIRACION' && jugador.conspiracion && !jugador.esBot) {
+        io.to(jugador.id).emit('rolConspiracion', jugador.conspiracion.rol);
+    }
 }
 
 // 3 minutos para volver (margen para el bloqueo de pantalla del celular); si
@@ -2351,8 +2390,9 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false, opcion
         if ((indiceActual !== sala.dealerIndex && sala.evento !== 'MERCADO') || opciones.venganza || opciones.proteger) {
             const esSalto = opciones.objetivoIndex !== undefined;
             let jugadorDerecha = sala.jugadores[esSalto ? opciones.objetivoIndex : siguienteVivo(sala.jugadores, indiceActual)];
-            const bloqueEscudo = (sala.escudos || []).includes(jugadorDerecha.nombre);
-            const bloqueRey = !bloqueEscudo && reyProtegido(sala) && jugadorDerecha.cartaActual === 9;
+            const fuerzaIntercambio = !!jugadorActual.conspiracion?.fuerzaIntercambio;
+            const bloqueEscudo = !fuerzaIntercambio && (sala.escudos || []).includes(jugadorDerecha.nombre);
+            const bloqueRey = !fuerzaIntercambio && !bloqueEscudo && reyProtegido(sala) && jugadorDerecha.cartaActual === 9;
 
             if (bloqueEscudo) {
                 io.to(idSala).emit('mensajeGlobal', `🛡️ El escudo de ${jugadorDerecha.nombre} rebotó el cambio de ${jugadorActual.nombre}.`);
@@ -2379,6 +2419,14 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false, opcion
                 bots.recordarCambio(sala.jugadores, jugadorActual, jugadorDerecha, temp, jugadorDerecha.cartaActual);
                 jugadorActual.cartaActual = jugadorDerecha.cartaActual;
                 jugadorDerecha.cartaActual = temp;
+                if (jugadorActual.conspiracion?.envenenarCambio) {
+                    delete jugadorActual.conspiracion.envenenarCambio;
+                    jugadorDerecha.venenoRonda = true;
+                    io.to(idSala).emit('mensajeGlobal', `☠️ ¡Una carta ha sido envenenada en el intercambio!`);
+                }
+                if (jugadorActual.conspiracion?.fuerzaIntercambio) {
+                    delete jugadorActual.conspiracion.fuerzaIntercambio;
+                }
                 enviarCarta(sala, jugadorActual);
                 enviarCarta(sala, jugadorDerecha);
                 if (opciones.proteger) {
@@ -2825,6 +2873,9 @@ io.on('connection', (socket) => {
             if (sala.estadoActual !== "LOBBY") {
                 if (sala.config.poderes) socket.emit('misPoderes', jugadorExistente.poderes || []);
                 if (sala.config.modoJuego === 'CORTE') socket.emit('corte', infoCorte(sala, jugadorExistente));
+                if (sala.config.modoJuego === 'CONSPIRACION' && jugadorExistente.conspiracion) {
+                    socket.emit('rolConspiracion', jugadorExistente.conspiracion.rol);
+                }
                 if (sala.config.equipos && sala.evento !== 'NIEBLA' && sala.estadoActual === "TURNOS_INTERCAMBIO") {
                     companeros(sala, jugadorExistente).forEach(t => socket.emit('cartaCompanero', { id: t.id, carta: t.cartaActual }));
                 }
@@ -3180,6 +3231,40 @@ io.on('connection', (socket) => {
         const jugador = sala.jugadores.find(j => j.id === socket.id);
         if (!jugador) return;
         socket.to(idSala).emit('fraseJugador', { jugadorId: socket.id, frase });
+    });
+
+    socket.on('usarHabilidadRol', (payload) => {
+        if (!permitir(socket.id, 'usarHabilidadRol', 500)) return;
+        if (!payload || typeof payload !== 'object') return;
+        const { idSala, objetivo } = payload;
+        if (!esIdSalaValido(idSala)) return;
+        const sala = estadoSalas[idSala];
+        if (!sala || sala.config.modoJuego !== 'CONSPIRACION' || sala.estadoActual !== 'TURNOS_INTERCAMBIO') return;
+        const j = sala.jugadores.find(x => x.nombre === nombreUsuarioLogueado);
+        if (!j || !j.conspiracion || j.conspiracion.habilidadUsada || j.vidas <= 0) return;
+        if (sala.jugadores[sala.turnoActualIndex]?.id !== j.id) return socket.emit('errorSala', 'Solo puedes usar tu habilidad en tu turno.');
+
+        let objetivoObj = null;
+        if (objetivo) {
+            objetivoObj = sala.jugadores.find(x => x.nombre === objetivo && x.vidas > 0);
+        }
+        const res = conspiracion.ejecutarHabilidad(sala, j, objetivoObj?.id);
+        if (!res) return;
+        if (res.mensajePublico) {
+            io.to(sala.idSala).emit('mensajeGlobal', res.mensajePublico);
+            io.to(sala.idSala).emit('accionMesa', { tipo: 'CONSPIRACION', icono: j.conspiracion.rol.icono, texto: res.mensajePublico });
+        }
+        if (res.mensajePrivado) {
+            socket.emit('mensajeGlobal', res.mensajePrivado);
+        }
+        if (res.rolRevelado) {
+            socket.emit('resultadoInquisicion', { objetivo: res.objetivo, rol: res.rolRevelado });
+        }
+        if (res.tipo === 'GOLPE_ESTADO' && res.cartaRobada !== undefined) {
+            enviarCarta(sala, j);
+            gestionarTurnos(sala, io);
+        }
+        io.to(sala.idSala).emit('actualizarJugadores', jugadoresPublicos(sala));
     });
 
     socket.on('disconnect', () => {
