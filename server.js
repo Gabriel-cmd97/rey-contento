@@ -1773,11 +1773,32 @@ function gestionarTurnos(sala, io, esInicio = false) {
                     puedeSaltar: !esDealer && sala.evento !== 'MERCADO' && sala.jugadores.filter(j => j.vidas > 0).length >= 3,
                 }) : null;
                 const r = poder ? usarPoder(sala, indiceActual, poder) : { error: true };
-                if (poder === 'SALTO' && !r.error) return; // el salto ya fue su jugada
+                // Conspiración en la Corte: habilidades tácticas del bot
+                let planConspiracion = null;
+                if (sala.config.modoJuego === 'CONSPIRACION' && jugadorActual.conspiracion && !jugadorActual.conspiracion.habilidadUsada && !jugadorActual.automatico && !sala.config.practica) {
+                    planConspiracion = bots.planConspiracion(sala, jugadorActual, { esDealer, derecha: jugadorDerecha });
+                    if (planConspiracion) {
+                        const resRol = conspiracion.ejecutarHabilidad(sala, jugadorActual, planConspiracion.objetivoId);
+                        if (resRol) {
+                            if (resRol.mensajePublico) {
+                                io.to(sala.idSala).emit('mensajeGlobal', resRol.mensajePublico);
+                                io.to(sala.idSala).emit('accionMesa', { tipo: 'CONSPIRACION', icono: jugadorActual.conspiracion.rol.icono, texto: resRol.mensajePublico });
+                            }
+                            io.to(sala.idSala).emit('actualizarJugadores', jugadoresPublicos(sala));
+
+                            if (resRol.tipo === 'GOLPE_ESTADO' && resRol.cartaRobada !== undefined) {
+                                enviarCarta(sala, jugadorActual);
+                                gestionarTurnos(sala, io);
+                                return;
+                            }
+                        }
+                    }
+                }
+
                 // Tras espiar u oráculo decide con lo que vio; si no, como siempre.
                 const decision = (!r.error && r.carta !== undefined)
                     ? (poderes.mejorQue(r.carta, jugadorActual.cartaActual, pierdeLaMasAlta) ? 'CAMBIAR' : 'MANTENER')
-                    : decidir();
+                    : (planConspiracion?.accionSiguiente || decidir());
                 // La Corte: acusar si hay pista y proteger al Rey si conviene.
                 let corte = null;
                 if (sala.config.modoJuego === 'CORTE' && !jugadorActual.automatico && sala.config.practica && decision === 'PROTEGER') {
@@ -1793,7 +1814,7 @@ function gestionarTurnos(sala, io, esInicio = false) {
                     ? bots.objetivoVenganza(sala, jugadorActual) : null;
                 const accionBot = corte !== null || objetivo !== null ? 'CAMBIAR' : decision;
                 const opcionesBot = corte !== null ? { objetivoIndex: corte, proteger: true } : objetivo !== null ? { objetivoIndex: objetivo, venganza: true } : {};
-                setTimeout(() => { if (sigueSuTurno()) ejecutarAccion(sala.idSala, accionBot, io, jugadorActual.id, false, opcionesBot); }, poder && !r.error ? 900 : 0);
+                setTimeout(() => { if (sigueSuTurno()) ejecutarAccion(sala.idSala, accionBot, io, jugadorActual.id, false, opcionesBot); }, (poder && !r.error) || planConspiracion ? 900 : 0);
             }, bots.retrasoBot());
             return;
         }

@@ -87,3 +87,43 @@ test('corte: el bot protege a su Rey si su carta le conviene y acusa al único r
     bot.cartaActual = 3; s.acusoCorte[0] = true;
     assert.deepStrictEqual(bots.planCorte(s, bot), {}); // 3 contra 2: no vale la pena; ya acusaron
 });
+
+test('conspiración: bot Bufón invierte carta con Truco del Espejo y mantiene', () => {
+    const bot = { id: 'buf', nombre: 'b', vidas: 3, cartaActual: 0, conspiracion: { id: 'BUFON', habilidadUsada: false } };
+    const s = { jugadores: [bot], evento: null };
+    const plan = bots.planConspiracion(s, bot, { esDealer: false });
+    assert.deepStrictEqual(plan, { habilidad: 'TRUCO_ESPEJO', accionSiguiente: 'MANTENER' });
+});
+
+test('conspiración: bot Campeón usa Intervención Real contra vecino con Rey o escudo', () => {
+    const bot = { id: 'cam', nombre: 'b', vidas: 3, cartaActual: 2, conspiracion: { id: 'CAMPEON', habilidadUsada: false } };
+    const rey = { id: 'rey', nombre: 'r', vidas: 3, cartaActual: 9, cartaRevelada: true };
+    const s = { jugadores: [bot, rey], escudos: [], evento: null };
+    const plan = bots.planConspiracion(s, bot, { esDealer: false, derecha: rey });
+    assert.deepStrictEqual(plan, { habilidad: 'INTERVENCION', accionSiguiente: 'CAMBIAR' });
+});
+
+test('conspiración: bot Usurpador perpetra Golpe de Estado con carta baja', () => {
+    const bot = { id: 'usr', nombre: 'b', vidas: 3, cartaActual: 1, conspiracion: { id: 'USURPADOR', habilidadUsada: false } };
+    const s = { jugadores: [bot], evento: null };
+    const plan = bots.planConspiracion(s, bot, { esDealer: false });
+    assert.deepStrictEqual(plan, { habilidad: 'GOLPE_ESTADO' });
+});
+
+test('conspiración: bot Asesino envenena cambio cuando entrega carta mortal', () => {
+    const bot = { id: 'ase', nombre: 'b', vidas: 3, cartaActual: 1, conspiracion: { id: 'ASESINO', habilidadUsada: false } };
+    const rival = { id: 'riv', nombre: 'r', vidas: 3 };
+    const s = { jugadores: [bot, rival], evento: null };
+    const plan = bots.planConspiracion(s, bot, { esDealer: false, derecha: rival });
+    assert.deepStrictEqual(plan, { habilidad: 'DAGA_ENVENENADA', accionSiguiente: 'CAMBIAR' });
+});
+
+test('conspiración: bot Inquisidor prioriza interrogar humanos vivos', () => {
+    const bot = { id: 'inq', nombre: 'b', vidas: 3, cartaActual: 5, conspiracion: { id: 'INQUISIDOR', habilidadUsada: false, interrogados: [] } };
+    const bot2 = { id: 'bot2', nombre: 'b2', vidas: 3, esBot: true };
+    const humano = { id: 'hum', nombre: 'h', vidas: 2, esBot: false };
+    const s = { jugadores: [bot, bot2, humano], evento: null };
+    const plan = bots.planConspiracion(s, bot, { esDealer: false });
+    assert.deepStrictEqual(plan, { habilidad: 'INTERROGATORIO', objetivoId: 'hum' });
+});
+

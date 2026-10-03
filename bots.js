@@ -227,7 +227,7 @@ function planConspiracion(sala, bot, ctx) {
     if (rol === 'CAMPEON') {
         // Intervención Real: fuerza el cambio ignorando bloqueos del Rey (9) o escudos.
         if (!esDealer && derecha) {
-            const conocida = derecha.cartaRevelada || (bot.memoria && bot.memoria[derecha.id]);
+            const conocida = (derecha.cartaRevelada && derecha.cartaActual !== undefined) ? derecha.cartaActual : (bot.memoria && bot.memoria[derecha.id]);
             const tiene9 = conocida === 9 && !pierdeAlta;
             const tieneEscudo = (sala.escudos || []).includes(derecha.nombre);
             const quiereCambiar = c <= 4;
