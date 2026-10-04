@@ -543,6 +543,7 @@ function actualizarBotonesTurno(esMio) {
     document.body.classList.toggle('puedo-jugar', !!esMio);
     setTimeout(pintarBarraCorte, 0);
     setTimeout(pintarBarraConspiracion, 0);
+    setTimeout(pintarBarraArcana, 0);
     document.getElementById('btnCambiar').innerText = 'CAMBIAR';
     pintarBarraPoderes();
     actualizarGuiaTurno(esMio);
@@ -880,14 +881,15 @@ function contarPartidaParaGuias() {
     pintarBotonGuias();
 }
 
-// Siguiente jugador vivo a mi derecha (con quien cambiaría), o null.
+// Siguiente jugador vivo a mi derecha (con quien cambiaría), o a la izquierda si el rumbo está invertido.
 function vecinoDerechoLocal() {
     const miIndex = listaJugadoresGlobal.findIndex(j => j.id === socket.id);
     if (miIndex === -1) return null;
     let i = miIndex;
     let intentos = 0;
+    const paso = (typeof _sentidoTurnos !== 'undefined' && _sentidoTurnos === -1) ? -1 : 1;
     do {
-        i = (i + 1) % listaJugadoresGlobal.length;
+        i = (i + paso + listaJugadoresGlobal.length) % listaJugadoresGlobal.length;
         intentos++;
     } while (listaJugadoresGlobal[i]?.vidas <= 0 && intentos < listaJugadoresGlobal.length);
     return i === miIndex ? null : listaJugadoresGlobal[i];
@@ -1001,6 +1003,18 @@ function actualizarGuiaTurno(esMio, redibujar = false) {
             lineas.push(`⚡ Ya empleaste tu habilidad táctica única (${r.habilidad.nombre})`);
         }
     }
+    if (modoJuegoActual === 'GUERRA_ARCANA') {
+        if (typeof _sentidoTurnos !== 'undefined' && _sentidoTurnos === -1) {
+            lineas.push('🌀 ¡Rumbo Invertido! Los turnos y cambios van hacia tu izquierda');
+        }
+        if (Array.isArray(_miGrimorio) && _miGrimorio.length > 0) {
+            const nombresH = _miGrimorio.map(h => `${h.runa || '✨'} ${h.nombre}`).join(' · ');
+            lineas.push(`✨ Grimorio: ${nombresH}`);
+            lineas.push('💡 Toca un pergamino abajo para lanzar su magia antes de jugar');
+        } else {
+            lineas.push('✨ Tu grimorio está vacío. Si pierdes una vida, recargarás nueva magia');
+        }
+    }
     if (eventoActual?.id === 'CARRUSEL') lineas.push('🎠 Carrusel: al final le pasas tu carta al de tu derecha y recibes la del de tu izquierda');
     if (eventoActual?.id === 'PREMIO') lineas.push('👑 Premio real: quien termine con la carta más alta gana una vida');
     if (puedoVengarme()) lineas.push('😈 Venganza: toca el asiento de cualquier jugador para cambiar con él');
@@ -1090,6 +1104,14 @@ function explicacionRonda(datos) {
     if (modoJuegoActual === 'CONSPIRACION' && _miRolConspiracion) {
         if (yo.venenoRonda && pierdo) {
             return `💔 Perdiste la ronda y sufriste 1 vida adicional por la Daga Envenenada (☠️). Tu misión: «${_miRolConspiracion.mision}».`;
+        }
+    }
+    if (modoJuegoActual === 'GUERRA_ARCANA') {
+        if (yo.arcana?.veloActivo && !pierdo) {
+            return `🌑 ¡Tu Velo de Sombras absorbió el golpe mortal! No perdiste vida.`;
+        }
+        if (yo.arcana?.ilusionActiva) {
+            return `🔮 ¡Tu Espejismo Arcano sumó +2 a tu carta y te salvó!`;
         }
     }
     if (pierdo) {
@@ -3172,6 +3194,7 @@ const EXPLICA_MODO = {
     DIEZ: ['🎯 Parejas: Diez', 'Se <b>suman las cartas de tu equipo</b>: la meta es 10 (15 en 3 contra 3).', 'Pierde el equipo que <b>se pasa</b>, o el que queda más lejos.', 'Ves la carta de tu compañero; bajo el reloj va la cuenta.'],
     CORTE: ['👑 La Corte', 'Cada equipo tiene un <b>Rey secreto</b>; solo cuentan las cartas de los Reyes.', '🛡️ <b>Proteger</b>: le das tu carta a tu Rey (una vez por ronda), pero te delatas.', '⚔️ <b>Acusar</b>: una vez por partida. Si fallas, pierde tu equipo.'],
     CONSPIRACION: ['📜 Conspiración en la Corte', 'Cada cortesano recibe un <b>Rol Secreto</b> sellado con cera roja.', 'Tienes una <b>habilidad táctica</b> única (1 por partida) para sabotear o protegerte.', 'Cumple tu <b>misión clandestina</b> para ganar Blis de recompensa al finalizar.'],
+    GUERRA_ARCANA: ['✨ Guerra Arcana', 'Recibes un <b>Grimorio Arcano</b> con 2 pergaminos de hechizo únicos.', 'Lánzalos en tu turno para <b>alterar el rumbo</b>, teletransportar cambios o escudarte.', 'Quien caiga derrotado y sobreviva <b>recargará</b> su grimorio con nueva magia.'],
     JEFE: ['👑 Todos contra el Rey', 'Todos juntos contra el <b>Rey Tirano</b>, que tiene muchas vidas.', 'Si <b>más de la mitad</b> tiene una carta más alta que la suya, el Tirano pierde una vida.', 'Si no, pierde quien tenga la <b>carta más baja</b>. Pásenle las cartas bajas al Tirano.'],
     PODERES: ['✨ Con poderes', 'Cada vez que pierdes una vida ganas un <b>poder</b> de un solo uso.', 'Tus poderes salen arriba de tus botones: Espiar, Oráculo, Salto y Escudo.'],
 };
@@ -3181,6 +3204,7 @@ function mostrarModoNuevo(datos) {
     const modos = [];
     if (datos.modoJuego === 'JEFE') modos.push('JEFE');
     else if (datos.modoJuego === 'CONSPIRACION') modos.push('CONSPIRACION');
+    else if (datos.modoJuego === 'GUERRA_ARCANA') modos.push('GUERRA_ARCANA');
     else if (datos.modoJuego === 'CORTE') modos.push('CORTE');
     else if ((datos.jugadores || []).some(j => j.equipo !== undefined && j.equipo !== null)) modos.push('DIEZ');
     if (datos.modoJuego === 'FIESTA') modos.push('FIESTA');
@@ -3465,6 +3489,106 @@ document.querySelectorAll('#modalDossierCorte [data-cierra], #modalRevelacionCon
         if (e.target.id === id) e.currentTarget.classList.add('hidden');
     });
 });
+
+// ==========================================
+// GUERRA ARCANA (Grimorios y Hechizos Tácticos)
+// ==========================================
+let _miGrimorio = [];
+let _sentidoTurnos = 1;
+let _hechizoPendiente = null;
+
+function alRecibirGrimorio(grimorio) {
+    _miGrimorio = Array.isArray(grimorio) ? grimorio : [];
+    pintarBarraArcana();
+    actualizarGuiaTurno(document.body.classList.contains('puedo-jugar'), true);
+}
+
+function actualizarSentidoMesa() {
+    const badge = document.getElementById('badgeSentidoMesa');
+    if (!badge) return;
+    const invertido = (_sentidoTurnos === -1);
+    badge.classList.toggle('hidden', !invertido);
+    if (invertido) {
+        badge.classList.add('pulso-arcano');
+    }
+}
+
+function animarHechizoMesa(datos) {
+    if (!datos || !datos.hechizo) return;
+    const h = datos.hechizo;
+    Sonidos.reaccion(h.id === 'DESTIERRO' ? '🔥' : '💎');
+    vibrar([70, 40, 70]);
+
+    const aviso = document.createElement('div');
+    aviso.className = 'aviso-hechizo-arcano';
+    aviso.innerHTML = `
+        <span class="runa-flotante">${h.runa || '✨'}</span>
+        <div class="hechizo-info-txt">
+            <b>${escapeHTML(datos.lanzadorNombre)} lanzó ${escapeHTML(h.nombre)}</b>
+            <small>${escapeHTML(h.descripcion)}</small>
+        </div>
+    `;
+    document.body.appendChild(aviso);
+    setTimeout(() => {
+        aviso.classList.add('saliendo');
+        setTimeout(() => aviso.remove(), 400);
+    }, 4000);
+}
+
+function pintarBarraArcana() {
+    const barra = document.getElementById('barraArcana');
+    if (!barra) return;
+    const esArcana = modoJuegoActual === 'GUERRA_ARCANA';
+    const miTurno = document.body.classList.contains('puedo-jugar');
+    const yo = listaJugadoresGlobal.find(j => j.id === socket?.id);
+    if (!esArcana || !yo || yo.vidas <= 0) {
+        barra.classList.add('hidden');
+        return;
+    }
+
+    if (!_miGrimorio || _miGrimorio.length === 0) {
+        barra.innerHTML = `<span class="arcana-sin-hechizos">✨ Grimorio vacío · Recarga al caer en batalla</span>`;
+        barra.classList.remove('hidden');
+        return;
+    }
+
+    barra.innerHTML = _miGrimorio.map(h => `
+        <button type="button" class="btn-hechizo-scroll ${miTurno ? 'listo' : 'en-espera'}" data-hechizo-id="${h.id}" title="${escapeHTML(h.descripcion)}">
+            <span class="runa-scroll">${h.runa || '✨'}</span>
+            <span class="info-scroll">
+                <b>${escapeHTML(h.nombre)}</b>
+                <small>${miTurno ? 'Toca para lanzar' : 'En tu turno'}</small>
+            </span>
+        </button>
+    `).join('');
+    barra.classList.remove('hidden');
+
+    barra.querySelectorAll('.btn-hechizo-scroll.listo').forEach(btn => {
+        btn.onclick = () => {
+            const hId = btn.dataset.hechizoId;
+            lanzarHechizoCliente(hId);
+        };
+    });
+}
+
+function lanzarHechizoCliente(hechizoId) {
+    if (!document.body.classList.contains('puedo-jugar')) {
+        return mostrarToast('Solo puedes lanzar hechizos en tu turno.', '', 2000);
+    }
+    const h = _miGrimorio.find(x => x.id === hechizoId);
+    if (!h) return;
+
+    if (h.requiereObjetivo) {
+        _apuntando = 'TRANSMUTACION';
+        _hechizoPendiente = hechizoId;
+        mostrarToast('🧲 Toca el asiento del jugador con quien deseas transmutar tu cambio.', 'rey', 4000);
+        return;
+    }
+
+    Sonidos.boton();
+    vibrar(40);
+    socket.emit('lanzarHechizo', { idSala: miSalaActual, hechizoId });
+}
 
 // ==========================================
 // APUESTAS DE LOS ELIMINADOS
@@ -4812,8 +4936,16 @@ function conectarSocket() {
             _miRolConspiracion = null;
             _habilidadConspiracionUsada = false;
         }
+        if (datos.modoJuego !== 'GUERRA_ARCANA') {
+            _miGrimorio = [];
+            _sentidoTurnos = 1;
+        } else {
+            _sentidoTurnos = datos.sentidoTurnos || 1;
+        }
+        actualizarSentidoMesa();
         actualizarBotonDossier();
         pintarBarraConspiracion();
+        pintarBarraArcana();
         ocultarEvento();
         marcarDuelo(datos.duelo);
         if (datos.anunciarDuelo) mostrarPresentacionDuelo(datos.duelistas);
@@ -5145,6 +5277,20 @@ function conectarSocket() {
             pintarBarraConspiracion();
             return;
         }
+        if (_apuntando === 'TRANSMUTACION') {
+            const s = e.target.closest('.silla[data-jugador-id]');
+            const j = s && listaJugadoresGlobal.find(x => x.id === s.dataset.jugadorId);
+            cancelarApuntar();
+            if (!j || j.id === socket.id || j.vidas <= 0) {
+                mostrarToast('Elige a otro cortesano con vida.', '', 2000);
+                return;
+            }
+            Sonidos.boton();
+            vibrar(40);
+            socket.emit('lanzarHechizo', { idSala: miSalaActual, hechizoId: _hechizoPendiente, objetivo: j.nombre });
+            _hechizoPendiente = null;
+            return;
+        }
         if (_apuntando === 'ACUSAR') {
             const s = e.target.closest('.silla[data-jugador-id]');
             const j = s && listaJugadoresGlobal.find(x => x.id === s.dataset.jugadorId);
@@ -5441,6 +5587,13 @@ function conectarSocket() {
         vibrar([60, 40, 100]);
     });
     socket.on('revelacionConspiracion', (revelaciones) => pintarRevelacionConspiracion(revelaciones));
+    socket.on('tuGrimorio', (grimorio) => alRecibirGrimorio(grimorio));
+    socket.on('sentidoTurnos', (sentido) => {
+        _sentidoTurnos = sentido || 1;
+        actualizarSentidoMesa();
+        actualizarGuiaTurno(document.body.classList.contains('puedo-jugar'), true);
+    });
+    socket.on('hechizoLanzado', (datos) => animarHechizoMesa(datos));
     socket.on('actualizarJugadores', (jugadores) => {
         listaJugadoresGlobal = jugadores.map(j => j.nombre === miNombreUsuario ? { ...j, id: socket.id } : j);
         dibujarMesaCircular();

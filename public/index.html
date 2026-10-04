@@ -190,6 +190,7 @@
                             <option value="FIESTA">Fiesta: evento en cada ronda</option>
                             <option value="JEFE">Todos contra el Rey</option>
                             <option value="CONSPIRACION">Conspiración en la Corte</option>
+                            <option value="GUERRA_ARCANA">Guerra Arcana (Hechizos &amp; Grimorios)</option>
                         </select>
                         </div>
                         <div class="config-item-nuevo">
@@ -477,6 +478,7 @@
                                 <div id="cartasPila" class="pila-cartas-stack"></div>
                                 <span id="contadorPila" class="pila-contador"></span>
                             </div>
+                            <div id="badgeSentidoMesa" class="badge-sentido-mesa hidden" aria-live="polite">🌀 Rumbo Invertido</div>
                         </div>
                     </div>
 
@@ -543,6 +545,8 @@
             <div id="barraCorte" class="barra-corte hidden"></div>
             <!-- Conspiración: rol secreto y habilidad (pintarBarraConspiracion en main.js) -->
             <div id="barraConspiracion" class="barra-conspiracion hidden" aria-label="Rol secreto de la Corte"></div>
+            <!-- Guerra Arcana: pergaminos y grimorio (pintarBarraArcana en main.js) -->
+            <div id="barraArcana" class="barra-arcana hidden" aria-label="Grimorio Arcano"></div>
             <div class="acciones-row">
                 <button id="btnDossierCorte" class="btn-dossier-corte hidden" title="Ver tu Rol Secreto de la Corte" aria-label="Rol Secreto de la Corte">📜 <span class="dossier-btn-texto">Rol</span></button>
                 <button id="btnReacciones" class="btn-abrir-reacciones" aria-expanded="false" aria-controls="barraReacciones" title="Reacciones y frases">😀</button>
@@ -737,6 +741,16 @@
                 <li><strong>👑 Duque Usurpador</strong> (Conspiradores): habilidad <em>Golpe de Estado</em> para robar de inmediato del mazo real saltando al vecino. Misión: poseer el Rey (9) o llegar al duelo final.</li>
             </ul>
             <p>Al terminar la partida, los sellos de cera se rompen en el desenmascaramiento palaciego y quienes hayan cumplido su misión secreta reciben generosas recompensas de <strong>Blis</strong>.</p>
+            <p><strong>Guerra Arcana</strong> (Hechizos &amp; Grimorios Tácticos): la magia antigua despierta en la corte. Cada jugador comienza la partida con un <strong>Grimorio Arcano con 2 pergaminos de hechizo</strong> de un solo uso para alterar las reglas en tiempo real durante su turno:</p>
+            <ul>
+                <li><strong>🌀 Inversión de Rumbo</strong>: ¡invierte inmediatamente el flujo de turnos de la mesa! Los cambios ahora van en sentido contrario (hacia la izquierda), desbaratando las trampas de tus rivales.</li>
+                <li><strong>🔮 Espejismo Arcano</strong>: encanta tu carta con un espejismo que le suma <strong>+2 de valor efectivo</strong> en la ronda (máx 9) y la disfraza de Rey si intentan espiarte o cambiártela.</li>
+                <li><strong>🌑 Velo de Sombras</strong>: te envuelve en una niebla espectral. Nadie puede cambiar contigo y, si al final de la ronda tu carta resulta ser la perdedora, el velo <strong>absorbe el golpe y no pierdes vida</strong>.</li>
+                <li><strong>⚡ Rayo de Destierro</strong>: purga la carta de tu vecino de cambio enviándola al fondo del mazo y obligándole a robar una carta nueva misteriosa antes de tu jugada.</li>
+                <li><strong>🧲 Portal de Transmutación</strong>: abre una brecha mágica que te permite cambiar tu carta con <strong>cualquier jugador vivo de la mesa</strong> sin importar la distancia.</li>
+                <li><strong>⏳ Cronorruptura</strong>: destruye los escudos y la impunidad del Rey de tu vecino, forzándole a aceptar el intercambio.</li>
+            </ul>
+            <p><strong>Recarga Arcana:</strong> el dolor de la derrota nutre el poder mágico; si pierdes una vida y sigues en juego, recibes <strong>1 pergamino nuevo</strong> al azar (máximo 2 en tu grimorio). El vencedor de la Guerra Arcana se consagra como <strong>Archimago Supremo</strong> y recibe un botín adicional de <strong>+25 Blis</strong>.</p>
             <p><strong>Duelo final:</strong> cuando solo quedan dos jugadores, se enfrentan cara a cara y sus cartas chocan al centro de la mesa.</p>
 
             <p class="nota-pergamino" style="font-size:11px;text-align:center;margin-top:18px;margin-bottom:0;">Íconos de las cartas: <a href="https://game-icons.net" target="_blank" rel="noopener" style="color:inherit;">game-icons.net</a> · CC BY 3.0</p>

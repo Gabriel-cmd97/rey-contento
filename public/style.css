@@ -5463,3 +5463,175 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
 .perfil-oponente.asiento-tirano { border-color: #d4a017 !important; box-shadow: 0 0 0 2px rgba(212,160,23,.55), 0 0 18px rgba(180,40,40,.55) !important; background: linear-gradient(160deg, #4a1414, #22090a) !important; }
 .rey-tirano { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; color: #ffd76a; background: rgba(120,20,20,.85); border: 1px solid #d4a017; border-radius: 8px; padding: 1px 6px; margin: 2px auto 0; }
 .rey-tirano .icono { width: 11px; height: 11px; }
+
+/* ==========================================
+   GUERRA ARCANA (Grimorios & Hechizos Tácticos)
+   ========================================== */
+.barra-arcana {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin: 4px auto 6px;
+    max-width: 480px;
+    width: 95%;
+    z-index: 15;
+}
+
+.arcana-sin-hechizos {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    background: rgba(15, 10, 30, 0.6);
+    border: 1px dashed rgba(162, 155, 254, 0.3);
+    padding: 4px 12px;
+    border-radius: 20px;
+}
+
+.btn-hechizo-scroll {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, rgba(30, 20, 60, 0.9), rgba(15, 10, 35, 0.95));
+    border: 1.5px solid #a29bfe;
+    border-radius: 12px;
+    padding: 6px 12px;
+    color: #f1f2f6;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(162, 155, 254, 0.2);
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-hechizo-scroll.listo {
+    border-color: #00d2d3;
+    box-shadow: 0 0 15px rgba(0, 210, 211, 0.4), inset 0 0 8px rgba(0, 210, 211, 0.3);
+    animation: pulsoArcano 2s infinite ease-in-out;
+}
+
+.btn-hechizo-scroll.listo:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 6px 20px rgba(0, 210, 211, 0.6), inset 0 0 12px rgba(0, 210, 211, 0.4);
+}
+
+.btn-hechizo-scroll.listo:active {
+    transform: scale(0.96);
+}
+
+.btn-hechizo-scroll.en-espera {
+    opacity: 0.65;
+    border-color: rgba(162, 155, 254, 0.4);
+    cursor: default;
+}
+
+.runa-scroll {
+    font-size: 20px;
+    line-height: 1;
+    filter: drop-shadow(0 0 6px rgba(162, 155, 254, 0.8));
+}
+
+.info-scroll {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    line-height: 1.15;
+}
+
+.info-scroll b {
+    font-size: 12px;
+    font-family: var(--fuente-medieval);
+    color: #ffeaa7;
+    letter-spacing: 0.3px;
+}
+
+.info-scroll small {
+    font-size: 9.5px;
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.badge-sentido-mesa {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0, 210, 211, 0.15);
+    border: 1.5px solid #00d2d3;
+    color: #00d2d3;
+    font-family: var(--fuente-medieval);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    box-shadow: 0 0 12px rgba(0, 210, 211, 0.35);
+    margin-top: 6px;
+    animation: pulsoArcano 1.8s infinite ease-in-out;
+}
+
+@keyframes pulsoArcano {
+    0%, 100% {
+        box-shadow: 0 0 8px rgba(0, 210, 211, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 18px rgba(0, 210, 211, 0.7);
+    }
+}
+
+.aviso-hechizo-arcano {
+    position: fixed;
+    top: 24%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    background: linear-gradient(135deg, rgba(20, 10, 45, 0.95), rgba(10, 5, 25, 0.98));
+    border: 2px solid #a29bfe;
+    box-shadow: 0 0 40px rgba(162, 155, 254, 0.5), 0 12px 30px rgba(0, 0, 0, 0.8);
+    border-radius: 16px;
+    padding: 14px 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    z-index: 9999;
+    color: #f1f2f6;
+    pointer-events: none;
+    animation: aparecerArcano 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.aviso-hechizo-arcano.saliendo {
+    opacity: 0;
+    transform: translate(-50%, -60%) scale(0.9);
+}
+
+.runa-flotante {
+    font-size: 36px;
+    filter: drop-shadow(0 0 12px rgba(162, 155, 254, 0.9));
+}
+
+.hechizo-info-txt {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.hechizo-info-txt b {
+    font-family: var(--fuente-medieval);
+    font-size: 15px;
+    color: #ffeaa7;
+    margin-bottom: 2px;
+}
+
+.hechizo-info-txt small {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.85);
+    max-width: 260px;
+}
+
+@keyframes aparecerArcano {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -40%) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
