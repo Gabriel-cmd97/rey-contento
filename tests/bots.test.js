@@ -127,3 +127,26 @@ test('conspiración: bot Inquisidor prioriza interrogar humanos vivos', () => {
     assert.deepStrictEqual(plan, { habilidad: 'INTERROGATORIO', objetivoId: 'hum' });
 });
 
+test('arcana: bot usa VELO_SOMBRAS con carta 0 siendo dealer', () => {
+    const bot = { id: 'bot1', nombre: 'b', vidas: 3, cartaActual: 0, arcana: { grimorio: ['VELO_SOMBRAS'] } };
+    const s = { jugadores: [bot], evento: null };
+    const plan = bots.planArcana(s, bot, { esDealer: true });
+    assert.deepStrictEqual(plan, { hechizo: 'VELO_SOMBRAS' });
+});
+
+test('arcana: bot usa CRONORUPTURA contra vecino con escudo o Rey', () => {
+    const bot = { id: 'bot1', nombre: 'b', vidas: 3, cartaActual: 2, arcana: { grimorio: ['CRONORUPTURA'] } };
+    const vecino = { id: 'v1', nombre: 'vec', vidas: 3, cartaActual: 9, cartaRevelada: true };
+    const s = { jugadores: [bot, vecino], escudos: [], evento: null };
+    const plan = bots.planArcana(s, bot, { esDealer: false, derecha: vecino });
+    assert.deepStrictEqual(plan, { hechizo: 'CRONORUPTURA', accionSiguiente: 'CAMBIAR' });
+});
+
+test('arcana: bot usa ILUSION para fortalecer carta media y mantener', () => {
+    const bot = { id: 'bot1', nombre: 'b', vidas: 3, cartaActual: 4, arcana: { grimorio: ['ILUSION'] } };
+    const s = { jugadores: [bot], evento: null };
+    const plan = bots.planArcana(s, bot, { esDealer: false });
+    assert.deepStrictEqual(plan, { hechizo: 'ILUSION', accionSiguiente: 'MANTENER' });
+});
+
+

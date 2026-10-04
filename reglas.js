@@ -42,11 +42,12 @@ function crearMazo(config) {
 // hacia la derecha). Si nadie más está vivo, da la vuelta completa y devuelve
 // el último índice revisado, igual que los bucles que reemplaza: quien llama
 // debe comprobar `vidas > 0` si le importa ese caso.
-function siguienteVivo(jugadores, indice) {
+function siguienteVivo(jugadores, indice, sentido = 1) {
     let i = indice;
     let intentos = 0;
+    const paso = sentido === -1 ? -1 : 1;
     do {
-        i = (i + 1) % jugadores.length;
+        i = (i + paso + jugadores.length) % jugadores.length;
         intentos++;
     } while (intentos < jugadores.length && jugadores[i] && jugadores[i].vidas <= 0);
     return i;

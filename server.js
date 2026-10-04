@@ -14,6 +14,7 @@ const torneoReglas = require('./torneo');
 const eventos = require('./eventos');
 const poderes = require('./poderes');
 const conspiracion = require('./conspiracion');
+const arcana = require('./arcana');
 const fs = require('fs');
 const crypto = require('crypto');
 const path = require('path');
@@ -231,6 +232,7 @@ function nombreBotAleatorio(usados = []) {
 // práctica guiada usa 60 s y un jugador desconectado tiene al menos 30 s.
 const TIEMPO_TURNO = 20;
 const TIEMPO_TURNO_CONSPIRACION = 35; // 35 segundos para conspirar, leer dossier y activar tácticas con calma
+const TIEMPO_TURNO_ARCANA = 30; // 30 segundos para evaluar hechizos, sentido de la mesa y transmutaciones
 
 // Valida y acota la configuración que viene del cliente.
 // Devuelve un nuevo objeto sanitizado, o null si algo es inválido.
@@ -249,7 +251,8 @@ function sanitizarConfig(raw) {
     // CLASICO o FIESTA (evento en cada ronda y la mesa vota el siguiente). Campana se quitó el 24/09/2026.
     // JEFE (Todos contra el Rey, 30/09/2026): el pueblo contra un Rey bot.
     // CONSPIRACION (Roles secretos e intriga en la corte, 03/10/2026).
-    const modoJuego     = enLista(raw.modoJuego, ['CLASICO', 'FIESTA', 'JEFE', 'CONSPIRACION'], 'CLASICO');
+    // GUERRA_ARCANA (Grimorios y hechizos tácticos en tiempo real, 03/10/2026).
+    const modoJuego     = enLista(raw.modoJuego, ['CLASICO', 'FIESTA', 'JEFE', 'CONSPIRACION', 'GUERRA_ARCANA'], 'CLASICO');
     const modoRey       = enLista(raw.modoRey, ['SORPRESA', 'DECLARADO'], 'SORPRESA');
     // Reyes: se sortea al crear la sala (ya no se elige); la sala de espera lo muestra.
     const frecuenciaReyes = ['NORMAL', 'ALTA', 'LOCURA'][Math.floor(Math.random() * 3)];
@@ -299,7 +302,7 @@ function sanitizarConfig(raw) {
     // En parejas los bots no ocupan lugares desde el lobby (dejarían fuera a
     // los amigos): entran al empezar, solo en los lugares que quedaron libres.
     // Los bots ya no se eligen: al empezar, completarConBots() llena los lugares libres.
-    const tiempoTurno = modoJuego === 'CONSPIRACION' ? TIEMPO_TURNO_CONSPIRACION : TIEMPO_TURNO;
+    const tiempoTurno = modoJuego === 'CONSPIRACION' ? TIEMPO_TURNO_CONSPIRACION : modoJuego === 'GUERRA_ARCANA' ? TIEMPO_TURNO_ARCANA : TIEMPO_TURNO;
     return { vidas, maxJugadores: maxMesa, numBots: 0, modoJuego, modoRey, frecuenciaReyes,
              dificultadBots, tiempoTurno, eventos: conEventos, poderes: conPoderes, equipos, publica, pozoBlis, password };
 }
@@ -421,6 +424,13 @@ function jugadoresPublicos(sala) {
                 tieneRol: true,
                 habilidadUsada: publico.conspiracion.habilidadUsada || false,
                 rol: (rondaRevelada && sala.estadoActual === 'FINALIZADO') || publico.vidas <= 0 ? publico.conspiracion.rol : null
+            };
+        }
+        if (sala.config.modoJuego === 'GUERRA_ARCANA' && publico.arcana) {
+            publico.arcana = {
+                numHechizos: (publico.arcana.grimorio || []).length,
+                veloActivo: !!publico.arcana.veloActivo,
+                ilusionActiva: !!publico.arcana.ilusionActiva
             };
         }
         return publico;
@@ -1073,6 +1083,14 @@ async function registrarFinPartida(sala, ganador) {
         }
     }
 
+    if (sala.config.modoJuego === 'GUERRA_ARCANA' && ganador && !ganador.esBot) {
+        const premioArcana = 25; // Bonificación de Archimago al vencedor
+        await conRetry(() => pool.execute('UPDATE usuarios SET monedas = monedas + ? WHERE username = ?', [premioArcana, ganador.nombre]), { op: 'premio_arcana' })
+            .catch(err => log.error('Fallo premiar guerra arcana', { error: err.message, user: ganador.nombre }));
+        io.to(sala.idSala).emit('mensajeGlobal', `✨ ¡${ganador.nombre} se consagra como Archimago Supremo y recibe +${premioArcana} Blis!`);
+        io.to(sala.idSala).emit('accionMesa', { tipo: 'ARCANA', icono: '✨', texto: `${ganador.nombre} es el Archimago Supremo (+${premioArcana} Blis)` });
+    }
+
     await registrarHistorialYLogros(sala, ganador, humanos);
     await sumarXpDePartida(sala, ganadoresNombres, humanos);
 }
@@ -1490,6 +1508,20 @@ function resolverRonda(sala, io) {
         });
     }
 
+    if (sala.config.modoJuego === 'GUERRA_ARCANA') {
+        const eventosArcana = arcana.resolverFinRondaArcana(sala, { perdedores, castigados, valorCritico });
+        eventosArcana.forEach(ev => {
+            io.to(sala.idSala).emit('mensajeGlobal', ev.mensaje);
+            io.to(sala.idSala).emit('accionMesa', { tipo: 'ARCANA', icono: '✨', texto: ev.mensaje });
+            if (ev.tipo === 'REABASTECIMIENTO' && ev.jugadorId) {
+                const jReab = sala.jugadores.find(x => x.id === ev.jugadorId);
+                if (jReab && !jReab.esBot) {
+                    io.to(jReab.id).emit('tuGrimorio', jReab.arcana.grimorio.map(id => arcana.HECHIZOS[id]));
+                }
+            }
+        });
+    }
+
     // Historial y logros: quién perdió vidas y quién quedó fuera en esta ronda.
     sala.caidas ||= []; sala.vidasPerdidas ||= {};
     sala.primeraPerdida ||= {}; // ronda en que perdió su primera vida (desempata a quienes caen juntos)
@@ -1649,17 +1681,13 @@ function gestionarTurnos(sala, io, esInicio = false) {
     let indiceActual = sala.turnoActualIndex;
 
     let jugadorActual = sala.jugadores[indiceActual];
-    let jugadorDerecha = sala.jugadores[siguienteVivo(sala.jugadores, indiceActual)];
+    let jugadorDerecha = sala.jugadores[siguienteVivo(sala.jugadores, indiceActual, sala.sentidoTurnos || 1)];
 
     if (jugadorActual.vidas <= 0) {
         if (indiceActual === sala.dealerIndex) {
             resolverRonda(sala, io);
         } else {
-            let intentos = 0;
-            do {
-                sala.turnoActualIndex = (sala.turnoActualIndex + 1) % sala.jugadores.length;
-                intentos++;
-            } while (intentos < sala.jugadores.length && sala.jugadores[sala.turnoActualIndex] && sala.jugadores[sala.turnoActualIndex].vidas <= 0);
+            sala.turnoActualIndex = siguienteVivo(sala.jugadores, sala.turnoActualIndex, sala.sentidoTurnos || 1);
             if (!sala.jugadores[sala.turnoActualIndex] || sala.jugadores[sala.turnoActualIndex].vidas <= 0) {
                 resolverRonda(sala, io);
                 return;
@@ -1795,10 +1823,33 @@ function gestionarTurnos(sala, io, esInicio = false) {
                     }
                 }
 
+                // Guerra Arcana: lanzamiento de hechizos del bot
+                let planArcana = null;
+                if (sala.config.modoJuego === 'GUERRA_ARCANA' && jugadorActual.arcana && !jugadorActual.automatico && !sala.config.practica) {
+                    planArcana = bots.planArcana(sala, jugadorActual, { esDealer, derecha: jugadorDerecha });
+                    if (planArcana) {
+                        const resH = arcana.ejecutarHechizo(sala, jugadorActual.id, planArcana.hechizo, { objetivoId: planArcana.objetivoId }, { enviarCarta });
+                        if (resH && resH.ok) {
+                            io.to(sala.idSala).emit('mensajeGlobal', resH.mensajeGlobal);
+                            io.to(sala.idSala).emit('accionMesa', { tipo: 'ARCANA', icono: resH.hechizo.icono || '✨', texto: resH.mensajeGlobal });
+                            io.to(sala.idSala).emit('hechizoLanzado', {
+                                lanzadorId: jugadorActual.id,
+                                lanzadorNombre: jugadorActual.nombre,
+                                hechizo: resH.hechizo,
+                                detalle: resH.detalle
+                            });
+                            if (resH.hechizo.id === 'INVERSION') {
+                                io.to(sala.idSala).emit('sentidoTurnos', sala.sentidoTurnos);
+                            }
+                            io.to(sala.idSala).emit('actualizarJugadores', jugadoresPublicos(sala));
+                        }
+                    }
+                }
+
                 // Tras espiar u oráculo decide con lo que vio; si no, como siempre.
                 const decision = (!r.error && r.carta !== undefined)
                     ? (poderes.mejorQue(r.carta, jugadorActual.cartaActual, pierdeLaMasAlta) ? 'CAMBIAR' : 'MANTENER')
-                    : (planConspiracion?.accionSiguiente || decidir());
+                    : (planConspiracion?.accionSiguiente || planArcana?.accionSiguiente || decidir());
                 // La Corte: acusar si hay pista y proteger al Rey si conviene.
                 let corte = null;
                 if (sala.config.modoJuego === 'CORTE' && !jugadorActual.automatico && sala.config.practica && decision === 'PROTEGER') {
@@ -1814,7 +1865,7 @@ function gestionarTurnos(sala, io, esInicio = false) {
                     ? bots.objetivoVenganza(sala, jugadorActual) : null;
                 const accionBot = corte !== null || objetivo !== null ? 'CAMBIAR' : decision;
                 const opcionesBot = corte !== null ? { objetivoIndex: corte, proteger: true } : objetivo !== null ? { objetivoIndex: objetivo, venganza: true } : {};
-                setTimeout(() => { if (sigueSuTurno()) ejecutarAccion(sala.idSala, accionBot, io, jugadorActual.id, false, opcionesBot); }, (poder && !r.error) || planConspiracion ? 900 : 0);
+                setTimeout(() => { if (sigueSuTurno()) ejecutarAccion(sala.idSala, accionBot, io, jugadorActual.id, false, opcionesBot); }, (poder && !r.error) || planConspiracion || planArcana ? 900 : 0);
             }, bots.retrasoBot());
             return;
         }
@@ -1868,7 +1919,7 @@ function desactivarAutomatico(sala, j, avisar = true) {
 // Lo que haría un bot en el lugar de `j` (para jugar por quien no alcanzó).
 function decisionPorAusente(sala, j) {
     const idx = sala.jugadores.indexOf(j);
-    const derecha = sala.jugadores[siguienteVivo(sala.jugadores, idx)];
+    const derecha = sala.jugadores[siguienteVivo(sala.jugadores, idx, sala.sentidoTurnos || 1)];
     return bots.decidirBot({ ...sala, config: { ...sala.config, dificultadBots: 'NORMAL' } }, j, {
         esDealer: idx === sala.dealerIndex, derecha,
     });
@@ -1920,6 +1971,15 @@ function iniciarRonda(sala, io) {
             });
             io.to(sala.idSala).emit('mensajeGlobal', '📜 ¡Conspiración en la Corte! Cada cortesano ha recibido su Rol Secreto lacrado en cera roja.');
             io.to(sala.idSala).emit('accionMesa', { tipo: 'CONSPIRACION', icono: '📜', texto: 'Se han repartido los Roles Secretos de la Corte' });
+        }
+        if (sala.config.modoJuego === 'GUERRA_ARCANA') {
+            arcana.repartirGrimorios(sala.jugadores);
+            sala.sentidoTurnos = 1;
+            sala.jugadores.forEach(j => {
+                if (j.arcana && !j.esBot) io.to(j.id).emit('tuGrimorio', j.arcana.grimorio.map(id => arcana.HECHIZOS[id]));
+            });
+            io.to(sala.idSala).emit('mensajeGlobal', '✨ ¡Guerra Arcana! Se han entregado los Grimorios Arcanos con pergaminos de poder a la mesa.');
+            io.to(sala.idSala).emit('accionMesa', { tipo: 'ARCANA', icono: '✨', texto: 'Grimorios Arcanos repartidos' });
         }
         sala.caidas = []; sala.vidasPerdidas = {}; sala.primeraPerdida = {};
         sala.dueloAnunciado = false; sala.rondasSinEvento = 0; sala.ultimoEvento = null; sala.castigados = [];
@@ -2021,6 +2081,13 @@ function iniciarRonda(sala, io) {
     }
 
     sala.jugadores.forEach((j, i) => { j.dealer = (i === sala.dealerIndex); });
+    sala.sentidoTurnos = 1;
+    io.to(sala.idSala).emit('sentidoTurnos', 1);
+    if (sala.config.modoJuego === 'GUERRA_ARCANA') {
+        sala.jugadores.forEach(j => {
+            if (j.arcana && !j.esBot) io.to(j.id).emit('tuGrimorio', j.arcana.grimorio.map(id => arcana.HECHIZOS[id]));
+        });
+    }
 
     // Duelo final: quedan 2 en una partida que empezó con más. Se presenta una
     // vez con su pantalla de "versus"; los eventos no aplican en el duelo.
@@ -2042,7 +2109,8 @@ function iniciarRonda(sala, io) {
     // El evento se muestra MS_CARTA_EVENTO en el cliente (4 s para leerlo con calma) + 400 ms de salida.
     const MS_INTRO_DUELO = 2800, MS_INTRO_EVENTO = 4400;
     const MS_INTRO_CONSPIRACION = (sala.rondaActual === 1 && sala.config.modoJuego === 'CONSPIRACION') ? 4500 : 0;
-    const introMs = (anunciarDuelo ? MS_INTRO_DUELO : 0) + (sala.evento ? MS_INTRO_EVENTO : 0) + MS_INTRO_CONSPIRACION;
+    const MS_INTRO_ARCANA = (sala.rondaActual === 1 && sala.config.modoJuego === 'GUERRA_ARCANA') ? 4500 : 0;
+    const introMs = (anunciarDuelo ? MS_INTRO_DUELO : 0) + (sala.evento ? MS_INTRO_EVENTO : 0) + MS_INTRO_CONSPIRACION + MS_INTRO_ARCANA;
     if (sala.evento) {
         const ev = eventos.CATALOGO[sala.evento];
         io.to(sala.idSala).emit('accionMesa', { tipo: 'EVENTO', icono: '✨', texto: `Evento: ${ev.titulo}` });
@@ -2061,6 +2129,7 @@ function iniciarRonda(sala, io) {
         modoJuego: sala.config.modoJuego || 'CLASICO',
         cartasRestantes: sala.mazo.length,
         pozo: sala.pozoTotal || 0,
+        sentidoTurnos: sala.sentidoTurnos || 1,
         jugadores: jugadoresPublicos(sala)
     });
 
@@ -2223,7 +2292,7 @@ function usarPoder(sala, idx, poder) {
     let resultado = {};
 
     if (poder === 'ESPIAR') {
-        const objetivo = sala.jugadores[siguienteVivo(sala.jugadores, idx)];
+        const objetivo = sala.jugadores[siguienteVivo(sala.jugadores, idx, sala.sentidoTurnos || 1)];
         if (!objetivo || objetivo === j) return { error: 'No hay a quién espiar.' };
         poderes.quitarPoder(j, poder);
         resultado.carta = objetivo.cartaActual;
@@ -2248,7 +2317,7 @@ function usarPoder(sala, idx, poder) {
     } else if (poder === 'SALTO') {
         if (idx === sala.dealerIndex) return { error: 'El dealer no puede saltar: si cambia, roba del mazo.' };
         if (sala.evento === 'MERCADO') return { error: 'En el Mercado no hay cambios entre jugadores.' };
-        const uno = siguienteVivo(sala.jugadores, idx), dos = siguienteVivo(sala.jugadores, uno);
+        const uno = siguienteVivo(sala.jugadores, idx, sala.sentidoTurnos || 1), dos = siguienteVivo(sala.jugadores, uno, sala.sentidoTurnos || 1);
         if (dos === idx || dos === uno) return { error: 'No hay nadie dos lugares a tu derecha.' };
         poderes.quitarPoder(j, poder);
         if (!j.esBot) io.to(j.id).emit('misPoderes', j.poderes);
@@ -2370,6 +2439,9 @@ function enviarCarta(sala, jugador) {
     if (sala.config.modoJuego === 'CONSPIRACION' && jugador.conspiracion && !jugador.esBot) {
         io.to(jugador.id).emit('rolConspiracion', jugador.conspiracion.rol);
     }
+    if (sala.config.modoJuego === 'GUERRA_ARCANA' && jugador.arcana && !jugador.esBot) {
+        io.to(jugador.id).emit('tuGrimorio', jugador.arcana.grimorio.map(id => arcana.HECHIZOS[id]));
+    }
 }
 
 // 3 minutos para volver (margen para el bloqueo de pantalla del celular); si
@@ -2412,8 +2484,13 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false, opcion
         // Con el evento "Mercado" todos roban del mazo, como el dealer.
         if ((indiceActual !== sala.dealerIndex && sala.evento !== 'MERCADO') || opciones.venganza || opciones.proteger) {
             const esSalto = opciones.objetivoIndex !== undefined;
-            let jugadorDerecha = sala.jugadores[esSalto ? opciones.objetivoIndex : siguienteVivo(sala.jugadores, indiceActual)];
-            const fuerzaIntercambio = !!jugadorActual.conspiracion?.fuerzaIntercambio;
+            let jugadorDerecha = sala.jugadores[esSalto ? opciones.objetivoIndex : siguienteVivo(sala.jugadores, indiceActual, sala.sentidoTurnos || 1)];
+            if (jugadorActual.arcana?.objetivoTeletransporte) {
+                const targetObj = sala.jugadores.find(j => j.id === jugadorActual.arcana.objetivoTeletransporte && j.vidas > 0);
+                if (targetObj) jugadorDerecha = targetObj;
+                delete jugadorActual.arcana.objetivoTeletransporte;
+            }
+            const fuerzaIntercambio = !!jugadorActual.conspiracion?.fuerzaIntercambio || !!jugadorActual.arcana?.cronorrupturaActiva;
             const bloqueEscudo = !fuerzaIntercambio && (sala.escudos || []).includes(jugadorDerecha.nombre);
             const bloqueRey = !fuerzaIntercambio && !bloqueEscudo && reyProtegido(sala) && jugadorDerecha.cartaActual === 9;
 
@@ -2449,6 +2526,9 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false, opcion
                 }
                 if (jugadorActual.conspiracion?.fuerzaIntercambio) {
                     delete jugadorActual.conspiracion.fuerzaIntercambio;
+                }
+                if (jugadorActual.arcana?.cronorrupturaActiva) {
+                    delete jugadorActual.arcana.cronorrupturaActiva;
                 }
                 enviarCarta(sala, jugadorActual);
                 enviarCarta(sala, jugadorDerecha);
@@ -2538,7 +2618,7 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false, opcion
         // El dealer termina la ronda
         setTimeout(() => { resolverRonda(sala, io); }, 1000);
     } else {
-        sala.turnoActualIndex = siguienteVivo(sala.jugadores, sala.turnoActualIndex);
+        sala.turnoActualIndex = siguienteVivo(sala.jugadores, sala.turnoActualIndex, sala.sentidoTurnos || 1);
         gestionarTurnos(sala, io, false);
     }
 }
@@ -2899,6 +2979,9 @@ io.on('connection', (socket) => {
                 if (sala.config.modoJuego === 'CONSPIRACION' && jugadorExistente.conspiracion) {
                     socket.emit('rolConspiracion', jugadorExistente.conspiracion.rol);
                 }
+                if (sala.config.modoJuego === 'GUERRA_ARCANA' && jugadorExistente.arcana) {
+                    socket.emit('tuGrimorio', jugadorExistente.arcana.grimorio.map(id => arcana.HECHIZOS[id]));
+                }
                 if (sala.config.equipos && sala.evento !== 'NIEBLA' && sala.estadoActual === "TURNOS_INTERCAMBIO") {
                     companeros(sala, jugadorExistente).forEach(t => socket.emit('cartaCompanero', { id: t.id, carta: t.cartaActual }));
                 }
@@ -2909,6 +2992,7 @@ io.on('connection', (socket) => {
                     duelo: !!sala.enDuelo,
                     ronda: sala.rondaActual,
                     dealer: sala.jugadores[sala.dealerIndex].nombre,
+                    sentidoTurnos: sala.sentidoTurnos || 1,
                     jugadores: jugadoresPublicos(sala),
                     estado: sala.estadoActual,
                     turnoEnCurso: sala.jugadores[sala.turnoActualIndex].id,
@@ -3287,6 +3371,42 @@ io.on('connection', (socket) => {
             enviarCarta(sala, j);
             gestionarTurnos(sala, io);
         }
+        io.to(sala.idSala).emit('actualizarJugadores', jugadoresPublicos(sala));
+    });
+
+    socket.on('lanzarHechizo', (payload) => {
+        if (!permitir(socket.id, 'lanzarHechizo', 400)) return;
+        if (!payload || typeof payload !== 'object') return;
+        const { idSala, hechizoId, objetivo } = payload;
+        if (!esIdSalaValido(idSala)) return;
+        const sala = estadoSalas[idSala];
+        if (!sala || sala.config.modoJuego !== 'GUERRA_ARCANA' || sala.estadoActual !== 'TURNOS_INTERCAMBIO') return;
+        const j = sala.jugadores.find(x => x.nombre === nombreUsuarioLogueado);
+        if (!j || !j.arcana || j.vidas <= 0) return;
+        if (sala.jugadores[sala.turnoActualIndex]?.id !== j.id) return socket.emit('errorSala', 'Solo puedes lanzar hechizos en tu turno.');
+
+        let objetivoObj = null;
+        if (objetivo) {
+            objetivoObj = sala.jugadores.find(x => (x.nombre === objetivo || x.id === objetivo) && x.vidas > 0);
+        }
+
+        const res = arcana.ejecutarHechizo(sala, j.id, hechizoId, { objetivoId: objetivoObj?.id }, { enviarCarta });
+        if (!res.ok) return socket.emit('errorSala', res.motivo);
+
+        io.to(sala.idSala).emit('mensajeGlobal', res.mensajeGlobal);
+        io.to(sala.idSala).emit('accionMesa', { tipo: 'ARCANA', icono: res.hechizo.icono || '✨', texto: res.mensajeGlobal });
+        io.to(sala.idSala).emit('hechizoLanzado', {
+            lanzadorId: j.id,
+            lanzadorNombre: j.nombre,
+            hechizo: res.hechizo,
+            detalle: res.detalle
+        });
+
+        if (res.hechizo.id === 'INVERSION') {
+            io.to(sala.idSala).emit('sentidoTurnos', sala.sentidoTurnos);
+        }
+
+        socket.emit('tuGrimorio', j.arcana.grimorio.map(id => arcana.HECHIZOS[id]));
         io.to(sala.idSala).emit('actualizarJugadores', jugadoresPublicos(sala));
     });
 

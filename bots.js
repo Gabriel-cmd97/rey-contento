@@ -267,7 +267,64 @@ function planConspiracion(sala, bot, ctx) {
     return null;
 }
 
-module.exports = { objetivoVenganza, planCorte, planConspiracion,
+// Guerra Arcana: decisión táctica de lanzamiento de hechizos del grimorio para bots.
+function planArcana(sala, bot, ctx) {
+    if (!bot.arcana || !Array.isArray(bot.arcana.grimorio) || bot.arcana.grimorio.length === 0 || bot.vidas <= 0) return null;
+    const grimorio = bot.arcana.grimorio;
+    const c = bot.cartaEfectiva !== undefined ? bot.cartaEfectiva : bot.cartaActual;
+    const derecha = ctx?.derecha;
+    const esDealer = ctx?.esDealer;
+    const pierdeAlta = sala.evento === 'MUNDO_AL_REVES';
+
+    // 1. VELO_SOMBRAS: Si tiene una carta mortal (<= 2 en normal, o >= 7 en Mundo al Revés) y no es seguro ganar
+    if (grimorio.includes('VELO_SOMBRAS')) {
+        const esMortal = pierdeAlta ? c >= 7 : c <= 2;
+        if (esMortal && (!derecha || esDealer || c === 0)) {
+            return { hechizo: 'VELO_SOMBRAS' };
+        }
+    }
+
+    // 2. CRONORUPTURA: Si quiere cambiar pero su vecino tiene escudo o Rey declarado
+    if (grimorio.includes('CRONORUPTURA') && !esDealer && derecha) {
+        const conocida = (derecha.cartaRevelada && derecha.cartaActual !== undefined) ? derecha.cartaActual : (bot.memoria && bot.memoria[derecha.id]);
+        const tiene9 = conocida === 9 && !pierdeAlta;
+        const tieneEscudo = (sala.escudos || []).includes(derecha.nombre);
+        if ((tiene9 || tieneEscudo) && (pierdeAlta ? c > 4 : c <= 4)) {
+            return { hechizo: 'CRONORUPTURA', accionSiguiente: 'CAMBIAR' };
+        }
+    }
+
+    // 3. ILUSION: Si tiene carta media o baja (ej: 3, 4 o 5) y quiere aumentarla a 5, 6, 7 para mantenerse seguro
+    if (grimorio.includes('ILUSION') && !pierdeAlta && c >= 2 && c <= 6) {
+        return { hechizo: 'ILUSION', accionSiguiente: 'MANTENER' };
+    }
+
+    // 4. TRANSMUTACION: Si no es dealer y su vecino a la derecha tiene carta no conveniente o escudo
+    if (grimorio.includes('TRANSMUTACION') && !esDealer && (pierdeAlta ? c >= 6 : c <= 3)) {
+        const rivales = (sala.jugadores || []).filter(j => j !== bot && j.vidas > 0);
+        if (rivales.length > 0) {
+            const target = rivales[Math.floor(Math.random() * rivales.length)];
+            return { hechizo: 'TRANSMUTACION', objetivoId: target.id, accionSiguiente: 'CAMBIAR' };
+        }
+    }
+
+    // 5. DESTIERRO: Si el vecino de la derecha tiene un Rey o carta conocida alta (o bot tiene carta baja)
+    if (grimorio.includes('DESTIERRO') && !esDealer && derecha) {
+        const conocida = (derecha.cartaRevelada && derecha.cartaActual !== undefined) ? derecha.cartaActual : (bot.memoria && bot.memoria[derecha.id]);
+        if (conocida >= 8 || c <= 3) {
+            return { hechizo: 'DESTIERRO' };
+        }
+    }
+
+    // 6. INVERSION: Si el bot quiere invertir el sentido de turnos
+    if (grimorio.includes('INVERSION') && c <= 3 && Math.random() < 0.4) {
+        return { hechizo: 'INVERSION' };
+    }
+
+    return null;
+}
+
+module.exports = { objetivoVenganza, planCorte, planConspiracion, planArcana,
     DIFICULTADES, COMPOSICION,
     probPerder, distribucionDesconocida, decidirBot, retrasoBot,
     recordarCambio, olvidarCarta, olvidarRonda,
