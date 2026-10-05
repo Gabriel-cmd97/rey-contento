@@ -796,11 +796,11 @@
         function actualizarResumenConfig() {
             const ic = (n) => `<svg class="icono" aria-hidden="true"><use href="#i-${n}"/></svg>`;
             const modo      = document.getElementById('selectModo')?.value === 'DECLARADO' ? 'Declarado' : 'Sorpresa';
-            const modoJuego = { FIESTA: `${ic('rayo')} Fiesta`, CORTE: `${ic('corona')} La Corte`, CONSPIRACION: `${ic('pergamino')} Conspiración` }[document.getElementById('selectModoJuego')?.value] || `${ic('espadas')} Clásico`;
+            const modoJuego = { FIESTA: `${ic('rayo')} Fiesta`, JEFE: `${ic('corona')} Todos vs Rey`, CONSPIRACION: `${ic('pergamino')} Conspiración`, GUERRA_ARCANA: `${ic('fuego')} Guerra Arcana` }[document.getElementById('selectModoJuego')?.value] || `${ic('espadas')} Clásico`;
             const vidas     = document.getElementById('selectVidas')?.value;
             const jugadores = document.getElementById('selectJugadores')?.value;
             const bots      = ''; // los bots se ponen al empezar, en los lugares libres
-            const tiempo    = document.getElementById('selectModoJuego')?.value === 'CONSPIRACION' ? '35' : '20';
+            const tiempo    = document.getElementById('selectModoJuego')?.value === 'CONSPIRACION' ? '35' : (document.getElementById('selectModoJuego')?.value === 'GUERRA_ARCANA' ? '30' : '20');
             // Parejas: la mesa es de 4 o 6 y se completa con bots; el número de
             // jugadores y de bots ya no se elige.
             const equipos = parseInt(document.getElementById('selectEquipos')?.value || '0');

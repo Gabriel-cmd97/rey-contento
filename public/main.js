@@ -4922,6 +4922,7 @@ function conectarSocket() {
 
     socket.on('datosMesa', (datos) => {
         terminarEsperaRapida();
+        if (datos.modoJuego) modoJuegoActual = datos.modoJuego;
         _pozoMesa = datos.pozo || 0;
         _espiado = null;
         _cartasCompaneros = {};
