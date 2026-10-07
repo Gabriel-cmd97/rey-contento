@@ -519,17 +519,31 @@ select,
     flex-grow: 1;
     background-color: #1a1a1a;
     padding-bottom: 70px;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.mesa-virtual {
+    width: 100%;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-sizing: border-box;
 }
 
 .tapete-virtual {
     position: relative;
-    width: 100%;
-    height: 60vh;
-    min-height: 400px;
+    width: 98%;
+    max-width: 1200px;
+    height: 65vh;
+    min-height: 420px;
     background: radial-gradient(ellipse at 50% 30%, #2ecc71 0%, #27ae60 40%, #1a8c45 70%, #145a32 100%);
-    border: 10px solid var(--madera);
-    border-radius: 100px;
-    margin: 20px auto;
+    border: 8px solid var(--madera);
+    border-radius: 120px / 90px;
+    margin: 10px auto;
     box-shadow:
         inset 0 0 80px rgba(0,0,0,0.5),
         inset 0 0 30px rgba(0,0,0,0.3),
@@ -538,6 +552,8 @@ select,
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 /* =========================================
@@ -979,6 +995,9 @@ select,
     border-radius: 14px;
     padding: 18px 20px 16px;
     width: min(340px, 90vw);
+    max-height: min(88vh, calc(100dvh - 32px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     box-shadow: 0 0 40px rgba(0,0,0,0.9), 0 0 20px rgba(241,196,15,0.1);
     text-align: center;
     animation: entrarResumen 0.3s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
@@ -1312,7 +1331,8 @@ select,
 .mesa-espectador { opacity: 0.9; filter: grayscale(10%) brightness(0.85); }
 
 /* Transiciones suaves */
-.perfil-oponente, .carta-naipe, #miSilla { transition: all 0.4s ease; }
+.perfil-oponente, #miSilla { transition: all 0.3s ease; }
+.carta-naipe { transition: filter 0.3s ease, box-shadow 0.3s ease; }
 
 /* =========================================
    PANTALLA DE VICTORIA
@@ -1328,6 +1348,22 @@ select,
 #modalReglas > div {
     background: linear-gradient(145deg, #f8efd9 0%, #efdfba 100%);
     box-shadow: 0 0 0 1px rgba(193,150,58,0.3), 0 30px 80px rgba(0,0,0,0.8);
+}
+@media (max-width: 768px) {
+    #modalReglas {
+        padding: max(10px, env(safe-area-inset-top, 10px)) 10px max(14px, env(safe-area-inset-bottom, 14px)) 10px !important;
+    }
+    #modalReglas > div {
+        padding: 20px 14px 18px !important;
+        border-radius: 12px !important;
+    }
+    #vistaQR {
+        padding: max(10px, env(safe-area-inset-top, 10px)) 10px max(14px, env(safe-area-inset-bottom, 14px)) 10px !important;
+    }
+    #vistaQR > div {
+        padding: 20px 14px !important;
+        border-radius: 12px !important;
+    }
 }
 
 /* =========================================
@@ -1440,7 +1476,7 @@ select,
    ========================================= */
 .animacion-reparto { animation: repartirCarta 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
-.volar-desde-centro-bottom  { animation: volarAbajo     0.6s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards; }
+.volar-desde-centro-bottom  { animation: volarAbajo     0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
 .volar-desde-centro-top     { animation: volarArriba    0.6s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards; }
 .volar-desde-centro-left    { animation: volarIzquierda 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards; }
 .volar-desde-centro-right   { animation: volarDerecha   0.6s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards; }
@@ -1476,12 +1512,12 @@ select,
        celular), no a lo ancho: cap de ancho + alta, con aire arriba/abajo. Las
        posiciones diagonales de los asientos usan %, así que escalan al achicar la mesa. */
     .tapete-virtual {
-        width: 96%;
-        max-width: 470px;
+        width: min(760px, 96vw);
+        max-width: 760px;
         height: min(86vh, 760px);
-        min-height: 0;
+        min-height: 480px;
         margin: 0 auto;
-        border-radius: 70px;
+        border-radius: 90px;
     }
     .mazo-dealer {
     left: -55px;
@@ -1494,9 +1530,9 @@ select,
     /* Tamaño de carta/número/figura lo controla la var adaptable (--carta-*). */
     #nombrePersonaje { font-size: 11px !important; }
 
-    .silla.bottom { bottom: 15px; }
+    .silla.bottom { bottom: 24px; }
     .mi-perfil-esquina {
-        bottom: calc(var(--carta-h, 150px) + 22px); /* sobre la carta (silla.bottom 15px + margen) */
+        bottom: calc(var(--carta-h, 150px) + 32px); /* sobre la carta (silla.bottom 24px + margen) */
         left: 50%;
         transform: translateX(-50%);
         padding: 4px 12px;
@@ -1605,9 +1641,9 @@ select,
     /* carta/número/figura: tamaño por var adaptable (--carta-*). */
     #nombrePersonaje { font-size: 10px !important; margin-top: 4px; }
 
-    .silla.bottom { bottom: 12px; }
+    .silla.bottom { bottom: 22px; }
     .mi-perfil-esquina {
-        bottom: calc(var(--carta-h, 108px) + 18px); /* sobre la carta (silla.bottom 12px + margen) */
+        bottom: calc(var(--carta-h, 108px) + 28px); /* sobre la carta (silla.bottom 22px + margen) */
         left: 50%;
         transform: translateX(-50%);
         padding: 3px 8px;
@@ -2343,14 +2379,16 @@ select,
 
 .guia-acciones {
     text-align: center;
-    font-size: 12px;
-    line-height: 1.35;
+    font-size: 11px;
+    line-height: 1.3;
     color: var(--pergamino);
-    background: rgba(0,0,0,0.55);
+    background: rgba(0,0,0,0.75);
     border: 1px dashed rgba(241,196,15,0.6);
-    border-radius: 10px;
-    padding: 5px 10px;
-    margin-bottom: 6px;
+    border-radius: 8px;
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    max-height: 48px;
+    overflow-y: auto;
 }
 
 .banner-objetivo {
@@ -3500,15 +3538,15 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
    LA MESA TERMINA DONDE EMPIEZA EL PANEL DE ABAJO
    --alto-pie lo mide main.js (ResizeObserver del panel de acciones).
    ========================================= */
-#mesaDeJuego { padding-bottom: calc(var(--alto-pie, 180px) + 6px); }
+#mesaDeJuego { padding-bottom: calc(var(--alto-pie, 80px) + 6px); }
 @media (max-width: 767px) {
     .tapete-virtual {
-        height: calc(100dvh - 44px - var(--alto-pie, 180px) - 10px) !important;
-        min-height: 320px !important;
+        height: calc(100dvh - 30px - var(--alto-pie, 80px)) !important;
+        min-height: 440px !important;
     }
 }
 @media (min-width: 768px) {
-    .tapete-virtual { height: min(760px, calc(100dvh - 60px - var(--alto-pie, 180px))) !important; min-height: 380px !important; }
+    .tapete-virtual { height: min(780px, calc(100dvh - 40px - var(--alto-pie, 80px))) !important; min-height: 480px !important; }
 }
 
 /* Compañero / Rival en cada asiento (parejas) */
@@ -3582,7 +3620,7 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
 .panel-acciones-fijo { gap: 4px !important; padding-top: 6px !important; }
 /* Los avisos van justo encima del panel de abajo (su alto real, --alto-pie),
    para no tapar las reacciones ni los botones. */
-#toastContainer, body.con-guia #toastContainer { bottom: calc(var(--alto-pie, 180px) + 8px) !important; }
+#toastContainer, body.con-guia #toastContainer { bottom: calc(var(--alto-pie, 80px) + 8px) !important; }
 #toastContainer .toast-mensaje { font-size: 12px; padding: 5px 12px; }
 
 /* =========================================
@@ -3591,12 +3629,61 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
 body.en-mesa #barraSuperior { display: none; }
 body.en-mesa #miniFeedJugadas { display: none !important; }
 body.en-mesa #barraReacciones:not(.abierta) { display: none !important; }
-body.en-mesa .tapete-virtual { margin-top: calc(8px + env(safe-area-inset-top, 0px)) !important; }
-@media (max-width: 767px) {
-    body.en-mesa .tapete-virtual { height: calc(100dvh - 14px - env(safe-area-inset-top, 0px) - var(--alto-pie, 180px)) !important; }
+
+body.en-mesa #mesaDeJuego {
+    padding-bottom: max(76px, calc(var(--alto-pie, 76px) + 8px)) !important;
+    justify-content: center !important;
+    align-items: center !important;
+    min-height: 100dvh !important;
+    box-sizing: border-box !important;
 }
-@media (min-width: 768px) {
-    body.en-mesa .tapete-virtual { height: min(800px, calc(100dvh - 24px - var(--alto-pie, 180px))) !important; }
+
+body.en-mesa .mesa-virtual {
+    width: 100% !important;
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+@media (max-width: 767px) {
+    body.en-mesa .tapete-virtual {
+        width: calc(100vw - 10px) !important;
+        max-width: 560px !important;
+        height: calc(100dvh - env(safe-area-inset-top, 0px) - max(88px, calc(var(--alto-pie, 76px) + 14px))) !important;
+        min-height: 460px !important;
+        max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 76px) !important;
+        margin: calc(4px + env(safe-area-inset-top, 0px)) auto 6px auto !important;
+        border-radius: min(90px, 22vw) !important;
+        border-width: 6px !important;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1099px) {
+    body.en-mesa .tapete-virtual {
+        width: min(760px, calc(100vw - 32px)) !important;
+        max-width: none !important;
+        height: calc(100dvh - 110px) !important;
+        min-height: 520px !important;
+        max-height: 860px !important;
+        margin: 10px auto !important;
+        border-radius: 110px !important;
+        border-width: 8px !important;
+    }
+}
+
+@media (min-width: 1100px) {
+    body.en-mesa .tapete-virtual {
+        width: min(1180px, 94vw) !important;
+        max-width: none !important;
+        height: calc(100dvh - 110px) !important;
+        min-height: 500px !important;
+        max-height: 800px !important;
+        margin: 12px auto !important;
+        border-radius: 140px / 105px !important;
+        border-width: 9px !important;
+    }
 }
 .info-mesa {
     margin: 3px 0 0;
@@ -3610,24 +3697,32 @@ body.en-mesa .tapete-virtual { margin-top: calc(8px + env(safe-area-inset-top, 0
 .boton-esquina {
     display: none;
     position: fixed;
-    top: calc(12px + env(safe-area-inset-top, 0px));
+    top: calc(10px + env(safe-area-inset-top, 0px));
     z-index: 150;
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     align-items: center;
     justify-content: center;
-    border: none;
-    border-radius: 10px;
-    background: rgba(20,12,8,0.55);
+    border: 1px solid rgba(241,196,15,0.25);
+    border-radius: 12px;
+    background: rgba(20,12,8,0.72);
+    backdrop-filter: blur(4px);
     color: #ffe27a;
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    transition: transform 0.1s ease, background 0.15s ease;
+}
+.boton-esquina:active {
+    transform: scale(0.92);
+    background: rgba(241,196,15,0.2);
 }
 body.en-mesa .boton-esquina { display: flex; }
-.boton-esquina .icono { width: 20px; height: 20px; }
-.esquina-izq { left: calc(12px + env(safe-area-inset-left, 0px)); }
-.esquina-der { right: calc(12px + env(safe-area-inset-right, 0px)); }
+.boton-esquina .icono { width: 22px; height: 22px; }
+.esquina-izq { left: calc(10px + env(safe-area-inset-left, 0px)); }
+.esquina-der { right: calc(10px + env(safe-area-inset-right, 0px)); }
 .contador-esquina {
     position: absolute;
     top: -4px;
@@ -3695,7 +3790,7 @@ body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 13%; }
 .aviso-automatico {
     position: fixed;
     left: 50%;
-    bottom: calc(var(--alto-pie, 180px) + 10px);
+    bottom: calc(var(--alto-pie, 80px) + 10px);
     transform: translateX(-50%);
     z-index: 400;
     width: min(92vw, 380px);
@@ -3838,6 +3933,13 @@ body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 13%; }
     60% { transform: rotateY(0) scale(1.12); }
     100% { transform: scale(1); }
 }
+@media (max-width: 420px) {
+    .gran-rey-carta { width: 96px; height: 140px; }
+    .gran-rey-carta b { font-size: 42px; }
+    .gran-rey-carta img { width: 44px; }
+    .gran-rey strong { font-size: 22px; }
+    .gran-rey > span:last-child { font-size: 13.5px; }
+}
 
 /* Doble castigo: el corazón roto dice cuántas vidas se fueron */
 .corazon-roto-capa .vidas-menos {
@@ -3974,19 +4076,36 @@ body.venganza-activa .silla:not(.hidden) .perfil-oponente {
    La marca pasa a la barra de arriba y se recortan márgenes y rellenos.
    ========================================= */
 /* Barra de arriba: marca a la izquierda; ayuda, guías, sonido y tu perfil a la derecha */
-.barra-top-juego { padding: 6px 12px; min-height: 46px; }
+.barra-top-juego {
+    padding: max(6px, env(safe-area-inset-top, 6px)) max(10px, env(safe-area-inset-right, 10px)) 6px max(10px, env(safe-area-inset-left, 10px));
+    min-height: calc(46px + env(safe-area-inset-top, 0px));
+}
 .barra-marca { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .barra-marca img { width: 24px; height: 24px; }
 .barra-marca span { font-family: var(--fuente-medieval); font-size: 16px; color: var(--oro); white-space: nowrap; }
 @media (max-width: 420px) { .barra-marca span { display: none; } }
-.barra-acciones { gap: 4px; }
-.btn-sonido-top { color: var(--oro); width: 34px; height: 34px; border-radius: 50%; }
+.barra-acciones { gap: 4px; display: flex; align-items: center; }
+.btn-sonido-top {
+    color: var(--oro);
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
 .btn-sonido-top .icono { width: 19px; height: 19px; }
 .btn-sonido-top:hover { background: rgba(241,196,15,0.12); }
+.btn-sonido-top:active { transform: scale(0.92); background: rgba(241,196,15,0.22); }
 .btn-perfil-top {
     gap: 6px; margin-left: 4px; padding: 3px 10px 3px 3px; border-radius: 999px;
     border: 1px solid rgba(241,196,15,0.35); background: rgba(241,196,15,0.08);
     font-size: 12px; letter-spacing: 0; text-transform: none; max-width: 220px;
+    touch-action: manipulation;
 }
 .avatar-top {
     position: relative; flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%;
@@ -3997,10 +4116,14 @@ body.venganza-activa .silla:not(.hidden) .perfil-oponente {
 .victorias-top .icono { width: 14px; height: 14px; }
 
 /* Lobby: el blasón queda en una línea discreta (la marca ya está arriba) */
-#seccion-lobby.main-seccion-centro { margin-top: 46px; min-height: calc(100dvh - 46px); padding: 8px 14px 0; }
+#seccion-lobby.main-seccion-centro {
+    margin-top: calc(48px + env(safe-area-inset-top, 0px));
+    min-height: calc(100dvh - 48px - env(safe-area-inset-top, 0px));
+    padding: 8px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+}
 #seccion-lobby .lobby-blason { display: none; }
 #seccion-lobby .lobby-tabs { margin-bottom: 10px; }
-#seccion-lobby .lobby-tab { padding: 9px 0; }
+#seccion-lobby .lobby-tab { padding: 9px 0; touch-action: manipulation; }
 .lobby-bloque { margin-bottom: 10px; }
 .lobby-bloque .lobby-section-label { margin-bottom: 5px; }
 .lobby-bloque .practica-lema { margin: 4px 0 0; font-size: 12.5px; }
@@ -4238,7 +4361,12 @@ body:not(.con-botones).puedo-jugar .chip-jugada {
     font: 13px var(--fuente-medieval); letter-spacing: .5px; line-height: 1.1;
     box-shadow: 0 4px 14px rgba(0,0,0,.55);
     animation: chip-entra .35s ease-out both;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.1s ease, filter 0.1s ease;
 }
+.chip-jugada:active { transform: scale(0.93); filter: brightness(1.15); }
 .chip-jugada b { font-weight: normal; }
 .chip-jugada small { font: 10.5px Georgia, serif; opacity: .85; }
 .chip-jugada .icono { width: 16px; height: 16px; }
@@ -4351,9 +4479,14 @@ body.en-mesa.puedo-jugar::after { content: ''; position: fixed; inset: 0; z-inde
 @keyframes brillo-turno { 50% { box-shadow: inset 0 0 0 2px rgba(255,226,122,.45), inset 0 0 18px rgba(255,190,40,.25); } }
 @media (prefers-reduced-motion: reduce) { body.en-mesa.puedo-jugar::after, .podio-corona, .carta-mortal-drama { animation: none !important; } }
 
-/* Victoria: si no cabe, se desplaza desde arriba (antes se centraba y el
-   título quedaba cortado sin forma de subir). */
-.pantalla-victoria { justify-content: flex-start !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; padding-block: 12px; }
+.pantalla-victoria {
+    justify-content: flex-start !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    padding-top: max(16px, env(safe-area-inset-top, 16px)) !important;
+    padding-bottom: max(24px, env(safe-area-inset-bottom, 24px)) !important;
+    padding-inline: 14px !important;
+}
 .victoria-contenido { margin-block: auto; }
 /* En horizontal: dos columnas (título y podio | tabla y botones) */
 @media (orientation: landscape) and (max-height: 600px) {
@@ -4674,25 +4807,44 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
 /* Práctica: el botón que toca usar brilla */
 .practica-brilla { animation: brillo-practica 1s ease-in-out infinite; box-shadow: 0 0 0 2px #ffe27a, 0 0 16px rgba(255,226,122,.8) !important; }
 @keyframes brillo-practica { 50% { box-shadow: 0 0 0 2px rgba(255,226,122,.4), 0 0 6px rgba(255,226,122,.3) !important; } }
-/* Aprender: cuatro prácticas en una fila */
-.aprender-fila { grid-template-columns: repeat(4, 1fr) !important; gap: 5px !important; }
-.aprender-fila .tarjeta-aprender { padding: 7px 6px 6px !important; }
-.aprender-fila .tarjeta-aprender strong { font-size: 12px; }
-.aprender-fila .tarjeta-aprender span { font-size: 10px; }
+/* Aprender: tarjetas de práctica y prueba de modos con bots */
+.aprender-fila { display: grid !important; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)) !important; gap: 6px !important; }
+.aprender-fila .tarjeta-aprender { padding: 8px 6px 7px !important; }
+.aprender-fila .tarjeta-aprender strong { font-size: 11.5px; }
+.aprender-fila .tarjeta-aprender span { font-size: 9.5px; }
 .aprender-fila .tarjeta-aprender.practica-nueva::after { top: 4px; right: 4px; font-size: 8px; padding: 1px 4px; }
 
 /* Primera vez en un modo: cómo se juega (no bloquea la mesa; se cierra sola o al tocarla) */
-.carta-modo { position: fixed; left: 50%; top: 18%; transform: translateX(-50%); z-index: 8500; width: min(90vw, 360px);
-    padding: 12px 14px 10px; border-radius: 14px; background: rgba(26,15,10,.97); border: 2px solid #ffe27a;
-    box-shadow: 0 10px 30px rgba(0,0,0,.6); color: var(--pergamino); cursor: pointer; animation: chip-entra .35s ease-out both; }
+.carta-modo {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 8500;
+    width: min(90vw, 360px);
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: rgba(24, 14, 9, 0.98);
+    border: 2px solid #ffe27a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 24px rgba(241, 196, 15, 0.35);
+    color: var(--pergamino);
+    cursor: pointer;
+    animation: modo-entra .35s ease-out both;
+}
 .carta-modo.hidden { display: none; }
-.carta-modo > b { display: block; font-family: var(--fuente-medieval); font-size: 17px; color: #ffe27a; margin: 2px 0 4px; }
-.carta-modo ul { margin: 0 0 8px; padding-left: 18px; font-size: 13px; line-height: 1.4; }
+.carta-modo > b { display: block; font-family: var(--fuente-medieval); font-size: 17px; color: #ffe27a; margin: 2px 0 6px; }
+.carta-modo ul { margin: 0 0 10px; padding-left: 18px; font-size: 13px; line-height: 1.45; }
 .carta-modo small { display: block; font-size: 11px; color: var(--texto-suave); text-align: center; }
-@media (orientation: landscape) and (max-height: 600px) { .carta-modo { top: 10px; left: calc(50% - var(--ancho-columna, 0px) / 2); max-height: calc(100dvh - 20px); overflow-y: auto; } }
+@media (orientation: landscape) and (max-height: 600px) {
+    .carta-modo { max-height: calc(100dvh - 20px); }
+}
 
-.carta-modo { animation: modo-entra .35s ease-out both; }
-@keyframes modo-entra { from { opacity: 0; transform: translateX(-50%) scale(.92); } to { opacity: 1; transform: translateX(-50%); } }
+@keyframes modo-entra {
+    from { opacity: 0; transform: translate(-50%, -46%) scale(.92); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
 
 /* =========================================
    COSMÉTICOS 2 (30/09/2026): avatares ilustrados, rareza, vitrina y marcos animados
@@ -5246,9 +5398,11 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
 
     /* --- Mesa: horizontal y ancha --- */
     body.en-mesa .tapete-virtual {
-        width: min(1150px, calc(100vw - 340px)) !important; max-width: none !important;
-        height: calc(100dvh - var(--alto-pie, 90px) - 40px) !important; max-height: 760px;
-        margin: 16px auto 0 !important; border-radius: 160px / 120px !important; }
+        width: min(1180px, calc(100vw - 320px)) !important; max-width: none !important;
+        height: calc(100dvh - 110px) !important;
+        max-height: 780px !important;
+        min-height: 500px !important;
+        margin: 14px auto 0 !important; border-radius: 150px / 110px !important; }
     body.en-mesa .centro-mesa-wrapper { top: 46% !important; }
     /* Bitácora de la ronda a la derecha, siempre visible */
     body.en-mesa #miniFeedJugadas:not(:empty) { display: flex !important; position: fixed !important; right: 18px; top: 80px; width: 250px;
@@ -5260,7 +5414,7 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
     /* Sala de espera: filas pegadas arriba (el grid estiraba las filas y dejaba huecos) */
     #panelJugadores:not(.hidden) { align-content: start !important; grid-auto-rows: min-content; }
     /* Mesa: se recorre a la izquierda para dejarle su columna a la bitácora */
-    body.en-mesa .tapete-virtual { margin-left: max(20px, calc((100vw - 290px - min(1150px, 100vw - 340px)) / 2)) !important; margin-right: auto !important; }
+    body.en-mesa .tapete-virtual { margin-left: max(20px, calc((100vw - 290px - min(1180px, 100vw - 340px)) / 2)) !important; margin-right: auto !important; }
     body.en-mesa .panel-acciones-fijo { left: calc((100vw - 290px) / 2) !important; }
 }
 

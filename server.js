@@ -2619,7 +2619,11 @@ function ejecutarAccion(idSala, accion, io, socketId, porTimeout = false, opcion
         setTimeout(() => { resolverRonda(sala, io); }, 1000);
     } else {
         sala.turnoActualIndex = siguienteVivo(sala.jugadores, sala.turnoActualIndex, sala.sentidoTurnos || 1);
-        gestionarTurnos(sala, io, false);
+        const retrasoAnimacion = (accion === 'CAMBIAR' || porTimeout) ? 800 : 500;
+        setTimeout(() => {
+            if (!estadoSalas[idSala]) return;
+            gestionarTurnos(sala, io, false);
+        }, retrasoAnimacion);
     }
 }
 

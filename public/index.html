@@ -157,14 +157,29 @@
                     <div id="bannerTorneo" class="banner-torneo hidden"></div>
                 </div>
 
-                <!-- 2. Aprender -->
+                <!-- 2. Aprender y probar modos -->
                 <div class="lobby-bloque">
-                    <p class="lobby-section-label">Aprender</p>
+                    <p class="lobby-section-label">Aprender y probar modos (con bots)</p>
                     <div class="aprender-fila">
                         <button id="btnPractica" class="tarjeta-aprender">
                             <svg class="icono" aria-hidden="true"><use href="#i-diana"/></svg>
-                            <strong>Aprender a jugar</strong>
-                            <span>3 rondas guiadas</span>
+                            <strong>Clásico</strong>
+                            <span>Tutorial guiado</span>
+                        </button>
+                        <button id="btnProbarArcana" class="tarjeta-aprender">
+                            <svg class="icono" aria-hidden="true"><use href="#i-fuego"/></svg>
+                            <strong>Guerra Arcana</strong>
+                            <span>Probar con bots</span>
+                        </button>
+                        <button id="btnProbarConspiracion" class="tarjeta-aprender">
+                            <svg class="icono" aria-hidden="true"><use href="#i-pergamino"/></svg>
+                            <strong>Conspiración</strong>
+                            <span>Probar con bots</span>
+                        </button>
+                        <button id="btnProbarJefe" class="tarjeta-aprender">
+                            <svg class="icono" aria-hidden="true"><use href="#i-corona"/></svg>
+                            <strong>Contra el Rey</strong>
+                            <span>Probar con bots</span>
                         </button>
                         <button id="btnPracticaFiesta" class="tarjeta-aprender">
                             <svg class="icono" aria-hidden="true"><use href="#i-grupo"/></svg>
@@ -173,7 +188,7 @@
                         </button>
                         <button id="btnPracticaPoderes" class="tarjeta-aprender">
                             <svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg>
-                            <strong>Eventos y poderes</strong>
+                            <strong>Poderes</strong>
                             <span>3 rondas guiadas</span>
                         </button>
                     </div>
@@ -181,16 +196,16 @@
 
                 <!-- 3. Crear mesa -->
                 <div class="lobby-bloque">
-                    <p class="lobby-section-label">Crear mesa para tus amigos</p>
+                    <p class="lobby-section-label">Crear partida (amigos o contra bots)</p>
                     <div class="config-grid-nuevo">
                         <div class="config-item-nuevo">
                             <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-naipe"/></svg> Modo de juego</span>
                             <select id="selectModoJuego" class="selector-medieval selector-compacto">
-                            <option value="CLASICO">Clásico</option>
-                            <option value="FIESTA">Fiesta: evento en cada ronda</option>
-                            <option value="JEFE">Todos contra el Rey</option>
-                            <option value="CONSPIRACION">Conspiración en la Corte</option>
-                            <option value="GUERRA_ARCANA">Guerra Arcana (Hechizos &amp; Grimorios)</option>
+                            <option value="CLASICO">⚔️ Clásico</option>
+                            <option value="GUERRA_ARCANA">🔮 Guerra Arcana (Hechizos)</option>
+                            <option value="CONSPIRACION">🎭 Conspiración en la Corte</option>
+                            <option value="JEFE">👑 Todos contra el Rey</option>
+                            <option value="FIESTA">⚡ Fiesta de eventos</option>
                         </select>
                         </div>
                         <div class="config-item-nuevo">
@@ -268,7 +283,8 @@
 
                 <!-- 4. Acciones siempre a la mano -->
                 <div class="lobby-acciones-fijas">
-                    <button id="btnCrearSala" class="boton-oro boton-lobby full-width" disabled>CREAR PARTIDA</button>
+                    <button id="btnCrearSala" class="boton-oro boton-lobby full-width" disabled>CREAR SALA MULTIJUGADOR</button>
+                    <button id="btnJugarSoloBots" class="boton-madera boton-lobby full-width margin-top-10" type="button"><svg class="icono" aria-hidden="true"><use href="#i-bot"/></svg> ¡JUGAR DIRECTO CONTRA BOTS!</button>
                 </div>
             </section>
 
@@ -333,6 +349,7 @@
                 <div class="lobby-sticky-bottom lobby-acciones-fijas">
                     <p id="rapidaEspera" class="rapida-espera hidden" role="status" aria-live="polite"></p>
                     <button id="btnEmpezar" class="boton-oro boton-lobby full-width hidden">¡EMPEZAR JUEGO!</button>
+                    <p id="ayudaBotsSala" class="practica-lema hidden" style="text-align:center;margin:4px 0 0;font-size:11.5px;">Si juegas solo, los asientos vacíos se completan con bots al instante.</p>
                     <div class="fila-salir-espera">
                         <button id="btnRapidaMasTiempo" class="boton-madera boton-lobby hidden"><svg class="icono" aria-hidden="true"><use href="#i-reloj"/></svg> +30 s</button>
                         <button id="btnSalirLobby" class="boton-lobby-ghost full-width"><svg class="icono" aria-hidden="true"><use href="#i-cerrar"/></svg> Cancelar / Salir</button>

@@ -538,7 +538,7 @@ function actualizarBotonesTurno(esMio) {
         document.getElementById('miCarta')?.animate([
             { transform: 'translateY(0)' }, { transform: 'translateY(-16px)', offset: .35 },
             { transform: 'translateY(0)', offset: .7 }, { transform: 'translateY(-5px)', offset: .85 }, { transform: 'translateY(0)' },
-        ], { duration: 650, easing: 'ease-out', composite: 'add' });
+        ], { duration: 650, easing: 'ease-out' });
     }
     document.body.classList.toggle('puedo-jugar', !!esMio);
     setTimeout(pintarBarraCorte, 0);
@@ -832,7 +832,7 @@ window.addEventListener('DOMContentLoaded', function vigilarAltoDelPie() {
     const pie = document.getElementById('panelAccionesPartida');
     if (!pie || typeof ResizeObserver === 'undefined') return;
     new ResizeObserver(() => {
-        const alto = pie.classList.contains('hidden') ? 0 : Math.ceil(pie.getBoundingClientRect().height);
+        const alto = pie.classList.contains('hidden') ? 0 : Math.min(120, Math.ceil(pie.getBoundingClientRect().height));
         document.documentElement.style.setProperty('--alto-pie', alto + 'px');
         if (_ultimaGuia && !document.getElementById('flechaGuia')?.classList.contains('hidden')) {
             requestAnimationFrame(() => actualizarGuiaTurno(..._ultimaGuia, true));
@@ -1035,18 +1035,18 @@ function actualizarGuiaTurno(esMio, redibujar = false) {
     if (destino) dibujarFlechaGuia(document.getElementById('miCarta'), destino);
 }
 
-// La carta hace un amago hacia la derecha para invitar a arrastrarla.
+// La carta hace un amago suave hacia la derecha para invitar a arrastrarla.
 function amagarCarta() {
     if (menosMovimiento()) return;
     const carta = document.getElementById('miCarta');
     if (!carta || carta.classList.contains('arrastrando')) return;
     carta.animate([
-        { transform: 'translateX(0) rotate(0deg)' },
-        { transform: 'translateX(22px) rotate(5deg)', offset: 0.3 },
-        { transform: 'translateX(0) rotate(0deg)', offset: 0.55 },
-        { transform: 'translateX(14px) rotate(3deg)', offset: 0.75 },
-        { transform: 'translateX(0) rotate(0deg)' },
-    ], { duration: 1100, delay: 500, easing: 'ease-in-out', composite: 'add' });
+        { transform: 'none' },
+        { transform: 'translateX(16px) rotate(3deg)', offset: 0.3 },
+        { transform: 'none', offset: 0.55 },
+        { transform: 'translateX(8px) rotate(1.5deg)', offset: 0.75 },
+        { transform: 'none' },
+    ], { duration: 900, delay: 250, easing: 'ease-in-out' });
 }
 
 // Recordatorio del objetivo al empezar cada ronda: ahora vive en la línea bajo
@@ -3107,7 +3107,7 @@ setInterval(() => { if (esEscritorio() && !_sondeoSalas) ajustarEscritorio(); },
 // Quien empieza ve solo el Clásico: Fiesta y el torneo (nivel 2), poderes (3),
 // parejas (4) y La Corte (5) se abren al subir. Lo bloqueado se ve con
 // candado y "Nivel N" en el selector; sus prácticas y el aviso del torneo se ocultan.
-var _desbloqueado = { fiesta: true, torneo: true, poderes: true, parejas: true, corte: true };
+var _desbloqueado = { fiesta: true, torneo: true, poderes: true, parejas: true, corte: true, jefe: true };
 function aplicarDesbloqueos(nivel, lista) {
     if (!Array.isArray(lista)) return;
     const abierto = {}; const nivelDe = {};
@@ -3884,6 +3884,33 @@ if (btnPractica) {
 }
 document.getElementById('coachSalir')?.addEventListener('click', terminarPractica);
 
+function iniciarContraBots(modoElegido) {
+    if (!socket?.connected) return;
+    const modo = modoElegido || document.getElementById('selectModoJuego')?.value || 'CLASICO';
+    const vidas = parseInt(document.getElementById('selectVidas')?.value || '3', 10);
+    const modoRey = document.getElementById('selectModo')?.value || 'SORPRESA';
+    const numJugadores = modo === 'JEFE' ? 5 : 4;
+    window._partidaSoloBots = true;
+    socket.emit('crearSala', {
+        configuracion: {
+            modoRey,
+            vidas,
+            maxJugadores: numJugadores,
+            poderes: modo === 'GUERRA_ARCANA' ? false : (document.getElementById('selectPoderes')?.value === 'SI'),
+            publica: false,
+            equipos: 0,
+            modoJuego: modo,
+            pozoBlis: 0,
+            password: null,
+        }
+    });
+}
+
+document.getElementById('btnProbarArcana')?.addEventListener('click', () => { if (socket?.connected) iniciarContraBots('GUERRA_ARCANA'); });
+document.getElementById('btnProbarConspiracion')?.addEventListener('click', () => { if (socket?.connected) iniciarContraBots('CONSPIRACION'); });
+document.getElementById('btnProbarJefe')?.addEventListener('click', () => { if (socket?.connected) iniciarContraBots('JEFE'); });
+document.getElementById('btnJugarSoloBots')?.addEventListener('click', () => { if (socket?.connected) iniciarContraBots(); });
+
 const btnGuias = document.getElementById('btnToggleGuias');
 if (btnGuias) {
     pintarBotonGuias();
@@ -4103,17 +4130,21 @@ function animarVueloCartaTween(el, gen, onComplete) {
     if (typeof TWEEN === 'undefined') {
         void el.offsetWidth; // forzar reflow para reiniciar el keyframe CSS
         el.classList.add('volar-desde-centro-bottom');
-        setTimeout(() => { if (gen === _renderGen) onComplete(); }, 600);
+        setTimeout(() => {
+            el.style.transform = '';
+            el.style.opacity = '';
+            onComplete();
+        }, 600);
         return;
     }
-    if (_tweenCarta) { _tweenCarta.stop(); _tweenCarta = null; }
-    // No mezclar con el keyframe CSS: manejamos transform por estilo inline.
+    if (_tweenCarta) {
+        _tweenCarta.stop();
+        _tweenCarta = null;
+        el.style.transform = '';
+        el.style.opacity = '';
+    }
     el.classList.remove('volar-desde-centro-bottom');
 
-    // Vuelo limpio: deslizar desde arriba + escalar con rebote, SIN rotación en Z.
-    // El spin competía con el flip (rotateY de .flipper al revelar) y se percibía
-    // como un "doble reparto". Esto replica el feel del keyframe volarAbajo, pero
-    // movido por TWEEN (que habilita encadenar/escalonar el reparto a futuro).
     const estado = { y: -250, scale: 0.2, opacity: 0 };
     const aplicar = () => {
         el.style.opacity = estado.opacity;
@@ -4124,15 +4155,17 @@ function animarVueloCartaTween(el, gen, onComplete) {
     Sonidos.carta();
     _tweenCarta = new TWEEN.Tween(estado)
         .to({ y: 0, scale: 1, opacity: 1 }, 600)
-        .easing(TWEEN.Easing.Back.Out) // rebote suave al aterrizar, como el cubic-bezier original
-        .onUpdate(() => { if (gen === _renderGen) aplicar(); })
+        .easing(TWEEN.Easing.Cubic.Out)
+        .onUpdate(() => { aplicar(); })
         .onComplete(() => {
             _tweenCarta = null;
-            if (gen !== _renderGen) return;
-            // Limpiar transform inline: el flip vive en .flipper (hijo), no acá.
             el.style.transform = '';
             el.style.opacity = '';
             onComplete();
+        })
+        .onStop(() => {
+            el.style.transform = '';
+            el.style.opacity = '';
         })
         .start();
 }
@@ -4604,6 +4637,7 @@ function conectarSocket() {
 
     socket.on('connect', () => {
         document.getElementById('btnCrearSala').disabled = false;
+        document.getElementById('btnJugarSoloBots')?.removeAttribute('disabled');
         // Al reconectar (celular desbloqueado, red caída, reinicio del servidor)
         // volver a la sala si había una. Va en 'connect' porque en Socket.io v4
         // el evento 'reconnect' ya no se emite en el socket, solo en socket.io.
@@ -4757,7 +4791,10 @@ function conectarSocket() {
 
     socket.on('salaCreada', (id) => {
         miSalaActual = id; soyElHost = true;
-        if (_practica) { socket.emit('iniciarPartida', id); }
+        if (_practica || window._partidaSoloBots) {
+            window._partidaSoloBots = false;
+            socket.emit('iniciarPartida', id);
+        }
         document.getElementById('mostrarCodigo').classList.remove('hidden');
         document.getElementById('codigoDisplay').innerText = id;
         document.getElementById('btnEmpezar').classList.remove('hidden');
@@ -4869,8 +4906,17 @@ function conectarSocket() {
         // Después de saber si soy anfitrión: el chip Privada/Pública solo se lo deja tocar a él.
         if (datos && datos.config) pintarComoSeraPartida(datos.config, datos.maxJugadores);
         const btnEmpezar = document.getElementById('btnEmpezar');
+        const ayudaBots = document.getElementById('ayudaBotsSala');
         if (btnEmpezar) {
             btnEmpezar.classList.toggle('hidden', !soyElHost);
+            const soloHumanos = jugadores.filter(j => !j.esBot).length;
+            if (soloHumanos <= 1) {
+                btnEmpezar.innerHTML = `<svg class="icono" aria-hidden="true"><use href="#i-bot"/></svg> ¡JUGAR CONTRA BOTS!`;
+                if (ayudaBots) ayudaBots.classList.remove('hidden');
+            } else {
+                btnEmpezar.innerHTML = `<svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> ¡EMPEZAR JUEGO!`;
+                if (ayudaBots) ayudaBots.classList.add('hidden');
+            }
         }
 
         const colores = ['#c0392b','#2980b9','#27ae60','#8e44ad','#e67e22','#16a085','#d35400','#2c3e50'];
@@ -5143,19 +5189,23 @@ function conectarSocket() {
         document.getElementById('btnSiguienteRonda').style.display = "none";
 
         setTimeout(() => {
-            // Si otro evento (cambioDeTurno, rondaTerminada, etc.) ya bumpeó la
-            // generación, abortar SIN consumir _cartaPendiente — el nuevo evento
-            // la procesará.
-            if (gen !== _renderGen) return;
-            const carta = _cartaPendiente;
+            let carta = _cartaPendiente;
             _cartaPendiente = null;
+            if (carta === null || carta === undefined) {
+                const yo = listaJugadoresGlobal?.find(j => j.id === socket.id);
+                if (yo && yo.cartaActual !== undefined && yo.cartaActual !== null) {
+                    carta = yo.cartaActual;
+                }
+            }
 
-            if (carta !== null && carta !== undefined) {
-                const contenedorCarta = document.getElementById('miCarta');
+            const contenedorCarta = document.getElementById('miCarta');
+            if (contenedorCarta) {
+                contenedorCarta.style.transform = '';
+                contenedorCarta.style.opacity = '';
+            }
+
+            if (carta !== null && carta !== undefined && contenedorCarta) {
                 contenedorCarta.classList.remove('flipped', 'volar-desde-centro-bottom', 'danio-recibido');
-                // POC TWEEN.js: el vuelo lo maneja animarVueloCartaTween; al terminar
-                // (onComplete) se revela la carta, se gira y arranca el reloj —el reloj
-                // inicia con la carta a la vista, igual que con el setTimeout previo.
                 animarVueloCartaTween(contenedorCarta, gen, () => {
                     pintarCartaPrincipal(carta);
                     contenedorCarta.classList.add('flipped');
@@ -5163,7 +5213,7 @@ function conectarSocket() {
                     gestionarRelojVisual(datosTurno.id, datosTurno.tiempo);
                 });
             } else {
-                // Sin carta que animar: iniciar reloj y revisar si es penultimo jugador
+                if (carta !== null && carta !== undefined) pintarCartaPrincipal(carta);
                 actualizarBotonesTurno(esMio);
                 gestionarRelojVisual(datosTurno.id, datosTurno.tiempo);
             }
@@ -5185,7 +5235,21 @@ function conectarSocket() {
             _cartaPendiente = null;
             pintarCartaPrincipal(carta);
             const c = document.getElementById('miCarta');
-            if (!c.classList.contains('flipped')) c.classList.add('flipped');
+            if (c) {
+                c.style.transform = '';
+                c.style.opacity = '';
+                if (!c.classList.contains('flipped')) c.classList.add('flipped');
+            }
+        } else {
+            const yo = listaJugadoresGlobal?.find(j => j.id === socket.id);
+            if (yo && yo.cartaActual !== undefined && yo.cartaActual !== null) {
+                pintarCartaPrincipal(yo.cartaActual);
+                const c = document.getElementById('miCarta');
+                if (c) {
+                    c.style.transform = '';
+                    c.style.opacity = '';
+                }
+            }
         }
 
         const yoEstoyMuerto = listaJugadoresGlobal.find(j => j.id === socket.id && j.vidas <= 0);

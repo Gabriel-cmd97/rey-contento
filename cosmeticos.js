@@ -66,12 +66,12 @@ const CATALOGO = [
     // (gratis); { letios } = Letios (se comprarán con dinero real; solo legendarios
     // y colecciones). Blis y Letios no se cambian entre sí. `coleccion`
     // agrupa artículos que se venden juntos con descuento (COLECCIONES).
-    { id: 'sombra',       tipo: 'avatar', titulo: 'Caballero negro',   rareza: 'epico',      img: 'sombra',       precio: 350, coleccion: 'sombra', animado: true },
+    { id: 'sombra',       tipo: 'avatar', titulo: 'Caballero oscuro',  rareza: 'epico',      img: 'sombra',       precio: 350, coleccion: 'sombra', animado: true },
     { id: 'calavera',     tipo: 'avatar', titulo: 'Rey esqueleto',     rareza: 'epico',      img: 'calavera',     precio: 400, animado: true },
     { id: 'senor_hierro', tipo: 'avatar', titulo: 'Guardián de Hierro', rareza: 'epico',      img: 'senor_hierro', precio: 320, animado: false },
     { id: 'archimago',    tipo: 'avatar', titulo: 'Archimago Antiguo', rareza: 'epico',      img: 'archimago',    precio: 380, animado: true },
     { id: 'sacerdotisa',  tipo: 'avatar', titulo: 'Sacerdotisa Roja',  rareza: 'epico',      img: 'sacerdotisa',  precio: 360, animado: true },
-    { id: 'caminante',    tipo: 'avatar', titulo: 'Rey del Invierno',  rareza: 'legendario', img: 'caminante',    precio: { letios: 26 }, coleccion: 'invernal', animado: true },
+    { id: 'caminante',    tipo: 'avatar', titulo: 'Rey de la Noche',   rareza: 'legendario', img: 'caminante',    precio: { letios: 26 }, coleccion: 'invernal', animado: true },
     { id: 'nigromante',   tipo: 'avatar', titulo: 'Soberano de Huesos', rareza: 'legendario', img: 'nigromante',   precio: { letios: 30 }, coleccion: 'ultratumba', animado: true },
     { id: 'hechicera',    tipo: 'avatar', titulo: 'Hechicera',         rareza: 'legendario', img: 'hechicera',    precio: { letios: 28 }, coleccion: 'hechicera', animado: true },
     { id: 'fenix',        tipo: 'avatar', titulo: 'Fénix',             rareza: 'legendario', img: 'fenix',        precio: { letios: 32 }, coleccion: 'fenix', animado: true },
