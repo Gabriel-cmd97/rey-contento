@@ -1,4 +1,75 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 90" preserveAspectRatio="none"><defs><linearGradient id="g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#78281f"/><stop offset=".6" stop-color="#e74c3c"/><stop offset="1" stop-color="#f39c12"/></linearGradient></defs>
-<rect width="60" height="90" rx="5" fill="url(#g)"/><rect x="4" y="4" width="52" height="82" rx="3" fill="none" stroke="#f4d03f" stroke-width="1.5"/>
-<path d="M30 58C21 54 11 44 9 30c6 6 11 7 15 7-4-4-5-10-4-16 4 8 7 12 10 14 3-2 6-6 10-14 1 6 0 12-4 16 4 0 9-1 15-7-2 14-12 24-21 28z" fill="#f4d03f" opacity=".95"/>
-<path d="M30 56l-5 16 5-5 5 5z" fill="#fdebd0"/><circle cx="30" cy="40" r="3" fill="#78281f"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180">
+  <defs>
+    <!-- Gradiente de fondo rojo oscuro a naranja brillante (Amanecer) -->
+    <linearGradient id="bgFenix" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#4a0e0e"/>
+      <stop offset="30%" stop-color="#78281f"/>
+      <stop offset="70%" stop-color="#e74c3c"/>
+      <stop offset="100%" stop-color="#f39c12"/>
+    </linearGradient>
+
+    <!-- Oro metálico pulido para el emblema -->
+    <linearGradient id="oroFenix" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff176"/>
+      <stop offset="40%" stop-color="#f4d03f"/>
+      <stop offset="80%" stop-color="#d4ac0d"/>
+      <stop offset="100%" stop-color="#9a7d0a"/>
+    </linearGradient>
+
+    <linearGradient id="oroClaro" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#f5b041"/>
+      <stop offset="100%" stop-color="#fdebd0"/>
+    </linearGradient>
+
+    <!-- Sombra base del emblema -->
+    <filter id="sombraEmblema">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#4a0e0e" flood-opacity="0.8"/>
+    </filter>
+  </defs>
+
+  <!-- Fondo premium -->
+  <rect width="120" height="180" rx="8" fill="url(#bgFenix)"/>
+  
+  <!-- Marcos dorados gemelos (estilo casino) -->
+  <rect x="6" y="6" width="108" height="168" rx="4" fill="none" stroke="url(#oroFenix)" stroke-width="2"/>
+  <rect x="10" y="10" width="100" height="160" rx="2" fill="none" stroke="url(#oroFenix)" stroke-width="0.8" stroke-dasharray="2,3" opacity="0.8"/>
+
+  <!-- Trama central de rayos de sol (Amanecer del fénix) -->
+  <g transform="translate(60, 90)" stroke="url(#oroFenix)" stroke-width="0.5" opacity="0.25">
+    <line x1="0" y1="-80" x2="0" y2="80"/>
+    <line x1="-50" y1="0" x2="50" y2="0"/>
+    <line x1="-40" y1="-60" x2="40" y2="60"/>
+    <line x1="-40" y1="60" x2="40" y2="-60"/>
+    <line x1="-25" y1="-70" x2="25" y2="70"/>
+    <line x1="-25" y1="70" x2="25" y2="-70"/>
+    <line x1="-45" y1="-30" x2="45" y2="30"/>
+    <line x1="-45" y1="30" x2="45" y2="-30"/>
+  </g>
+
+  <!-- ==================== EMBLEMA HERÁLDICO DEL FÉNIX ==================== -->
+  <g transform="scale(2)">
+    <!-- Halo resplandeciente del núcleo -->
+    <circle cx="30" cy="40" r="14" fill="#f39c12" opacity="0.25">
+      <animate attributeName="r" values="13;16;13" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="30" cy="40" r="10" fill="none" stroke="url(#oroFenix)" stroke-width="0.3" stroke-dasharray="1,1"/>
+
+    <!-- Diseño clásico del fénix con estilo pulido -->
+    <g filter="url(#sombraEmblema)">
+      <!-- Forma principal del ala / fénix -->
+      <path d="M30 58 C21 54 11 44 9 30 C15 36 20 37 24 37 C20 33 19 27 20 21 C24 29 27 33 30 35 C33 33 36 29 40 21 C41 27 40 33 36 37 C40 37 45 36 51 30 C49 44 39 54 30 58 Z" fill="url(#oroFenix)"/>
+      
+      <!-- Cola de diamante heráldica -->
+      <path d="M30 56 L25 72 L30 67 L35 72 Z" fill="url(#oroClaro)"/>
+      
+      <!-- Joya / Ojo central -->
+      <circle cx="30" cy="40" r="3.5" fill="#4a0e0e" stroke="url(#oroFenix)" stroke-width="0.5"/>
+      <circle cx="30" cy="40" r="2" fill="#e74c3c"/>
+      <circle cx="30" cy="40" r="1" fill="#fdebd0"/>
+      
+      <!-- Detalles interiores de las alas (nuevas plumas) -->
+      <path d="M14 31 C17 34 20 35 22 35 C19 33 18 29 19 26 C22 31 24 33 30 35 C30 35 23 37 14 31 Z" fill="url(#oroClaro)" opacity="0.8"/>
+      <path d="M46 31 C43 34 40 35 38 35 C41 33 42 29 41 26 C38 31 36 33 30 35 C30 35 37 37 46 31 Z" fill="url(#oroClaro)" opacity="0.8"/>
+    </g>
+  </g>
+</svg>

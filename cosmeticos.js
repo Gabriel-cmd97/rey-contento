@@ -82,16 +82,20 @@ const CATALOGO = [
     { id: 'fuego_valyrio', tipo: 'marco',  titulo: 'Fuego Valyrio',     rareza: 'legendario', precio: { letios: 22 }, animado: true },
     { id: 'celestial',     tipo: 'marco',  titulo: 'Celestial',         rareza: 'legendario', precio: { letios: 24 }, coleccion: 'hechicera', animado: true },
     { id: 'hielo_eterno',  tipo: 'marco',  titulo: 'Invierno Eterno',   rareza: 'legendario', precio: { letios: 20 }, coleccion: 'invernal', animado: true },
-    { id: 'nigromancia',   tipo: 'marco',  titulo: 'Aura de Nazarick',  rareza: 'legendario', precio: { letios: 24 }, coleccion: 'ultratumba', animado: true },
+    { id: 'nigromancia',   tipo: 'marco',  titulo: 'Aura de Nazarick',  rareza: 'legendario', precio: { letios: 24 }, animado: true },
     { id: 'tablero',   tipo: 'dorso',  titulo: 'Tablero',         rareza: 'raro',       precio: 120 },
     { id: 'runas',     tipo: 'dorso',  titulo: 'Runas',           rareza: 'epico',      precio: 300, coleccion: 'sombra', img: 'runas' },
     { id: 'realeza',   tipo: 'dorso',  titulo: 'Realeza',         rareza: 'epico',      precio: 350, coleccion: 'hechicera', img: 'realeza' },
     { id: 'lobo',      tipo: 'dorso',  titulo: 'Lobo Huargo',     rareza: 'epico',      precio: 350, coleccion: 'invernal', img: 'lobo' },
+    { id: 'huesos',    tipo: 'dorso',  titulo: 'Naipe de Huesos', rareza: 'epico',      precio: 320, coleccion: 'ultratumba', img: 'huesos' },
     { id: 'dragon',    tipo: 'dorso',  titulo: 'Fuego de Dragón', rareza: 'legendario', precio: { letios: 20 }, img: 'dragon' },
     { id: 'fenix',     tipo: 'dorso',  titulo: 'Fénix',           rareza: 'legendario', precio: { letios: 20 }, coleccion: 'fenix', img: 'fenix' },
     { id: 'marmol',    tipo: 'tapete', titulo: 'Mármol',          rareza: 'raro',       precio: 150 },
     { id: 'aurora',    tipo: 'tapete', titulo: 'Aurora',          rareza: 'epico',      precio: 450, coleccion: 'hechicera', animado: true },
     { id: 'lava',      tipo: 'tapete', titulo: 'Volcán',          rareza: 'epico',      precio: 400, coleccion: 'fenix', animado: true },
+    { id: 'abismo',    tipo: 'tapete', titulo: 'Abismo',          rareza: 'epico',      precio: 350, coleccion: 'sombra', animado: true },
+    { id: 'hielo',     tipo: 'tapete', titulo: 'Páramo Helado',   rareza: 'epico',      precio: 400, coleccion: 'invernal', animado: true },
+    { id: 'cripta',    tipo: 'tapete', titulo: 'La Cripta',       rareza: 'epico',      precio: 400, coleccion: 'ultratumba', animado: true },
 ];
 
 const TIPOS = ['avatar', 'marco', 'dorso', 'tapete'];

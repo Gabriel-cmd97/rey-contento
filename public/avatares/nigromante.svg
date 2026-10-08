@@ -1,102 +1,117 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <radialGradient id="bgNigro" cx="50%" cy="40%" r="55%">
-      <stop offset="0%" stop-color="#2d113f"/>
-      <stop offset="60%" stop-color="#14061e"/>
-      <stop offset="100%" stop-color="#07020b"/>
+    <!-- Fondo abisal nigromántico (Verde vil/Muerte) -->
+    <radialGradient id="bgHuesos" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#0b2e21"/>
+      <stop offset="60%" stop-color="#041410"/>
+      <stop offset="100%" stop-color="#010604"/>
     </radialGradient>
-    <linearGradient id="oroNigro" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#ffe875"/>
-      <stop offset="45%" stop-color="#f4d03f"/>
-      <stop offset="85%" stop-color="#9a7d0a"/>
-      <stop offset="100%" stop-color="#564205"/>
+    
+    <linearGradient id="huesoAntiguo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fdfbf7"/>
+      <stop offset="40%" stop-color="#e3dfd3"/>
+      <stop offset="70%" stop-color="#b8b2a3"/>
+      <stop offset="100%" stop-color="#7a7566"/>
     </linearGradient>
-    <linearGradient id="hueso" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="70%" stop-color="#e2e6ea"/>
-      <stop offset="100%" stop-color="#9aa0a6"/>
+
+    <linearGradient id="huesoOscuro" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#b8b2a3"/>
+      <stop offset="100%" stop-color="#4a473c"/>
     </linearGradient>
-    <radialGradient id="fuegoOjo" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ff4d4d"/>
-      <stop offset="45%" stop-color="#e74c3c"/>
-      <stop offset="80%" stop-color="#922b21"/>
-      <stop offset="100%" stop-color="#922b21" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="haloNigro" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#a569bd" stop-opacity="0.35"/>
-      <stop offset="100%" stop-color="#5b2c6f" stop-opacity="0"/>
+
+    <radialGradient id="ojoFantasma" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a7f3d0"/>
+      <stop offset="50%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#047857" stop-opacity="0"/>
     </radialGradient>
   </defs>
 
-  <!-- Fondo abisal -->
-  <circle cx="32" cy="32" r="32" fill="url(#bgNigro)"/>
+  <circle cx="32" cy="32" r="32" fill="url(#bgHuesos)"/>
 
-  <!-- Halo de nigromancia pulsante -->
-  <circle cx="32" cy="32" r="28" fill="url(#haloNigro)">
-    <animate attributeName="r" values="24;28;24" dur="3s" repeatCount="indefinite"/>
-    <animate attributeName="opacity" values="0.6;1;0.6" dur="3s" repeatCount="indefinite"/>
+  <!-- Aura necrótica animada -->
+  <circle cx="32" cy="32" r="28" fill="#10b981" opacity="0.15">
+    <animate attributeName="r" values="26;30;26" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.1;0.25;0.1" dur="3s" repeatCount="indefinite"/>
   </circle>
 
-  <!-- Círculo rúnico arcano sutil -->
-  <circle cx="32" cy="32" r="27" fill="none" stroke="#7d3c98" stroke-width="0.75" stroke-dasharray="2,3" opacity="0.65"/>
-  <circle cx="32" cy="32" r="29.5" fill="none" stroke="#a569bd" stroke-width="0.5" stroke-dasharray="5,2" opacity="0.45"/>
+  <!-- Manto andrajoso oscuro -->
+  <path d="M8 64 C10 44, 20 38, 32 38 C44 38, 54 44, 56 64 Z" fill="#0d1117"/>
+  <path d="M14 64 C16 48, 22 42, 32 42 C42 42, 48 48, 50 64 Z" fill="#161b22"/>
 
-  <!-- Manto real imperial de terciopelo y hombreras de obsidiana -->
-  <path d="M10 64 C12 50, 18 44, 25 43 L32 50 L39 43 C46 44, 52 50, 54 64 Z" fill="#1b0826"/>
-  <path d="M10 64 C12 50, 18 44, 25 43 L28 47 L23 64 Z" fill="#2d0f3e"/>
-  <path d="M54 64 C52 50, 46 44, 39 43 L36 47 L41 64 Z" fill="#2d0f3e"/>
-  <!-- Broche y cuello con gemas de rubí -->
-  <path d="M25 43 L32 49 L39 43 L32 39 Z" fill="url(#oroNigro)"/>
-  <circle cx="32" cy="44" r="2" fill="#c0392b" stroke="#f4d03f" stroke-width="0.5"/>
+  <!-- Armadura de Huesos Entrelazados (Caja Torácica) -->
+  <!-- Costilla 1 -->
+  <path d="M32 48 C24 46, 18 52, 14 56 C20 54, 26 50, 32 50 C38 50, 44 54, 50 56 C46 52, 40 46, 32 48 Z" fill="url(#huesoAntiguo)"/>
+  <!-- Costilla 2 -->
+  <path d="M32 54 C24 52, 16 58, 12 62 C18 60, 26 56, 32 56 C38 56, 46 60, 52 62 C48 58, 40 52, 32 54 Z" fill="url(#huesoAntiguo)"/>
+  <!-- Esternón -->
+  <polygon points="30,46 34,46 33,64 31,64" fill="url(#huesoOscuro)"/>
 
-  <!-- Hombreras de hueso y oro con cuernos -->
-  <path d="M10 49 C7 44, 9 39, 13 41 C11 44, 14 47, 18 48 Z" fill="url(#oroNigro)"/>
-  <path d="M54 49 C57 44, 55 39, 51 41 C53 44, 50 47, 46 48 Z" fill="url(#oroNigro)"/>
+  <!-- Hombreras de cráneos pequeños -->
+  <circle cx="16" cy="46" r="4" fill="url(#huesoAntiguo)"/>
+  <polygon points="14,48 18,48 17,52 15,52" fill="url(#huesoAntiguo)"/>
+  <circle cx="15" cy="45" r="0.8" fill="#010409"/>
+  <circle cx="17" cy="45" r="0.8" fill="#010409"/>
 
-  <!-- Cráneo majestuoso -->
-  <path d="M19 28 C19 18, 24 15, 32 15 C40 15, 45 18, 45 28 C45 34, 43 38, 39 40 C39 43, 37 45, 37 46 L27 46 C27 45, 25 43, 25 40 C21 38, 19 34, 19 28 Z" fill="url(#hueso)"/>
-  <!-- Pómulos y sombras craneales -->
-  <path d="M21 33 C23 37, 26 39, 27 44 L25 44 C23 41, 20 37, 20 33 Z" fill="#7f8c8d" opacity="0.6"/>
-  <path d="M43 33 C41 37, 38 39, 37 44 L39 44 C41 41, 44 37, 44 33 Z" fill="#7f8c8d" opacity="0.6"/>
-  <!-- Cavidad nasal gótica -->
-  <polygon points="32,36 30,40 34,40" fill="#0b0610"/>
+  <circle cx="48" cy="46" r="4" fill="url(#huesoAntiguo)"/>
+  <polygon points="46,48 50,48 49,52 47,52" fill="url(#huesoAntiguo)"/>
+  <circle cx="47" cy="45" r="0.8" fill="#010409"/>
+  <circle cx="49" cy="45" r="0.8" fill="#010409"/>
 
-  <!-- Dientes siniestros -->
-  <rect x="28" y="44" width="1.5" height="2" fill="#1b0826"/>
-  <rect x="30.5" y="44" width="1.5" height="2.5" fill="#1b0826"/>
-  <rect x="33" y="44" width="1.5" height="2" fill="#1b0826"/>
-  <rect x="35.5" y="44" width="1.5" height="2" fill="#1b0826"/>
+  <!-- Capucha Profunda -->
+  <path d="M12 32 C12 10, 22 4, 32 4 C42 4, 52 10, 52 32 C52 44, 46 48, 32 48 C18 48, 12 44, 12 32 Z" fill="#0d1117"/>
+  <path d="M18 32 C18 14, 24 8, 32 8 C40 8, 46 14, 46 32 C46 40, 42 44, 32 44 C22 44, 18 40, 18 32 Z" fill="#010409"/>
 
-  <!-- Cuencas oculares profundas y amenazantes -->
-  <path d="M23 27 C23 23, 29 23, 29 28 C29 32, 24 33, 23 27 Z" fill="#07020a"/>
-  <path d="M41 27 C41 23, 35 23, 35 28 C35 32, 40 33, 41 27 Z" fill="#07020a"/>
+  <!-- Casco/Máscara de bestia huesuda (Rattleshirt style) -->
+  <!-- Cráneo base -->
+  <path d="M22 28 C22 18, 26 14, 32 14 C38 14, 42 18, 42 28 C42 34, 38 38, 36 38 C34 38, 34 40, 34 42 L30 42 C30 40, 30 38, 28 38 C26 38, 22 34, 22 28 Z" fill="url(#huesoAntiguo)"/>
+  
+  <!-- Cuernos del casco imponentes -->
+  <path d="M23 18 C16 8, 6 12, 4 20 C6 16, 14 14, 21 22 Z" fill="url(#huesoAntiguo)" stroke="#3f3f46" stroke-width="0.5"/>
+  <path d="M41 18 C48 8, 58 12, 60 20 C58 16, 50 14, 43 22 Z" fill="url(#huesoAntiguo)" stroke="#3f3f46" stroke-width="0.5"/>
+  <!-- Cuernos inferiores -->
+  <path d="M22 26 C14 26, 8 32, 6 38 C10 32, 16 30, 22 32 Z" fill="url(#huesoAntiguo)" stroke="#3f3f46" stroke-width="0.5"/>
+  <path d="M42 26 C50 26, 56 32, 58 38 C54 32, 48 30, 42 32 Z" fill="url(#huesoAntiguo)" stroke="#3f3f46" stroke-width="0.5"/>
 
-  <!-- Llamas de alma carmesí en los ojos (Overlord / Nazarick) animadas -->
+  <!-- Sombras pómulos -->
+  <path d="M24 30 C26 34, 28 36, 28 38 L24 36 Z" fill="#7a7566" opacity="0.8"/>
+  <path d="M40 30 C38 34, 36 36, 36 38 L40 36 Z" fill="#7a7566" opacity="0.8"/>
+
+  <!-- Ojos profundos y fuego fiero -->
+  <polygon points="24,26 30,24 28,30" fill="#010409"/>
+  <polygon points="40,26 34,24 36,30" fill="#010409"/>
+  
+  <!-- Fuego en los ojos -->
   <g>
-    <circle cx="26" cy="28" r="2.5" fill="url(#fuegoOjo)">
-      <animate attributeName="r" values="2;3.2;2" dur="1.5s" repeatCount="indefinite"/>
+    <circle cx="27" cy="27" r="2.5" fill="url(#ojoFantasma)">
+      <animate attributeName="r" values="2;3.5;2" dur="1.5s" repeatCount="indefinite"/>
     </circle>
-    <circle cx="26" cy="28" r="1.1" fill="#fff5f5">
-      <animate attributeName="opacity" values="0.7;1;0.7" dur="1.5s" repeatCount="indefinite"/>
+    <circle cx="27" cy="27" r="0.8" fill="#ffffff"/>
+
+    <circle cx="37" cy="27" r="2.5" fill="url(#ojoFantasma)">
+      <animate attributeName="r" values="3.5;2;3.5" dur="1.5s" repeatCount="indefinite"/>
     </circle>
-    <circle cx="38" cy="28" r="2.5" fill="url(#fuegoOjo)">
-      <animate attributeName="r" values="3.2;2;3.2" dur="1.5s" repeatCount="indefinite"/>
-    </circle>
-    <circle cx="38" cy="28" r="1.1" fill="#fff5f5">
-      <animate attributeName="opacity" values="1;0.7;1" dur="1.5s" repeatCount="indefinite"/>
-    </circle>
+    <circle cx="37" cy="27" r="0.8" fill="#ffffff"/>
   </g>
 
-  <!-- Gran Corona Imperial de Overlord con rubíes y picos afilados -->
-  <path d="M17 19 L21 11 L25 17 L32 7 L39 17 L43 11 L47 19 L46 22 L18 22 Z" fill="url(#oroNigro)" stroke="#7d6608" stroke-width="0.5"/>
-  <path d="M18 21 L46 21 L45 23 L19 23 Z" fill="#564205"/>
-  <!-- Rubí central imperial -->
-  <polygon points="32,11 34.5,14 32,17 29.5,14" fill="#e74c3c" stroke="#f4d03f" stroke-width="0.5">
-    <animate attributeName="fill" values="#e74c3c;#ff7675;#c0392b;#e74c3c" dur="2s" repeatCount="indefinite"/>
-  </polygon>
-  <!-- Rubíes laterales -->
-  <circle cx="21" cy="14" r="1.3" fill="#c0392b"/>
-  <circle cx="43" cy="14" r="1.3" fill="#c0392b"/>
-  <circle cx="25" cy="19" r="1" fill="#c0392b"/>
-  <circle cx="39" cy="19" r="1" fill="#c0392b"/>
+  <!-- Nariz bestial hueca -->
+  <polygon points="32,30 30,35 34,35" fill="#010409"/>
+
+  <!-- Mandíbula y dientes afilados (fauces de bestia) -->
+  <!-- Sombra interior boca -->
+  <path d="M26 38 C30 36, 34 36, 38 38 L36 44 L28 44 Z" fill="#010409"/>
+  <!-- Base mandíbula inferior -->
+  <path d="M26 42 C30 46, 34 46, 38 42 L36 46 L28 46 Z" fill="url(#huesoAntiguo)"/>
+  
+  <!-- Colmillos largos superiores -->
+  <polygon points="27,38 26,44 28,39" fill="#fdfbf7"/>
+  <polygon points="37,38 38,44 36,39" fill="#fdfbf7"/>
+  <!-- Dientes intermedios -->
+  <polygon points="29,38 28.5,41 30,38.5" fill="#fdfbf7"/>
+  <polygon points="31,38 30.5,40 31.5,38.5" fill="#fdfbf7"/>
+  <polygon points="33,38 32.5,40 33.5,38.5" fill="#fdfbf7"/>
+  <polygon points="35,38 34.5,41 35.5,38.5" fill="#fdfbf7"/>
+
+  <!-- Colmillos inferiores -->
+  <polygon points="28,45 28.5,40 29.5,44" fill="#e3dfd3"/>
+  <polygon points="36,45 35.5,40 34.5,44" fill="#e3dfd3"/>
 </svg>

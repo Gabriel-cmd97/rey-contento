@@ -5061,8 +5061,9 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
 }
 
 /* Dorsos ilustrados y nuevos dorsos de fantasía oscura */
-:is(.dorso-fenix, .dorso-realeza, .dorso-runas, .dorso-dragon, .dorso-lobo) { background-size: 100% 100% !important; background-repeat: no-repeat !important; }
+:is(.dorso-fenix, .dorso-realeza, .dorso-runas, .dorso-dragon, .dorso-lobo, .dorso-huesos) { background-size: 100% 100% !important; background-repeat: no-repeat !important; }
 .dorso-fenix { background: url('/dorsos/fenix.svg') center / 100% 100% no-repeat !important; border-color: #f4d03f !important; }
+.dorso-huesos { background: url('/dorsos/huesos.svg') center / 100% 100% no-repeat !important; border-color: #e3dfd3 !important; box-shadow: 0 0 12px rgba(16,185,129,.6); }
 .dorso-realeza { background: url('/dorsos/realeza.svg') center / 100% 100% no-repeat !important; border-color: #d4ac0d !important; }
 .dorso-runas { background: url('/dorsos/runas.svg') center / 100% 100% no-repeat !important; border-color: #922b21 !important; box-shadow: 0 0 8px rgba(231,76,60,.6); }
 .dorso-dragon { background: url('/dorsos/dragon.svg') center / 100% 100% no-repeat !important; border-color: #f39c12 !important; box-shadow: 0 0 12px rgba(230,126,34,.7); }
@@ -5136,7 +5137,19 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
                 radial-gradient(ellipse at 50% 50%, #641e16, #1b0f0a 80%) !important; background-size: 200% 200%, 180% 180%, 100% 100% !important;
     animation: lava 7s ease-in-out infinite alternate; }
 @keyframes lava { to { background-position: 100% 0, 0 100%, 0 0; } }
-@media (prefers-reduced-motion: reduce) { .tapete-aurora, .tapete-lava { animation: none !important; } }
+.tapete-virtual.tapete-abismo, .muestra-tapete.tapete-abismo {
+    background: radial-gradient(circle at 50% 50%, #1e1e24 0%, #0a0a0c 50%, #000000 100%) !important; background-size: 200% 200% !important;
+    animation: respiracion-abismo 8s ease-in-out infinite alternate; }
+@keyframes respiracion-abismo { from { background-size: 100% 100%; } to { background-size: 150% 150%; } }
+.tapete-virtual.tapete-hielo, .muestra-tapete.tapete-hielo {
+    background: linear-gradient(135deg, #a4c8d9, #e0f2f1 20%, #7db9cd 50%, #a4c8d9 80%, #5d9ba6) !important; background-size: 300% 300% !important;
+    animation: viento-helado 15s linear infinite; }
+@keyframes viento-helado { 100% { background-position: 100% 100%; } }
+.tapete-virtual.tapete-cripta, .muestra-tapete.tapete-cripta {
+    background: radial-gradient(circle at 50% 50%, #064e3b 0%, #022c22 40%, #000000 100%) !important; background-size: 150% 150% !important;
+    animation: pulso-necrotico 6s ease-in-out infinite alternate; box-shadow: inset 0 0 80px rgba(16,185,129,0.15) !important; }
+@keyframes pulso-necrotico { from { background-position: 0% 0%; } to { background-position: 10% 10%; } }
+@media (prefers-reduced-motion: reduce) { .tapete-aurora, .tapete-lava, .tapete-abismo, .tapete-hielo, .tapete-cripta { animation: none !important; } }
 
 /* Tienda: portada de colección, pestañas y tarjetas más vistosas */
 .tienda-caja { max-width: 440px !important; padding-top: 18px !important; }

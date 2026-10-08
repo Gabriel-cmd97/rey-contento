@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180">
+  <defs>
+    <!-- Fondo abisal (cripta) -->
+    <radialGradient id="bgCripta" cx="50%" cy="50%" r="65%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="60%" stop-color="#09090b"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+
+    <!-- Gradiente Hueso Antiguo -->
+    <linearGradient id="hueso" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fdfbf7"/>
+      <stop offset="35%" stop-color="#e3dfd3"/>
+      <stop offset="75%" stop-color="#b8b2a3"/>
+      <stop offset="100%" stop-color="#7a7566"/>
+    </linearGradient>
+
+    <linearGradient id="huesoOscuro" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#b8b2a3"/>
+      <stop offset="100%" stop-color="#3f3f46"/>
+    </linearGradient>
+
+    <!-- Aura necrótica (verde vil) -->
+    <radialGradient id="fuegoAlma" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a7f3d0"/>
+      <stop offset="40%" stop-color="#10b981"/>
+      <stop offset="80%" stop-color="#047857"/>
+      <stop offset="100%" stop-color="#064e3b" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Fondo de la cripta -->
+  <rect width="120" height="180" rx="8" fill="url(#bgCripta)"/>
+
+  <!-- Trama de telarañas / magia de muerte -->
+  <g stroke="#10b981" stroke-width="0.3" opacity="0.15">
+    <path d="M60 90 L10 10 M60 90 L110 10 M60 90 L10 170 M60 90 L110 170 M60 90 L60 10 M60 90 L60 170 M60 90 L10 90 M60 90 L110 90"/>
+    <circle cx="60" cy="90" r="20" fill="none" stroke-dasharray="2,4"/>
+    <circle cx="60" cy="90" r="40" fill="none" stroke-dasharray="2,6"/>
+    <circle cx="60" cy="90" r="60" fill="none" stroke-dasharray="2,8"/>
+  </g>
+
+  <!-- Marco de huesos / costillas -->
+  <!-- Bordes laterales (fémures estilizados) -->
+  <rect x="6" y="10" width="4" height="160" rx="2" fill="url(#hueso)"/>
+  <rect x="110" y="10" width="4" height="160" rx="2" fill="url(#hueso)"/>
+  <!-- Bordes superior/inferior -->
+  <rect x="10" y="6" width="100" height="4" rx="2" fill="url(#hueso)"/>
+  <rect x="10" y="170" width="100" height="4" rx="2" fill="url(#hueso)"/>
+
+  <!-- Nodos de las esquinas (articulaciones) -->
+  <circle cx="8" cy="8" r="4" fill="url(#huesoOscuro)"/>
+  <circle cx="112" cy="8" r="4" fill="url(#huesoOscuro)"/>
+  <circle cx="8" cy="172" r="4" fill="url(#huesoOscuro)"/>
+  <circle cx="112" cy="172" r="4" fill="url(#huesoOscuro)"/>
+
+  <!-- Aura central necrótica -->
+  <circle cx="60" cy="90" r="35" fill="url(#fuegoAlma)" opacity="0.4">
+    <animate attributeName="r" values="32;38;32" dur="2.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.3;0.6;0.3" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- ==================== INSIGNIA CENTRAL (CALAVERA Y ESPADAS) ==================== -->
+  <g transform="translate(60, 90)">
+    <!-- Espadas cruzadas (Hueso afilado) -->
+    <g stroke="#3f3f46" stroke-width="0.5">
+      <!-- Espada 1 (Diagonal izq-arriba a der-abajo) -->
+      <polygon points="-25,-25 -28,-22 25,25 28,22" fill="url(#hueso)"/>
+      <polygon points="-28,-22 -35,-35 -22,-28" fill="url(#huesoOscuro)"/> <!-- Punta -->
+      <polygon points="25,25 28,22 35,35 22,28" fill="url(#huesoOscuro)"/> <!-- Mango -->
+
+      <!-- Espada 2 (Diagonal der-arriba a izq-abajo) -->
+      <polygon points="25,-25 28,-22 -25,25 -28,22" fill="url(#hueso)"/>
+      <polygon points="28,-22 35,-35 22,-28" fill="url(#huesoOscuro)"/> <!-- Punta -->
+      <polygon points="-25,25 -28,22 -35,35 -22,28" fill="url(#huesoOscuro)"/> <!-- Mango -->
+    </g>
+
+    <!-- Calavera central majestuosa -->
+    <path d="M-15 -5 C-15 -18, -10 -22, 0 -22 C10 -22, 15 -18, 15 -5 C15 5, 12 10, 8 10 C6 10, 6 12, 6 15 L-6 15 C-6 12, -6 10, -8 10 C-12 10, -15 5, -15 -5 Z" fill="url(#hueso)" stroke="#27272a" stroke-width="0.8"/>
+    
+    <!-- Pómulos -->
+    <path d="M-12 0 C-10 6, -8 8, -6 10 L-10 8 Z" fill="#7a7566" opacity="0.8"/>
+    <path d="M12 0 C10 6, 8 8, 6 10 L10 8 Z" fill="#7a7566" opacity="0.8"/>
+
+    <!-- Cuencas oculares -->
+    <polygon points="-10,-3 -4,-5 -6,2" fill="#09090b"/>
+    <polygon points="10,-3 4,-5 6,2" fill="#09090b"/>
+    
+    <!-- Llamas en los ojos -->
+    <circle cx="-7" cy="-2" r="1.5" fill="url(#fuegoAlma)">
+      <animate attributeName="r" values="1;2;1" dur="1.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="-7" cy="-2" r="0.5" fill="#ffffff"/>
+
+    <circle cx="7" cy="-2" r="1.5" fill="url(#fuegoAlma)">
+      <animate attributeName="r" values="2;1;2" dur="1.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="7" cy="-2" r="0.5" fill="#ffffff"/>
+
+    <!-- Cavidad nasal -->
+    <polygon points="0,0 -2,6 2,6" fill="#09090b"/>
+
+    <!-- Dientes -->
+    <path d="M-5 10 C0 11, 0 11, 5 10 L3 15 L-3 15 Z" fill="#09090b"/>
+    <polygon points="-4,10 -3,15 -2,10" fill="url(#hueso)"/>
+    <polygon points="4,10 3,15 2,10" fill="url(#hueso)"/>
+    <polygon points="-1,10 -0.5,14 0,10" fill="url(#hueso)"/>
+    <polygon points="1,10 0.5,14 0,10" fill="url(#hueso)"/>
+  </g>
+</svg>
