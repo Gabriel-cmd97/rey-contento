@@ -200,7 +200,7 @@ select,
 /* =========================================
    ESTRUCTURA PRINCIPAL DEL JUEGO
    ========================================= */
-#pantallaJuego { display: flex; flex-direction: column; min-height: 100vh; }
+#pantallaJuego { display: flex; flex-direction: column; height: 100dvh; max-height: 100dvh; overflow: hidden; }
 
 .header-juego { display: none; }
 
@@ -414,16 +414,16 @@ select,
     list-style: none;
     padding: 0;
     margin: 0;
+    display: contents;
 }
 .lista-jugadores-nuevo li {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     background: rgba(255,255,255,0.06);
     border: 1px solid rgba(241,196,15,0.15);
     border-radius: 10px;
-    padding: 8px 12px;
-    margin-bottom: 5px;
+    padding: 6px 10px;
     font-size: 13px;
     animation: fadeSlideUp 0.3s ease forwards;
 }
@@ -450,14 +450,16 @@ select,
 }
 
 /* Slots vacíos */
+.slots-vacios {
+    display: contents;
+}
 .slots-vacios .slot-vacio {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     border: 1px dashed rgba(255,255,255,0.1);
     border-radius: 10px;
-    padding: 8px 12px;
-    margin-bottom: 5px;
+    padding: 6px 10px;
     opacity: 0.35;
 }
 .slots-vacios .slot-vacio .slot-icon {
@@ -563,7 +565,7 @@ select,
 .silla.top    { top: 10px;  left: 50%;  transform: translateX(-50%); }
 .silla.left   { left: 10px; top: 50%;   transform: translateY(-50%); }
 .silla.right  { right: 10px; top: 50%;  transform: translateY(-50%); }
-.silla.bottom { bottom: 35px; left: 50%; transform: translateX(-50%); z-index: 20; }
+.silla.bottom { bottom: 50px; left: 50%; transform: translateX(-50%); z-index: 20; }
 
 /* Mazo flotante — se posiciona junto al dealer via clases pos-* */
 #mazoFlotante {
@@ -611,7 +613,7 @@ select,
     position: absolute;
     /* Sobre la carta: sigue su altura adaptable (--carta-h) + offset del asiento
        (.silla.bottom) + margen, para no encimarse cuando la carta crece. */
-    bottom: calc(var(--carta-h, 125px) + 41px);
+    bottom: calc(var(--carta-h, 125px) + 56px);
     left: 50%;
     transform: translateX(-50%);
     background: linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(40,20,10,0.95) 100%);
@@ -1515,7 +1517,7 @@ select,
         width: min(760px, 96vw);
         max-width: 760px;
         height: min(86vh, 760px);
-        min-height: 480px;
+        min-height: 380px;
         margin: 0 auto;
         border-radius: 90px;
     }
@@ -1530,9 +1532,9 @@ select,
     /* Tamaño de carta/número/figura lo controla la var adaptable (--carta-*). */
     #nombrePersonaje { font-size: 11px !important; }
 
-    .silla.bottom { bottom: 24px; }
+    .silla.bottom { bottom: 44px; }
     .mi-perfil-esquina {
-        bottom: calc(var(--carta-h, 150px) + 32px); /* sobre la carta (silla.bottom 24px + margen) */
+        bottom: calc(var(--carta-h, 150px) + 52px); /* sobre la carta (silla.bottom 24px + margen) */
         left: 50%;
         transform: translateX(-50%);
         padding: 4px 12px;
@@ -1641,9 +1643,9 @@ select,
     /* carta/número/figura: tamaño por var adaptable (--carta-*). */
     #nombrePersonaje { font-size: 10px !important; margin-top: 4px; }
 
-    .silla.bottom { bottom: 22px; }
+    .silla.bottom { bottom: 38px; }
     .mi-perfil-esquina {
-        bottom: calc(var(--carta-h, 108px) + 28px); /* sobre la carta (silla.bottom 22px + margen) */
+        bottom: calc(var(--carta-h, 108px) + 44px); /* sobre la carta (silla.bottom 22px + margen) */
         left: 50%;
         transform: translateX(-50%);
         padding: 3px 8px;
@@ -3542,11 +3544,11 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
 @media (max-width: 767px) {
     .tapete-virtual {
         height: calc(100dvh - 30px - var(--alto-pie, 80px)) !important;
-        min-height: 440px !important;
+        min-height: 340px !important;
     }
 }
 @media (min-width: 768px) {
-    .tapete-virtual { height: min(780px, calc(100dvh - 40px - var(--alto-pie, 80px))) !important; min-height: 480px !important; }
+    .tapete-virtual { height: min(780px, calc(100dvh - 40px - var(--alto-pie, 80px))) !important; min-height: 380px !important; }
 }
 
 /* Compañero / Rival en cada asiento (parejas) */
@@ -3652,7 +3654,7 @@ body.en-mesa .mesa-virtual {
         width: calc(100vw - 10px) !important;
         max-width: 560px !important;
         height: calc(100dvh - env(safe-area-inset-top, 0px) - max(88px, calc(var(--alto-pie, 76px) + 14px))) !important;
-        min-height: 460px !important;
+        min-height: 360px !important;
         max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 76px) !important;
         margin: calc(4px + env(safe-area-inset-top, 0px)) auto 6px auto !important;
         border-radius: min(90px, 22vw) !important;
@@ -3770,18 +3772,28 @@ body.en-mesa .boton-esquina { display: flex; }
 
 /* 😀 junto a MANTENER: despliega reacciones y frases */
 .btn-abrir-reacciones {
-    flex: 0 0 44px !important;
-    min-width: 44px;
+    position: fixed !important;
+    right: 12px;
+    bottom: calc(var(--alto-pie, 70px) + max(10px, env(safe-area-inset-bottom, 10px)));
+    width: 48px !important;
+    height: 48px !important;
+    flex: none !important;
+    min-width: 0 !important;
     padding: 0 !important;
-    border: none;
-    border-radius: 10px;
-    background: rgba(255,255,255,0.06);
-    font-size: 22px;
+    border: 1px solid rgba(241,196,15,0.4) !important;
+    border-radius: 50% !important;
+    background: rgba(20, 10, 5, 0.9) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    font-size: 24px;
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    z-index: 105;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-.btn-abrir-reacciones[aria-expanded="true"] { background: rgba(241,196,15,0.2); }
+.btn-abrir-reacciones[aria-expanded="true"] { background: rgba(241,196,15,0.3) !important; box-shadow: 0 0 15px rgba(241,196,15,0.4); }
 /* Con la mesa hasta arriba, los asientos de las esquinas superiores bajan un
    poco para no quedar bajo los botones de menú y bitácora. */
 body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 13%; }
@@ -3959,6 +3971,21 @@ body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 13%; }
     border: 4px solid var(--oro-oscuro); border-radius: 14px; padding: 22px 20px; text-align: center;
     box-shadow: 0 0 40px #000;
 }
+#modalSalirPartida .caja-rendirse {
+    border-color: var(--rojo-rey);
+    background: linear-gradient(135deg, #1c1010 0%, #0a0505 100%);
+    color: #e5d4d4;
+    box-shadow: 0 0 50px rgba(139,0,0,0.4);
+}
+.icono-rendirse {
+    width: 60px; height: 60px; margin: 0 auto 12px;
+    background: rgba(139,0,0,0.2); border: 2px solid var(--rojo-rey);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: var(--rojo-rey);
+}
+.icono-rendirse .icono { width: 32px; height: 32px; }
+.boton-huir { border-color: #6a1a1a !important; color: #ff6b6b !important; }
+.boton-huir:hover { background: rgba(139,0,0,0.3) !important; }
 #modalSalirPartida h2 { margin: 0 0 10px; color: var(--rojo-rey); font-size: 1.6rem; }
 #modalSalirPartida p { margin: 0 0 18px; line-height: 1.45; }
 #modalSalirPartida .acciones-salir { display: flex; flex-direction: column; gap: 10px; }
@@ -4011,6 +4038,10 @@ body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 13%; }
     -webkit-overflow-scrolling: touch; padding-right: 2px;
     scrollbar-width: thin; scrollbar-color: rgba(241,196,15,.45) transparent;
     mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    align-content: start;
 }
 /* Versión compacta: una línea por regla, para que la tarjeta completa quepa
    sobre los botones fijos (Empezar / Salir) en celulares de 740 px. */
@@ -4325,7 +4356,6 @@ button.chip-visibilidad:not(:disabled):active { transform: scale(.96); }
     }
     body.en-mesa #panelAccionesPartida.hidden { display: none !important; }
     body.en-mesa .acciones-row { display: grid !important; grid-template-columns: 1fr; gap: 6px; }
-    body.en-mesa .acciones-row #btnReacciones { order: 3; width: 100%; height: 34px; }
     body.en-mesa .acciones-row #btnMantener, body.en-mesa .acciones-row #btnCambiar { width: 100% !important; padding-block: 12px; }
     body.en-mesa .guia-acciones { font-size: 11px; line-height: 1.3; max-height: 40vh; overflow-y: auto; }
     body.en-mesa .barra-reacciones.abierta { position: static !important; flex-wrap: wrap; }
@@ -5655,66 +5685,89 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
 }
 
 .btn-hechizo-scroll {
-    display: inline-flex;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 8px;
-    background: linear-gradient(135deg, rgba(30, 20, 60, 0.9), rgba(15, 10, 35, 0.95));
-    border: 1.5px solid #a29bfe;
-    border-radius: 12px;
-    padding: 6px 12px;
+    justify-content: center;
+    width: 66px;
+    height: 92px;
+    gap: 4px;
+    background: linear-gradient(180deg, #1c1136 0%, #0d061c 100%);
+    border: 2px solid #a29bfe;
+    border-radius: 6px;
+    padding: 6px 4px;
     color: #f1f2f6;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(162, 155, 254, 0.2);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(162, 155, 254, 0.4);
     transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     position: relative;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
+    flex: none; /* Previene que se estiren horizontalmente */
+}
+
+/* Borde interior mágico */
+.btn-hechizo-scroll::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1px dashed rgba(162, 155, 254, 0.35);
+    border-radius: 3px;
+    pointer-events: none;
+    transition: border-color 0.25s ease;
 }
 
 .btn-hechizo-scroll.listo {
     border-color: #00d2d3;
-    box-shadow: 0 0 15px rgba(0, 210, 211, 0.4), inset 0 0 8px rgba(0, 210, 211, 0.3);
+    box-shadow: 0 0 20px rgba(0, 210, 211, 0.4), inset 0 0 12px rgba(0, 210, 211, 0.3);
     animation: pulsoArcano 2s infinite ease-in-out;
 }
+.btn-hechizo-scroll.listo::before { border-color: rgba(0, 210, 211, 0.6); }
 
 .btn-hechizo-scroll.listo:hover {
-    transform: translateY(-2px) scale(1.03);
-    box-shadow: 0 6px 20px rgba(0, 210, 211, 0.6), inset 0 0 12px rgba(0, 210, 211, 0.4);
+    transform: translateY(-8px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(0, 210, 211, 0.7), inset 0 0 15px rgba(0, 210, 211, 0.5);
+    z-index: 5;
 }
 
 .btn-hechizo-scroll.listo:active {
-    transform: scale(0.96);
+    transform: translateY(-2px) scale(0.98);
 }
 
 .btn-hechizo-scroll.en-espera {
-    opacity: 0.65;
-    border-color: rgba(162, 155, 254, 0.4);
+    opacity: 0.75;
+    border-color: rgba(162, 155, 254, 0.3);
     cursor: default;
+    filter: grayscale(40%);
 }
 
 .runa-scroll {
-    font-size: 20px;
+    font-size: 32px;
     line-height: 1;
-    filter: drop-shadow(0 0 6px rgba(162, 155, 254, 0.8));
+    filter: drop-shadow(0 0 8px rgba(162, 155, 254, 0.9));
+    margin-bottom: 2px;
+    z-index: 1;
 }
+.btn-hechizo-scroll.listo .runa-scroll { filter: drop-shadow(0 0 12px rgba(0, 210, 211, 1)); }
 
 .info-scroll {
     display: flex;
     flex-direction: column;
-    text-align: left;
-    line-height: 1.15;
+    text-align: center;
+    line-height: 1.1;
+    z-index: 1;
 }
 
 .info-scroll b {
-    font-size: 12px;
+    font-size: 9.5px;
     font-family: var(--fuente-medieval);
     color: #ffeaa7;
-    letter-spacing: 0.3px;
+    letter-spacing: 0px;
+    text-shadow: 0 1px 2px #000;
 }
 
 .info-scroll small {
-    font-size: 9.5px;
-    color: rgba(255, 255, 255, 0.65);
+    display: none;
 }
 
 .badge-sentido-mesa {

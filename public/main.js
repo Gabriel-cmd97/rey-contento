@@ -832,7 +832,7 @@ window.addEventListener('DOMContentLoaded', function vigilarAltoDelPie() {
     const pie = document.getElementById('panelAccionesPartida');
     if (!pie || typeof ResizeObserver === 'undefined') return;
     new ResizeObserver(() => {
-        const alto = pie.classList.contains('hidden') ? 0 : Math.min(120, Math.ceil(pie.getBoundingClientRect().height));
+        const alto = pie.classList.contains('hidden') ? 0 : Math.ceil(pie.getBoundingClientRect().height);
         document.documentElement.style.setProperty('--alto-pie', alto + 'px');
         if (_ultimaGuia && !document.getElementById('flechaGuia')?.classList.contains('hidden')) {
             requestAnimationFrame(() => actualizarGuiaTurno(..._ultimaGuia, true));

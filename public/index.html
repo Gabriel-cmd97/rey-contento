@@ -929,12 +929,16 @@
 <div id="sugerenciaReaccion" class="sugerencia-reaccion hidden" aria-label="Reacción sugerida"></div>
 
 <div id="modalSalirPartida" class="hidden" role="dialog" aria-modal="true" aria-labelledby="tituloSalirPartida">
-    <div class="caja-salir">
-        <h2 id="tituloSalirPartida" class="medieval-font">¿Salir de la partida?</h2>
-        <p>Pierdes esta partida y la mesa sigue sin ti. Puedes volver a entrar con el código cuando termine, para la revancha.</p>
+    <div class="caja-salir caja-rendirse">
+        <div class="icono-rendirse">
+            <svg class="icono" aria-hidden="true"><use href="#i-puerta"/></svg>
+        </div>
+        <h2 id="tituloSalirPartida" class="medieval-font">¿Desertar de la Mesa?</h2>
+        <p>Huir ahora significa <strong>perder la partida</strong> al instante. La mesa seguirá jugando sin ti.</p>
+        <p class="nota-cobarde" style="font-size:12.5px; opacity:0.8; font-style:italic;">"Los cobardes no tienen lugar en la Corte del Rey."</p>
         <div class="acciones-salir">
-            <button id="btnConfirmarSalir" class="boton-madera">Sí, salir</button>
-            <button id="btnCancelarSalir" class="boton-oro">Seguir jugando</button>
+            <button id="btnCancelarSalir" class="boton-oro"><svg class="icono" aria-hidden="true"><use href="#i-escudo"/></svg> Luchar</button>
+            <button id="btnConfirmarSalir" class="boton-madera boton-huir"><svg class="icono" aria-hidden="true"><use href="#i-calavera"/></svg> Huir</button>
         </div>
     </div>
 </div>
