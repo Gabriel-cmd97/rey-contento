@@ -688,15 +688,17 @@ function aplicarTemaMesa() {
     // Ojo: la clase base se llama "tapete-virtual"; no quitarla.
     [...t.classList].filter(c => c.startsWith('tema-') || (c.startsWith('tapete-') && c !== 'tapete-virtual')).forEach(c => t.classList.remove(c));
     const emb = document.getElementById('tapeteEmblemaFondo');
+    const embImg = emb ? emb.querySelector('.tapete-emblema-img') : null;
     if (emb) {
         [...emb.classList].filter(c => c.startsWith('emb-')).forEach(c => emb.classList.remove(c));
+        if (embImg) embImg.src = '/iconos/emblema-mesa.svg';
     }
     if (eventoActual) {
         t.classList.add(`tema-${eventoActual.id}`);
-        if (emb) emb.classList.add(`emb-${eventoActual.id}`);
+        if (emb) { emb.classList.add(`emb-${eventoActual.id}`); if (embImg) embImg.src = `/iconos/emblema-${eventoActual.id}.svg`; }
     } else if (miLook?.tapete && miLook.tapete !== 'verde') {
         t.classList.add(`tapete-${miLook.tapete}`);
-        if (emb) emb.classList.add(`emb-${miLook.tapete}`);
+        if (emb) { emb.classList.add(`emb-${miLook.tapete}`); if (embImg) { const iconName = ['azul','rojo','morado','madera','oro','marmol','aurora','lava','abismo','hielo','cripta'].includes(miLook.tapete) ? miLook.tapete : 'mesa'; embImg.src = `/iconos/emblema-${iconName}.svg`; } }
     }
 }
 

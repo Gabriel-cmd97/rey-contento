@@ -50,18 +50,19 @@ const CATALOGO = [
     { id: 'gemas',     tipo: 'marco',  titulo: 'Corona de gemas', rareza: 'legendario', nivel: 15 },
     // Dorsos de carta
     { id: 'clasico',   tipo: 'dorso',  titulo: 'Clásico',    rareza: 'comun' },
-    { id: 'carmesi',   tipo: 'dorso',  titulo: 'Carmesí',    rareza: 'raro', logro: 'muro_del_rey' },
-    { id: 'real',      tipo: 'dorso',  titulo: 'Azul real',  rareza: 'raro', logro: 'intocable' },
+    { id: 'carmesi',   tipo: 'dorso',  titulo: 'Carmesí',    rareza: 'raro', logro: 'muro_del_rey', coleccion: 'casino' },
+    { id: 'real',      tipo: 'dorso',  titulo: 'Azul real',  rareza: 'raro', logro: 'intocable', coleccion: 'noche' },
     { id: 'esmeralda', tipo: 'dorso',  titulo: 'Esmeralda',  rareza: 'raro', nivel: 4 },
-    { id: 'noche',     tipo: 'dorso',  titulo: 'Noche estrellada', rareza: 'epico', nivel: 8 },
-    { id: 'dorado',    tipo: 'dorso',  titulo: 'Dorado',     rareza: 'legendario', logro: 'rey_de_reyes' },
+    { id: 'noche',     tipo: 'dorso',  titulo: 'Noche estrellada', rareza: 'epico', nivel: 8, coleccion: 'realeza' },
+    { id: 'dorado',    tipo: 'dorso',  titulo: 'Dorado',     rareza: 'legendario', logro: 'rey_de_reyes', coleccion: 'tesoro' },
+    { id: 'madera',    tipo: 'dorso',  titulo: 'Roble',      rareza: 'epico', logro: 'veterano', coleccion: 'taberna' },
     // Tapetes (solo los ve quien los elige)
     { id: 'verde',     tipo: 'tapete', titulo: 'Verde',      rareza: 'comun' },
-    { id: 'azul',      tipo: 'tapete', titulo: 'Azul noche', rareza: 'raro', logro: 'aprendiz' },
-    { id: 'rojo',      tipo: 'tapete', titulo: 'Casino',     rareza: 'raro', logro: 'por_un_pelo' },
-    { id: 'morado',    tipo: 'tapete', titulo: 'Real',       rareza: 'epico', logro: 'racha_real' },
-    { id: 'madera',    tipo: 'tapete', titulo: 'Taberna',    rareza: 'epico', logro: 'veterano' },
-    { id: 'oro',       tipo: 'tapete', titulo: 'Tesoro',     rareza: 'legendario', nivel: 7 },
+    { id: 'azul',      tipo: 'tapete', titulo: 'Azul noche', rareza: 'raro', logro: 'aprendiz', coleccion: 'noche' },
+    { id: 'rojo',      tipo: 'tapete', titulo: 'Casino',     rareza: 'raro', logro: 'por_un_pelo', coleccion: 'casino' },
+    { id: 'morado',    tipo: 'tapete', titulo: 'Real',       rareza: 'epico', logro: 'racha_real', coleccion: 'realeza' },
+    { id: 'madera',    tipo: 'tapete', titulo: 'Taberna',    rareza: 'epico', logro: 'veterano', coleccion: 'taberna' },
+    { id: 'oro',       tipo: 'tapete', titulo: 'Tesoro',     rareza: 'legendario', nivel: 7, coleccion: 'tesoro' },
     // Tienda (30/09/2026): solo se consiguen con moneda (`precio`): número = Blis
     // (gratis); { letios } = Letios (se comprarán con dinero real; solo legendarios
     // y colecciones). Blis y Letios no se cambian entre sí. `coleccion`
