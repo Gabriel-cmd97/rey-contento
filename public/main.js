@@ -218,9 +218,9 @@ const nombresCartas = {
 // a /iconos para no depender de un CDN externo en runtime y verse igual en todo
 // dispositivo (a diferencia de los emojis, que cada SO dibuja distinto).
 const figurasCartas = {
-    0: "/iconos/0.svg", 1: "/iconos/1.svg", 2: "/iconos/2.svg", 3: "/iconos/3.svg",
-    4: "/iconos/4.svg", 5: "/iconos/5.svg", 6: "/iconos/6.svg", 7: "/iconos/7.svg",
-    8: "/iconos/8.svg", 9: "/iconos/9.svg"
+    0: "/iconos/char_0.jpg", 1: "/iconos/char_1.jpg", 2: "/iconos/char_2.jpg", 3: "/iconos/char_3.jpg",
+    4: "/iconos/char_4.jpg", 5: "/iconos/char_5.jpg", 6: "/iconos/char_6.jpg", 7: "/iconos/char_7.jpg",
+    8: "/iconos/char_8.jpg", 9: "/iconos/char_9.jpg"
 };
 // <img> de la figura de una carta al tamaño dado (px). '' si no hay.
 function figuraIMG(n, px) {
@@ -688,17 +688,15 @@ function aplicarTemaMesa() {
     // Ojo: la clase base se llama "tapete-virtual"; no quitarla.
     [...t.classList].filter(c => c.startsWith('tema-') || (c.startsWith('tapete-') && c !== 'tapete-virtual')).forEach(c => t.classList.remove(c));
     const emb = document.getElementById('tapeteEmblemaFondo');
-    const embImg = emb ? emb.querySelector('.tapete-emblema-img') : null;
     if (emb) {
         [...emb.classList].filter(c => c.startsWith('emb-')).forEach(c => emb.classList.remove(c));
-        if (embImg) embImg.src = '/iconos/emblema-mesa.svg';
     }
     if (eventoActual) {
         t.classList.add(`tema-${eventoActual.id}`);
-        if (emb) { emb.classList.add(`emb-${eventoActual.id}`); if (embImg) embImg.src = `/iconos/emblema-${eventoActual.id}.svg`; }
+        if (emb) emb.classList.add(`emb-${eventoActual.id}`);
     } else if (miLook?.tapete && miLook.tapete !== 'verde') {
         t.classList.add(`tapete-${miLook.tapete}`);
-        if (emb) { emb.classList.add(`emb-${miLook.tapete}`); if (embImg) { const iconName = ['azul','rojo','morado','madera','oro','marmol','aurora','lava','abismo','hielo','cripta'].includes(miLook.tapete) ? miLook.tapete : 'mesa'; embImg.src = `/iconos/emblema-${iconName}.svg`; } }
+        if (emb) emb.classList.add(`emb-${miLook.tapete}`);
     }
 }
 
@@ -3713,7 +3711,35 @@ async function actualizarVictoriasBarra() {
         _tienda.letios = data.letios ?? 0;
         _tienda.gaudios = data.gaudios ?? 0;
         _tienda.comprados = data.cosmeticos?.comprados || [];
+        
         _tienda.nivel = data.nivel?.nivel || 1;
+        
+        // Bloquear modos de juego por nivel
+        const selectModo = document.getElementById('selectModoJuego');
+        if (selectModo) {
+            const modos = {
+                'CLASICO': 1,
+                'JEFE': 2,
+                'FIESTA': 3,
+                'GUERRA_ARCANA': 4,
+                'CONSPIRACION': 5
+            };
+            Array.from(selectModo.options).forEach(opt => {
+                const req = modos[opt.value] || 1;
+                if (_tienda.nivel < req) {
+                    opt.disabled = true;
+                    opt.textContent = opt.textContent.replace(/\s\(Nivel \d+\)$/, '') + ` (Nivel ${req})`;
+                } else {
+                    opt.disabled = false;
+                    opt.textContent = opt.textContent.replace(/\s\(Nivel \d+\)$/, '');
+                }
+            });
+            // If current selected is disabled, fallback to CLASICO
+            if (selectModo.options[selectModo.selectedIndex]?.disabled) {
+                selectModo.value = 'CLASICO';
+                if (typeof actualizarResumenConfig === 'function') actualizarResumenConfig();
+            }
+        }
         _colecciones = data.cosmeticos?.colecciones || [];
         pintarMonedas();
         if (data.nivel) aplicarDesbloqueos(data.nivel.nivel, data.desbloqueosNivel);

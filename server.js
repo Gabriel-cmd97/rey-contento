@@ -844,7 +844,7 @@ app.post('/registro', limitarAuth, async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         await conRetry(
-            () => pool.execute('INSERT INTO usuarios (username, password_hash) VALUES (?, ?)', [username, hashedPassword]),
+            () => pool.execute('INSERT INTO usuarios (username, password_hash, letios) VALUES (?, ?, 100)', [username, hashedPassword]),
             { op: 'registro', username }
         );
         // Si falla guardar el código, la cuenta igual queda creada: se genera

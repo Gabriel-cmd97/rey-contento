@@ -703,7 +703,7 @@ select,
 #numeroCarta { font-size: var(--carta-num, 60px); font-weight: bold; margin: -5px; font-family: 'Cinzel', serif; }
 /* Figura grande en la carta principal — pareja con el número (~mitad y mitad).
    Escala junto con la carta (var --carta-fig); pisa el width/height del <img>. */
-#figuraCarta img { width: var(--carta-fig, 50px); height: var(--carta-fig, 50px); }
+#figuraCarta img { width: var(--carta-fig, 50px); height: var(--carta-fig, 50px); border-radius: 6px; box-shadow: 0 0 6px rgba(0,0,0,0.5); object-fit: cover; mix-blend-mode: multiply; }
 
 .carta-9 { background: linear-gradient(145deg, #fff9c4 0%, #fff3a0 100%) !important; }
 .carta-9 #numeroCarta { color: var(--oro-oscuro) !important; }
@@ -772,7 +772,7 @@ select,
     box-shadow: 0 2px 6px rgba(0,0,0,0.7);
 }
 .carta-en-pila .pila-num { font-size: calc(var(--pila-w, 36px) * 0.42); line-height: 1; }
-.carta-en-pila .pila-fig { width: 62%; height: auto; }
+.carta-en-pila .pila-fig { width: 62%; height: 62%; border-radius: 4px; object-fit: cover; mix-blend-mode: multiply; box-shadow: 0 0 4px rgba(0,0,0,0.5); }
 .carta-en-pila.rey-pila {
     background: linear-gradient(145deg, #fff9c4 0%, #fff3a0 100%); /* dorado, como .carta-9 */
     border-color: var(--oro);
@@ -1911,6 +1911,10 @@ select,
 .emb-marmol .tapete-emblema-img { filter: grayscale(0.5) brightness(1.3) drop-shadow(0 0 18px rgba(255,255,255,0.5)) !important; }
 .emb-madera .tapete-emblema-img { filter: sepia(0.85) brightness(1.15) contrast(1.15) drop-shadow(0 0 18px rgba(146,64,14,0.7)) !important; }
 .emb-oro .tapete-emblema-img { filter: drop-shadow(0 0 26px rgba(255,215,0,0.85)) brightness(1.15) !important; }
+.emb-hielo .tapete-emblema-img { filter: hue-rotate(185deg) brightness(1.2) drop-shadow(0 0 20px rgba(125,211,252,0.8)) !important; }
+.emb-cripta .tapete-emblema-img { filter: hue-rotate(100deg) brightness(1.1) drop-shadow(0 0 20px rgba(16,185,129,0.7)) !important; }
+.emb-abismo .tapete-emblema-img { filter: hue-rotate(270deg) grayscale(0.5) brightness(0.7) drop-shadow(0 0 25px rgba(88,28,135,1)) !important; }
+
 
 /* Animación y movimiento ambiental en el tapete de la mesa */
 .tapete-virtual {
@@ -3092,7 +3096,7 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
     gap: 16px;
     transform: translateZ(0);
 }
-.escaner-qr video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.escaner-qr video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; mix-blend-mode: multiply; }
 .escaner-marco {
     position: relative;
     width: min(68vw, 280px);
@@ -4896,7 +4900,7 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
 /* =========================================
    COSMÉTICOS 2 (30/09/2026): avatares ilustrados, rareza, vitrina y marcos animados
    ========================================= */
-.avatar-img { width: 100%; height: 100%; border-radius: 50%; display: block; object-fit: cover; }
+.avatar-img { width: 100%; height: 100%; border-radius: 50%; display: block; object-fit: cover; mix-blend-mode: multiply; }
 .avatar-top:has(.avatar-img), .jugador-avatar-lobby:has(.avatar-img), .avatar-cosm:has(.avatar-img) { background: none !important; padding: 0; }
 #inicialUsuario:has(.avatar-img) { width: 100%; height: 100%; }
 /* En el asiento de la mesa: chiquito, junto al nombre */
@@ -5875,3 +5879,21 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
 
 /* Dorso Madera */
 .dorso-madera { background: repeating-linear-gradient(90deg, rgba(0,0,0,0.15) 0 2px, transparent 2px 12px), radial-gradient(circle at 50% 50%, #6e4629 0%, #3e2723 100%) !important; border-color: #2e1a12 !important; }
+/* Banner Beta Letios */
+.banner-beta-letios {
+    background: linear-gradient(135deg, rgba(26, 188, 156, 0.15) 0%, rgba(46, 204, 113, 0.25) 100%);
+    border: 1px dashed #2ecc71;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 12px 16px;
+    text-align: center;
+    color: #e0f2f1;
+    font-size: 13.5px;
+    line-height: 1.4;
+    box-shadow: 0 0 15px rgba(46, 204, 113, 0.15);
+}
+.banner-beta-letios strong { color: #58d68d; font-family: var(--fuente-medieval); font-size: 14.5px; letter-spacing: 0.5px; }
+.banner-beta-letios small { display: block; margin-top: 4px; font-size: 11px; color: rgba(255,255,255,0.6); font-style: italic; }
+
+/* Estilos para las nuevas mini-cartas con imágenes JPG */
+.mini-carta-frente img, .resumen-carta-cara img, .carta-oraculo img, .carta-duelo img { border-radius: 3px; object-fit: cover; mix-blend-mode: multiply; box-shadow: 0 0 4px rgba(0,0,0,0.5); }
