@@ -1630,24 +1630,38 @@ let _practica = null; // { tipo, nombreA, nombreB, dichos: Set } mientras dura
 // tipo: 'basica' (Aprender a jugar), 'poderes' (Eventos y poderes) o 'fiesta' (Modo Fiesta).
 function empezarPractica(tipo = 'basica') {
     _practica = { tipo, nombreA: 'A', nombreB: 'B', dichos: new Set() };
+    document.body.classList.add('en-practica');
     socket.emit('crearSala', { configuracion: { practica: tipo } });
 }
 
 function mostrarCoach(html, { boton = null, alPulsar = null } = {}) {
     const coach = document.getElementById('coachPractica');
     if (!coach) return;
-    document.getElementById('coachTexto').innerHTML = html;
+    const txt = document.getElementById('coachTexto');
+    if (txt) txt.innerHTML = html;
     const b = document.getElementById('coachBoton');
-    b.classList.toggle('hidden', !boton);
-    if (boton) { b.textContent = boton; b.onclick = alPulsar; }
+    if (b) {
+        if (boton) {
+            b.textContent = boton;
+            b.onclick = alPulsar;
+        } else {
+            b.textContent = '¡Entendido! Continuar';
+            b.onclick = () => coach.classList.add('hidden');
+        }
+        b.classList.remove('hidden');
+    }
+    const x = document.getElementById('coachCerrarX');
+    if (x) x.onclick = () => coach.classList.add('hidden');
+
     // Al final (botón "Terminar práctica") sobra "Salir de la práctica".
     document.getElementById('coachSalir')?.classList.toggle('hidden', !!boton);
     coach.classList.remove('hidden');
-    coach.animate?.([{ opacity: 0, transform: 'translate(-50%, -6px)' }, { opacity: 1, transform: 'translate(-50%, 0)' }],
-        { duration: menosMovimiento() ? 0 : 280, easing: 'ease-out' });
+    coach.animate?.([{ opacity: 0, transform: 'translateX(-50%) translateY(-10px) scale(0.96)' }, { opacity: 1, transform: 'translateX(-50%) translateY(0) scale(1)' }],
+        { duration: menosMovimiento() ? 0 : 250, easing: 'ease-out' });
 }
 
 function terminarPractica() {
+    document.body.classList.remove('en-practica');
     if (miSalaActual) socket.emit('abandonarSala', miSalaActual);
     escribirLS({ poderes: 'reyPracticaPoderesHecha', fiesta: 'reyPracticaFiestaHecha', corte: 'reyPracticaCorteHecha' }[_practica?.tipo] || 'reyPracticaHecha', '1');
     _practica = null;
@@ -2791,7 +2805,9 @@ function pintarMonedas() {
 const MONEDA = { singular: 'Blis', plural: 'Blis' };
 const RAREZA_TXT = { comun: 'Común', raro: 'Raro', epico: 'Épico', legendario: 'Legendario' };
 const TIPO_TXT = { avatar: 'Avatar', marco: 'Marco', dorso: 'Dorso de carta', tapete: 'Tapete' };
-let _tiendaTab = 'arcon', _colIdx = 0;
+let _tiendaTab = 'arcon', _colIdx = 0, _colDir = 'der';
+let _swipeCooldownHasta = 0;
+window._ignorarClicTiendaHasta = 0;
 
 function vistaArticulo(c, clase = 'tienda-muestra') {
     if (c.tipo === 'avatar') return `<span class="avatar-cosm ${clase}"><img class="avatar-img" src="/avatares/${c.img}.svg" alt=""></span>`;
@@ -2821,13 +2837,127 @@ function portadaColeccion(col) {
     const todas = piezas.every(tengoArt), alguna = piezas.some(tengoArt);
     const { tipo, cantidad } = parsePrecio(col.precio);
     const suma = parsePrecio(col.suma).cantidad;
-    return `<div class="col-portada col-${col.id}" data-col="${col.id}">
-        <span class="col-etiqueta">Colección · ${Math.round(col.descuento * 100)}% menos</span>
-        <p class="col-titulo">${escapeHTML(col.titulo)}</p><p class="col-lema">${escapeHTML(col.lema)}</p>
-        <div class="col-piezas">${piezas.map(c => vistaArticulo(c, '')).join('')}</div>
-        <div class="col-precio">${todas ? '<b>✓ Ya la tienes completa</b>' : alguna ? '<b style="font-size:13px">Ya tienes piezas: cómpralas sueltas abajo</b>'
-            : `<s>${icono(tipo)} ${suma}</s><b>${icono(tipo)} ${cantidad}</b><span class="col-ahorro">Ahorras ${suma - cantidad}</span>`}</div>
+    const cols = _colecciones || [];
+
+    return `
+    <div class="col-carrusel-contenedor" id="carruselColecciones">
+        <div class="col-nav-bar">
+            <button type="button" class="btn-col-nav" data-colnav="-1" aria-label="Colección anterior">
+                <svg viewBox="0 0 24 24" width="22" height="22"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="col-nav-centro">
+                <span class="col-nav-contador">Colección ${_colIdx + 1} de ${cols.length}</span>
+                <div class="col-puntos">
+                    ${cols.map((c, i) => `<button type="button" data-colidx="${i}" class="${i === _colIdx ? 'activo' : ''}" aria-label="${escapeHTML(c.titulo)}"></button>`).join('')}
+                </div>
+            </div>
+            <button type="button" class="btn-col-nav" data-colnav="1" aria-label="Siguiente colección">
+                <svg viewBox="0 0 24 24" width="22" height="22"><path d="M9 18l6-6-6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        </div>
+
+        <div class="col-portada col-${col.id} col-anim-${_colDir || 'der'}" data-col="${col.id}">
+            <div class="col-cabecera-info">
+                <div>
+                    <span class="col-etiqueta">Colección · ${Math.round(col.descuento * 100)}% menos</span>
+                    <h4 class="col-titulo">${escapeHTML(col.titulo)}</h4>
+                    <p class="col-lema">${escapeHTML(col.lema)}</p>
+                </div>
+                <div class="col-precio-destacado">
+                    ${todas ? '<span class="col-completa-badge">✓ Completa</span>' : alguna ? '<small class="col-parcial-txt">Piezas sueltas</small>'
+                    : `<span class="col-precio-tachado">${icono(tipo)} ${suma}</span><b class="col-precio-actual">${icono(tipo)} ${cantidad}</b>`}
+                </div>
+            </div>
+
+            <div class="col-escaparate-piezas">
+                ${piezas.map(c => {
+                    const enUso = miLook?.[c.tipo] === c.id;
+                    const esDorso = c.tipo === 'dorso';
+                    const esPropio = tengoArt(c);
+                    return `
+                    <div class="col-pieza-tarjeta rareza-${c.rareza} ${esDorso ? 'pieza-naipe-destacada' : ''} ${esPropio ? 'poseido' : ''} ${enUso ? 'en-uso' : ''}" 
+                         ${esPropio ? `data-usar="${c.tipo}:${c.id}"` : `data-ver="${c.tipo}:${c.id}"`}
+                         title="${escapeHTML(c.titulo)} - ${esPropio ? (enUso ? 'En uso en tu mesa' : 'Toca para colocar en tu mesa') : 'Toca para ver / comprar'}">
+                        <div class="col-pieza-visual">
+                            ${esDorso ? `<span class="muestra-dorso tienda-dorso-showcase dorso-${c.id}"></span>`
+                                      : vistaArticulo(c, 'tienda-muestra-col')}
+                        </div>
+                        <div class="col-pieza-detalles">
+                            <span class="col-pieza-tipo">${esDorso ? '🃏 Naipe' : TIPO_TXT[c.tipo]}</span>
+                            <b class="col-pieza-nombre" title="${escapeHTML(c.titulo)}">${escapeHTML(c.titulo)}</b>
+                        </div>
+                        <div class="col-pieza-accion">
+                            ${esPropio 
+                                ? `<button type="button" class="tienda-btn ${enUso ? 'en-uso' : 'usar'}" data-usar="${c.tipo}:${c.id}" ${enUso ? 'disabled' : ''}>${enUso ? '✓ En uso' : 'Usar'}</button>`
+                                : botonPrecio(c.precio, `data-comprar="${c.tipo}:${c.id}"`)}
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
+
+            ${!todas && !alguna ? `
+            <div class="col-comprar-todo-wrap">
+                <button type="button" class="boton-oro btn-comprar-coleccion-lote" data-col="${col.id}">
+                    <svg class="icono"><use href="#i-corona"/></svg> Desbloquear Toda la Colección (${icono(tipo)} ${cantidad}) · Ahorras ${suma - cantidad}
+                </button>
+            </div>` : ''}
+        </div>
+        <p class="col-swipe-hint"><svg class="icono"><use href="#i-mano"/></svg> Desliza o usa ◀ ▶ para cambiar de colección · Toca un naipe para colocarlo</p>
     </div>`;
+}
+
+function cambiarColeccionTienda(delta) {
+    const cols = _colecciones || [];
+    if (!cols.length) return;
+    _colDir = delta >= 0 ? 'der' : 'izq';
+    _colIdx = (_colIdx + delta + cols.length) % cols.length;
+    Sonidos.pop?.();
+    abrirTienda(false);
+}
+
+function setupSwipeColecciones() {
+    const el = document.getElementById('carruselColecciones');
+    if (!el || el._swipeInit) return;
+    el._swipeInit = true;
+    let startX = 0, startY = 0, startTime = 0;
+    let swipePosible = false;
+
+    el.addEventListener('touchstart', (e) => {
+        if (!e.touches || !e.touches.length) return;
+        if (Date.now() < _swipeCooldownHasta) return;
+
+        // Si el toque inició en un botón o control interactivo, no permitir swipe para no bloquear la pulsación
+        if (e.target.closest('button, .tienda-btn, [data-usar], [data-comprar], .btn-col-nav, .col-puntos')) {
+            swipePosible = false;
+            return;
+        }
+
+        swipePosible = true;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        startTime = Date.now();
+    }, { passive: true });
+
+    el.addEventListener('touchend', (e) => {
+        if (!swipePosible || !e.changedTouches || !e.changedTouches.length) return;
+        swipePosible = false;
+        if (Date.now() < _swipeCooldownHasta) return;
+
+        const dx = e.changedTouches[0].clientX - startX;
+        const dy = e.changedTouches[0].clientY - startY;
+        const dt = Date.now() - startTime;
+
+        // Umbral deliberado y seguro: mínimo 70px horizontales, dominancia horizontal 1.6x y tiempo menor a 650ms
+        if (Math.abs(dx) >= 70 && Math.abs(dx) > Math.abs(dy) * 1.6 && dt < 650) {
+            _swipeCooldownHasta = Date.now() + 350;
+            window._ignorarClicTiendaHasta = Date.now() + 250;
+            if (dx < 0) {
+                cambiarColeccionTienda(1);
+            } else {
+                cambiarColeccionTienda(-1);
+            }
+        }
+    }, { passive: true });
 }
 
 async function abrirTienda(refrescar = true) {
@@ -2864,26 +2994,37 @@ async function abrirTienda(refrescar = true) {
         </div>`;
     } else if (_tiendaTab === 'colecciones' && cols.length) {
         _colIdx = _colIdx % cols.length;
-        cuerpo = portadaColeccion(cols[_colIdx])
-            + `<div class="col-puntos">${cols.map((c, i) => `<button type="button" data-colidx="${i}" class="${i === _colIdx ? 'activo' : ''}" aria-label="${escapeHTML(c.titulo)}"></button>`).join('')}</div>`;
+        cuerpo = portadaColeccion(cols[_colIdx]);
     }
-    if (_tiendaTab !== 'arcon') {
-        const lista = _catalogoCosm.filter(c => c.precio && (_tiendaTab === 'colecciones' ? c.coleccion === cols[_colIdx]?.id : c.tipo === _tiendaTab));
+    if (_tiendaTab !== 'arcon' && _tiendaTab !== 'colecciones') {
+        const lista = _catalogoCosm.filter(c => c.precio && c.tipo === _tiendaTab);
         const orden = { comun: 0, raro: 1, epico: 2, legendario: 3 };
-        cuerpo += `<div class="tienda-grid">` + lista.sort((a, b) => orden[b.rareza] - orden[a.rareza]).map(c => {
+        let bannerDorsos = '';
+        if (_tiendaTab === 'dorso') {
+            bannerDorsos = `
+            <div class="dorsos-banner-carrusel" data-tab="colecciones">
+                <span class="dorsos-banner-txt">🃏 ¿Quieres ver los naipes temáticos por colección?</span>
+                <button type="button" class="dorsos-banner-btn" data-tab="colecciones">Ver Colecciones ◀ ▶</button>
+            </div>`;
+        }
+        cuerpo += bannerDorsos + `<div class="tienda-grid">` + lista.sort((a, b) => orden[b.rareza] - orden[a.rareza]).map(c => {
             const enUso = miLook?.[c.tipo] === c.id;
-            return `<div class="tienda-art rareza-${c.rareza}" data-ver="${c.tipo}:${c.id}">
+            const esPropio = tengoArt(c);
+            return `<div class="tienda-art rareza-${c.rareza} ${esPropio ? 'poseido' : ''} ${enUso ? 'en-uso' : ''}" 
+                ${esPropio ? `data-usar="${c.tipo}:${c.id}"` : `data-ver="${c.tipo}:${c.id}"`} 
+                title="${escapeHTML(c.titulo)} - ${esPropio ? (enUso ? 'En uso en tu mesa' : 'Toca para colocar en tu mesa') : 'Toca para ver / comprar'}">
                 <span class="cosm-rareza">${RAREZA_TXT[c.rareza]}</span>${c.animado ? '<span class="etq-animado" title="Animado">✨</span>' : ''}
                 ${vistaArticulo(c)}
                 <b>${escapeHTML(c.titulo)}</b><small>${TIPO_TXT[c.tipo]}</small>
-                ${tengoArt(c) ? `<button type="button" class="tienda-btn ${enUso ? 'en-uso' : 'usar'}" data-usar="${c.tipo}:${c.id}" ${enUso ? 'disabled' : ''}>${enUso ? '✓ En uso' : 'Usar'}</button>`
-                              : botonPrecio(c.precio, `data-comprar="${c.tipo}:${c.id}"`)}
+                ${esPropio ? `<button type="button" class="tienda-btn ${enUso ? 'en-uso' : 'usar'}" data-usar="${c.tipo}:${c.id}" ${enUso ? 'disabled' : ''}>${enUso ? '✓ En uso' : 'Usar'}</button>`
+                           : botonPrecio(c.precio, `data-comprar="${c.tipo}:${c.id}"`)}
             </div>`;
         }).join('') + `</div>`;
     }
     document.getElementById('tiendaArticulos').innerHTML =
         `<div class="tienda-tabs">${tabs.map(([k, t]) => `<button type="button" data-tab="${k}" class="${k === _tiendaTab ? 'activa' : ''}">${t}</button>`).join('')}</div>` + cuerpo;
     pintarMonedas();
+    setupSwipeColecciones();
     document.getElementById('modalTienda').classList.remove('hidden');
 }
 
@@ -3000,6 +3141,7 @@ document.getElementById('btnCerrarArconPremio')?.addEventListener('click', () =>
     document.getElementById('modalArconPremio')?.classList.add('hidden');
 });
 const clicTienda = async (e) => {
+    if (window._ignorarClicTiendaHasta && Date.now() < window._ignorarClicTiendaHasta) return;
     if (e.target.id === 'modalTienda' || e.target.id === 'modalVista' || e.target.id === 'modalArconPremio') return e.target.classList.add('hidden');
     const x = e.target.closest('#modalVista [data-cierra], #modalArconPremio [data-cierra]');
     if (x) {
@@ -3015,17 +3157,58 @@ const clicTienda = async (e) => {
     }
     const tab = e.target.closest('[data-tab]');
     if (tab) { _tiendaTab = tab.dataset.tab; Sonidos.boton(); return abrirTienda(false); }
+    const colNav = e.target.closest('[data-colnav]');
+    if (colNav) {
+        if (Date.now() < _swipeCooldownHasta) return;
+        _swipeCooldownHasta = Date.now() + 250;
+        const delta = parseInt(colNav.dataset.colnav, 10);
+        cambiarColeccionTienda(delta);
+        return;
+    }
     const punto = e.target.closest('[data-colidx]');
-    if (punto) { _colIdx = Number(punto.dataset.colidx); return abrirTienda(false); }
+    if (punto) {
+        if (Date.now() < _swipeCooldownHasta) return;
+        _swipeCooldownHasta = Date.now() + 250;
+        const idx = Number(punto.dataset.colidx);
+        _colDir = idx >= _colIdx ? 'der' : 'izq';
+        _colIdx = idx;
+        Sonidos.pop?.();
+        return abrirTienda(false);
+    }
     const usar = e.target.closest('[data-usar]');
-    if (usar) { const [t, i] = usar.dataset.usar.split(':'); await usarCosmetico(t, i); Sonidos.boton(); document.getElementById('modalVista').classList.add('hidden'); return abrirTienda(false); }
+    if (usar) {
+        const [t, i] = usar.dataset.usar.split(':');
+        const yaPuesto = miLook?.[t] === i;
+        const c = _catalogoCosm.find(x => x.tipo === t && x.id === i);
+        if (yaPuesto) {
+            mostrarToast(`✓ ${c?.titulo || 'Estilo'} ya está colocado en tu mesa`, 'rey', 2000);
+            return;
+        }
+        await usarCosmetico(t, i);
+        Sonidos.boton();
+        mostrarToast(`🎉 ¡${c?.titulo || 'Estilo'} colocado en tu mesa!`, 'rey', 2200);
+        document.getElementById('modalVista')?.classList.add('hidden');
+        return abrirTienda(false);
+    }
     const b = e.target.closest('[data-comprar]');
     if (b) { const [tipo, id] = b.dataset.comprar.split(':'); const c = _catalogoCosm.find(x => x.tipo === tipo && x.id === id); return confirmarCompra({ tipo, id }, c.titulo, c.precio); }
+    const btnLote = e.target.closest('.btn-comprar-coleccion-lote');
+    if (btnLote) {
+        const col = (_colecciones || []).find(c => c.id === btnLote.dataset.col);
+        if (col) {
+            const piezas = col.articulos.map(k => _catalogoCosm.find(c => `${c.tipo}:${c.id}` === k));
+            if (!piezas.some(tengoArt)) return confirmarCompra({ coleccion: col.id }, col.titulo, col.precio);
+        }
+        return;
+    }
     const portada = e.target.closest('[data-col]');
     if (portada) {
+        if (e.target.closest('.col-pieza-tarjeta, .btn-col-nav, .col-puntos, .btn-comprar-coleccion-lote')) return;
         const col = (_colecciones || []).find(c => c.id === portada.dataset.col);
-        const piezas = col.articulos.map(k => _catalogoCosm.find(c => `${c.tipo}:${c.id}` === k));
-        if (!piezas.some(tengoArt)) return confirmarCompra({ coleccion: col.id }, col.titulo, col.precio);
+        if (col) {
+            const piezas = col.articulos.map(k => _catalogoCosm.find(c => `${c.tipo}:${c.id}` === k));
+            if (!piezas.some(tengoArt)) return confirmarCompra({ coleccion: col.id }, col.titulo, col.precio);
+        }
         return;
     }
     const ver = e.target.closest('[data-ver]');
@@ -3214,8 +3397,10 @@ function mostrarModoNuevo(datos) {
     if (!nuevos.length) return;
     nuevos.forEach(m => escribirLS('reyModoVisto_' + m, '1'));
     const carta = document.getElementById('cartaModo');
-    carta.innerHTML = nuevos.map(m => { const [t, ...l] = EXPLICA_MODO[m]; return `<b>${t}</b><ul>${l.map(x => `<li>${x}</li>`).join('')}</ul>`; }).join('')
-        + '<small>Primera vez en este modo: las guías te acompañan esta ronda. Toca para cerrar.</small>';
+    carta.innerHTML = `<button type="button" class="modal-cerrar-x" aria-label="Cerrar" style="position:absolute;top:10px;right:12px;background:none;border:none;color:#ffe27a;font-size:18px;cursor:pointer;">✕</button>`
+        + nuevos.map(m => { const [t, ...l] = EXPLICA_MODO[m]; return `<b>${t}</b><ul>${l.map(x => `<li>${x}</li>`).join('')}</ul>`; }).join('')
+        + '<button type="button" class="boton-oro btn-modo-entendido" style="margin-top:14px; width:100%; padding:9px 16px; font-weight:bold;">¡Entendido! Empezar</button>'
+        + '<small style="margin-top:8px; display:block; opacity:0.8;">Primera vez en este modo: las guías te acompañan esta ronda.</small>';
     // Después de lo que sale al empezar: carta del evento (~4.4 s), aviso de
     // tu equipo (5 s) y tarjeta de tu papel en La Corte (~4.6 s).
     const hayEquipos = (datos.jugadores || []).some(j => j.equipo !== undefined && j.equipo !== null);
@@ -3223,8 +3408,7 @@ function mostrarModoNuevo(datos) {
     setTimeout(() => {
         carta.classList.remove('hidden');
         const cerrar = () => carta.classList.add('hidden');
-        carta.onclick = cerrar;
-        clearTimeout(carta._t); carta._t = setTimeout(cerrar, 8000);
+        carta.querySelectorAll('.modal-cerrar-x, .btn-modo-entendido').forEach(b => b.onclick = cerrar);
     }, retraso);
 }
 
@@ -3240,12 +3424,14 @@ function alRecibirCorte(info, anunciar) {
     if (anunciar && nuevo) {
         // Tarjeta grande al centro (un aviso chico se perdía entre los demás).
         const carta = document.getElementById('cartaRol');
-        carta.innerHTML = info.soyRey
+        carta.innerHTML = `<button type="button" class="modal-cerrar-x" aria-label="Cerrar">✕</button>` + (info.soyRey
             ? `<span class="rol-icono">${icono('corona')}</span><b>Eres el REY</b><small>de ${NOMBRE_EQUIPO[info.miEquipo]}</small><p>Solo cuenta tu carta: que no sea la más baja entre los Reyes. ¡Que no te descubran!</p>`
-            : `<span class="rol-icono">🛡️</span><b>Eres ESCUDERO</b><small>de ${NOMBRE_EQUIPO[info.miEquipo]}</small><p>Tu Rey es <b>${escapeHTML(info.miRey)}</b>. Protégelo cambiándole tu carta… sin delatarlo.</p>`;
+            : `<span class="rol-icono">🛡️</span><b>Eres ESCUDERO</b><small>de ${NOMBRE_EQUIPO[info.miEquipo]}</small><p>Tu Rey es <b>${escapeHTML(info.miRey)}</b>. Protégelo cambiándole tu carta… sin delatarlo.</p>`)
+            + `<button type="button" class="boton-oro btn-rol-entendido" style="margin-top:12px; width:100%; padding:8px 12px; font-weight:bold;">¡Entendido!</button>`;
         carta.classList.remove('hidden', 'saliendo');
         vibrar([80, 40, 80]); Sonidos.reaccion(info.soyRey ? '💎' : '🔥');
-        setTimeout(() => { carta.classList.add('saliendo'); setTimeout(() => carta.classList.add('hidden'), 400); }, 4200);
+        const cerrar = () => { carta.classList.add('saliendo'); setTimeout(() => carta.classList.add('hidden'), 350); };
+        carta.querySelectorAll('.modal-cerrar-x, .btn-rol-entendido').forEach(b => b.onclick = cerrar);
     }
     dibujarMesaCircular();
     pintarBarraCorte();
@@ -3307,15 +3493,18 @@ function alRecibirRolConspiracion(rol, anunciar = true) {
     if (anunciar && nuevo) {
         const carta = document.getElementById('cartaRol');
         if (carta) {
-            carta.innerHTML = `<span class="rol-icono">${icono(rol.icono || 'pergamino')}</span>
+            carta.innerHTML = `<button type="button" class="modal-cerrar-x" aria-label="Cerrar">✕</button>
+                <span class="rol-icono">${icono(rol.icono || 'pergamino')}</span>
                 <b style="color:${rol.color || 'var(--oro)'}">${escapeHTML(rol.titulo)}</b>
                 <small>${escapeHTML(rol.faccion)}</small>
                 <p>«${escapeHTML(rol.lema)}»</p>
-                <p style="font-size:12px;opacity:0.9;margin-top:4px;"><b>Misión:</b> ${escapeHTML(rol.mision)}</p>`;
+                <p style="font-size:12px;opacity:0.9;margin-top:4px;"><b>Misión:</b> ${escapeHTML(rol.mision)}</p>
+                <button type="button" class="boton-oro btn-rol-entendido" style="margin-top:12px; width:100%; padding:8px 12px; font-weight:bold;">¡Entendido!</button>`;
             carta.classList.remove('hidden', 'saliendo');
             vibrar([80, 40, 80]);
             Sonidos.reaccion('💎');
-            setTimeout(() => { carta.classList.add('saliendo'); setTimeout(() => carta.classList.add('hidden'), 400); }, 5000);
+            const cerrar = () => { carta.classList.add('saliendo'); setTimeout(() => carta.classList.add('hidden'), 350); };
+            carta.querySelectorAll('.modal-cerrar-x, .btn-rol-entendido').forEach(b => b.onclick = cerrar);
         }
         mostrarToast(`📜 Tu rol: ${rol.titulo}. Pulsa "📜 Rol" abajo para ver tu dossier y activar tu táctica.`, 'rey', 5500);
     }
@@ -3713,6 +3902,7 @@ async function actualizarVictoriasBarra() {
         _tienda.comprados = data.cosmeticos?.comprados || [];
         
         _tienda.nivel = data.nivel?.nivel || 1;
+        actualizarEstadoCajonesNivel(_tienda.nivel);
         
         // Bloquear modos de juego por nivel
         const selectModo = document.getElementById('selectModoJuego');
@@ -3916,7 +4106,7 @@ function iniciarContraBots(modoElegido) {
     if (!socket?.connected) return;
     const modo = modoElegido || document.getElementById('selectModoJuego')?.value || 'CLASICO';
     const vidas = parseInt(document.getElementById('selectVidas')?.value || '3', 10);
-    const modoRey = document.getElementById('selectModo')?.value || 'SORPRESA';
+    const modoRey = (modo === 'CLASICO') ? (document.getElementById('selectModo')?.value || 'SORPRESA') : 'SORPRESA';
     const numJugadores = modo === 'JEFE' ? 5 : 4;
     window._partidaSoloBots = true;
     socket.emit('crearSala', {
@@ -4688,20 +4878,31 @@ function conectarSocket() {
         if (idSala === miSalaActual) return; // ya se está reingresando sola
         const modal = document.createElement('div');
         modal.id = "modalReconexion";
+        modal.className = "modal-reconexion-overlay";
         modal.innerHTML = `
-            <div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;justify-content:center;align-items:center;">
-                <div style="background:var(--pergamino);color:var(--texto);padding:30px;border-radius:15px;border:6px solid var(--oro-oscuro);text-align:center;max-width:90%;width:350px;box-shadow:0 0 40px #000;">
-                    <h2 class="medieval-font" style="color:var(--rojo-rey);font-size:28px;margin-top:0;">Batalla Inconclusa!</h2>
-                    <p style="font-size:18px;font-weight:bold;">Tus tropas te esperan en sala <span style="color:#e67e22;font-size:22px;">${idSala}</span>.</p>
-                    <div style="margin-top:25px;display:flex;flex-direction:column;gap:10px;">
-                        <button id="btnSiRegresar" style="background:#2ecc71;color:white;font-size:18px;width:100%;">Regresar a la Mesa</button>
-                        <button id="btnNoRegresar" style="background:#7f8c8d;color:white;font-size:16px;width:100%;">Huir (Rendirse)</button>
-                    </div>
+            <div class="caja-reconexion">
+                <div class="reconexion-icono-corona">
+                    <svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg>
+                </div>
+                <h3 class="reconexion-titulo">¡Batalla Inconclusa!</h3>
+                <p class="reconexion-subtitulo">Tu honor y tus tropas te reclaman en el campo de batalla.</p>
+                <div class="reconexion-chip-sala">
+                    <span>Mesa Activa</span>
+                    <b>${escapeHTML(idSala)}</b>
+                </div>
+                <div class="reconexion-acciones">
+                    <button type="button" id="btnSiRegresar" class="boton-oro btn-reanudar-partida btn-latido">
+                        <svg class="icono" aria-hidden="true"><use href="#i-corona"/></svg> REANUDAR COMBATE
+                    </button>
+                    <button type="button" id="btnNoRegresar" class="btn-huir-partida">
+                        Huir del combate (Rendirse)
+                    </button>
                 </div>
             </div>`;
         document.body.appendChild(modal);
         document.getElementById('btnSiRegresar').onclick = () => {
             miSalaActual = idSala;
+            window._reingresando = true;
             socket.emit('unirseSala', { idSala });
             document.body.removeChild(modal);
         };
@@ -4713,15 +4914,16 @@ function conectarSocket() {
 
     // --- LOBBY ---
     document.getElementById('btnCrearSala').onclick = () => {
+        const modoJuego = document.getElementById('selectModoJuego')?.value || 'CLASICO';
         socket.emit('crearSala', {
             configuracion: {
-                modoRey: document.getElementById('selectModo').value,
+                modoRey: modoJuego === 'CLASICO' ? (document.getElementById('selectModo')?.value || 'SORPRESA') : 'SORPRESA',
                 vidas: parseInt(document.getElementById('selectVidas').value),
                 maxJugadores: parseInt(document.getElementById('selectJugadores').value),
                 poderes: document.getElementById('selectPoderes').value === 'SI',
                 publica: document.getElementById('selectVisibilidad')?.value === 'PUBLICA',
                 equipos: parseInt(document.getElementById('selectEquipos').value || '0'),
-                modoJuego: document.getElementById('selectModoJuego')?.value || 'CLASICO', // el servidor valida la lista
+                modoJuego: modoJuego, // el servidor valida la lista
                 pozoBlis: parseInt(document.getElementById('selectPozoBlis')?.value || '0', 10),
                 password: document.getElementById('inputPasswordSala').value.trim()
             }
@@ -5943,6 +6145,145 @@ function conectarSocket() {
 // archivo (_gestosInicializados, _repartiendo...). Llamarla a media carga
 // lanzaba "Cannot access ... before initialization", cortaba el resto de
 // main.js y quien volvía con sesión guardada veía la mesa congelada.
+
+// ==========================================
+// CAJONES DE MODOS DE JUEGO (LOBBY INTERACTIVO)
+// ==========================================
+function inicializarCajonesModos() {
+    const contenedor = document.getElementById('cajonesModos');
+    if (!contenedor) return;
+
+    // Abrir/Cerrar cajón al tocar cabecera
+    contenedor.querySelectorAll('.cajon-cabecera').forEach(cab => {
+        cab.addEventListener('click', () => {
+            const cajon = cab.closest('.cajon-modo');
+            if (!cajon) return;
+            const modo = cajon.dataset.modo;
+            const reqNivel = parseInt(cajon.dataset.nivel || '1', 10);
+            const miNivel = _tienda.nivel || 1;
+
+            if (miNivel < reqNivel) {
+                Sonidos.reaccion?.('😡');
+                mostrarToast(`🔒 Desbloquea ${cajon.querySelector('.cajon-titulo')?.textContent} al llegar a Nivel ${reqNivel}`, 'danio', 3000);
+                vibrar([40, 40, 40]);
+                return;
+            }
+
+            const estabaAbierto = cajon.classList.contains('abierto');
+            // Cerrar todos los demás
+            contenedor.querySelectorAll('.cajon-modo').forEach(c => c.classList.remove('abierto'));
+
+            if (!estabaAbierto) {
+                cajon.classList.add('abierto');
+                const sel = document.getElementById('selectModoJuego');
+                if (sel) sel.value = modo;
+                if (modo !== 'CLASICO') {
+                    const selModo = document.getElementById('selectModo');
+                    if (selModo) selModo.value = 'SORPRESA';
+                }
+                // Sincronizar las opciones activas de este cajón
+                cajon.querySelectorAll('.chip-btn.activo').forEach(chip => {
+                    const target = chip.closest('.cajon-chips')?.dataset.target;
+                    const el = target && document.getElementById(target);
+                    if (el) el.value = chip.dataset.val;
+                });
+                if (typeof actualizarResumenConfig === 'function') actualizarResumenConfig();
+                Sonidos.boton?.();
+            }
+        });
+    });
+
+    // Chips de opciones dentro de cada cajón
+    contenedor.querySelectorAll('.chip-btn').forEach(chip => {
+        chip.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const grupo = chip.closest('.cajon-chips');
+            if (!grupo) return;
+            grupo.querySelectorAll('.chip-btn').forEach(b => b.classList.remove('activo'));
+            chip.classList.add('activo');
+
+            const targetId = grupo.dataset.target;
+            const val = chip.dataset.val;
+            const sel = document.getElementById(targetId);
+            if (sel) {
+                sel.value = val;
+                if (typeof actualizarResumenConfig === 'function') actualizarResumenConfig();
+            }
+            Sonidos.boton?.();
+        });
+    });
+
+    // Botones de acción directa dentro del cajón
+    contenedor.querySelectorAll('.btn-cajon-bots').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const cajon = btn.closest('.cajon-modo');
+            const modo = cajon?.dataset.modo || 'CLASICO';
+            cajon?.querySelectorAll('.chip-btn.activo').forEach(chip => {
+                const target = chip.closest('.cajon-chips')?.dataset.target;
+                const el = target && document.getElementById(target);
+                if (el) el.value = chip.dataset.val;
+            });
+            if (modo !== 'CLASICO') {
+                const selModo = document.getElementById('selectModo');
+                if (selModo) selModo.value = 'SORPRESA';
+            }
+            iniciarContraBots(modo);
+        });
+    });
+
+    contenedor.querySelectorAll('.btn-cajon-amigos').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const cajon = btn.closest('.cajon-modo');
+            const modo = cajon?.dataset.modo || 'CLASICO';
+            const sel = document.getElementById('selectModoJuego');
+            if (sel) sel.value = modo;
+            cajon?.querySelectorAll('.chip-btn.activo').forEach(chip => {
+                const target = chip.closest('.cajon-chips')?.dataset.target;
+                const el = target && document.getElementById(target);
+                if (el) el.value = chip.dataset.val;
+            });
+            if (modo !== 'CLASICO') {
+                const selModo = document.getElementById('selectModo');
+                if (selModo) selModo.value = 'SORPRESA';
+            }
+            document.getElementById('btnCrearSala')?.click();
+        });
+    });
+}
+
+function actualizarEstadoCajonesNivel(miNivel = 1) {
+    const contenedor = document.getElementById('cajonesModos');
+    if (!contenedor) return;
+    contenedor.querySelectorAll('.cajon-modo').forEach(cajon => {
+        const req = parseInt(cajon.dataset.nivel || '1', 10);
+        const badge = cajon.querySelector('.cajon-badge');
+        const bloqueado = miNivel < req;
+        cajon.classList.toggle('bloqueado', bloqueado);
+        if (badge) {
+            if (bloqueado) {
+                badge.className = 'cajon-badge badge-bloqueado';
+                badge.textContent = `🔒 Nivel ${req}`;
+            } else {
+                badge.className = 'cajon-badge badge-activo';
+                badge.textContent = `Nivel ${req}`;
+            }
+        }
+        if (bloqueado && cajon.classList.contains('abierto')) {
+            cajon.classList.remove('abierto');
+        }
+    });
+    // Si ninguno está abierto, abrir el clásico
+    if (!contenedor.querySelector('.cajon-modo.abierto')) {
+        contenedor.querySelector('[data-modo="CLASICO"]')?.classList.add('abierto');
+    }
+}
+document.addEventListener('DOMContentLoaded', () => {
+    inicializarCajonesModos();
+    actualizarEstadoCajonesNivel(1);
+});
+
 function restaurarSesion() {
     const token    = localStorage.getItem('reyToken');
     const username = localStorage.getItem('reyUsername');

@@ -144,147 +144,296 @@
             <div class="lobby-tabs" id="lobbyTabs">
                 <button class="lobby-tab active" id="tabCrear" onclick="switchTab('crear')"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> CREAR</button>
                 <button class="lobby-tab" id="tabUnirse" onclick="switchTab('unirse')"><svg class="icono" aria-hidden="true"><use href="#i-puerta"/></svg> UNIRSE</button>
+                <button class="lobby-tab" id="tabAcademia" onclick="switchTab('academia')"><svg class="icono" aria-hidden="true"><use href="#i-libro"/></svg> ACADEMIA</button>
             </div>
 
             <!-- PANEL CREAR -->
             <section class="lobby-panel" id="panelConfiguracion">
-                <!-- 1. Jugar ahora -->
-                <div class="lobby-bloque">
-                    <p class="lobby-section-label">Jugar ahora</p>
-                    <button id="btnRapida" class="boton-oro boton-lobby full-width boton-rapida"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Partida rápida</button>
-                    <p class="practica-lema">Mesa de 4 · si falta gente, entran bots</p>
-                    <!-- Torneo de la noche (pintarTorneo en main.js) -->
+                <!-- 1. Partida Rápida Instantánea -->
+                <div class="lobby-bloque" style="margin-bottom: 12px;">
+                    <button id="btnRapida" class="boton-oro boton-lobby full-width boton-rapida"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Partida rápida multijugador</button>
+                    
+                    <!-- Banner directo a la Academia para que los nuevos la vean de inmediato -->
+                    <div class="banner-ir-academia" onclick="switchTab('academia')">
+                        <span class="icono-acad">🎓</span>
+                        <div class="banner-acad-txt">
+                            <strong>¿Nuevo en El Rey? Entra a la Academia</strong>
+                            <span>Aprende las reglas con tutoriales paso a paso y sin prisas.</span>
+                        </div>
+                        <span class="banner-acad-flecha">➔</span>
+                    </div>
+
                     <div id="bannerTorneo" class="banner-torneo hidden"></div>
                 </div>
 
-                <!-- 2. Aprender y probar modos -->
+                <!-- 2. Cajones de Modos de Juego -->
                 <div class="lobby-bloque">
-                    <p class="lobby-section-label">Aprender y probar modos (con bots)</p>
+                    <p class="lobby-section-label"><svg class="icono" aria-hidden="true"><use href="#i-naipe"/></svg> Modos de juego (Toca para configurar y jugar)</p>
+                    
+                    <div class="cajones-modos" id="cajonesModos">
+                        <!-- CAJÓN 1: CLÁSICO -->
+                        <div class="cajon-modo abierto" data-modo="CLASICO" data-nivel="1">
+                            <div class="cajon-cabecera">
+                                <div class="cajon-icono-titulo">
+                                    <span class="cajon-icono">⚔️</span>
+                                    <div>
+                                        <h4 class="cajon-titulo">Modo Clásico</h4>
+                                        <p class="cajon-desc">El juego tradicional. Evita la carta más baja y engaña al vecino.</p>
+                                    </div>
+                                </div>
+                                <span class="cajon-badge badge-activo">Nivel 1</span>
+                            </div>
+                            <div class="cajon-cuerpo">
+                                <div class="cajon-opciones-grid">
+                                    <div class="cajon-grupo">
+                                        <span class="cajon-label">❤️ Vidas</span>
+                                        <div class="cajon-chips" data-target="selectVidas">
+                                            <button type="button" class="chip-btn" data-val="1">1 Vida</button>
+                                            <button type="button" class="chip-btn activo" data-val="3">3 Vidas</button>
+                                            <button type="button" class="chip-btn" data-val="5">5 Vidas</button>
+                                        </div>
+                                    </div>
+                                    <div class="cajon-grupo">
+                                        <span class="cajon-label">👑 El Rey (9)</span>
+                                        <div class="cajon-chips" data-target="selectModo">
+                                            <button type="button" class="chip-btn activo" data-val="SORPRESA">🎭 Sorpresa</button>
+                                            <button type="button" class="chip-btn" data-val="DECLARADO">👑 Declarado</button>
+                                        </div>
+                                    </div>
+                                    <div class="cajon-grupo">
+                                        <span class="cajon-label">👥 Jugadores</span>
+                                        <div class="cajon-chips" data-target="selectJugadores">
+                                            <button type="button" class="chip-btn" data-val="4">4 Jug</button>
+                                            <button type="button" class="chip-btn" data-val="6">6 Jug</button>
+                                            <button type="button" class="chip-btn activo" data-val="8">8 Jug</button>
+                                        </div>
+                                    </div>
+                                    <div class="cajon-grupo">
+                                        <span class="cajon-label">💰 Pozo de Blis</span>
+                                        <div class="cajon-chips" data-target="selectPozoBlis">
+                                            <button type="button" class="chip-btn activo" data-val="0">Gratis</button>
+                                            <button type="button" class="chip-btn" data-val="10">10 Blis</button>
+                                            <button type="button" class="chip-btn" data-val="25">25 Blis</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="cajon-acciones">
+                                    <button type="button" class="boton-madera btn-cajon-bots"><svg class="icono"><use href="#i-bot"/></svg> ¡JUGAR VS BOTS!</button>
+                                    <button type="button" class="boton-oro btn-cajon-amigos"><svg class="icono"><use href="#i-corona"/></svg> CREAR SALA AMIGOS</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CAJÓN 2: TODOS VS REY -->
+                        <div class="cajon-modo" data-modo="JEFE" data-nivel="2">
+                            <div class="cajon-cabecera">
+                                <div class="cajon-icono-titulo">
+                                    <span class="cajon-icono">👑</span>
+                                    <div>
+                                        <h4 class="cajon-titulo">Todos contra el Rey</h4>
+                                        <p class="cajon-desc">Cooperativo: únanse en equipo para derrocar al tirano del reino.</p>
+                                    </div>
+                                </div>
+                                <span class="cajon-badge">Nivel 2</span>
+                            </div>
+                            <div class="cajon-cuerpo">
+                                <div class="cajon-opciones-grid">
+                                    <div class="cajon-grupo">
+                                        <span class="cajon-label">❤️ Vidas del Rey Tirano</span>
+                                        <div class="cajon-chips" data-target="selectVidas">
+                                            <button type="button" class="chip-btn" data-val="1">1 Vida</button>
+                                            <button type="button" class="chip-btn activo" data-val="3">3 Vidas</button>
+                                            <button type="button" class="chip-btn" data-val="5">5 Vidas</button>
+                                        </div>
+                                    </div>
+                                    <div class="cajon-grupo">
+                                        <span class="cajon-label">💰 Pozo de Blis</span>
+                                        <div class="cajon-chips" data-target="selectPozoBlis">
+                                            <button type="button" class="chip-btn activo" data-val="0">Gratis</button>
+                                            <button type="button" class="chip-btn" data-val="10">10 Blis</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="cajon-acciones">
+                                    <button type="button" class="boton-madera btn-cajon-bots"><svg class="icono"><use href="#i-bot"/></svg> ¡JUGAR VS REY BOT!</button>
+                                    <button type="button" class="boton-oro btn-cajon-amigos"><svg class="icono"><use href="#i-corona"/></svg> CREAR SALA AMIGOS</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CAJÓN 3: FIESTA -->
+                        <div class="cajon-modo" data-modo="FIESTA" data-nivel="3">
+                            <div class="cajon-cabecera">
+                                <div class="cajon-icono-titulo">
+                                    <span class="cajon-icono">⚡</span>
+                                    <div>
+                                        <h4 class="cajon-titulo">Modo Fiesta</h4>
+                                        <p class="cajon-desc">Eventos caóticos en cada ronda: niebla espesa, tormenta y carrusel.</p>
+                                    </div>
+                                </div>
+                                <span class="cajon-badge">Nivel 3</span>
+                            </div>
+                            <div class="cajon-cuerpo">
+                                <div class="cajon-opciones-grid">
+                                    <div class="cajon-grupo">
+                                        <span class="cajon-label">❤️ Vidas</span>
+                                        <div class="cajon-chips" data-target="selectVidas">
+                                            <button type="button" class="chip-btn" data-val="1">1 Vida</button>
+                                            <button type="button" class="chip-btn activo" data-val="3">3 Vidas</button>
+                                            <button type="button" class="chip-btn" data-val="5">5 Vidas</button>
+                                        </div>
+                                    </div>
+                                    <div class="cajon-grupo">
+                                        <span class="cajon-label">👥 Jugadores</span>
+                                        <div class="cajon-chips" data-target="selectJugadores">
+                                            <button type="button" class="chip-btn" data-val="4">4 Jug</button>
+                                            <button type="button" class="chip-btn activo" data-val="6">6 Jug</button>
+                                            <button type="button" class="chip-btn" data-val="8">8 Jug</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="cajon-acciones">
+                                    <button type="button" class="boton-madera btn-cajon-bots"><svg class="icono"><use href="#i-bot"/></svg> ¡JUGAR VS BOTS!</button>
+                                    <button type="button" class="boton-oro btn-cajon-amigos"><svg class="icono"><use href="#i-corona"/></svg> CREAR SALA AMIGOS</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CAJÓN 4: GUERRA ARCANA -->
+                        <div class="cajon-modo" data-modo="GUERRA_ARCANA" data-nivel="4">
+                            <div class="cajon-cabecera">
+                                <div class="cajon-icono-titulo">
+                                    <span class="cajon-icono">🔮</span>
+                                    <div>
+                                        <h4 class="cajon-titulo">Guerra Arcana</h4>
+                                        <p class="cajon-desc">Hechizos tácticos en tu mano para congelar, desviar y alterar turnos.</p>
+                                    </div>
+                                </div>
+                                <span class="cajon-badge">Nivel 4</span>
+                            </div>
+                            <div class="cajon-cuerpo">
+                                <div class="cajon-opciones-grid">
+                                    <div class="cajon-grupo">
+                                        <span class="cajon-label">❤️ Vidas</span>
+                                        <div class="cajon-chips" data-target="selectVidas">
+                                            <button type="button" class="chip-btn" data-val="1">1 Vida</button>
+                                            <button type="button" class="chip-btn activo" data-val="3">3 Vidas</button>
+                                            <button type="button" class="chip-btn" data-val="5">5 Vidas</button>
+                                        </div>
+                                    </div>
+                                    <div class="cajon-grupo">
+                                        <span class="cajon-label">👥 Jugadores</span>
+                                        <div class="cajon-chips" data-target="selectJugadores">
+                                            <button type="button" class="chip-btn" data-val="4">4 Jug</button>
+                                            <button type="button" class="chip-btn activo" data-val="6">6 Jug</button>
+                                            <button type="button" class="chip-btn" data-val="8">8 Jug</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="cajon-acciones">
+                                    <button type="button" class="boton-madera btn-cajon-bots"><svg class="icono"><use href="#i-bot"/></svg> ¡JUGAR VS BOTS!</button>
+                                    <button type="button" class="boton-oro btn-cajon-amigos"><svg class="icono"><use href="#i-corona"/></svg> CREAR SALA AMIGOS</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CAJÓN 5: CONSPIRACIÓN -->
+                        <div class="cajon-modo" data-modo="CONSPIRACION" data-nivel="5">
+                            <div class="cajon-cabecera">
+                                <div class="cajon-icono-titulo">
+                                    <span class="cajon-icono">🎭</span>
+                                    <div>
+                                        <h4 class="cajon-titulo">Conspiración en la Corte</h4>
+                                        <p class="cajon-desc">Roles ocultos, inquisidores, asesinos y deducción social secreta.</p>
+                                    </div>
+                                </div>
+                                <span class="cajon-badge">Nivel 5</span>
+                            </div>
+                            <div class="cajon-cuerpo">
+                                <div class="cajon-opciones-grid">
+                                    <div class="cajon-grupo">
+                                        <span class="cajon-label">❤️ Vidas</span>
+                                        <div class="cajon-chips" data-target="selectVidas">
+                                            <button type="button" class="chip-btn activo" data-val="3">3 Vidas</button>
+                                            <button type="button" class="chip-btn" data-val="5">5 Vidas</button>
+                                        </div>
+                                    </div>
+                                    <div class="cajon-grupo">
+                                        <span class="cajon-label">👥 Jugadores</span>
+                                        <div class="cajon-chips" data-target="selectJugadores">
+                                            <button type="button" class="chip-btn" data-val="4">4 Jug</button>
+                                            <button type="button" class="chip-btn activo" data-val="6">6 Jug</button>
+                                            <button type="button" class="chip-btn" data-val="8">8 Jug</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="cajon-acciones">
+                                    <button type="button" class="boton-madera btn-cajon-bots"><svg class="icono"><use href="#i-bot"/></svg> ¡JUGAR VS BOTS!</button>
+                                    <button type="button" class="boton-oro btn-cajon-amigos"><svg class="icono"><use href="#i-corona"/></svg> CREAR SALA AMIGOS</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTENEDOR OCULTO DE INPUTS (Mantiene 100% retrocompatibilidad con server y scripts) -->
+                <div class="hidden" style="display:none !important;">
+                    <select id="selectModoJuego"><option value="CLASICO" selected>CLASICO</option><option value="JEFE">JEFE</option><option value="FIESTA">FIESTA</option><option value="GUERRA_ARCANA">GUERRA_ARCANA</option><option value="CONSPIRACION">CONSPIRACION</option></select>
+                    <select id="selectVidas"><option value="1">1</option><option value="3" selected>3</option><option value="5">5</option></select>
+                    <select id="selectModo"><option value="SORPRESA" selected>SORPRESA</option><option value="DECLARADO">DECLARADO</option></select>
+                    <select id="selectJugadores"><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8" selected>8</option></select>
+                    <select id="selectPozoBlis"><option value="0" selected>0</option><option value="10">10</option><option value="25">25</option><option value="50">50</option></select>
+                    <select id="selectEquipos"><option value="0" selected>0</option><option value="2">2</option><option value="3">3</option></select>
+                    <select id="selectPoderes"><option value="NO" selected>NO</option><option value="SI">SI</option></select>
+                    <select id="selectVisibilidad"><option value="PRIVADA" selected>PRIVADA</option><option value="PUBLICA">PUBLICA</option></select>
+                    <input type="text" id="inputPasswordSala" value="">
+                    <button id="btnCrearSala" disabled></button>
+                    <button id="btnJugarSoloBots"></button>
+                    <span id="resumenConfig"></span>
+                    <span id="resumenMasOpciones"></span>
+                </div>
+            </section>
+
+            <!-- PANEL ACADEMIA (Tutoriales y prácticas guiadas) -->
+            <section class="lobby-panel hidden" id="panelAcademia">
+                <div class="lobby-bloque bloque-academia" style="margin-top:0;">
+                    <p class="lobby-section-label" style="color:#58d68d; font-size:15px;"><svg class="icono" aria-hidden="true"><use href="#i-libro"/></svg> Academia del Reino: Aprende a jugar</p>
+                    <p style="font-size:12.5px; color:var(--texto-suave); margin:0 0 14px; line-height:1.45;">
+                        ¿Primera vez aquí? Aprende las mecánicas de cada modo paso a paso con bots explicativos. 
+                        Los textos esperan a que los leas y puedes cerrarlos con <b>✕</b> cuando estés listo.
+                    </p>
                     <div class="aprender-fila">
-                        <button id="btnPractica" class="tarjeta-aprender">
+                        <button id="btnPractica" class="tarjeta-aprender tutorial-destacado">
                             <svg class="icono" aria-hidden="true"><use href="#i-diana"/></svg>
-                            <strong>Clásico</strong>
-                            <span>Tutorial guiado</span>
+                            <strong>Modo Clásico</strong>
+                            <span>Tutorial guiado para nuevos</span>
                         </button>
                         <button id="btnProbarArcana" class="tarjeta-aprender">
                             <svg class="icono" aria-hidden="true"><use href="#i-fuego"/></svg>
                             <strong>Guerra Arcana</strong>
-                            <span>Probar con bots</span>
+                            <span>Práctica guiada de hechizos</span>
                         </button>
                         <button id="btnProbarConspiracion" class="tarjeta-aprender">
                             <svg class="icono" aria-hidden="true"><use href="#i-pergamino"/></svg>
                             <strong>Conspiración</strong>
-                            <span>Probar con bots</span>
+                            <span>Práctica de roles secretos</span>
                         </button>
                         <button id="btnProbarJefe" class="tarjeta-aprender">
                             <svg class="icono" aria-hidden="true"><use href="#i-corona"/></svg>
                             <strong>Contra el Rey</strong>
-                            <span>Probar con bots</span>
+                            <span>Práctica cooperativa</span>
                         </button>
                         <button id="btnPracticaFiesta" class="tarjeta-aprender">
                             <svg class="icono" aria-hidden="true"><use href="#i-grupo"/></svg>
                             <strong>Modo Fiesta</strong>
-                            <span>3 rondas guiadas</span>
+                            <span>Práctica de eventos locos</span>
                         </button>
                         <button id="btnPracticaPoderes" class="tarjeta-aprender">
                             <svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg>
                             <strong>Poderes</strong>
-                            <span>3 rondas guiadas</span>
+                            <span>Práctica de poderes tácticos</span>
                         </button>
                     </div>
-                </div>
-
-                <!-- 3. Crear mesa -->
-                <div class="lobby-bloque">
-                    <p class="lobby-section-label">Crear partida (amigos o contra bots)</p>
-                    <div class="config-grid-nuevo">
-                        <div class="config-item-nuevo">
-                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-naipe"/></svg> Modo de juego</span>
-                            <select id="selectModoJuego" class="selector-medieval selector-compacto">
-                            <option value="CLASICO">⚔️ Clásico</option>
-                            <option value="GUERRA_ARCANA">🔮 Guerra Arcana (Hechizos)</option>
-                            <option value="CONSPIRACION">🎭 Conspiración en la Corte</option>
-                            <option value="JEFE">👑 Todos contra el Rey</option>
-                            <option value="FIESTA">⚡ Fiesta de eventos</option>
-                        </select>
-                        </div>
-                        <div class="config-item-nuevo">
-                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-corazon"/></svg> Vidas</span>
-                            <select id="selectVidas" class="selector-medieval selector-compacto">
-                            <option value="1">1 vida</option>
-                            <option value="3" selected>3 vidas</option>
-                            <option value="5">5 vidas</option>
-                        </select>
-                        </div>
-                        <div class="config-item-nuevo">
-                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-grupo"/></svg> Jugadores en la mesa</span>
-                            <select id="selectJugadores" class="selector-medieval selector-compacto">
-                            <option value="2">2 jugadores</option>
-                            <option value="3">3 jugadores</option>
-                            <option value="4">4 jugadores</option>
-                            <option value="5">5 jugadores</option>
-                            <option value="6">6 jugadores</option>
-                            <option value="7">7 jugadores</option>
-                            <option value="8" selected>8 jugadores</option>
-                        </select>
-                        </div>
-                    </div>
-                    <details class="mas-opciones" id="masOpciones">
-                        <summary>
-                            <span><svg class="icono" aria-hidden="true"><use href="#i-ajustes"/></svg> Más opciones</span>
-                            <span id="resumenMasOpciones" class="resumen-mas-opciones"></span>
-                        </summary>
-                        <div class="config-grid-nuevo">
-                        <div class="config-item-nuevo" title="Parejas: equipos Oro y Plata">
-                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-grupo"/></svg> Parejas</span>
-                            <select id="selectEquipos" class="selector-medieval selector-compacto">
-                                <option value="0" selected>Individual</option>
-                                <option value="2">2 contra 2</option>
-                                <option value="3">3 contra 3</option>
-                            </select>
-                        </div>
-                            <div class="config-item-nuevo" title="Sorpresa: el 9 va oculto · Declarado: todos saben quién lo tiene">
-                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-mascara"/></svg> Modo Rey</span>
-                            <select id="selectModo" class="selector-medieval selector-compacto">
-                            <option value="SORPRESA">Sorpresa</option>
-                            <option value="DECLARADO">Declarado</option>
-                        </select>
-                        </div>
-                            <div class="config-item-nuevo" title="Cada vez que pierdes una vida ganas un poder de un solo uso">
-                            <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-ojo"/></svg> Poderes <span class="etiqueta-canje"><svg class="icono" aria-hidden="true"><use href="#i-corazon-roto"/></svg>→<svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg></span></span>
-                            <select id="selectPoderes" class="selector-medieval selector-compacto">
-                            <option value="NO" selected>No</option>
-                            <option value="SI">Sí</option>
-                        </select>
-                        </div>
-                            <div class="config-item-nuevo" title="Pozo del Rey: cada jugador aporta la entrada en Blis y el ganador se lleva todo">
-                                <span class="config-label-nuevo"><svg class="icono icono-blis" aria-hidden="true"><use href="#i-blis"/></svg> Pozo de Blis</span>
-                                <select id="selectPozoBlis" class="selector-medieval selector-compacto">
-                                    <option value="0" selected>Sin pozo (gratis)</option>
-                                    <option value="10">10 Blis</option>
-                                    <option value="25">25 Blis</option>
-                                    <option value="50">50 Blis</option>
-                                </select>
-                            </div>
-                            <div class="config-item-nuevo" title="Privada: solo entran con el código, el enlace o el QR · Pública: aparece en Unirse para cualquiera">
-                                <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-globo"/></svg> Visibilidad</span>
-                                <select id="selectVisibilidad" class="selector-medieval selector-compacto">
-                                    <option value="PRIVADA" selected>Privada</option>
-                                    <option value="PUBLICA">Pública</option>
-                                </select>
-                            </div>
-                            <div class="config-item-nuevo">
-                                <span class="config-label-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-candado"/></svg> Contraseña</span>
-                                <input type="text" id="inputPasswordSala" class="selector-compacto" placeholder="Opcional" maxlength="20" autocomplete="off">
-                            </div>
-                        </div>
-                    </details>
-                </div>
-
-                <!-- 4. Acciones siempre a la mano -->
-                <div class="lobby-acciones-fijas">
-                    <button id="btnCrearSala" class="boton-oro boton-lobby full-width" disabled>CREAR SALA MULTIJUGADOR</button>
-                    <button id="btnJugarSoloBots" class="boton-madera boton-lobby full-width margin-top-10" type="button"><svg class="icono" aria-hidden="true"><use href="#i-bot"/></svg> ¡JUGAR DIRECTO CONTRA BOTS!</button>
                 </div>
             </section>
 
@@ -430,11 +579,13 @@
                     </div>
 
                     <!-- Globo de la práctica guiada -->
-                    <div id="coachPractica" class="coach-practica hidden" role="status" aria-live="polite">
-                        <p id="coachTexto"></p>
+                    <div id="coachPractica" class="coach-practica hidden" role="dialog" aria-live="polite">
+                        <button type="button" id="coachCerrarX" class="coach-cerrar-x" aria-label="Cerrar aviso">✕</button>
+                        <div class="coach-header"><svg class="icono" aria-hidden="true"><use href="#i-libro"/></svg> <span>TUTORIAL PASO A PASO</span></div>
+                        <div id="coachTexto" class="coach-texto"></div>
                         <div class="coach-acciones">
-                            <button id="coachBoton" class="boton-oro hidden"></button>
-                            <button id="coachSalir" class="coach-salir">Salir de la práctica</button>
+                            <button type="button" id="coachBoton" class="boton-oro">¡Entendido! Continuar</button>
+                            <button type="button" id="coachSalir" class="coach-salir">Salir de la práctica</button>
                         </div>
                     </div>
 
@@ -790,29 +941,34 @@
     <script>
         // Tab switching del lobby
         function switchTab(tab) {
-            const tabCrear   = document.getElementById('tabCrear');
-            const tabUnirse  = document.getElementById('tabUnirse');
-            const panelCrear = document.getElementById('panelConfiguracion');
-            const panelUnir  = document.getElementById('panelUnirse');
+            const tabCrear    = document.getElementById('tabCrear');
+            const tabUnirse   = document.getElementById('tabUnirse');
+            const tabAcademia = document.getElementById('tabAcademia');
+            const panelCrear  = document.getElementById('panelConfiguracion');
+            const panelUnir   = document.getElementById('panelUnirse');
+            const panelAcad   = document.getElementById('panelAcademia');
+
+            [tabCrear, tabUnirse, tabAcademia].forEach(t => t?.classList.remove('active'));
+            [panelCrear, panelUnir, panelAcad].forEach(p => p?.classList.add('hidden'));
 
             if (tab === 'crear') {
-                tabCrear.classList.add('active');
-                tabUnirse.classList.remove('active');
-                panelCrear.classList.remove('hidden');
-                panelUnir.classList.add('hidden');
-            } else {
-                tabUnirse.classList.add('active');
+                tabCrear?.classList.add('active');
+                panelCrear?.classList.remove('hidden');
+            } else if (tab === 'unirse') {
+                tabUnirse?.classList.add('active');
+                panelUnir?.classList.remove('hidden');
                 setTimeout(() => window.alAbrirUnirse && window.alAbrirUnirse(), 0);
-                tabCrear.classList.remove('active');
-                panelUnir.classList.remove('hidden');
-                panelCrear.classList.add('hidden');
+            } else if (tab === 'academia') {
+                tabAcademia?.classList.add('active');
+                panelAcad?.classList.remove('hidden');
             }
         }
 
         // Actualiza el resumen de config
         function actualizarResumenConfig() {
             const ic = (n) => `<svg class="icono" aria-hidden="true"><use href="#i-${n}"/></svg>`;
-            const modo      = document.getElementById('selectModo')?.value === 'DECLARADO' ? 'Declarado' : 'Sorpresa';
+            const esClasico = (document.getElementById('selectModoJuego')?.value || 'CLASICO') === 'CLASICO';
+            const modo      = esClasico ? (document.getElementById('selectModo')?.value === 'DECLARADO' ? 'Declarado' : 'Sorpresa') : 'Sorpresa';
             const modoJuego = { FIESTA: `${ic('rayo')} Fiesta`, JEFE: `${ic('corona')} Todos vs Rey`, CONSPIRACION: `${ic('pergamino')} Conspiración`, GUERRA_ARCANA: `${ic('fuego')} Guerra Arcana` }[document.getElementById('selectModoJuego')?.value] || `${ic('espadas')} Clásico`;
             const vidas     = document.getElementById('selectVidas')?.value;
             const jugadores = document.getElementById('selectJugadores')?.value;
@@ -828,7 +984,7 @@
                 el.closest('.config-item-nuevo')?.classList.toggle('config-apagado', equipos > 0);
             });
             // Resumen de "Más opciones" para verlo sin desplegar
-            const extras = [modo];
+            const extras = esClasico ? [modo] : [];
             if (document.getElementById('selectPoderes')?.value === 'SI') extras.push('con poderes');
             if (document.getElementById('selectVisibilidad')?.value === 'PUBLICA') extras.push('pública');
             if (document.getElementById('inputPasswordSala')?.value.trim()) extras.push('con contraseña');
@@ -836,7 +992,8 @@
             if (resMas) resMas.textContent = extras.join(' · ');
             const resumen   = document.getElementById('resumenConfig');
             if (resumen) {
-                resumen.innerHTML = `${ic('ajustes')} ${modoJuego} · ${modo} · ${vidas} ${ic('corazon')} · ${equipos ? `${equipos} contra ${equipos}` : `${jugadores} jug`} · ${ic('reloj')} ${tiempo}s${bots}`;
+                const modoTag = esClasico ? ` · ${modo}` : '';
+                resumen.innerHTML = `${ic('ajustes')} ${modoJuego}${modoTag} · ${vidas} ${ic('corazon')} · ${equipos ? `${equipos} contra ${equipos}` : `${jugadores} jug`} · ${ic('reloj')} ${tiempo}s${bots}`;
             }
         }
 
@@ -892,12 +1049,12 @@
     <div class="modal-caja tienda-caja">
         <button type="button" class="modal-cerrar-x" data-cierra="modalTienda" aria-label="Cerrar"><svg class="icono" aria-hidden="true"><use href="#i-cerrar"/></svg></button>
         <h3 id="tituloTienda" class="medieval-font tienda-titulo"><svg class="icono" aria-hidden="true"><use href="#i-tienda"/></svg> Tienda del Rey</h3>
-        <div class="tienda-saldos">
         <div class="banner-beta-letios">
             <strong>🎁 ¡Regalo de Beta Abierta!</strong><br>
             Recibes 100 Letios gratis para probar la tienda premium.
             <small>(Próximamente los Letios se adquirirán con dinero real).</small>
         </div>
+        <div class="tienda-saldos">
             <span class="tienda-saldo-item saldo-blis" title="Tus Blis"><svg class="icono icono-blis" aria-hidden="true"><use href="#i-blis"/></svg> <b id="tiendaSaldoBlis">0</b> Blis</span>
             <span class="tienda-saldo-item saldo-letios" title="Tus Letios"><svg class="icono icono-letio" aria-hidden="true"><use href="#i-letio"/></svg> <b id="tiendaSaldoLetios">0</b> Letios</span>
             <span class="hidden"><b id="tiendaSaldoGaudios">0</b></span><!-- Gaudios retirados el 30/09/2026 -->

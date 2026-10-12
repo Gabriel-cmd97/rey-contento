@@ -253,7 +253,8 @@ function sanitizarConfig(raw) {
     // CONSPIRACION (Roles secretos e intriga en la corte, 03/10/2026).
     // GUERRA_ARCANA (Grimorios y hechizos tácticos en tiempo real, 03/10/2026).
     const modoJuego     = enLista(raw.modoJuego, ['CLASICO', 'FIESTA', 'JEFE', 'CONSPIRACION', 'GUERRA_ARCANA'], 'CLASICO');
-    const modoRey       = enLista(raw.modoRey, ['SORPRESA', 'DECLARADO'], 'SORPRESA');
+    // Solo el modo CLASICO permite Rey Declarado; en los demás modos (Fiesta, Jefe, Conspiración, Arcana) el Rey siempre es Sorpresa.
+    const modoRey       = (modoJuego === 'CLASICO') ? enLista(raw.modoRey, ['SORPRESA', 'DECLARADO'], 'SORPRESA') : 'SORPRESA';
     // Reyes: se sortea al crear la sala (ya no se elige); la sala de espera lo muestra.
     const frecuenciaReyes = ['NORMAL', 'ALTA', 'LOCURA'][Math.floor(Math.random() * 3)];
     // Dificultad fija: ya no se elige al crear sala (demasiadas opciones).
@@ -1744,7 +1745,7 @@ function gestionarTurnos(sala, io, esInicio = false) {
         // Tiempo elegido en la sala; si el jugador está desconectado se le dan
         // al menos 30s de gracia para que alcance a volver.
         const tiempoSala = sala.config.tiempoTurno || TIEMPO_TURNO;
-        let tiempoTurno = jugadorActual.online ? tiempoSala : Math.max(30, tiempoSala);
+        let tiempoTurno = sala.config.practica ? 180 : (jugadorActual.online ? tiempoSala : Math.max(30, tiempoSala));
 
         // Primer turno de la ronda: el cliente arranca el reloj visual recién tras
         // el vuelo+flip de la carta (~800ms después de juegoIniciado), mientras que
@@ -1866,7 +1867,7 @@ function gestionarTurnos(sala, io, esInicio = false) {
                 const accionBot = corte !== null || objetivo !== null ? 'CAMBIAR' : decision;
                 const opcionesBot = corte !== null ? { objetivoIndex: corte, proteger: true } : objetivo !== null ? { objetivoIndex: objetivo, venganza: true } : {};
                 setTimeout(() => { if (sigueSuTurno()) ejecutarAccion(sala.idSala, accionBot, io, jugadorActual.id, false, opcionesBot); }, (poder && !r.error) || planConspiracion || planArcana ? 900 : 0);
-            }, bots.retrasoBot());
+            }, sala.config.practica ? 5500 : bots.retrasoBot());
             return;
         }
 
