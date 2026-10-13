@@ -2110,7 +2110,7 @@ function iniciarRonda(sala, io) {
     // El evento se muestra MS_CARTA_EVENTO en el cliente (4 s para leerlo con calma) + 400 ms de salida.
     const MS_INTRO_DUELO = 2800, MS_INTRO_EVENTO = 4400;
     const MS_INTRO_CONSPIRACION = (sala.rondaActual === 1 && sala.config.modoJuego === 'CONSPIRACION') ? 4500 : 0;
-    const MS_INTRO_ARCANA = (sala.rondaActual === 1 && sala.config.modoJuego === 'GUERRA_ARCANA') ? 4500 : 0;
+    const MS_INTRO_ARCANA = (sala.rondaActual === 1 && sala.config.modoJuego === 'GUERRA_ARCANA') ? 2500 : 0;
     const introMs = (anunciarDuelo ? MS_INTRO_DUELO : 0) + (sala.evento ? MS_INTRO_EVENTO : 0) + MS_INTRO_CONSPIRACION + MS_INTRO_ARCANA;
     if (sala.evento) {
         const ev = eventos.CATALOGO[sala.evento];

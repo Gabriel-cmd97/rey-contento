@@ -2678,6 +2678,8 @@ function pintarHistorialPerfil(historial) {
 async function cargarMiPerfil() {
     const modal = document.getElementById('modalPerfil');
     modal.classList.remove('hidden');
+    const tabActual = document.querySelector('#perfilPestanas .perfil-tab.active')?.dataset.ptab || 'estilos';
+    activarPerfilTab(tabActual);
     try {
         const res  = await fetch(`${URL_SERVIDOR}/mis-stats/${encodeURIComponent(miNombreUsuario)}`);
         const data = await res.json();
@@ -2692,6 +2694,28 @@ async function cargarMiPerfil() {
         pintarHistorialPerfil(data.historial || []);
     } catch { /* sin conexión, los valores quedan en — */ }
 }
+
+function activarPerfilTab(tabKey) {
+    const pestanas = document.querySelectorAll('#perfilPestanas .perfil-tab');
+    pestanas.forEach(b => {
+        b.classList.toggle('active', b.dataset.ptab === tabKey);
+    });
+    const seccionEstilos = document.getElementById('pSeccionEstilos');
+    const seccionStats = document.getElementById('pSeccionStats');
+    const seccionCuenta = document.getElementById('pSeccionCuenta');
+    if (seccionEstilos) seccionEstilos.classList.toggle('hidden', tabKey !== 'estilos');
+    if (seccionStats) seccionStats.classList.toggle('hidden', tabKey !== 'stats');
+    if (seccionCuenta) seccionCuenta.classList.toggle('hidden', tabKey !== 'cuenta');
+}
+
+document.getElementById('perfilPestanas')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.perfil-tab');
+    if (btn && btn.dataset.ptab) {
+        Sonidos.boton?.();
+        activarPerfilTab(btn.dataset.ptab);
+    }
+});
+
 document.getElementById('btnMiPerfil').addEventListener('click', cargarMiPerfil);
 
 // ==========================================
@@ -2726,6 +2750,8 @@ function pintarMiLook() {
 function pintarCosmeticosPerfil(datos, ganados, catalogoLogros, nivel = 1) {
     const caja = document.getElementById('pCosmeticos');
     if (!caja || !datos) return;
+    const modalCaja = caja.closest('.modal-caja');
+    const scrollPrevio = modalCaja ? modalCaja.scrollTop : 0;
     _catalogoCosm = datos.catalogo;
     miLook = datos.elegidos;
     pintarMiLook();
@@ -2764,18 +2790,51 @@ function pintarCosmeticosPerfil(datos, ganados, catalogoLogros, nivel = 1) {
                 ${muestra(c)}<span class="cosm-nombre">${libre ? escapeHTML(c.titulo) : icono('candado') + ' ' + escapeHTML(requisito)}</span>
             </button>`;
         }).join('')}</div>`).join('');
+    if (modalCaja && scrollPrevio > 0) modalCaja.scrollTop = scrollPrevio;
+
     caja.onclick = async (e) => {
         const b = e.target.closest('.cosm-opcion:not(.bloqueado)');
         if (!b || b.classList.contains('elegido')) return;
+        const tipo = b.dataset.tipo;
+        const id = b.dataset.id;
         try {
             const res = await fetch(`${URL_SERVIDOR}/cosmeticos`, { method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${miToken}` },
-                body: JSON.stringify({ tipo: b.dataset.tipo, id: b.dataset.id }) });
+                body: JSON.stringify({ tipo, id }) });
             const r = await res.json();
             if (!res.ok) return mostrarToast(r.error || 'No se pudo cambiar.', 'danio', 2500);
             datos.elegidos = r.elegidos;
-            pintarCosmeticosPerfil(datos, ganados, catalogoLogros, nivel);
-            Sonidos.boton();
+            miLook = datos.elegidos;
+            pintarMiLook();
+
+            // Actualización IN-SITU: mantiene la posición exacta del usuario en pantalla
+            caja.querySelectorAll(`.cosm-opcion[data-tipo="${tipo}"]`).forEach(btn => btn.classList.remove('elegido'));
+            b.classList.add('elegido');
+
+            // Si cambió el avatar, refrescar previews dependientes de marcos
+            if (tipo === 'avatar') {
+                caja.querySelectorAll('.cosm-opcion[data-tipo="marco"] .avatar-cosm').forEach(span => {
+                    span.innerHTML = contenidoAvatar(miLook, miNombreUsuario);
+                });
+            }
+
+            // Actualizar vitrina
+            const vitrinaAvatar = caja.querySelector('.vitrina-avatar');
+            if (vitrinaAvatar) {
+                vitrinaAvatar.className = 'avatar-cosm vitrina-avatar' + claseMarco(miLook);
+                vitrinaAvatar.innerHTML = contenidoAvatar(miLook, miNombreUsuario);
+            }
+            const elg = (t) => datos.catalogo.find(c => c.tipo === t && c.id === datos.elegidos[t]) || {};
+            const vitrinaSmall = caja.querySelector('.vitrina-datos small');
+            if (vitrinaSmall) {
+                vitrinaSmall.textContent = `${elg('avatar').titulo || ''} · marco ${elg('marco').titulo || ''}`;
+            }
+            const vitrinaCartas = caja.querySelector('.vitrina-cartas');
+            if (vitrinaCartas) {
+                vitrinaCartas.innerHTML = `<span class="muestra-dorso${claseDorso(miLook)}"></span><span class="muestra-tapete tapete-${escapeHTML(miLook?.tapete || 'verde')}"></span>`;
+            }
+
+            Sonidos.boton?.();
         } catch { mostrarToast('Sin conexión: intenta de nuevo.', 'danio', 2500); }
     };
 }
@@ -2966,7 +3025,7 @@ async function abrirTienda(refrescar = true) {
     document.getElementById('tiendaAyuda').textContent =
         `Blis: gratis, se ganan jugando y con el cofre diario. Letios: para lo legendario; se ganan en el torneo, la racha de 7 días y el Arcón.`;
     document.querySelectorAll('.nombre-moneda').forEach(e => { e.textContent = MONEDA.plural; });
-    const tabs = [['arcon', '✨ Arcón'], ['colecciones', 'Colecciones'], ['avatar', 'Avatares'], ['marco', 'Marcos'], ['dorso', 'Dorsos'], ['tapete', 'Tapetes']];
+    const tabs = [['arcon', '✨ Arcón'], ['colecciones', '👑 Colecciones'], ['avatar', '👤 Avatares'], ['marco', '🖼️ Marcos'], ['dorso', '🃏 Naipes'], ['tapete', '🪵 Tapetes']];
     let cuerpo = '';
     if (_tiendaTab === 'arcon') {
         const puedeBlis = (_tienda.blis || 0) >= 100;
@@ -3021,8 +3080,11 @@ async function abrirTienda(refrescar = true) {
             </div>`;
         }).join('') + `</div>`;
     }
-    document.getElementById('tiendaArticulos').innerHTML =
+    const artEl = document.getElementById('tiendaArticulos');
+    const scrollPrevTienda = artEl ? artEl.scrollTop : 0;
+    artEl.innerHTML =
         `<div class="tienda-tabs">${tabs.map(([k, t]) => `<button type="button" data-tab="${k}" class="${k === _tiendaTab ? 'activa' : ''}">${t}</button>`).join('')}</div>` + cuerpo;
+    if (artEl && scrollPrevTienda > 0) artEl.scrollTop = scrollPrevTienda;
     pintarMonedas();
     setupSwipeColecciones();
     document.getElementById('modalTienda').classList.remove('hidden');
@@ -3904,31 +3966,13 @@ async function actualizarVictoriasBarra() {
         _tienda.nivel = data.nivel?.nivel || 1;
         actualizarEstadoCajonesNivel(_tienda.nivel);
         
-        // Bloquear modos de juego por nivel
+        // Modos de juego disponibles para todos los niveles
         const selectModo = document.getElementById('selectModoJuego');
         if (selectModo) {
-            const modos = {
-                'CLASICO': 1,
-                'JEFE': 2,
-                'FIESTA': 3,
-                'GUERRA_ARCANA': 4,
-                'CONSPIRACION': 5
-            };
             Array.from(selectModo.options).forEach(opt => {
-                const req = modos[opt.value] || 1;
-                if (_tienda.nivel < req) {
-                    opt.disabled = true;
-                    opt.textContent = opt.textContent.replace(/\s\(Nivel \d+\)$/, '') + ` (Nivel ${req})`;
-                } else {
-                    opt.disabled = false;
-                    opt.textContent = opt.textContent.replace(/\s\(Nivel \d+\)$/, '');
-                }
+                opt.disabled = false;
+                opt.textContent = opt.textContent.replace(/\s\(Nivel \d+\)$/, '');
             });
-            // If current selected is disabled, fallback to CLASICO
-            if (selectModo.options[selectModo.selectedIndex]?.disabled) {
-                selectModo.value = 'CLASICO';
-                if (typeof actualizarResumenConfig === 'function') actualizarResumenConfig();
-            }
         }
         _colecciones = data.cosmeticos?.colecciones || [];
         pintarMonedas();
@@ -4103,12 +4147,19 @@ if (btnPractica) {
 document.getElementById('coachSalir')?.addEventListener('click', terminarPractica);
 
 function iniciarContraBots(modoElegido) {
-    if (!socket?.connected) return;
+    if (!socket?.connected) {
+        mostrarToast('Conectando con el servidor...', 'rey', 2000);
+        conectarSocket();
+        socket?.once('connect', () => iniciarContraBots(modoElegido));
+        return;
+    }
     const modo = modoElegido || document.getElementById('selectModoJuego')?.value || 'CLASICO';
     const vidas = parseInt(document.getElementById('selectVidas')?.value || '3', 10);
     const modoRey = (modo === 'CLASICO') ? (document.getElementById('selectModo')?.value || 'SORPRESA') : 'SORPRESA';
     const numJugadores = modo === 'JEFE' ? 5 : 4;
     window._partidaSoloBots = true;
+    mostrarToast('Iniciando partida contra bots...', 'rey', 2000);
+    Sonidos.boton?.();
     socket.emit('crearSala', {
         configuracion: {
             modoRey,
@@ -4124,10 +4175,22 @@ function iniciarContraBots(modoElegido) {
     });
 }
 
-document.getElementById('btnProbarArcana')?.addEventListener('click', () => { if (socket?.connected) iniciarContraBots('GUERRA_ARCANA'); });
-document.getElementById('btnProbarConspiracion')?.addEventListener('click', () => { if (socket?.connected) iniciarContraBots('CONSPIRACION'); });
-document.getElementById('btnProbarJefe')?.addEventListener('click', () => { if (socket?.connected) iniciarContraBots('JEFE'); });
-document.getElementById('btnJugarSoloBots')?.addEventListener('click', () => { if (socket?.connected) iniciarContraBots(); });
+document.getElementById('btnProbarArcana')?.addEventListener('click', () => {
+    Sonidos.boton?.();
+    iniciarContraBots('GUERRA_ARCANA');
+});
+document.getElementById('btnProbarConspiracion')?.addEventListener('click', () => {
+    Sonidos.boton?.();
+    iniciarContraBots('CONSPIRACION');
+});
+document.getElementById('btnProbarJefe')?.addEventListener('click', () => {
+    Sonidos.boton?.();
+    iniciarContraBots('JEFE');
+});
+document.getElementById('btnJugarSoloBots')?.addEventListener('click', () => {
+    Sonidos.boton?.();
+    iniciarContraBots();
+});
 
 const btnGuias = document.getElementById('btnToggleGuias');
 if (btnGuias) {
@@ -5023,13 +5086,14 @@ function conectarSocket() {
         miSalaActual = id; soyElHost = true;
         if (_practica || window._partidaSoloBots) {
             window._partidaSoloBots = false;
-            socket.emit('iniciarPartida', id);
+            setTimeout(() => socket.emit('iniciarPartida', id), 60);
         }
         document.getElementById('mostrarCodigo').classList.remove('hidden');
         document.getElementById('codigoDisplay').innerText = id;
         document.getElementById('btnEmpezar').classList.remove('hidden');
         document.getElementById('lobbyTabs')?.classList.add('hidden');
         document.getElementById('panelConfiguracion').classList.add('hidden');
+        document.getElementById('panelAcademia')?.classList.add('hidden');
         document.getElementById('panelUnirse').classList.add('hidden');
         document.getElementById('panelJugadores').classList.remove('hidden');
     });
@@ -6159,15 +6223,6 @@ function inicializarCajonesModos() {
             const cajon = cab.closest('.cajon-modo');
             if (!cajon) return;
             const modo = cajon.dataset.modo;
-            const reqNivel = parseInt(cajon.dataset.nivel || '1', 10);
-            const miNivel = _tienda.nivel || 1;
-
-            if (miNivel < reqNivel) {
-                Sonidos.reaccion?.('😡');
-                mostrarToast(`🔒 Desbloquea ${cajon.querySelector('.cajon-titulo')?.textContent} al llegar a Nivel ${reqNivel}`, 'danio', 3000);
-                vibrar([40, 40, 40]);
-                return;
-            }
 
             const estabaAbierto = cajon.classList.contains('abierto');
             // Cerrar todos los demás
@@ -6189,6 +6244,9 @@ function inicializarCajonesModos() {
                 });
                 if (typeof actualizarResumenConfig === 'function') actualizarResumenConfig();
                 Sonidos.boton?.();
+                setTimeout(() => {
+                    cajon.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 120);
             }
         });
     });
@@ -6237,6 +6295,14 @@ function inicializarCajonesModos() {
             e.stopPropagation();
             const cajon = btn.closest('.cajon-modo');
             const modo = cajon?.dataset.modo || 'CLASICO';
+            const reqNivel = parseInt(cajon?.dataset.nivel || '1', 10);
+            const miNivel = _tienda.nivel || 1;
+            if (miNivel < reqNivel) {
+                Sonidos.reaccion?.('😡');
+                mostrarToast(`🔒 Desbloquea salas con amigos de ${cajon.querySelector('.cajon-titulo')?.textContent} en Nivel ${reqNivel}. ¡Puedes probarlo ahora contra bots!`, 'danio', 3500);
+                vibrar([40, 40, 40]);
+                return;
+            }
             const sel = document.getElementById('selectModoJuego');
             if (sel) sel.value = modo;
             cajon?.querySelectorAll('.chip-btn.activo').forEach(chip => {
@@ -6259,8 +6325,9 @@ function actualizarEstadoCajonesNivel(miNivel = 1) {
     contenedor.querySelectorAll('.cajon-modo').forEach(cajon => {
         const req = parseInt(cajon.dataset.nivel || '1', 10);
         const badge = cajon.querySelector('.cajon-badge');
+        const btnAmigos = cajon.querySelector('.btn-cajon-amigos');
         const bloqueado = miNivel < req;
-        cajon.classList.toggle('bloqueado', bloqueado);
+        cajon.classList.remove('bloqueado');
         if (badge) {
             if (bloqueado) {
                 badge.className = 'cajon-badge badge-bloqueado';
@@ -6270,8 +6337,13 @@ function actualizarEstadoCajonesNivel(miNivel = 1) {
                 badge.textContent = `Nivel ${req}`;
             }
         }
-        if (bloqueado && cajon.classList.contains('abierto')) {
-            cajon.classList.remove('abierto');
+        if (btnAmigos) {
+            btnAmigos.classList.toggle('amigos-bloqueado', bloqueado);
+            if (bloqueado) {
+                btnAmigos.innerHTML = `<svg class="icono"><use href="#i-candado"/></svg> AMIGOS (NIVEL ${req})`;
+            } else {
+                btnAmigos.innerHTML = `<svg class="icono"><use href="#i-corona"/></svg> CREAR SALA AMIGOS`;
+            }
         }
     });
     // Si ninguno está abierto, abrir el clásico

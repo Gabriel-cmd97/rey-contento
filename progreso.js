@@ -70,11 +70,10 @@ function estadoPremio(ultimoDia, racha, hoy = hoyCDMX()) {
 // Clásico; los modos extra llegan como premio. El cliente lo aplica en el lobby
 // (aplicarDesbloqueos) y el servidor lo anuncia al subir (sumarXp).
 const DESBLOQUEOS = [
-    { nivel: 1, id: 'fiesta',  titulo: 'Modo Fiesta' },
-    { nivel: 1, id: 'torneo',  titulo: 'Torneo de la noche' },
-    { nivel: 1, id: 'poderes', titulo: 'Poderes' },
-    { nivel: 1, id: 'parejas', titulo: 'Parejas (Diez)' },
-    { nivel: 1, id: 'jefe',    titulo: 'Todos contra el Rey' },
+    { nivel: 2, id: 'jefe',         titulo: 'Todos contra el Rey' },
+    { nivel: 3, id: 'fiesta',       titulo: 'Modo Fiesta' },
+    { nivel: 4, id: 'arcana',       titulo: 'Guerra Arcana' },
+    { nivel: 5, id: 'conspiracion', titulo: 'Conspiración en la Corte' },
 ];
 function desbloqueosEntre(antes, ahora) { return DESBLOQUEOS.filter(d => d.nivel > antes && d.nivel <= ahora); }
 

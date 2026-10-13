@@ -140,35 +140,30 @@
                 <p class="lobby-blason-lema">Que no te toque la carta más baja</p>
             </header>
 
-            <!-- TABS -->
+            <!-- TABS DEL LOBBY -->
             <div class="lobby-tabs" id="lobbyTabs">
-                <button class="lobby-tab active" id="tabCrear" onclick="switchTab('crear')"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> CREAR</button>
+                <button class="lobby-tab active" id="tabCrear" onclick="switchTab('crear')"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> JUGAR</button>
                 <button class="lobby-tab" id="tabUnirse" onclick="switchTab('unirse')"><svg class="icono" aria-hidden="true"><use href="#i-puerta"/></svg> UNIRSE</button>
                 <button class="lobby-tab" id="tabAcademia" onclick="switchTab('academia')"><svg class="icono" aria-hidden="true"><use href="#i-libro"/></svg> ACADEMIA</button>
             </div>
 
-            <!-- PANEL CREAR -->
+            <!-- PANEL JUGAR -->
             <section class="lobby-panel" id="panelConfiguracion">
                 <!-- 1. Partida Rápida Instantánea -->
                 <div class="lobby-bloque" style="margin-bottom: 12px;">
-                    <button id="btnRapida" class="boton-oro boton-lobby full-width boton-rapida"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Partida rápida multijugador</button>
-                    
-                    <!-- Banner directo a la Academia para que los nuevos la vean de inmediato -->
-                    <div class="banner-ir-academia" onclick="switchTab('academia')">
-                        <span class="icono-acad">🎓</span>
-                        <div class="banner-acad-txt">
-                            <strong>¿Nuevo en El Rey? Entra a la Academia</strong>
-                            <span>Aprende las reglas con tutoriales paso a paso y sin prisas.</span>
-                        </div>
-                        <span class="banner-acad-flecha">➔</span>
-                    </div>
-
+                    <button id="btnRapida" class="boton-oro boton-lobby full-width boton-rapida">
+                        <svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg>
+                        <span class="rapida-btn-content">
+                            <b>PARTIDA RÁPIDA MULTIJUGADOR</b>
+                            <small class="rapida-sub">¡Entra a jugar al instante con otros cortesanos online!</small>
+                        </span>
+                    </button>
                     <div id="bannerTorneo" class="banner-torneo hidden"></div>
                 </div>
 
-                <!-- 2. Cajones de Modos de Juego -->
+                <!-- 2. Modos de Juego Ordenados -->
                 <div class="lobby-bloque">
-                    <p class="lobby-section-label"><svg class="icono" aria-hidden="true"><use href="#i-naipe"/></svg> Modos de juego (Toca para configurar y jugar)</p>
+                    <p class="lobby-section-label"><svg class="icono" aria-hidden="true"><use href="#i-corona"/></svg> Modos de juego (Toca para configurar tu mesa)</p>
                     
                     <div class="cajones-modos" id="cajonesModos">
                         <!-- CAJÓN 1: CLÁSICO -->
@@ -178,10 +173,13 @@
                                     <span class="cajon-icono">⚔️</span>
                                     <div>
                                         <h4 class="cajon-titulo">Modo Clásico</h4>
-                                        <p class="cajon-desc">El juego tradicional. Evita la carta más baja y engaña al vecino.</p>
+                                        <p class="cajon-desc">El juego tradicional: sobrevive sin quedarte con la carta más baja.</p>
                                     </div>
                                 </div>
-                                <span class="cajon-badge badge-activo">Nivel 1</span>
+                                <div class="cajon-cab-der">
+                                    <span class="cajon-badge badge-activo">Nivel 1</span>
+                                    <span class="cajon-flecha" aria-hidden="true">▾</span>
+                                </div>
                             </div>
                             <div class="cajon-cuerpo">
                                 <div class="cajon-opciones-grid">
@@ -204,8 +202,8 @@
                                         <span class="cajon-label">👥 Jugadores</span>
                                         <div class="cajon-chips" data-target="selectJugadores">
                                             <button type="button" class="chip-btn" data-val="4">4 Jug</button>
-                                            <button type="button" class="chip-btn" data-val="6">6 Jug</button>
-                                            <button type="button" class="chip-btn activo" data-val="8">8 Jug</button>
+                                            <button type="button" class="chip-btn activo" data-val="6">6 Jug</button>
+                                            <button type="button" class="chip-btn" data-val="8">8 Jug</button>
                                         </div>
                                     </div>
                                     <div class="cajon-grupo">
@@ -234,7 +232,10 @@
                                         <p class="cajon-desc">Cooperativo: únanse en equipo para derrocar al tirano del reino.</p>
                                     </div>
                                 </div>
-                                <span class="cajon-badge">Nivel 2</span>
+                                <div class="cajon-cab-der">
+                                    <span class="cajon-badge">Nivel 2</span>
+                                    <span class="cajon-flecha" aria-hidden="true">▾</span>
+                                </div>
                             </div>
                             <div class="cajon-cuerpo">
                                 <div class="cajon-opciones-grid">
@@ -268,10 +269,13 @@
                                     <span class="cajon-icono">⚡</span>
                                     <div>
                                         <h4 class="cajon-titulo">Modo Fiesta</h4>
-                                        <p class="cajon-desc">Eventos caóticos en cada ronda: niebla espesa, tormenta y carrusel.</p>
+                                        <p class="cajon-desc">Eventos caóticos en cada ronda: niebla, mundo al revés y carrusel.</p>
                                     </div>
                                 </div>
-                                <span class="cajon-badge">Nivel 3</span>
+                                <div class="cajon-cab-der">
+                                    <span class="cajon-badge">Nivel 3</span>
+                                    <span class="cajon-flecha" aria-hidden="true">▾</span>
+                                </div>
                             </div>
                             <div class="cajon-cuerpo">
                                 <div class="cajon-opciones-grid">
@@ -306,10 +310,13 @@
                                     <span class="cajon-icono">🔮</span>
                                     <div>
                                         <h4 class="cajon-titulo">Guerra Arcana</h4>
-                                        <p class="cajon-desc">Hechizos tácticos en tu mano para congelar, desviar y alterar turnos.</p>
+                                        <p class="cajon-desc">Magia táctica: grimorios y pergaminos de hechizo para alterar turnos.</p>
                                     </div>
                                 </div>
-                                <span class="cajon-badge">Nivel 4</span>
+                                <div class="cajon-cab-der">
+                                    <span class="cajon-badge">Nivel 4</span>
+                                    <span class="cajon-flecha" aria-hidden="true">▾</span>
+                                </div>
                             </div>
                             <div class="cajon-cuerpo">
                                 <div class="cajon-opciones-grid">
@@ -347,7 +354,10 @@
                                         <p class="cajon-desc">Roles ocultos, inquisidores, asesinos y deducción social secreta.</p>
                                     </div>
                                 </div>
-                                <span class="cajon-badge">Nivel 5</span>
+                                <div class="cajon-cab-der">
+                                    <span class="cajon-badge">Nivel 5</span>
+                                    <span class="cajon-flecha" aria-hidden="true">▾</span>
+                                </div>
                             </div>
                             <div class="cajon-cuerpo">
                                 <div class="cajon-opciones-grid">
@@ -389,7 +399,6 @@
                     <input type="text" id="inputPasswordSala" value="">
                     <button id="btnCrearSala" disabled></button>
                     <button id="btnJugarSoloBots"></button>
-                    <span id="resumenConfig"></span>
                     <span id="resumenMasOpciones"></span>
                 </div>
             </section>
@@ -745,30 +754,50 @@
 
     </div>
 
-    <!-- Modal Perfil Personal -->
+    <!-- Modal Perfil Personal Ordenado y Amigable -->
     <div id="modalPerfil" class="hidden modal-overlay">
-        <div class="modal-caja">
+        <div class="modal-caja perfil-caja-nueva">
             <button type="button" class="modal-cerrar-x" data-cierra="modalPerfil" aria-label="Cerrar"><svg class="icono" aria-hidden="true"><use href="#i-cerrar"/></svg></button>
-            <h3 class="medieval-font" style="color:var(--oro);margin:0 0 16px;text-align:center;font-size:20px;"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> Mi Perfil</h3>
+            <h3 class="medieval-font perfil-titulo-nuevo"><svg class="icono" aria-hidden="true"><use href="#i-persona"/></svg> Mi Perfil</h3>
             <div id="pNivel" class="perfil-nivel"></div>
-            <div id="contenidoPerfil" class="perfil-stats-grid">
-                <div class="perfil-stat-item"><span class="perfil-stat-val" id="pVictorias">—</span><span class="perfil-stat-label">Victorias</span></div>
-                <div class="perfil-stat-item"><span class="perfil-stat-val" id="pPartidas">—</span><span class="perfil-stat-label">Partidas</span></div>
-                <div class="perfil-stat-item"><span class="perfil-stat-val" id="pWinrate">—</span><span class="perfil-stat-label">Winrate</span></div>
-                <div class="perfil-stat-item"><span class="perfil-stat-val" id="pRachaActual">—</span><span class="perfil-stat-label">Racha actual</span></div>
-                <div class="perfil-stat-item perfil-stat-full"><span class="perfil-stat-val" id="pRachaMax">—</span><span class="perfil-stat-label"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Racha máxima</span></div>
+
+            <!-- Pestañas ordenadas del perfil -->
+            <div class="perfil-pestanas" id="perfilPestanas">
+                <button type="button" class="perfil-tab active" data-ptab="estilos"><svg class="icono" aria-hidden="true"><use href="#i-corona"/></svg> Estilos</button>
+                <button type="button" class="perfil-tab" data-ptab="stats"><svg class="icono" aria-hidden="true"><use href="#i-trofeo"/></svg> Estadísticas</button>
+                <button type="button" class="perfil-tab" data-ptab="cuenta"><svg class="icono" aria-hidden="true"><use href="#i-candado"/></svg> Cuenta</button>
             </div>
-            <h4 class="perfil-seccion">Mis prendas y estilos</h4>
-            <p class="perfil-cosm-ayuda">Se ven en la mesa. Los que tienen candado se ganan con logros o en la tienda.</p>
-            <div id="pCosmeticos" class="perfil-cosmeticos"></div>
-            <h4 class="perfil-seccion">Logros <span id="pLogrosCuenta"></span></h4>
-            <ul id="pLogros" class="perfil-logros"></ul>
-            <h4 class="perfil-seccion">Últimas partidas</h4>
-            <ol id="pHistorial" class="perfil-historial"><li class="perfil-vacio">Cargando…</li></ol>
-            <h4 class="perfil-seccion">Recuperación de cuenta</h4>
-            <p class="perfil-nota">Si olvidas tu contraseña, la recuperas con tu código. Si lo perdiste, genera uno nuevo: el anterior deja de servir.</p>
-            <button id="btnNuevoCodigo" class="boton-madera boton-lobby full-width"><svg class="icono" aria-hidden="true"><use href="#i-candado"/></svg> Generar código de recuperación</button>
-            <button id="btnCerrarPerfil" class="boton-madera boton-lobby full-width" style="margin-top:16px;font-size:14px;padding:10px;">Cerrar</button>
+
+            <!-- Sección 1: Estilos y Prendas -->
+            <div id="pSeccionEstilos" class="perfil-seccion-bloque">
+                <p class="perfil-cosm-ayuda">Toca cualquier estilo para ponértelo en la mesa de juego.</p>
+                <div id="pCosmeticos" class="perfil-cosmeticos"></div>
+            </div>
+
+            <!-- Sección 2: Estadísticas y Logros -->
+            <div id="pSeccionStats" class="perfil-seccion-bloque hidden">
+                <h4 class="perfil-subtitulo"><svg class="icono" aria-hidden="true"><use href="#i-espadas"/></svg> Resumen de Batallas</h4>
+                <div id="contenidoPerfil" class="perfil-stats-grid">
+                    <div class="perfil-stat-item"><span class="perfil-stat-val" id="pVictorias">—</span><span class="perfil-stat-label">Victorias</span></div>
+                    <div class="perfil-stat-item"><span class="perfil-stat-val" id="pPartidas">—</span><span class="perfil-stat-label">Partidas</span></div>
+                    <div class="perfil-stat-item"><span class="perfil-stat-val" id="pWinrate">—</span><span class="perfil-stat-label">Winrate</span></div>
+                    <div class="perfil-stat-item"><span class="perfil-stat-val" id="pRachaActual">—</span><span class="perfil-stat-label">Racha actual</span></div>
+                    <div class="perfil-stat-item perfil-stat-full"><span class="perfil-stat-val" id="pRachaMax">—</span><span class="perfil-stat-label"><svg class="icono" aria-hidden="true"><use href="#i-rayo"/></svg> Racha máxima</span></div>
+                </div>
+                <h4 class="perfil-subtitulo" style="margin-top:16px;"><svg class="icono" aria-hidden="true"><use href="#i-trofeo"/></svg> Logros del Reino <span id="pLogrosCuenta"></span></h4>
+                <ul id="pLogros" class="perfil-logros"></ul>
+            </div>
+
+            <!-- Sección 3: Historial y Cuenta -->
+            <div id="pSeccionCuenta" class="perfil-seccion-bloque hidden">
+                <h4 class="perfil-subtitulo"><svg class="icono" aria-hidden="true"><use href="#i-pergamino"/></svg> Últimas Partidas</h4>
+                <ol id="pHistorial" class="perfil-historial"><li class="perfil-vacio">Cargando…</li></ol>
+                <h4 class="perfil-subtitulo" style="margin-top:16px;"><svg class="icono" aria-hidden="true"><use href="#i-candado"/></svg> Seguridad de la Cuenta</h4>
+                <p class="perfil-nota">Si olvidas tu contraseña o cambias de celular, recuperas tu cuenta con tu código personal.</p>
+                <button id="btnNuevoCodigo" class="boton-madera boton-lobby full-width"><svg class="icono" aria-hidden="true"><use href="#i-candado"/></svg> Generar código de recuperación</button>
+            </div>
+
+            <button id="btnCerrarPerfil" class="boton-madera boton-lobby full-width" style="margin-top:14px;font-size:13.5px;padding:9px;">Cerrar Perfil</button>
         </div>
     </div>
 
