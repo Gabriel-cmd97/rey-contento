@@ -259,6 +259,9 @@ function escapeHTML(s) {
 function mostrarToast(mensaje, tipo = '', duracion = 2500) {
     const container = document.getElementById('toastContainer');
     if (!container) return;
+    if (typeof mensaje === 'object' && mensaje !== null) {
+        mensaje = mensaje.error || mensaje.mensaje || mensaje.msg || mensaje.titulo || JSON.stringify(mensaje);
+    }
     const toast = document.createElement('div');
     toast.className = 'toast-mensaje' + (tipo ? ' toast-' + tipo : '');
     // textContent en lugar de innerHTML: los toasts solo muestran texto plano
@@ -1558,7 +1561,7 @@ window.alAbrirUnirse = () => {
     _sondeoSalas = setInterval(pedirSalasAbiertas, 4000);
 };
 
-const NOMBRE_MODO_JUEGO = { CLASICO: 'Clásico', FIESTA: 'Fiesta', CAMPANA: 'Campana' };
+const NOMBRE_MODO_JUEGO = { CLASICO: 'Clásico', FIESTA: 'Fiesta', CAMPANA: 'Campana', JEFE: 'Todos contra el Rey', GUERRA_ARCANA: 'Guerra Arcana', CONSPIRACION: 'Conspiración' };
 
 function pintarSalasAbiertas(salas) {
     const lista = document.getElementById('listaSalasAbiertas');
@@ -2655,7 +2658,7 @@ function pintarLogrosPerfil(catalogo, ganados) {
     }).join('');
 }
 
-const NOMBRE_MODO = { CLASICO: 'Clásico', FIESTA: 'Fiesta', CAMPANA: 'Campana', RAPIDA: 'Rápida', PAREJAS: 'Parejas' };
+const NOMBRE_MODO = { CLASICO: 'Clásico', FIESTA: 'Fiesta', CAMPANA: 'Campana', RAPIDA: 'Rápida', PAREJAS: 'Parejas', JEFE: 'Todos contra el Rey', GUERRA_ARCANA: 'Guerra Arcana', CONSPIRACION: 'Conspiración' };
 
 function pintarHistorialPerfil(historial) {
     const lista = document.getElementById('pHistorial');
@@ -2780,12 +2783,27 @@ function pintarCosmeticosPerfil(datos, ganados, catalogoLogros, nivel = 1) {
             .sort((a, b) => (orden[a.rareza] ?? 0) - (orden[b.rareza] ?? 0)).map(c => {
             const libre = c.precio ? (datos.comprados || []).includes(`${c.tipo}:${c.id}`)
                 : (!c.logro || tengo.has(c.logro)) && (!c.nivel || nivel >= c.nivel);
-            const requisito = c.precio ? `Tienda · ${c.precio}` : c.nivel && nivel < c.nivel ? `Nivel ${c.nivel}` : nombreLogro(c.logro);
             const elegido = datos.elegidos[tipo] === c.id;
             const rareza = c.rareza || 'comun';
+
+            let requisito = '';
+            let tooltip = c.titulo;
+            if (c.precio) {
+                const pr = parsePrecio(c.precio);
+                requisito = `Tienda · ${pr.cantidad} ${pr.etiqueta}`;
+                if (!libre) tooltip = `${c.titulo}: disponible en la Tienda (${pr.cantidad} ${pr.etiqueta})`;
+            } else if (c.nivel && nivel < c.nivel) {
+                requisito = `Nivel ${c.nivel}`;
+                if (!libre) tooltip = `${c.titulo}: se abre al llegar al nivel ${c.nivel}`;
+            } else if (c.logro) {
+                const nLogro = nombreLogro(c.logro);
+                requisito = nLogro;
+                if (!libre) tooltip = `${c.titulo}: se gana con el logro «${nLogro}»`;
+            }
+
             return `<button type="button" class="cosm-opcion rareza-${rareza}${elegido ? ' elegido' : ''}${libre ? '' : ' bloqueado'}"
                 data-tipo="${tipo}" data-id="${escapeHTML(c.id)}" ${libre ? '' : 'disabled'}
-                title="${escapeHTML(libre ? c.titulo : c.nivel && nivel < c.nivel ? `${c.titulo}: se abre al llegar al nivel ${c.nivel}` : `${c.titulo}: se gana con el logro «${nombreLogro(c.logro)}»`)}">
+                title="${escapeHTML(tooltip)}">
                 <span class="cosm-rareza">${RAREZA[rareza]}</span>
                 ${muestra(c)}<span class="cosm-nombre">${libre ? escapeHTML(c.titulo) : icono('candado') + ' ' + escapeHTML(requisito)}</span>
             </button>`;
