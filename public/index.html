@@ -565,7 +565,10 @@
                     <!-- Gran revelación del Rey -->
                     <div id="granRey" class="gran-rey hidden" role="status" aria-live="assertive">
                         <span class="gran-rey-rayos" aria-hidden="true"></span>
-                        <div class="gran-rey-carta"><b>9</b><img src="/iconos/9.svg" alt=""><small>El Rey Contento</small></div>
+                        <div class="gran-rey-carta">
+                            <span class="sr-only">9</span>
+                            <img src="/cartas/carta_9.svg" alt="El Rey Contento" class="gran-rey-arte" draggable="false">
+                        </div>
                         <strong id="granReyTitulo"></strong>
                         <span id="granReyTexto"></span>
                     </div>
@@ -676,6 +679,7 @@
                                     <span id="numeroCarta">?</span>
                                     <span id="figuraCarta" style="line-height:0; margin-top:4px; margin-bottom:2px;"></span>
                                     <span id="nombrePersonaje" style="font-size:16px; margin-top:6px; font-family:'MedievalSharp';">Esperando...</span>
+                                    <img id="cartaFrenteImg" class="carta-frente-arte" alt="" draggable="false">
                                 </div>
                             </div>
                         </div>

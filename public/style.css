@@ -703,21 +703,44 @@ body.en-mesa #pantallaJuego {
     border: 3px solid rgba(241,196,15,0.4) !important;
 }
 .front-character {
-    /* Tono pergamino cálido (papel envejecido) — combina con la estética medieval
-       y mantiene legibles el número y la figura oscuros. Las cartas especiales
-       (carta-9 dorada, carta-0 gris) lo pisan con !important. */
-    background: linear-gradient(150deg, #f8efd6 0%, #efdfba 55%, #e6d2a6 100%);
+    /* Tono de fondo oscuro elegante para albergar el arte SVG */
+    background: #1b2129;
     transform: rotateY(180deg);
     color: #2e2113;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid rgba(241,196,15,0.4) !important;
 }
 #numeroCarta { font-size: var(--carta-num, 60px); font-weight: bold; margin: -5px; font-family: 'Cinzel', serif; }
-/* Figura grande en la carta principal — pareja con el número (~mitad y mitad).
-   Escala junto con la carta (var --carta-fig); pisa el width/height del <img>. */
-#figuraCarta img { width: var(--carta-fig, 50px); height: var(--carta-fig, 50px); border-radius: 6px; box-shadow: 0 0 6px rgba(0,0,0,0.5); object-fit: cover; mix-blend-mode: multiply; }
+/* Figura grande en la carta principal — escala junto con la carta */
+#figuraCarta img { width: var(--carta-fig, 50px); height: var(--carta-fig, 50px); border-radius: 6px; box-shadow: 0 0 6px rgba(0,0,0,0.5); object-fit: cover; }
 
-.carta-9 { background: linear-gradient(145deg, #fff9c4 0%, #fff3a0 100%) !important; }
+.carta-frente-arte {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    border-radius: 8px;
+    display: none;
+    z-index: 2;
+    pointer-events: none;
+    mix-blend-mode: normal !important;
+}
+.front-character.tiene-arte .carta-frente-arte {
+    display: block;
+}
+.front-character.tiene-arte #numeroCarta,
+.front-character.tiene-arte #figuraCarta,
+.front-character.tiene-arte #nombrePersonaje {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.carta-9 { background: #1f1503 !important; border-color: #f1c40f !important; box-shadow: 0 0 25px rgba(241,196,15,0.7), inset 0 0 10px rgba(241,196,15,0.3) !important; }
 .carta-9 #numeroCarta { color: var(--oro-oscuro) !important; }
-.carta-0 { background: linear-gradient(145deg, #ecf0f1 0%, #dde4e8 100%) !important; }
+.carta-0 { background: #12161b !important; border-color: #95a5a6 !important; box-shadow: 0 0 18px rgba(149,165,166,0.5) !important; }
 .carta-0 #numeroCarta { color: #7f8c8d !important; }
 
 /* =========================================
@@ -832,20 +855,30 @@ body.en-mesa #pantallaJuego {
 }
 .mini-carta-reverso { background: repeating-linear-gradient(45deg, #2c3e50, #2c3e50 5px, #34495e 5px, #34495e 10px); }
 .mini-carta-frente {
-    /* Mismo pergamino que tu carta (.front-character). Las variantes
-       .mini-carta-0 / .mini-carta-9 lo pisan después para sus colores especiales. */
-    background: linear-gradient(150deg, #f8efd6 0%, #efdfba 55%, #e6d2a6 100%); color: #2e2113;
-    font-size: 24px; font-weight: bold;
+    /* Fondo oscuro y marco elegante para la carta vectorizada */
+    background: #141c15 !important;
+    color: #2e2113;
     display: flex; justify-content: center; align-items: center;
-    font-family: 'MedievalSharp';
     width: var(--mini-w, 56px) !important; height: var(--mini-h, 84px) !important;
-    flex-direction: column !important;
-    padding: 5px;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: 6px !important;
+    border: 1.5px solid rgba(241,196,15,0.5) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.8) !important;
     transition: all 0.4s ease;
     z-index: 60;
 }
-.mini-carta-0 { background: #ecf0f1; border-color: #7f8c8d; }
-.mini-carta-9 { background: #fff9c4; border-color: var(--oro); text-shadow: 0 0 5px var(--oro); }
+.mini-carta-arte {
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    display: block;
+    border-radius: 5px;
+    pointer-events: none;
+    mix-blend-mode: normal !important;
+}
+.mini-carta-0 { background: #12161b !important; border-color: #95a5a6 !important; box-shadow: 0 0 14px rgba(149,165,166,0.6) !important; }
+.mini-carta-9 { background: #1f1503 !important; border-color: var(--oro) !important; box-shadow: 0 0 20px rgba(241,196,15,0.8) !important; }
 .mini-carta-muerto {
     width: 40px; height: 60px;
     margin: 5px auto 0 auto;
@@ -3335,19 +3368,24 @@ body.en-practica .mi-perfil-esquina {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    background: linear-gradient(150deg, #f8efd6 0%, #efdfba 55%, #e6d2a6 100%);
-    color: #2e2113;
     border: 2px solid var(--oro-oscuro);
     border-radius: 8px;
-    box-shadow: 0 10px 24px rgba(0,0,0,0.6);
+    overflow: hidden;
+    padding: 0 !important;
+    background: transparent;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.7);
     font-family: var(--fuente-medieval);
     pointer-events: none;
 }
-.carta-duelo b { font-size: 30px; line-height: 1; }
-.carta-duelo small { font-size: 9px; }
-.carta-duelo.carta-9 { background: linear-gradient(145deg, #fff9c4, #fff3a0); }
-.carta-duelo.carta-0 { background: linear-gradient(145deg, #ecf0f1, #dde4e8); }
+.carta-duelo-arte {
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    display: block;
+    mix-blend-mode: normal !important;
+}
+.carta-duelo.carta-9 { border-color: #f1c40f; box-shadow: 0 0 20px rgba(241,196,15,0.8); }
+.carta-duelo.carta-0 { border-color: #95a5a6; box-shadow: 0 0 15px rgba(149,165,166,0.6); }
 .carta-duelo.pierde { border-color: var(--rojo-rey); box-shadow: 0 0 26px var(--rojo-rey); }
 .chispa-duelo {
     position: fixed;
@@ -3997,24 +4035,29 @@ body.en-mesa .silla.top-left, body.en-mesa .silla.top-right { top: 13%; }
 .gran-rey-carta {
     position: relative;
     width: 118px;
-    height: 170px;
+    height: 177px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    background: linear-gradient(145deg, #fff9c4 0%, #fff3a0 60%, #f5d76e 100%);
-    color: #5a3e05;
     border: 3px solid #d4a514;
     border-radius: 12px;
-    box-shadow: 0 0 40px rgba(241,196,15,0.9), 0 14px 30px rgba(0,0,0,0.6);
+    box-shadow: 0 0 45px rgba(241,196,15,0.95), 0 14px 30px rgba(0,0,0,0.7);
     font-family: var(--fuente-medieval);
     animation: gran-rey-carta 0.6s cubic-bezier(.2,.9,.3,1.3);
     transition: transform 0.6s cubic-bezier(.5,0,.3,1), opacity 0.6s;
+    padding: 0 !important;
+    overflow: hidden;
+    background: transparent;
 }
-.gran-rey-carta b { font-size: 52px; line-height: 1; }
-.gran-rey-carta img { width: 54px; height: auto; }
-.gran-rey-carta small { font-size: 12px; }
+.gran-rey-arte {
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    display: block;
+    border-radius: 10px;
+    mix-blend-mode: normal !important;
+}
 .gran-rey strong { position: relative; font-family: var(--fuente-medieval); font-size: 28px; color: #ffe27a; text-shadow: 0 2px 10px rgba(0,0,0,0.9); margin-top: 8px; text-wrap: balance; text-align: center; }
 .gran-rey > span:last-child { position: relative; font-family: Georgia, serif; font-size: 16px; color: var(--pergamino); text-shadow: 0 1px 6px rgba(0,0,0,0.9); text-align: center; padding: 0 12px; }
 /* Vuelo hacia el asiento de quien lo tiene */
@@ -5219,11 +5262,8 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
     border-color: #ffe27a !important;
 }
 .dorso-dorado::after, .dorso-realeza::after {
-    content: ''; position: absolute; inset: -60%; pointer-events: none;
-    background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.45) 50%, transparent 60%);
-    animation: brillo-dorso-mov 3.8s ease-in-out infinite;
+    display: none !important;
 }
-@keyframes brillo-dorso-mov { from { transform: translateX(-80%) rotate(25deg); } to { transform: translateX(80%) rotate(25deg); } }
 
 .dorso-noche {
     position: relative; overflow: hidden;
@@ -6247,8 +6287,25 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
 .banner-beta-letios strong { color: #58d68d; font-family: var(--fuente-medieval); font-size: 14.5px; letter-spacing: 0.5px; }
 .banner-beta-letios small { display: block; margin-top: 4px; font-size: 11px; color: rgba(255,255,255,0.6); font-style: italic; }
 
-/* Estilos para las nuevas mini-cartas con imágenes JPG */
-.mini-carta-frente img, .resumen-carta-cara img, .carta-oraculo img, .carta-duelo img { border-radius: 3px; object-fit: cover; mix-blend-mode: multiply; box-shadow: 0 0 4px rgba(0,0,0,0.5); }
+/* Estilos para cartas vectorizadas y mini-cartas */
+.mini-carta-arte, .resumen-carta-arte, .carta-oraculo-arte, .carta-duelo-arte, .gran-rey-arte, .pila-arte {
+    border-radius: 4px;
+    object-fit: fill;
+    mix-blend-mode: normal !important;
+    box-shadow: none !important;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
 
 /* Academia y tutoriales guiados */
 .bloque-academia {
@@ -6836,4 +6893,109 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
     margin-left: 6px;
     vertical-align: middle;
 }
+
+/* ── CASILLAS DESPLEGABLES DE ASPECTOS (PERFIL) ── */
+.casillas-cosm-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin-top: 10px;
+    margin-bottom: 14px;
+}
+.casilla-cosm {
+    border-radius: 12px;
+    border: 1px solid rgba(243, 230, 200, 0.22);
+    background: linear-gradient(160deg, rgba(35, 22, 17, 0.9) 0%, rgba(18, 10, 7, 0.96) 100%);
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.casilla-cosm:hover {
+    border-color: rgba(241, 196, 15, 0.5);
+}
+.casilla-cosm.abierta {
+    border-color: #ffe27a !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 0 14px rgba(241, 196, 15, 0.2) !important;
+}
+.casilla-cosm-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+    background: rgba(0, 0, 0, 0.25);
+    transition: background 0.15s ease;
+}
+.casilla-cosm-cabecera:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+.casilla-cosm.abierta .casilla-cosm-cabecera {
+    background: linear-gradient(135deg, rgba(241, 196, 15, 0.18) 0%, rgba(0, 0, 0, 0.3) 100%);
+    border-bottom: 1px solid rgba(241, 196, 15, 0.25);
+}
+.casilla-cosm-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.casilla-cosm-icono {
+    font-size: 19px;
+    line-height: 1;
+}
+.casilla-cosm-textos {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.casilla-cosm-titulo {
+    font-family: var(--fuente-medieval);
+    font-size: 14.5px;
+    color: #fff;
+    letter-spacing: 0.4px;
+}
+.casilla-cosm-actual {
+    font-size: 11.5px;
+    color: #f1c40f;
+}
+.casilla-cosm-der {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.casilla-cosm-preview {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.casilla-cosm-preview .avatar-cosm {
+    width: 28px !important;
+    height: 28px !important;
+}
+.casilla-cosm-preview .muestra-dorso {
+    width: 20px !important;
+    height: 30px !important;
+}
+.casilla-cosm-preview .muestra-tapete {
+    width: 32px !important;
+    height: 22px !important;
+}
+.casilla-cosm-flecha {
+    font-size: 15px;
+    color: #f1c40f;
+    transition: transform 0.25s ease;
+    display: inline-block;
+    user-select: none;
+}
+.casilla-cosm.abierta .casilla-cosm-flecha {
+    transform: rotate(180deg);
+}
+.casilla-cosm-cuerpo {
+    display: none;
+    padding: 10px 8px 12px;
+}
+.casilla-cosm.abierta .casilla-cosm-cuerpo {
+    display: block;
+    animation: fadeIn 0.2s ease-out;
+}
+
 

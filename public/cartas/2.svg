@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 240" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgCampesino" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3d2c1d"/>
+      <stop offset="50%" stop-color="#281c12"/>
+      <stop offset="100%" stop-color="#140d07"/>
+    </linearGradient>
+    <linearGradient id="bordeOcre" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e59866"/>
+      <stop offset="35%" stop-color="#f39c12"/>
+      <stop offset="70%" stop-color="#ba4a00"/>
+      <stop offset="100%" stop-color="#6e2c00"/>
+    </linearGradient>
+    <radialGradient id="arcoCampesino" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#7d5a28"/>
+      <stop offset="50%" stop-color="#4a3314"/>
+      <stop offset="100%" stop-color="#1e1408"/>
+    </radialGradient>
+    <linearGradient id="pajaSombrero" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f9e79f"/>
+      <stop offset="50%" stop-color="#d4ac0d"/>
+      <stop offset="100%" stop-color="#7d6608"/>
+    </linearGradient>
+    <linearGradient id="linoCamisa" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fdfefe"/>
+      <stop offset="50%" stop-color="#d5dbdb"/>
+      <stop offset="100%" stop-color="#99a3a4"/>
+    </linearGradient>
+    <linearGradient id="trigoOro" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f9e79f"/>
+      <stop offset="50%" stop-color="#f1c40f"/>
+      <stop offset="100%" stop-color="#b7950b"/>
+    </linearGradient>
+    <linearGradient id="hozAcero" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#bdc3c7"/>
+      <stop offset="100%" stop-color="#7f8c8d"/>
+    </linearGradient>
+    <linearGradient id="cintaCampesino" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a3525"/>
+      <stop offset="50%" stop-color="#2d1f14"/>
+      <stop offset="100%" stop-color="#170f08"/>
+    </linearGradient>
+    <filter id="sombraCampesino" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.85"/>
+    </filter>
+  </defs>
+
+  <!-- Tarjeta base -->
+  <rect width="160" height="240" rx="12" fill="url(#bgCampesino)"/>
+  
+  <!-- Marcos metálicos -->
+  <rect x="4" y="4" width="152" height="232" rx="9" fill="none" stroke="url(#bordeOcre)" stroke-width="2.5"/>
+  <rect x="8" y="8" width="144" height="224" rx="7" fill="none" stroke="#f39c12" stroke-width="0.8" stroke-opacity="0.35" stroke-dasharray="4,2"/>
+
+  <!-- Esquinas -->
+  <path d="M12 18 L18 12 M12 12 L19 19 M12 22 L22 12" stroke="#f39c12" stroke-width="1" opacity="0.6"/>
+  <path d="M148 18 L142 12 M148 12 L141 19 M148 22 L138 12" stroke="#f39c12" stroke-width="1" opacity="0.6"/>
+  <path d="M12 222 L18 228 M12 228 L19 221 M12 218 L22 228" stroke="#f39c12" stroke-width="1" opacity="0.6"/>
+  <path d="M148 222 L142 228 M148 228 L141 221 M148 218 L138 228" stroke="#f39c12" stroke-width="1" opacity="0.6"/>
+
+  <!-- Número Superior Izquierdo -->
+  <g transform="translate(14, 14)">
+    <circle cx="10" cy="10" r="10" fill="#281c12" stroke="url(#bordeOcre)" stroke-width="1.5" filter="url(#sombraCampesino)"/>
+    <text x="10" y="14" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="13" fill="#f8c471" filter="drop-shadow(0 1px 2px #000)">2</text>
+  </g>
+
+  <!-- Número Inferior Derecho -->
+  <g transform="translate(126, 206)">
+    <circle cx="10" cy="10" r="10" fill="#281c12" stroke="url(#bordeOcre)" stroke-width="1.5" filter="url(#sombraCampesino)"/>
+    <text x="10" y="14" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="13" fill="#f8c471" filter="drop-shadow(0 1px 2px #000)">2</text>
+  </g>
+
+  <!-- Ventana Gótica Central (Retrato del Campesino) -->
+  <path d="M22 68 Q22 28 80 28 Q138 28 138 68 L138 178 L22 178 Z" fill="url(#arcoCampesino)" filter="url(#sombraCampesino)"/>
+
+  <!-- Sol del atardecer y campo de trigo de fondo -->
+  <circle cx="80" cy="65" r="28" fill="#f39c12" opacity="0.25"/>
+  <path d="M25 178 Q50 145 80 160 Q110 145 135 178 Z" fill="#5c3f1a" opacity="0.4"/>
+  <!-- Espigas de trigo lejanas -->
+  <path d="M30 178 L40 150 M50 178 L55 145 M110 178 L105 145 M125 178 L120 152" stroke="#b7950b" stroke-width="1.2" opacity="0.5"/>
+
+  <!-- Ropaje rústico / Camisa de lino -->
+  <path d="M38 178 Q45 125 65 120 Q80 118 95 120 Q115 125 122 178 Z" fill="url(#linoCamisa)"/>
+  <path d="M72 120 L80 140 L88 120 Z" fill="#99a3a4"/>
+  <!-- Cuerda al cuello -->
+  <path d="M74 122 Q80 132 86 122" stroke="#784212" stroke-width="1.5" fill="none"/>
+
+  <!-- Cuello y rostro alegre curtido por el sol -->
+  <ellipse cx="80" cy="110" rx="14" ry="16" fill="#ba7c59"/>
+  <!-- Rostro -->
+  <path d="M68 90 C68 76 92 76 92 90 C92 102 86 110 80 110 C74 110 68 102 68 90 Z" fill="#d99873"/>
+  <!-- Mejillas sonrosadas y pecas -->
+  <circle cx="73" cy="94" r="3" fill="#e74c3c" opacity="0.3"/>
+  <circle cx="87" cy="94" r="3" fill="#e74c3c" opacity="0.3"/>
+
+  <!-- Sonrisa honesta y amistosa -->
+  <path d="M75 99 Q80 104 85 99" stroke="#5a2e12" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <!-- Nariz recta y amable -->
+  <path d="M80 88 L78 95 L82 95" stroke="#a05d3b" stroke-width="1.2" fill="none"/>
+  <!-- Ojos alegres y arruguitas de reír -->
+  <path d="M71 88 Q75 85 79 88" stroke="#4a250e" stroke-width="1.5" fill="none"/>
+  <path d="M81 88 Q85 85 89 88" stroke="#4a250e" stroke-width="1.5" fill="none"/>
+
+  <!-- Sombrero de paja tejido de ala ancha -->
+  <!-- Copa del sombrero -->
+  <ellipse cx="80" cy="74" rx="22" ry="16" fill="url(#pajaSombrero)"/>
+  <!-- Ala ancha ondulada -->
+  <path d="M42 80 C50 68 110 68 118 80 C125 86 35 86 42 80 Z" fill="url(#pajaSombrero)" stroke="#7d6608" stroke-width="1"/>
+  <!-- Cinta del sombrero -->
+  <path d="M58 77 C66 72 94 72 102 77" stroke="#922b21" stroke-width="3" fill="none"/>
+
+  <!-- Manojo de trigo dorado en el brazo izquierdo -->
+  <g transform="translate(100, 115) rotate(15)">
+    <!-- Tallos -->
+    <path d="M10 60 L10 10 M15 60 L20 15 M5 60 L0 12" stroke="#b7950b" stroke-width="2"/>
+    <!-- Granos de trigo dorados -->
+    <ellipse cx="10" cy="15" rx="3" ry="6" fill="url(#trigoOro)"/>
+    <ellipse cx="7" cy="20" rx="3" ry="5" fill="url(#trigoOro)"/>
+    <ellipse cx="13" cy="20" rx="3" ry="5" fill="url(#trigoOro)"/>
+    <ellipse cx="9" cy="27" rx="3" ry="5" fill="url(#trigoOro)"/>
+    <ellipse cx="18" cy="22" rx="3" ry="5" fill="url(#trigoOro)"/>
+    <ellipse cx="2" cy="22" rx="3" ry="5" fill="url(#trigoOro)"/>
+    <!-- Espiguillas finas -->
+    <path d="M10 10 L10 4 M6 16 L0 12 M14 16 L20 12" stroke="#f9e79f" stroke-width="1"/>
+  </g>
+
+  <!-- Hoz de metal curvada en el lado derecho -->
+  <g transform="translate(42, 125)">
+    <!-- Mango de madera -->
+    <rect x="0" y="24" width="6" height="22" rx="2" fill="#5d4037" stroke="#271c19" stroke-width="0.8" transform="rotate(-20 3 35)"/>
+    <!-- Cuchilla de acero curvada -->
+    <path d="M10 26 C15 10 32 4 30 18 C28 12 18 16 12 28 Z" fill="url(#hozAcero)" stroke="#566573" stroke-width="0.8"/>
+  </g>
+
+  <!-- Marco de la Ventana Gótica -->
+  <path d="M22 68 Q22 28 80 28 Q138 28 138 68 L138 178 L22 178 Z" fill="none" stroke="url(#bordeOcre)" stroke-width="2.5"/>
+  <path d="M26 70 Q26 33 80 33 Q134 33 134 70 L134 174 L26 174 Z" fill="none" stroke="#f39c12" stroke-width="1" opacity="0.4"/>
+
+  <!-- Pergamino / Cinta del Nombre Inferior -->
+  <g transform="translate(16, 185)" filter="url(#sombraCampesino)">
+    <path d="M0 8 L12 0 L12 24 L0 16 Z" fill="#281c12"/>
+    <path d="M128 8 L116 0 L116 24 L128 16 Z" fill="#281c12"/>
+    <rect x="8" y="0" width="112" height="24" rx="3" fill="url(#cintaCampesino)" stroke="url(#bordeOcre)" stroke-width="1.5"/>
+    <text x="64" y="16" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="9.5" fill="#f8c471" letter-spacing="1" filter="drop-shadow(0 1px 2px #000)">2 · EL CAMPESINO</text>
+  </g>
+</svg>

@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 240" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgTrovador" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#113636"/>
+      <stop offset="50%" stop-color="#0a2222"/>
+      <stop offset="100%" stop-color="#051212"/>
+    </linearGradient>
+    <linearGradient id="bordeTurquesa" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#48c9b0"/>
+      <stop offset="35%" stop-color="#1abc9c"/>
+      <stop offset="70%" stop-color="#117a65"/>
+      <stop offset="100%" stop-color="#0e6251"/>
+    </linearGradient>
+    <radialGradient id="arcoTrovador" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#1b4f4f"/>
+      <stop offset="55%" stop-color="#0c2b2b"/>
+      <stop offset="100%" stop-color="#041212"/>
+    </radialGradient>
+    <linearGradient id="terciopeloGorro" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#922b21"/>
+      <stop offset="50%" stop-color="#641e16"/>
+      <stop offset="100%" stop-color="#4a150f"/>
+    </linearGradient>
+    <linearGradient id="plumaBardo" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1abc9c"/>
+      <stop offset="50%" stop-color="#f39c12"/>
+      <stop offset="100%" stop-color="#f1c40f"/>
+    </linearGradient>
+    <linearGradient id="maderaLaud" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ba4a00"/>
+      <stop offset="50%" stop-color="#7e5109"/>
+      <stop offset="100%" stop-color="#4e342e"/>
+    </linearGradient>
+    <linearGradient id="cintaTrovador" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#164e4e"/>
+      <stop offset="50%" stop-color="#0c2d2d"/>
+      <stop offset="100%" stop-color="#051717"/>
+    </linearGradient>
+    <filter id="sombraTrovador" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.85"/>
+    </filter>
+  </defs>
+
+  <!-- Tarjeta base -->
+  <rect width="160" height="240" rx="12" fill="url(#bgTrovador)"/>
+  
+  <!-- Marcos metálicos -->
+  <rect x="4" y="4" width="152" height="232" rx="9" fill="none" stroke="url(#bordeTurquesa)" stroke-width="2.5"/>
+  <rect x="8" y="8" width="144" height="224" rx="7" fill="none" stroke="#48c9b0" stroke-width="0.8" stroke-opacity="0.4" stroke-dasharray="4,2"/>
+
+  <!-- Esquinas -->
+  <path d="M12 18 L18 12 M12 12 L19 19 M12 22 L22 12" stroke="#48c9b0" stroke-width="1" opacity="0.6"/>
+  <path d="M148 18 L142 12 M148 12 L141 19 M148 22 L138 12" stroke="#48c9b0" stroke-width="1" opacity="0.6"/>
+  <path d="M12 222 L18 228 M12 228 L19 221 M12 218 L22 228" stroke="#48c9b0" stroke-width="1" opacity="0.6"/>
+  <path d="M148 222 L142 228 M148 228 L141 221 M148 218 L138 228" stroke="#48c9b0" stroke-width="1" opacity="0.6"/>
+
+  <!-- Número Superior Izquierdo -->
+  <g transform="translate(14, 14)">
+    <circle cx="10" cy="10" r="10" fill="#0a2222" stroke="url(#bordeTurquesa)" stroke-width="1.5" filter="url(#sombraTrovador)"/>
+    <text x="10" y="14" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="13" fill="#a3e4d7" filter="drop-shadow(0 1px 2px #000)">3</text>
+  </g>
+
+  <!-- Número Inferior Derecho -->
+  <g transform="translate(126, 206)">
+    <circle cx="10" cy="10" r="10" fill="#0a2222" stroke="url(#bordeTurquesa)" stroke-width="1.5" filter="url(#sombraTrovador)"/>
+    <text x="10" y="14" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="13" fill="#a3e4d7" filter="drop-shadow(0 1px 2px #000)">3</text>
+  </g>
+
+  <!-- Ventana Gótica Central (Retrato del Trovador) -->
+  <path d="M22 68 Q22 28 80 28 Q138 28 138 68 L138 178 L22 178 Z" fill="url(#arcoTrovador)" filter="url(#sombraTrovador)"/>
+
+  <!-- Destellos y notas musicales flotantes -->
+  <g opacity="0.6">
+    <path d="M35 70 Q38 60 45 65 M45 65 L45 76" stroke="#48c9b0" stroke-width="1.2" fill="none"/>
+    <circle cx="43" cy="76" r="2.5" fill="#48c9b0"/>
+    <path d="M120 75 Q123 65 130 70 M130 70 L130 80" stroke="#f1c40f" stroke-width="1.2" fill="none"/>
+    <circle cx="128" cy="80" r="2" fill="#f1c40f"/>
+    <!-- Estrellitas brillantes de inspiración -->
+    <path d="M115 50 L117 55 L122 57 L117 59 L115 64 L113 59 L108 57 L113 55 Z" fill="#f9e79f" opacity="0.7"/>
+  </g>
+
+  <!-- Traje de Bardo / Terciopelo y bordados -->
+  <path d="M38 178 Q45 125 62 118 Q80 115 98 118 Q115 125 122 178 Z" fill="#117a65"/>
+  <!-- Chaleco / Jubón rojo vino -->
+  <path d="M62 118 L80 178 L98 118 Q80 115 62 118 Z" fill="url(#terciopeloGorro)"/>
+  <!-- Botones dorados -->
+  <circle cx="80" cy="132" r="1.5" fill="#f1c40f"/>
+  <circle cx="80" cy="144" r="1.5" fill="#f1c40f"/>
+  <circle cx="80" cy="156" r="1.5" fill="#f1c40f"/>
+
+  <!-- Cuello con volantes blancos -->
+  <path d="M68 118 C72 112 88 112 92 118 C88 122 72 122 68 118 Z" fill="#fff" stroke="#d5dbdb" stroke-width="0.8"/>
+
+  <!-- Rostro carismático y cuello -->
+  <ellipse cx="80" cy="104" rx="13" ry="15" fill="#e59866"/>
+  <!-- Rostro -->
+  <path d="M68 86 C68 72 92 72 92 86 C92 98 86 106 80 106 C74 106 68 98 68 86 Z" fill="#f5cba7"/>
+  <!-- Pelo rizado castaño -->
+  <circle cx="66" cy="85" r="5" fill="#4a2311"/>
+  <circle cx="65" cy="92" r="4.5" fill="#4a2311"/>
+  <circle cx="94" cy="85" r="5" fill="#4a2311"/>
+  <circle cx="95" cy="92" r="4.5" fill="#4a2311"/>
+
+  <!-- Guiño de ojo y sonrisa pícara -->
+  <!-- Ojo izquierdo abierto y chispeante -->
+  <ellipse cx="74" cy="85" rx="2.5" ry="3" fill="#2c3e50"/>
+  <circle cx="73" cy="84" r="1" fill="#fff"/>
+  <!-- Ojo derecho guiñando seductor -->
+  <path d="M84 86 Q88 83 91 86" stroke="#4a2311" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+  <!-- Sonrisa pícara -->
+  <path d="M74 95 Q82 102 88 95" stroke="#78281f" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+  <!-- Nariz elegante -->
+  <path d="M80 83 L78 90 L82 90" stroke="#c0392b" stroke-width="0.8" fill="none"/>
+
+  <!-- Gorro de Bardo de terciopelo inclinado -->
+  <ellipse cx="78" cy="72" rx="22" ry="12" fill="url(#terciopeloGorro)" transform="rotate(-10 78 72)"/>
+  <path d="M56 73 C65 62 95 62 104 73 C95 78 65 78 56 73 Z" fill="#4a150f" transform="rotate(-10 78 72)"/>
+  
+  <!-- Pluma de pavo real / faisán exuberante -->
+  <path d="M64 74 C50 60 48 38 72 32 C62 42 66 58 76 68 Z" fill="url(#plumaBardo)" stroke="#f39c12" stroke-width="0.8"/>
+  <line x1="64" y1="74" x2="72" y2="32" stroke="#d4ac0d" stroke-width="0.8"/>
+
+  <!-- Laúd de madera tallada en los brazos -->
+  <g transform="translate(68, 115) rotate(-25)">
+    <!-- Cuerpo abovedado del laúd -->
+    <ellipse cx="25" cy="45" rx="18" ry="24" fill="url(#maderaLaud)" stroke="#3e2723" stroke-width="1.2"/>
+    <ellipse cx="25" cy="45" rx="14" ry="20" fill="#d35400" opacity="0.6"/>
+    <!-- Boca / Rosetón tallado -->
+    <circle cx="25" cy="40" r="5" fill="#1a0c02" stroke="#f1c40f" stroke-width="0.8"/>
+    <!-- Mástil y clavijero doblado -->
+    <rect x="22" y="5" width="6" height="26" fill="#3e2723"/>
+    <path d="M22 5 L17 -2 L23 -4 L28 5 Z" fill="#271c19"/>
+    <!-- Cuerdas finas brillantes -->
+    <line x1="23" y1="4" x2="23" y2="56" stroke="#f9e79f" stroke-width="0.6" opacity="0.85"/>
+    <line x1="25" y1="4" x2="25" y2="56" stroke="#f9e79f" stroke-width="0.6" opacity="0.85"/>
+    <line x1="27" y1="4" x2="27" y2="56" stroke="#f9e79f" stroke-width="0.6" opacity="0.85"/>
+    <!-- Mano tocando las cuerdas -->
+    <ellipse cx="26" cy="42" rx="4" ry="3" fill="#f5cba7"/>
+  </g>
+
+  <!-- Marco de la Ventana Gótica -->
+  <path d="M22 68 Q22 28 80 28 Q138 28 138 68 L138 178 L22 178 Z" fill="none" stroke="url(#bordeTurquesa)" stroke-width="2.5"/>
+  <path d="M26 70 Q26 33 80 33 Q134 33 134 70 L134 174 L26 174 Z" fill="none" stroke="#48c9b0" stroke-width="1" opacity="0.4"/>
+
+  <!-- Pergamino / Cinta del Nombre Inferior -->
+  <g transform="translate(16, 185)" filter="url(#sombraTrovador)">
+    <path d="M0 8 L12 0 L12 24 L0 16 Z" fill="#0a2222"/>
+    <path d="M128 8 L116 0 L116 24 L128 16 Z" fill="#0a2222"/>
+    <rect x="8" y="0" width="112" height="24" rx="3" fill="url(#cintaTrovador)" stroke="url(#bordeTurquesa)" stroke-width="1.5"/>
+    <text x="64" y="16" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="9.5" fill="#a3e4d7" letter-spacing="1" filter="drop-shadow(0 1px 2px #000)">3 · EL TROVADOR</text>
+  </g>
+</svg>

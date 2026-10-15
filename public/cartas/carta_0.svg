@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 240" width="100%" height="100%">
+  <defs>
+    <!-- Fondo y bordes -->
+    <linearGradient id="bgMendigo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2c3540"/>
+      <stop offset="45%" stop-color="#1f252d"/>
+      <stop offset="100%" stop-color="#12161b"/>
+    </linearGradient>
+    <linearGradient id="bordeHierro" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#95a5a6"/>
+      <stop offset="35%" stop-color="#566573"/>
+      <stop offset="70%" stop-color="#7f8c8d"/>
+      <stop offset="100%" stop-color="#34495e"/>
+    </linearGradient>
+    <radialGradient id="arcoMendigo" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#3a4754"/>
+      <stop offset="60%" stop-color="#1c232a"/>
+      <stop offset="100%" stop-color="#0b0e12"/>
+    </radialGradient>
+    <!-- Capucha y ropajes -->
+    <linearGradient id="capuchaMendigo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4a4238"/>
+      <stop offset="50%" stop-color="#2d2822"/>
+      <stop offset="100%" stop-color="#191512"/>
+    </linearGradient>
+    <linearGradient id="cuencoMadera" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8d6e63"/>
+      <stop offset="70%" stop-color="#4e342e"/>
+      <stop offset="100%" stop-color="#271c19"/>
+    </linearGradient>
+    <radialGradient id="monedaCobre" cx="35%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#f39c12"/>
+      <stop offset="60%" stop-color="#d35400"/>
+      <stop offset="100%" stop-color="#873600"/>
+    </radialGradient>
+    <linearGradient id="pergaminoCinta" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3e4a59"/>
+      <stop offset="50%" stop-color="#26303c"/>
+      <stop offset="100%" stop-color="#161c24"/>
+    </linearGradient>
+    <filter id="sombraGrave" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.8"/>
+    </filter>
+  </defs>
+
+  <!-- Tarjeta base -->
+  <rect width="160" height="240" rx="12" fill="url(#bgMendigo)"/>
+  
+  <!-- Marcos metálicos -->
+  <rect x="4" y="4" width="152" height="232" rx="9" fill="none" stroke="url(#bordeHierro)" stroke-width="2.5"/>
+  <rect x="8" y="8" width="144" height="224" rx="7" fill="none" stroke="#7f8c8d" stroke-width="0.8" stroke-opacity="0.4" stroke-dasharray="4,2"/>
+
+  <!-- Adornos esquinas góticas -->
+  <path d="M12 18 L18 12 M12 12 L19 19 M12 22 L22 12" stroke="#95a5a6" stroke-width="1" opacity="0.6"/>
+  <path d="M148 18 L142 12 M148 12 L141 19 M148 22 L138 12" stroke="#95a5a6" stroke-width="1" opacity="0.6"/>
+  <path d="M12 222 L18 228 M12 228 L19 221 M12 218 L22 228" stroke="#95a5a6" stroke-width="1" opacity="0.6"/>
+  <path d="M148 222 L142 228 M148 228 L141 221 M148 218 L138 228" stroke="#95a5a6" stroke-width="1" opacity="0.6"/>
+
+  <!-- Medallón / Número Superior Izquierdo -->
+  <g transform="translate(14, 14)">
+    <circle cx="10" cy="10" r="10" fill="#1b2129" stroke="url(#bordeHierro)" stroke-width="1.5" filter="url(#sombraGrave)"/>
+    <text x="10" y="14" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="13" fill="#ecf0f1" filter="drop-shadow(0 1px 2px #000)">0</text>
+  </g>
+
+  <!-- Medallón / Número Inferior Derecho -->
+  <g transform="translate(126, 206)">
+    <circle cx="10" cy="10" r="10" fill="#1b2129" stroke="url(#bordeHierro)" stroke-width="1.5" filter="url(#sombraGrave)"/>
+    <text x="10" y="14" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="13" fill="#ecf0f1" filter="drop-shadow(0 1px 2px #000)">0</text>
+  </g>
+
+  <!-- Ventana Gótica Central (Retrato) -->
+  <path d="M22 68 Q22 28 80 28 Q138 28 138 68 L138 178 L22 178 Z" fill="url(#arcoMendigo)" filter="url(#sombraGrave)"/>
+  
+  <!-- Pared de adoquines en penumbra de fondo -->
+  <path d="M28 60 H132 M28 85 H132 M28 110 H132 M28 135 H132 M28 160 H132" stroke="#252d36" stroke-width="1" stroke-dasharray="14,10"/>
+
+  <!-- Silueta y rostro del Mendigo -->
+  <!-- Manto y hombros -->
+  <path d="M36 178 Q42 125 60 115 Q80 110 100 115 Q118 125 124 178 Z" fill="url(#capuchaMendigo)"/>
+  <!-- Remiendos en el manto -->
+  <rect x="44" y="145" width="12" height="10" rx="1" fill="#3e3831" stroke="#231f1b" stroke-width="0.8"/>
+  <line x1="43" y1="144" x2="57" y2="156" stroke="#5a5247" stroke-width="0.6"/>
+  
+  <!-- Cuello y sombra -->
+  <ellipse cx="80" cy="105" rx="14" ry="16" fill="#1a1410"/>
+  
+  <!-- Rostro cansado / venerable -->
+  <path d="M68 85 C68 70 92 70 92 85 C92 98 86 108 80 108 C74 108 68 98 68 85 Z" fill="#bfa085"/>
+  <path d="M68 88 C72 102 88 102 92 88 Z" fill="#8c6c52" opacity="0.4"/>
+  
+  <!-- Barba descuidada y rastro de nieve -->
+  <path d="M67 92 Q80 118 93 92 Q87 114 80 116 Q73 114 67 92 Z" fill="#95a5a6"/>
+  <path d="M72 96 Q80 110 88 96" stroke="#bdc3c7" stroke-width="1.2" fill="none"/>
+
+  <!-- Ojos profundos y cejas -->
+  <path d="M72 82 Q76 80 79 83 M81 83 Q84 80 88 82" stroke="#4a3525" stroke-width="1.4" fill="none"/>
+  <circle cx="75" cy="86" r="1.5" fill="#2c3e50"/>
+  <circle cx="85" cy="86" r="1.5" fill="#2c3e50"/>
+  <circle cx="75.5" cy="85.5" r="0.5" fill="#fff"/>
+  <circle cx="85.5" cy="85.5" r="0.5" fill="#fff"/>
+  <!-- Nariz y arrugas -->
+  <path d="M80 84 L78 92 L82 92" stroke="#6e5038" stroke-width="1" fill="none"/>
+
+  <!-- Capucha envolvente -->
+  <path d="M62 82 C62 55 98 55 98 82 C98 96 95 106 94 114 C88 108 72 108 66 114 C65 106 62 96 62 82 Z" fill="none" stroke="url(#capuchaMendigo)" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M58 84 C58 50 102 50 102 84 C102 102 98 116 97 120 L63 120 C62 116 58 102 58 84 Z" fill="none" stroke="#1c1713" stroke-width="2"/>
+
+  <!-- Manos sosteniendo el cuenco de madera -->
+  <ellipse cx="80" cy="158" rx="24" ry="12" fill="url(#cuencoMadera)" stroke="#271c19" stroke-width="1.5"/>
+  <ellipse cx="80" cy="155" rx="20" ry="8" fill="#1e1411"/>
+  <!-- Dedos gastados sosteniendo el borde -->
+  <path d="M56 155 Q60 148 64 156" stroke="#a48268" stroke-width="3" stroke-linecap="round"/>
+  <path d="M96 156 Q100 148 104 155" stroke="#a48268" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Moneda solitaria de cobre brillante en el cuenco -->
+  <ellipse cx="80" cy="155" rx="6" ry="4" fill="url(#monedaCobre)" stroke="#d35400" stroke-width="0.8"/>
+  <!-- Brillo solitario -->
+  <circle cx="78" cy="154" r="1" fill="#fff" opacity="0.8"/>
+
+  <!-- Vaho gélido invernal sutil -->
+  <path d="M82 98 Q87 93 90 95 Q93 97 97 93" fill="none" stroke="#ecf0f1" stroke-width="1" opacity="0.35" stroke-linecap="round"/>
+
+  <!-- Marco de la Ventana Gótica (Relieve metálico) -->
+  <path d="M22 68 Q22 28 80 28 Q138 28 138 68 L138 178 L22 178 Z" fill="none" stroke="url(#bordeHierro)" stroke-width="2.5"/>
+  <path d="M26 70 Q26 33 80 33 Q134 33 134 70 L134 174 L26 174 Z" fill="none" stroke="#2c3e50" stroke-width="1" opacity="0.6"/>
+
+  <!-- Pergamino / Cinta del Nombre Inferior -->
+  <g transform="translate(16, 185)" filter="url(#sombraGrave)">
+    <!-- Puntas dobladas -->
+    <path d="M0 8 L12 0 L12 24 L0 16 Z" fill="#1b2129"/>
+    <path d="M128 8 L116 0 L116 24 L128 16 Z" fill="#1b2129"/>
+    <!-- Cuerpo del pergamino -->
+    <rect x="8" y="0" width="112" height="24" rx="3" fill="url(#pergaminoCinta)" stroke="url(#bordeHierro)" stroke-width="1.5"/>
+    <!-- Texto del título -->
+    <text x="64" y="16" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="9.5" fill="#ecf0f1" letter-spacing="1" filter="drop-shadow(0 1px 2px #000)">0 · EL MENDIGO</text>
+  </g>
+</svg>

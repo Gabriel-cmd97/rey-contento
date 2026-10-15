@@ -1,80 +1,123 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <radialGradient id="bgCalavera" cx="50%" cy="35%" r="60%">
-      <stop offset="0%" stop-color="#3d4852"/>
-      <stop offset="60%" stop-color="#182026"/>
-      <stop offset="100%" stop-color="#0a0e12"/>
+    <radialGradient id="bgReyEsqueleto" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="55%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
     </radialGradient>
-    <linearGradient id="oroCorona" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#f9e79f"/>
-      <stop offset="45%" stop-color="#f1c40f"/>
-      <stop offset="85%" stop-color="#b7950b"/>
-      <stop offset="100%" stop-color="#7d6608"/>
+    <linearGradient id="oroCoronaAntigua" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="35%" stop-color="#eab308"/>
+      <stop offset="75%" stop-color="#a16207"/>
+      <stop offset="100%" stop-color="#451a03"/>
     </linearGradient>
-    <linearGradient id="cráneoHueso" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#fdfefe"/>
-      <stop offset="60%" stop-color="#e5e8e8"/>
-      <stop offset="100%" stop-color="#95a5a6"/>
+    <linearGradient id="huesoAncestral" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="45%" stop-color="#f1f5f9"/>
+      <stop offset="80%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#64748b"/>
     </linearGradient>
-    <radialGradient id="fuegoVerde" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#a3e4d7"/>
-      <stop offset="45%" stop-color="#2ecc71"/>
-      <stop offset="85%" stop-color="#117864"/>
-      <stop offset="100%" stop-color="#0b5345" stop-opacity="0"/>
+    <radialGradient id="llamaAlmaVerde" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="30%" stop-color="#6ee7b7"/>
+      <stop offset="65%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#064e3b" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="auraCripta" cx="50%" cy="35%" r="55%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
     </radialGradient>
   </defs>
 
-  <!-- Fondo oscuro medieval -->
-  <circle cx="32" cy="32" r="32" fill="url(#bgCalavera)"/>
+  <!-- Fondo de cripta real ancestral -->
+  <circle cx="32" cy="32" r="32" fill="url(#bgReyEsqueleto)"/>
 
-  <!-- Halo espectral sutil -->
-  <circle cx="32" cy="32" r="28" fill="#1abc9c" opacity="0.15">
-    <animate attributeName="opacity" values="0.1;0.25;0.1" dur="2.8s" repeatCount="indefinite"/>
+  <!-- Halo de ultratumba -->
+  <circle cx="32" cy="28" r="23" fill="url(#auraCripta)">
+    <animate attributeName="opacity" values="0.7;1;0.7" dur="2.2s" repeatCount="indefinite"/>
   </circle>
 
-  <!-- Manto real desgastado con hombreras de hierro -->
-  <path d="M12 64 C13 50, 18 43, 25 42 L32 47 L39 42 C46 43, 51 50, 52 64 Z" fill="#2c3e50"/>
-  <path d="M26 42 L32 47 L38 42 L32 39 Z" fill="url(#oroCorona)"/>
-  <circle cx="32" cy="43.5" r="1.6" fill="#c0392b" stroke="#f1c40f" stroke-width="0.4"/>
+  <!-- Pavesas y fuego fatuo de la cripta -->
+  <circle cx="12" cy="24" r="0.9" fill="#6ee7b7" opacity="0.8">
+    <animate attributeName="cy" values="24;14;24" dur="2.2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="52" cy="20" r="0.8" fill="#a7f3d0" opacity="0.85">
+    <animate attributeName="cy" values="20;10;20" dur="2.6s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="16" cy="46" r="0.7" fill="#34d399" opacity="0.7"/>
+  <circle cx="48" cy="48" r="0.7" fill="#6ee7b7" opacity="0.75"/>
 
-  <!-- Cráneo de Rey Esqueleto ancestral -->
-  <path d="M20 28 C20 17, 24 15, 32 15 C40 15, 44 17, 44 28 C44 34, 42 38, 38 40 C38 43, 36 45, 36 46 L28 46 C28 45, 26 43, 26 40 C22 38, 20 34, 20 28 Z" fill="url(#cráneoHueso)"/>
-  <!-- Relieves y suturas óseas -->
-  <path d="M30 18 L32 20 L31 22" stroke="#7f8c8d" stroke-width="0.6" fill="none" opacity="0.6"/>
-  <path d="M22 34 C24 37, 26 39, 27 43 L25 43 C23 40, 21 37, 21 34 Z" fill="#7f8c8d" opacity="0.5"/>
-  <path d="M42 34 C40 37, 38 39, 37 43 L39 43 C41 40, 43 37, 43 34 Z" fill="#7f8c8d" opacity="0.5"/>
+  <!-- Manto real andrajoso de terciopelo sepulcral -->
+  <path d="M10 64 C11 50, 16 43, 24 41 L32 46 L40 41 C48 43, 53 50, 54 64 Z" fill="#090d16"/>
+  <!-- Hombreras de hierro oxidado y broche del sepulcro -->
+  <path d="M12 64 C13 52, 18 45, 25 43 L21 64 Z" fill="#1e293b"/>
+  <path d="M52 64 C51 52, 46 45, 39 43 L43 64 Z" fill="#1e293b"/>
+  <polygon points="32,45 27,42 29,52 32,55 35,52 37,42" fill="url(#oroCoronaAntigua)"/>
+  <circle cx="32" cy="47.5" r="1.5" fill="#e11d48"/>
 
-  <!-- Fosa nasal en triángulo invertido gótico -->
-  <polygon points="32,36 30.5,40 33.5,40" fill="#17202a"/>
+  <!-- Cráneo de Soberano Esqueleto (Modelado óseo con facetas) -->
+  <path d="M19 27 C19 15, 23 13, 32 13 C41 13, 45 15, 45 27 C45 33, 43 37, 39 39 C39 42, 37 45, 36 46 L28 46 C27 45, 25 42, 25 39 C21 37, 19 33, 19 27 Z" fill="url(#huesoAncestral)" stroke="#090d16" stroke-width="0.8"/>
 
-  <!-- Dientes detallados -->
-  <rect x="28.5" y="44" width="1.5" height="2" fill="#1c2833"/>
-  <rect x="31" y="44" width="1.8" height="2.4" fill="#1c2833"/>
-  <rect x="33.8" y="44" width="1.5" height="2" fill="#1c2833"/>
+  <!-- Arcos cigomáticos / Pómulos huecos profundos -->
+  <path d="M20 33 C23 37, 26 39, 27 44 L25 44 C22 41, 20 37, 20 33 Z" fill="#334155"/>
+  <path d="M44 33 C41 37, 38 39, 37 44 L39 44 C42 41, 44 37, 44 33 Z" fill="#334155"/>
 
-  <!-- Cuencas oculares oscuras -->
-  <path d="M23 27 C23 23, 29 23, 29 28 C29 32, 24 33, 23 27 Z" fill="#0f141a"/>
-  <path d="M41 27 C41 23, 35 23, 35 28 C35 32, 40 33, 41 27 Z" fill="#0f141a"/>
+  <!-- Fisura / Grieta de batalla en la frente ósea -->
+  <path d="M30 17 L33 21 L31 24" stroke="#475569" stroke-width="0.7" fill="none"/>
+  <path d="M33 21 L35 22" stroke="#475569" stroke-width="0.5" fill="none"/>
 
-  <!-- Llamas espectrales en las cuencas (fuego verde esmeralda místico) animadas -->
-  <g>
-    <circle cx="26" cy="28" r="2.4" fill="url(#fuegoVerde)">
-      <animate attributeName="r" values="1.8;2.8;1.8" dur="1.8s" repeatCount="indefinite"/>
-    </circle>
-    <circle cx="26" cy="28" r="1" fill="#ffffff">
-      <animate attributeName="opacity" values="0.7;1;0.7" dur="1.8s" repeatCount="indefinite"/>
-    </circle>
-    <circle cx="38" cy="28" r="2.4" fill="url(#fuegoVerde)">
-      <animate attributeName="r" values="2.8;1.8;2.8" dur="1.8s" repeatCount="indefinite"/>
-    </circle>
-    <circle cx="38" cy="28" r="1" fill="#ffffff">
-      <animate attributeName="opacity" values="1;0.7;1" dur="1.8s" repeatCount="indefinite"/>
-    </circle>
+  <!-- Fosa nasal en doble gota gótica ósea -->
+  <path d="M30.5 39 C30.5 35, 32 35, 32 39 Z" fill="#090d16"/>
+  <path d="M33.5 39 C33.5 35, 32 35, 32 39 Z" fill="#090d16"/>
+
+  <!-- Dentadura de Rey Esqueleto detallada y amenazante -->
+  <!-- Dientes superiores -->
+  <g fill="#f8fafc" stroke="#475569" stroke-width="0.3">
+    <rect x="26" y="44" width="1.6" height="2.8" rx="0.3"/>
+    <rect x="28.2" y="44" width="1.8" height="3.2" rx="0.3"/>
+    <rect x="30.5" y="44" width="1.5" height="3.3" rx="0.3"/>
+    <rect x="32" y="44" width="1.5" height="3.3" rx="0.3"/>
+    <rect x="34" y="44" width="1.8" height="3.2" rx="0.3"/>
+    <rect x="36.4" y="44" width="1.6" height="2.8" rx="0.3"/>
   </g>
 
-  <!-- Corona Real de Oro envejecida con púas y gemas -->
-  <path d="M18 19 L21 11 L25 17 L32 8 L39 17 L43 11 L46 19 L45 22 L19 22 Z" fill="url(#oroCorona)" stroke="#7d6608" stroke-width="0.6"/>
-  <polygon points="32,12 34,14.5 32,17 30,14.5" fill="#2ecc71" stroke="#f1c40f" stroke-width="0.4"/>
-  <circle cx="22" cy="15" r="1.1" fill="#c0392b"/>
-  <circle cx="42" cy="15" r="1.1" fill="#c0392b"/>
+  <!-- Mandíbula inferior ósea semiabierta -->
+  <path d="M26 49 C26 53, 30 55, 32 55 C34 55, 38 53, 38 49 Z" fill="url(#huesoAncestral)" stroke="#090d16" stroke-width="0.6"/>
+  <!-- Dientes inferiores entrelazados -->
+  <g fill="#f1f5f9">
+    <polygon points="27.5,49 28.5,47 29.5,49"/>
+    <polygon points="29.5,49 30.5,46.5 31.5,49"/>
+    <polygon points="31.5,49 32.5,46.5 33.5,49"/>
+    <polygon points="33.5,49 34.5,47 35.5,49"/>
+  </g>
+
+  <!-- Cuencas oculares góticas profundas talladas en el hueso -->
+  <path d="M22 26 C22 21.5, 29 21.5, 29 27 C29 32, 23 33, 22 26 Z" fill="#020617"/>
+  <path d="M42 26 C42 21.5, 35 21.5, 35 27 C35 32, 41 33, 42 26 Z" fill="#020617"/>
+
+  <!-- Almas ardientes en las cuencas (Fuego Espectral Esmeralda) -->
+  <circle cx="25.5" cy="27" r="3.2" fill="url(#llamaAlmaVerde)">
+    <animate attributeName="r" values="2.6;3.6;2.6" dur="1.7s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="25.5" cy="27" r="1.1" fill="#ffffff">
+    <animate attributeName="opacity" values="0.7;1;0.7" dur="1.7s" repeatCount="indefinite"/>
+  </circle>
+
+  <circle cx="38.5" cy="27" r="3.2" fill="url(#llamaAlmaVerde)">
+    <animate attributeName="r" values="3.6;2.6;3.6" dur="1.7s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="38.5" cy="27" r="1.1" fill="#ffffff">
+    <animate attributeName="opacity" values="1;0.7;1" dur="1.7s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Corona Real de Oro envejecido con púas góticas y rubíes de sangre -->
+  <path d="M17 18 L20 9 L24 16 L32 6 L40 16 L44 9 L47 18 L46 22 L18 22 Z" fill="url(#oroCoronaAntigua)" stroke="#451a03" stroke-width="0.7"/>
+
+  <!-- Rubí central tallado en la corona -->
+  <polygon points="32,10 34.5,13.5 32,17 29.5,13.5" fill="#e11d48" stroke="#fef08a" stroke-width="0.4"/>
+  <circle cx="32" cy="13" r="0.5" fill="#ffffff"/>
+
+  <!-- Gemas menores en las púas laterales -->
+  <circle cx="21" cy="13" r="1.1" fill="#e11d48" stroke="#fef08a" stroke-width="0.3"/>
+  <circle cx="43" cy="13" r="1.1" fill="#e11d48" stroke="#fef08a" stroke-width="0.3"/>
 </svg>

@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 240" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgVerdugo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3b1116"/>
+      <stop offset="50%" stop-color="#20080b"/>
+      <stop offset="100%" stop-color="#0d0204"/>
+    </linearGradient>
+    <linearGradient id="bordeCrimson" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e74c3c"/>
+      <stop offset="35%" stop-color="#c0392b"/>
+      <stop offset="70%" stop-color="#78281f"/>
+      <stop offset="100%" stop-color="#4a110a"/>
+    </linearGradient>
+    <radialGradient id="arcoVerdugo" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#4a151b"/>
+      <stop offset="55%" stop-color="#24070a"/>
+      <stop offset="100%" stop-color="#0a0203"/>
+    </radialGradient>
+    <linearGradient id="cueroCapucha" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2c3e50"/>
+      <stop offset="40%" stop-color="#1a252f"/>
+      <stop offset="100%" stop-color="#0b1015"/>
+    </linearGradient>
+    <linearGradient id="hachaAcero" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="45%" stop-color="#95a5a6"/>
+      <stop offset="85%" stop-color="#34495e"/>
+      <stop offset="100%" stop-color="#17202a"/>
+    </linearGradient>
+    <radialGradient id="ojoRojo" cx="40%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#ff7675"/>
+      <stop offset="50%" stop-color="#e74c3c"/>
+      <stop offset="100%" stop-color="#641e16"/>
+    </radialGradient>
+    <linearGradient id="cintaVerdugo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a110a"/>
+      <stop offset="50%" stop-color="#2b0906"/>
+      <stop offset="100%" stop-color="#140402"/>
+    </linearGradient>
+    <filter id="sombraVerdugo" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.9"/>
+    </filter>
+  </defs>
+
+  <!-- Tarjeta base -->
+  <rect width="160" height="240" rx="12" fill="url(#bgVerdugo)"/>
+  
+  <!-- Marcos metálicos -->
+  <rect x="4" y="4" width="152" height="232" rx="9" fill="none" stroke="url(#bordeCrimson)" stroke-width="2.5"/>
+  <rect x="8" y="8" width="144" height="224" rx="7" fill="none" stroke="#e74c3c" stroke-width="0.8" stroke-opacity="0.4" stroke-dasharray="4,2"/>
+
+  <!-- Esquinas -->
+  <path d="M12 18 L18 12 M12 12 L19 19 M12 22 L22 12" stroke="#e74c3c" stroke-width="1" opacity="0.6"/>
+  <path d="M148 18 L142 12 M148 12 L141 19 M148 22 L138 12" stroke="#e74c3c" stroke-width="1" opacity="0.6"/>
+  <path d="M12 222 L18 228 M12 228 L19 221 M12 218 L22 228" stroke="#e74c3c" stroke-width="1" opacity="0.6"/>
+  <path d="M148 222 L142 228 M148 228 L141 221 M148 218 L138 228" stroke="#e74c3c" stroke-width="1" opacity="0.6"/>
+
+  <!-- Número Superior Izquierdo -->
+  <g transform="translate(14, 14)">
+    <circle cx="10" cy="10" r="10" fill="#20080b" stroke="url(#bordeCrimson)" stroke-width="1.5" filter="url(#sombraVerdugo)"/>
+    <text x="10" y="14" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="13" fill="#f5b7b1" filter="drop-shadow(0 1px 2px #000)">5</text>
+  </g>
+
+  <!-- Número Inferior Derecho -->
+  <g transform="translate(126, 206)">
+    <circle cx="10" cy="10" r="10" fill="#20080b" stroke="url(#bordeCrimson)" stroke-width="1.5" filter="url(#sombraVerdugo)"/>
+    <text x="10" y="14" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="13" fill="#f5b7b1" filter="drop-shadow(0 1px 2px #000)">5</text>
+  </g>
+
+  <!-- Ventana Gótica Central (Retrato del Verdugo) -->
+  <path d="M22 68 Q22 28 80 28 Q138 28 138 68 L138 178 L22 178 Z" fill="url(#arcoVerdugo)" filter="url(#sombraVerdugo)"/>
+
+  <!-- Cadenas de mazmorra colgantes de fondo -->
+  <path d="M35 35 V85 M45 32 V70 M120 35 V80" stroke="#7f8c8d" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.4"/>
+  <!-- Niebla roja en la base -->
+  <ellipse cx="80" cy="165" rx="45" ry="15" fill="#c0392b" opacity="0.25"/>
+
+  <!-- Espaldas y hombros macizos del Verdugo -->
+  <path d="M32 178 Q40 120 60 114 Q80 112 100 114 Q120 120 128 178 Z" fill="#140a0c"/>
+  <!-- Hombreras de cuero negro con correas de hierro -->
+  <path d="M36 138 C36 118 56 116 62 128 L52 165 Z" fill="#1c2833"/>
+  <path d="M124 138 C124 118 104 116 98 128 L108 165 Z" fill="#1c2833"/>
+  <!-- Remaches de hierro con púas -->
+  <polygon points="46,126 49,121 52,126" fill="#bdc3c7"/>
+  <polygon points="108,126 111,121 114,126" fill="#bdc3c7"/>
+
+  <!-- Capucha negra de verdugo envolvente -->
+  <path d="M60 85 C58 56 102 56 100 85 C98 116 96 128 92 135 C80 138 80 138 68 135 C64 128 62 116 60 85 Z" fill="url(#cueroCapucha)"/>
+  <!-- Punta superior de la capucha gótica -->
+  <path d="M72 60 Q80 40 85 45 Q82 58 76 60 Z" fill="#151d24"/>
+
+  <!-- Costuras toscas en la capucha -->
+  <line x1="80" y1="55" x2="80" y2="78" stroke="#566573" stroke-width="1.2" stroke-dasharray="2,2"/>
+
+  <!-- Hendiduras oculares con fulgor siniestro -->
+  <polygon points="70,86 77,88 71,92" fill="#000"/>
+  <polygon points="90,86 83,88 89,92" fill="#000"/>
+  <circle cx="73" cy="88" r="1.8" fill="url(#ojoRojo)"/>
+  <circle cx="87" cy="88" r="1.8" fill="url(#ojoRojo)"/>
+  <circle cx="73" cy="87.5" r="0.6" fill="#fff"/>
+  <circle cx="87" cy="87.5" r="0.6" fill="#fff"/>
+
+  <!-- Hendidura para respiración en la máscara -->
+  <circle cx="78" cy="106" r="1" fill="#000"/>
+  <circle cx="82" cy="106" r="1" fill="#000"/>
+  <circle cx="80" cy="110" r="1" fill="#000"/>
+
+  <!-- Gran Hacha de Verdugo de dos filos descansando al frente -->
+  <g transform="translate(56, 105)">
+    <!-- Mango largo de fresno oscuro -->
+    <rect x="22" y="10" width="6" height="70" rx="1.5" fill="#4a2711" stroke="#271205" stroke-width="0.8"/>
+    <!-- Cuchilla de hacha monumental -->
+    <path d="M22 20 C6 10 2 36 22 42 Z" fill="url(#hachaAcero)" stroke="#1a252f" stroke-width="1"/>
+    <path d="M28 20 C44 10 48 36 28 42 Z" fill="url(#hachaAcero)" stroke="#1a252f" stroke-width="1"/>
+    <!-- Punta de refuerzo central -->
+    <polygon points="25,12 28,24 22,24" fill="#7f8c8d"/>
+    <!-- Filo afilado de acero plateado -->
+    <path d="M5 14 Q2 26 5 38" stroke="#ffffff" stroke-width="1.4" fill="none" opacity="0.9"/>
+    <!-- Muesca de batalla en el filo -->
+    <polygon points="4,25 6,26 4,27" fill="#17202a"/>
+    <!-- Guanteletes de hierro sosteniendo el mango -->
+    <rect x="18" y="44" width="14" height="12" rx="3" fill="#34495e" stroke="#17202a" stroke-width="1"/>
+    <line x1="22" y1="44" x2="22" y2="56" stroke="#17202a" stroke-width="1"/>
+    <line x1="28" y1="44" x2="28" y2="56" stroke="#17202a" stroke-width="1"/>
+  </g>
+
+  <!-- Marco de la Ventana Gótica -->
+  <path d="M22 68 Q22 28 80 28 Q138 28 138 68 L138 178 L22 178 Z" fill="none" stroke="url(#bordeCrimson)" stroke-width="2.5"/>
+  <path d="M26 70 Q26 33 80 33 Q134 33 134 70 L134 174 L26 174 Z" fill="none" stroke="#e74c3c" stroke-width="1" opacity="0.4"/>
+
+  <!-- Pergamino / Cinta del Nombre Inferior -->
+  <g transform="translate(16, 185)" filter="url(#sombraVerdugo)">
+    <path d="M0 8 L12 0 L12 24 L0 16 Z" fill="#20080b"/>
+    <path d="M128 8 L116 0 L116 24 L128 16 Z" fill="#20080b"/>
+    <rect x="8" y="0" width="112" height="24" rx="3" fill="url(#cintaVerdugo)" stroke="url(#bordeCrimson)" stroke-width="1.5"/>
+    <text x="64" y="16" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="9.5" fill="#f5b7b1" letter-spacing="1" filter="drop-shadow(0 1px 2px #000)">5 · EL VERDUGO</text>
+  </g>
+</svg>

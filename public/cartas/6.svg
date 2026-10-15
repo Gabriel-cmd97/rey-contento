@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 240" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgDuquesa" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3a1c40"/>
+      <stop offset="50%" stop-color="#210e26"/>
+      <stop offset="100%" stop-color="#0e0412"/>
+    </linearGradient>
+    <linearGradient id="bordePurpura" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#bb8fce"/>
+      <stop offset="35%" stop-color="#8e44ad"/>
+      <stop offset="70%" stop-color="#5b2c6f"/>
+      <stop offset="100%" stop-color="#4a235a"/>
+    </linearGradient>
+    <radialGradient id="arcoDuquesa" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#4a2154"/>
+      <stop offset="55%" stop-color="#260e2b"/>
+      <stop offset="100%" stop-color="#0c040d"/>
+    </radialGradient>
+    <linearGradient id="oroVestido" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f9e79f"/>
+      <stop offset="40%" stop-color="#f1c40f"/>
+      <stop offset="80%" stop-color="#b7950b"/>
+      <stop offset="100%" stop-color="#7d6608"/>
+    </linearGradient>
+    <linearGradient id="terciopeloVestido" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7d3c98"/>
+      <stop offset="50%" stop-color="#512e5f"/>
+      <stop offset="100%" stop-color="#2c1433"/>
+    </linearGradient>
+    <radialGradient id="rubiColgante" cx="35%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#ff7675"/>
+      <stop offset="50%" stop-color="#d63031"/>
+      <stop offset="100%" stop-color="#78281f"/>
+    </radialGradient>
+    <linearGradient id="abanicoOro" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fef9e7"/>
+      <stop offset="50%" stop-color="#f9e79f"/>
+      <stop offset="100%" stop-color="#d4ac0d"/>
+    </linearGradient>
+    <linearGradient id="cintaDuquesa" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4c1e54"/>
+      <stop offset="50%" stop-color="#2e1033"/>
+      <stop offset="100%" stop-color="#140617"/>
+    </linearGradient>
+    <filter id="sombraDuquesa" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.85"/>
+    </filter>
+  </defs>
+
+  <!-- Tarjeta base -->
+  <rect width="160" height="240" rx="12" fill="url(#bgDuquesa)"/>
+  
+  <!-- Marcos metálicos -->
+  <rect x="4" y="4" width="152" height="232" rx="9" fill="none" stroke="url(#bordePurpura)" stroke-width="2.5"/>
+  <rect x="8" y="8" width="144" height="224" rx="7" fill="none" stroke="#bb8fce" stroke-width="0.8" stroke-opacity="0.4" stroke-dasharray="4,2"/>
+
+  <!-- Esquinas -->
+  <path d="M12 18 L18 12 M12 12 L19 19 M12 22 L22 12" stroke="#bb8fce" stroke-width="1" opacity="0.6"/>
+  <path d="M148 18 L142 12 M148 12 L141 19 M148 22 L138 12" stroke="#bb8fce" stroke-width="1" opacity="0.6"/>
+  <path d="M12 222 L18 228 M12 228 L19 221 M12 218 L22 228" stroke="#bb8fce" stroke-width="1" opacity="0.6"/>
+  <path d="M148 222 L142 228 M148 228 L141 221 M148 218 L138 228" stroke="#bb8fce" stroke-width="1" opacity="0.6"/>
+
+  <!-- Número Superior Izquierdo -->
+  <g transform="translate(14, 14)">
+    <circle cx="10" cy="10" r="10" fill="#210e26" stroke="url(#bordePurpura)" stroke-width="1.5" filter="url(#sombraDuquesa)"/>
+    <text x="10" y="14" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="13" fill="#e8daef" filter="drop-shadow(0 1px 2px #000)">6</text>
+  </g>
+
+  <!-- Número Inferior Derecho -->
+  <g transform="translate(126, 206)">
+    <circle cx="10" cy="10" r="10" fill="#210e26" stroke="url(#bordePurpura)" stroke-width="1.5" filter="url(#sombraDuquesa)"/>
+    <text x="10" y="14" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="13" fill="#e8daef" filter="drop-shadow(0 1px 2px #000)">6</text>
+  </g>
+
+  <!-- Ventana Gótica Central (Retrato de la Duquesa) -->
+  <path d="M22 68 Q22 28 80 28 Q138 28 138 68 L138 178 L22 178 Z" fill="url(#arcoDuquesa)" filter="url(#sombraDuquesa)"/>
+
+  <!-- Cortinajes de terciopelo palaciego con brocados -->
+  <path d="M25 35 Q50 45 40 90 L25 90 Z" fill="#4a154b" opacity="0.7"/>
+  <path d="M135 35 Q110 45 120 90 L135 90 Z" fill="#4a154b" opacity="0.7"/>
+  <!-- Cordón dorado de la cortina -->
+  <path d="M35 75 Q40 85 35 95" stroke="#f1c40f" stroke-width="1" fill="none"/>
+  <path d="M125 75 Q120 85 125 95" stroke="#f1c40f" stroke-width="1" fill="none"/>
+
+  <!-- Vestido noble de terciopelo amatista y brocado de oro -->
+  <path d="M38 178 Q45 125 64 122 Q80 120 96 122 Q115 125 122 178 Z" fill="url(#terciopeloVestido)"/>
+  <!-- Corsé bordado con filigrana de oro -->
+  <path d="M68 122 L80 178 L92 122 Q80 126 68 122 Z" fill="url(#oroVestido)"/>
+  <path d="M72 135 H88 M74 148 H86 M76 160 H84" stroke="#7d6608" stroke-width="1.2"/>
+
+  <!-- Cuello de encaje noble blanco -->
+  <path d="M58 120 C62 108 98 108 102 120 C92 126 68 126 58 120 Z" fill="#fcf3cf" stroke="#f9e79f" stroke-width="0.8"/>
+
+  <!-- Cuello esbelto y gargantilla de rubí -->
+  <ellipse cx="80" cy="106" rx="11" ry="14" fill="#fadbd8"/>
+  <rect x="71" y="108" width="18" height="3" fill="#1b0a1f"/>
+  <ellipse cx="80" cy="113" rx="3.5" ry="4.5" fill="url(#rubiColgante)" stroke="#f1c40f" stroke-width="0.8"/>
+
+  <!-- Rostro sereno y aristocrático -->
+  <path d="M69 86 C69 74 91 74 91 86 C91 98 86 105 80 105 C74 105 69 98 69 86 Z" fill="#fdebd0"/>
+  <!-- Labios carmesí refinados -->
+  <path d="M76 96 Q80 94 84 96 Q80 100 76 96 Z" fill="#c0392b"/>
+  <!-- Nariz aristocrática fina -->
+  <path d="M80 84 L78.5 91 L81.5 91" stroke="#d98880" stroke-width="0.8" fill="none"/>
+  <!-- Ojos castaños de mirada cautivadora -->
+  <ellipse cx="74" cy="85" rx="3" ry="2.2" fill="#fff"/>
+  <ellipse cx="86" cy="85" rx="3" ry="2.2" fill="#fff"/>
+  <circle cx="74.5" cy="85" r="1.6" fill="#4a235a"/>
+  <circle cx="86.5" cy="85" r="1.6" fill="#4a235a"/>
+  <circle cx="75" cy="84.5" r="0.6" fill="#fff"/>
+  <circle cx="87" cy="84.5" r="0.6" fill="#fff"/>
+  <!-- Pestañas finas -->
+  <path d="M71 83 Q75 82 78 84 M82 84 Q85 82 89 83" stroke="#210e26" stroke-width="1.2" fill="none"/>
+
+  <!-- Peinado alto trenzado con perlas -->
+  <!-- Mechones y moño alto -->
+  <ellipse cx="80" cy="68" rx="20" ry="18" fill="#4a2810"/>
+  <ellipse cx="80" cy="62" rx="14" ry="12" fill="#381d09"/>
+  <!-- Rizo elegante cayendo sobre el hombro -->
+  <path d="M67 85 Q62 98 65 110" stroke="#4a2810" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M93 85 Q98 98 95 110" stroke="#4a2810" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <!-- Tira de perlas tejida en el cabello -->
+  <circle cx="70" cy="66" r="1.5" fill="#fff"/>
+  <circle cx="75" cy="62" r="1.5" fill="#fff"/>
+  <circle cx="80" cy="60" r="1.7" fill="#fff"/>
+  <circle cx="85" cy="62" r="1.5" fill="#fff"/>
+  <circle cx="90" cy="66" r="1.5" fill="#fff"/>
+  <!-- Peineta de oro con esmeralda central -->
+  <rect x="74" y="52" width="12" height="4" rx="1" fill="#f1c40f"/>
+  <circle cx="80" cy="54" r="1.5" fill="#2ecc71"/>
+
+  <!-- Abanico de oro y seda calada sostenido por las manos -->
+  <g transform="translate(62, 132)">
+    <!-- Varillas del abanico desplegadas -->
+    <path d="M18 35 L-4 12 C10 0 35 0 45 12 L22 35 Z" fill="url(#abanicoOro)" stroke="#b7950b" stroke-width="0.8"/>
+    <!-- Calado floral en el abanico -->
+    <circle cx="18" cy="14" r="3" fill="#8e44ad" opacity="0.6"/>
+    <circle cx="7" cy="18" r="2.5" fill="#8e44ad" opacity="0.6"/>
+    <circle cx="30" cy="18" r="2.5" fill="#8e44ad" opacity="0.6"/>
+    <!-- Manos delicadas de dama -->
+    <ellipse cx="20" cy="34" rx="5" ry="4" fill="#fadbd8"/>
+    <!-- Anillo con amatista en el dedo -->
+    <circle cx="18" cy="33" r="1" fill="#8e44ad"/>
+  </g>
+
+  <!-- Marco de la Ventana Gótica -->
+  <path d="M22 68 Q22 28 80 28 Q138 28 138 68 L138 178 L22 178 Z" fill="none" stroke="url(#bordePurpura)" stroke-width="2.5"/>
+  <path d="M26 70 Q26 33 80 33 Q134 33 134 70 L134 174 L26 174 Z" fill="none" stroke="#bb8fce" stroke-width="1" opacity="0.4"/>
+
+  <!-- Pergamino / Cinta del Nombre Inferior -->
+  <g transform="translate(16, 185)" filter="url(#sombraDuquesa)">
+    <path d="M0 8 L12 0 L12 24 L0 16 Z" fill="#210e26"/>
+    <path d="M128 8 L116 0 L116 24 L128 16 Z" fill="#210e26"/>
+    <rect x="8" y="0" width="112" height="24" rx="3" fill="url(#cintaDuquesa)" stroke="url(#bordePurpura)" stroke-width="1.5"/>
+    <text x="64" y="16" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="9.5" fill="#e8daef" letter-spacing="1" filter="drop-shadow(0 1px 2px #000)">6 · LA DUQUESA</text>
+  </g>
+</svg>

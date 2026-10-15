@@ -1,0 +1,206 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 240" width="100%" height="100%">
+  <defs>
+    <!-- Fondo dorado imperial -->
+    <linearGradient id="bgRey" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4a3b1a"/>
+      <stop offset="30%" stop-color="#2a1f0a"/>
+      <stop offset="70%" stop-color="#1c1405"/>
+      <stop offset="100%" stop-color="#0a0701"/>
+    </linearGradient>
+    <linearGradient id="bordeOroRey" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff9c4"/>
+      <stop offset="25%" stop-color="#f1c40f"/>
+      <stop offset="50%" stop-color="#f39c12"/>
+      <stop offset="75%" stop-color="#d4ac0d"/>
+      <stop offset="100%" stop-color="#7d6608"/>
+    </linearGradient>
+    <radialGradient id="arcoRey" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#7d6608"/>
+      <stop offset="45%" stop-color="#3d2c07"/>
+      <stop offset="85%" stop-color="#1f1503"/>
+      <stop offset="100%" stop-color="#080501"/>
+    </radialGradient>
+    <radialGradient id="resplandorSolar" cx="50%" cy="30%" r="55%">
+      <stop offset="0%" stop-color="#fff9c4" stop-opacity="0.45"/>
+      <stop offset="50%" stop-color="#f39c12" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="coronaOro" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="25%" stop-color="#f9e79f"/>
+      <stop offset="55%" stop-color="#f1c40f"/>
+      <stop offset="85%" stop-color="#b7950b"/>
+      <stop offset="100%" stop-color="#7d6608"/>
+    </linearGradient>
+    <linearGradient id="mantoPurpura" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c0392b"/>
+      <stop offset="50%" stop-color="#78281f"/>
+      <stop offset="100%" stop-color="#4a150f"/>
+    </linearGradient>
+    <radialGradient id="rubiCorona" cx="35%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#ff7675"/>
+      <stop offset="50%" stop-color="#d63031"/>
+      <stop offset="100%" stop-color="#78281f"/>
+    </radialGradient>
+    <radialGradient id="esmeraldaCorona" cx="35%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#55efc4"/>
+      <stop offset="50%" stop-color="#00b894"/>
+      <stop offset="100%" stop-color="#004d40"/>
+    </radialGradient>
+    <linearGradient id="cintaRey" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5c450c"/>
+      <stop offset="50%" stop-color="#3b2b06"/>
+      <stop offset="100%" stop-color="#1a1202"/>
+    </linearGradient>
+    <filter id="sombraRey" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3.5" flood-color="#000" flood-opacity="0.9"/>
+    </filter>
+  </defs>
+
+  <!-- Tarjeta base -->
+  <rect width="160" height="240" rx="12" fill="url(#bgRey)"/>
+  
+  <!-- Marcos metálicos imperiales dorados -->
+  <rect x="4" y="4" width="152" height="232" rx="9" fill="none" stroke="url(#bordeOroRey)" stroke-width="2.8"/>
+  <rect x="8" y="8" width="144" height="224" rx="7" fill="none" stroke="#f1c40f" stroke-width="0.8" stroke-opacity="0.6" stroke-dasharray="4,2"/>
+
+  <!-- Esquinas heráldicas reales -->
+  <path d="M12 18 L18 12 M12 12 L19 19 M12 22 L22 12" stroke="#fff9c4" stroke-width="1.2" opacity="0.8"/>
+  <path d="M148 18 L142 12 M148 12 L141 19 M148 22 L138 12" stroke="#fff9c4" stroke-width="1.2" opacity="0.8"/>
+  <path d="M12 222 L18 228 M12 228 L19 221 M12 218 L22 228" stroke="#fff9c4" stroke-width="1.2" opacity="0.8"/>
+  <path d="M148 222 L142 228 M148 228 L141 221 M148 218 L138 228" stroke="#fff9c4" stroke-width="1.2" opacity="0.8"/>
+
+  <!-- Flor de lis diminuta en las 4 esquinas interiores -->
+  <path d="M13 13 Q16 10 16 13 Q16 10 19 13 Q16 16 16 18 Q16 16 13 13 Z" fill="#f1c40f" opacity="0.7"/>
+  <path d="M147 13 Q144 10 144 13 Q144 10 141 13 Q144 16 144 18 Q144 16 147 13 Z" fill="#f1c40f" opacity="0.7"/>
+
+  <!-- Número Superior Izquierdo Imperial -->
+  <g transform="translate(14, 14)">
+    <circle cx="10" cy="10" r="10" fill="#2a1f0a" stroke="url(#bordeOroRey)" stroke-width="1.8" filter="url(#sombraRey)"/>
+    <text x="10" y="14" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="13" fill="#fff9c4" filter="drop-shadow(0 1px 3px #000)">9</text>
+  </g>
+
+  <!-- Número Inferior Derecho Imperial -->
+  <g transform="translate(126, 206)">
+    <circle cx="10" cy="10" r="10" fill="#2a1f0a" stroke="url(#bordeOroRey)" stroke-width="1.8" filter="url(#sombraRey)"/>
+    <text x="10" y="14" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="13" fill="#fff9c4" filter="drop-shadow(0 1px 3px #000)">9</text>
+  </g>
+
+  <!-- Ventana Gótica Central (Retrato del Rey Contento) -->
+  <path d="M22 68 Q22 28 80 28 Q138 28 138 68 L138 178 L22 178 Z" fill="url(#arcoRey)" filter="url(#sombraRey)"/>
+
+  <!-- Resplandor solar y destellos de la sala del trono -->
+  <circle cx="80" cy="70" r="45" fill="url(#resplandorSolar)"/>
+  <!-- Rayos de luz dorados celestiales -->
+  <g stroke="#f1c40f" stroke-width="0.8" opacity="0.35">
+    <line x1="80" y1="70" x2="35" y2="35"/>
+    <line x1="80" y1="70" x2="55" y2="30"/>
+    <line x1="80" y1="70" x2="80" y2="28"/>
+    <line x1="80" y1="70" x2="105" y2="30"/>
+    <line x1="80" y1="70" x2="125" y2="35"/>
+  </g>
+
+  <!-- Destellos y brillos dorados flotando -->
+  <circle cx="45" cy="50" r="1.5" fill="#fff9c4" opacity="0.8"/>
+  <circle cx="115" cy="52" r="1.5" fill="#fff9c4" opacity="0.8"/>
+  <polygon points="40,90 41,93 44,94 41,95 40,98 39,95 36,94 39,93" fill="#f1c40f" opacity="0.8"/>
+  <polygon points="120,85 121,88 124,89 121,90 120,93 119,90 116,89 119,88" fill="#f1c40f" opacity="0.8"/>
+
+  <!-- Manto real de terciopelo carmesí y armiño imperial -->
+  <path d="M34 178 Q40 120 60 114 Q80 112 100 114 Q120 120 126 178 Z" fill="url(#mantoPurpura)"/>
+  <!-- Capa de armiño blanco con motas negras -->
+  <path d="M48 126 C52 110 108 110 112 126 L108 178 L52 178 Z" fill="#ffffff"/>
+  <!-- Manchas negras de armiño real -->
+  <polygon points="62,135 64,139 60,139" fill="#1a1a1a"/>
+  <polygon points="98,135 100,139 96,139" fill="#1a1a1a"/>
+  <polygon points="70,150 72,154 68,154" fill="#1a1a1a"/>
+  <polygon points="90,150 92,154 88,154" fill="#1a1a1a"/>
+  <polygon points="80,165 82,169 78,169" fill="#1a1a1a"/>
+
+  <!-- Gran Collar de la Orden Real de Oro con gran rubí -->
+  <path d="M62 118 Q80 132 98 118" stroke="url(#coronaOro)" stroke-width="3" fill="none"/>
+  <circle cx="80" cy="128" r="4.5" fill="url(#rubiCorona)" stroke="#f1c40f" stroke-width="1"/>
+
+  <!-- Cuello y Rostro del Rey Contento -->
+  <ellipse cx="80" cy="102" rx="14" ry="16" fill="#f5cba7"/>
+  <!-- Rostro -->
+  <path d="M68 85 C68 70 92 70 92 85 C92 98 86 106 80 106 C74 106 68 98 68 85 Z" fill="#fdebd0"/>
+  <!-- Mejillas sonrosadas de rey feliz -->
+  <circle cx="72" cy="88" r="4" fill="#e74c3c" opacity="0.3"/>
+  <circle cx="88" cy="88" r="4" fill="#e74c3c" opacity="0.3"/>
+
+  <!-- Barba tupida, elegante y bien cuidada -->
+  <path d="M66 86 C64 116 72 124 80 125 C88 124 96 116 94 86 C90 98 70 98 66 86 Z" fill="#a0522d"/>
+  <path d="M70 95 Q80 118 90 95" stroke="#d35400" stroke-width="1.5" fill="none"/>
+
+  <!-- Sonrisa radiante y contagiosa -->
+  <path d="M73 92 Q80 102 87 92 Z" fill="#78281f"/>
+  <path d="M75 92 Q80 96 85 92" fill="#ffffff"/>
+  <!-- Bigote real curvado hacia arriba -->
+  <path d="M68 88 Q78 94 80 91 Q82 94 92 88 Q80 98 68 88 Z" fill="#873600"/>
+
+  <!-- Ojos alegres y arruguitas de júbilo -->
+  <path d="M70 82 Q75 79 80 82" stroke="#4a250e" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M80 82 Q85 79 90 82" stroke="#4a250e" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <circle cx="75" cy="84" r="1.8" fill="#2c3e50"/>
+  <circle cx="85" cy="84" r="1.8" fill="#2c3e50"/>
+  <circle cx="75.5" cy="83.5" r="0.6" fill="#fff"/>
+  <circle cx="85.5" cy="83.5" r="0.6" fill="#fff"/>
+  <!-- Nariz noble -->
+  <path d="M80 81 L78 88 L82 88" stroke="#ba4a00" stroke-width="1.2" fill="none"/>
+
+  <!-- Corona Imperial Monumental de Oro macizo -->
+  <g transform="translate(52, 38)">
+    <!-- Base de la corona con terciopelo interior púrpura -->
+    <path d="M4 32 C12 28 44 28 52 32 L48 38 C40 35 16 35 8 38 Z" fill="#6c3483"/>
+    <!-- Banda dorada con perlas y filigrana -->
+    <rect x="4" y="28" width="48" height="8" rx="2" fill="url(#coronaOro)" stroke="#7d6608" stroke-width="0.8"/>
+    <!-- Gemas engarzadas en la banda -->
+    <circle cx="10" cy="32" r="2" fill="url(#rubiCorona)"/>
+    <circle cx="20" cy="32" r="2" fill="url(#esmeraldaCorona)"/>
+    <circle cx="28" cy="32" r="2.5" fill="#ffffff" stroke="#f1c40f" stroke-width="0.5"/>
+    <circle cx="36" cy="32" r="2" fill="url(#esmeraldaCorona)"/>
+    <circle cx="46" cy="32" r="2" fill="url(#rubiCorona)"/>
+    <!-- Puntas florales de la corona (Flor de Lis) -->
+    <!-- Punta izquierda -->
+    <path d="M8 28 L4 16 L12 22 L16 28 Z" fill="url(#coronaOro)" stroke="#7d6608" stroke-width="0.8"/>
+    <circle cx="4" cy="16" r="1.5" fill="#fff"/>
+    <!-- Punta central majestuosa -->
+    <path d="M22 28 L28 8 L34 28 Z" fill="url(#coronaOro)" stroke="#7d6608" stroke-width="0.8"/>
+    <!-- Cruz / Esmeralda superior central -->
+    <circle cx="28" cy="8" r="2.5" fill="url(#rubiCorona)" stroke="#f1c40f" stroke-width="0.6"/>
+    <path d="M28 3 L28 13 M23 8 L33 8" stroke="#f9e79f" stroke-width="1.2"/>
+    <!-- Punta derecha -->
+    <path d="M48 28 L52 16 L44 22 L40 28 Z" fill="url(#coronaOro)" stroke="#7d6608" stroke-width="0.8"/>
+    <circle cx="52" cy="16" r="1.5" fill="#fff"/>
+    <!-- Puntas intermedias -->
+    <polygon points="17,28 20,18 23,28" fill="url(#coronaOro)"/>
+    <circle cx="20" cy="18" r="1.2" fill="#55efc4"/>
+    <polygon points="33,28 36,18 39,28" fill="url(#coronaOro)"/>
+    <circle cx="36" cy="18" r="1.2" fill="#55efc4"/>
+  </g>
+
+  <!-- Cetro Real en la mano derecha -->
+  <g transform="translate(108, 90)">
+    <!-- Vara de oro -->
+    <rect x="10" y="20" width="4.5" height="70" rx="1.5" fill="url(#coronaOro)" stroke="#7d6608" stroke-width="0.8"/>
+    <!-- Pomo superior con flor de lis -->
+    <circle cx="12" cy="18" r="5" fill="url(#coronaOro)"/>
+    <circle cx="12" cy="18" r="2.5" fill="url(#rubiCorona)"/>
+    <path d="M8 12 Q12 6 12 10 Q12 6 16 12 Q12 14 12 16 Q12 14 8 12 Z" fill="url(#coronaOro)"/>
+    <!-- Mano real enguantada en blanco sosteniendo el cetro -->
+    <ellipse cx="12" cy="55" rx="5" ry="4" fill="#ffffff" stroke="#d5dbdb" stroke-width="0.8"/>
+  </g>
+
+  <!-- Marco de la Ventana Gótica Imperial -->
+  <path d="M22 68 Q22 28 80 28 Q138 28 138 68 L138 178 L22 178 Z" fill="none" stroke="url(#bordeOroRey)" stroke-width="2.8"/>
+  <path d="M26 70 Q26 33 80 33 Q134 33 134 70 L134 174 L26 174 Z" fill="none" stroke="#f1c40f" stroke-width="1" opacity="0.6"/>
+
+  <!-- Pergamino / Cinta del Nombre Inferior -->
+  <g transform="translate(14, 185)" filter="url(#sombraRey)">
+    <path d="M0 8 L12 0 L12 24 L0 16 Z" fill="#2a1f0a"/>
+    <path d="M132 8 L120 0 L120 24 L132 16 Z" fill="#2a1f0a"/>
+    <rect x="8" y="0" width="116" height="24" rx="3" fill="url(#cintaRey)" stroke="url(#bordeOroRey)" stroke-width="1.8"/>
+    <text x="66" y="16" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="9" fill="#fff9c4" letter-spacing="1" filter="drop-shadow(0 1px 3px #000)">9 · EL REY CONTENTO</text>
+  </g>
+</svg>

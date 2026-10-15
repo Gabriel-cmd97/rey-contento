@@ -1,64 +1,104 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <radialGradient id="bgMago" cx="50%" cy="35%" r="60%">
-      <stop offset="0%" stop-color="#233554"/>
-      <stop offset="60%" stop-color="#0e1726"/>
-      <stop offset="100%" stop-color="#050a12"/>
+    <radialGradient id="bgMagoCosmico" cx="50%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
     </radialGradient>
-    <linearGradient id="sombreroAzul" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#34495e"/>
-      <stop offset="50%" stop-color="#212f3d"/>
-      <stop offset="100%" stop-color="#17202a"/>
+    <linearGradient id="sombreroArcano" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3b4252"/>
+      <stop offset="35%" stop-color="#2e3440"/>
+      <stop offset="75%" stop-color="#1e222a"/>
+      <stop offset="100%" stop-color="#0b0e14"/>
     </linearGradient>
-    <linearGradient id="hebillaPlata" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#fdfefe"/>
-      <stop offset="50%" stop-color="#bdc3c7"/>
-      <stop offset="100%" stop-color="#7f8c8d"/>
-    </linearGradient>
-    <linearGradient id="barbaMago" x1="0" y1="0" x2="0" y2="1">
+    <linearGradient id="barbaSabia" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="60%" stop-color="#d5dbdb"/>
-      <stop offset="100%" stop-color="#95a5a6"/>
+      <stop offset="45%" stop-color="#e2e8f0"/>
+      <stop offset="80%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+    <radialGradient id="ojoZafiro" cx="45%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="30%" stop-color="#67e8f9"/>
+      <stop offset="70%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#082f49"/>
+    </radialGradient>
+    <linearGradient id="plataHebilla" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#64748b"/>
     </linearGradient>
   </defs>
 
-  <!-- Fondo nocturno sabio -->
-  <circle cx="32" cy="32" r="32" fill="url(#bgMago)"/>
+  <!-- Fondo de firmamento estrellado -->
+  <circle cx="32" cy="32" r="32" fill="url(#bgMagoCosmico)"/>
 
-  <!-- Chispas de polvo de estrellas -->
-  <circle cx="16" cy="18" r="0.7" fill="#64ffda" opacity="0.7"/>
-  <circle cx="48" cy="20" r="0.9" fill="#f4d03f" opacity="0.8"/>
-  <circle cx="50" cy="42" r="0.8" fill="#64ffda" opacity="0.6"/>
+  <!-- Halo de sabiduría celestial -->
+  <circle cx="32" cy="24" r="22" fill="#38bdf8" opacity="0.12">
+    <animate attributeName="opacity" values="0.08;0.22;0.08" dur="3s" repeatCount="indefinite"/>
+  </circle>
 
-  <!-- Túnica medieval de lana noble azul oscuro -->
-  <path d="M12 64 C13 50, 18 43, 25 42 L32 47 L39 42 C46 43, 51 50, 52 64 Z" fill="#1b2631"/>
-  <path d="M28 44 L32 49 L36 44 Z" fill="#2c3e50"/>
-  <!-- Broche estelar -->
-  <circle cx="32" cy="45" r="1.5" fill="#f4d03f"/>
+  <!-- Polvo de estrellas y constelaciones -->
+  <circle cx="14" cy="18" r="0.9" fill="#38bdf8" opacity="0.8">
+    <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="50" cy="16" r="0.8" fill="#fde047" opacity="0.85">
+    <animate attributeName="opacity" values="1;0.4;1" dur="2.4s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="52" cy="42" r="0.7" fill="#67e8f9" opacity="0.7"/>
+  <circle cx="12" cy="44" r="0.6" fill="#fef08a" opacity="0.6"/>
 
-  <!-- Barba larga y tupida de gran mago -->
-  <path d="M22 36 C22 52, 28 62, 32 63 C36 62, 42 52, 42 36 C38 38, 35 38, 32 38 C29 38, 26 38, 22 36 Z" fill="url(#barbaMago)"/>
-  <path d="M25 40 C28 50, 30 56, 32 60 C34 56, 36 50, 39 40" stroke="#bdc3c7" stroke-width="0.8" fill="none"/>
-  <!-- Bigote abundante -->
-  <path d="M25 36 C28 39, 31 39, 32 38 C33 39, 36 39, 39 36 C36 35, 33 35, 32 36 C31 35, 28 35, 25 36 Z" fill="#ffffff"/>
+  <!-- Túnica solemne de lana noche con bordados estelares -->
+  <path d="M10 64 C11 50, 16 43, 24 42 L32 47 L40 42 C48 43, 53 50, 54 64 Z" fill="#0f172a"/>
+  <path d="M25 43 L32 49 L39 43 Z" fill="#1e293b"/>
+  <!-- Broche pectoral en orbe astral -->
+  <circle cx="32" cy="45.5" r="2" fill="#38bdf8" stroke="#fde047" stroke-width="0.6"/>
+  <circle cx="32" cy="45.5" r="0.7" fill="#ffffff"/>
 
-  <!-- Rostro sabio y anciano -->
-  <ellipse cx="32" cy="33" rx="8" ry="7" fill="#fad7a0"/>
-  <path d="M27 30 C29 29, 31 30, 31 31" stroke="#935116" stroke-width="0.8" fill="none"/>
-  <path d="M37 30 C35 29, 33 30, 33 31" stroke="#935116" stroke-width="0.8" fill="none"/>
-  <!-- Ojos azules profundos llenos de sabiduría -->
-  <circle cx="28.5" cy="32" r="1.2" fill="#2980b9"/>
-  <circle cx="35.5" cy="32" r="1.2" fill="#2980b9"/>
-  <circle cx="28.8" cy="31.8" r="0.4" fill="#ffffff"/>
-  <circle cx="35.8" cy="31.8" r="0.4" fill="#ffffff"/>
+  <!-- Barba blanca larga, majestuosa y ondulada de anciano sabio -->
+  <path d="M21 36 C21 52, 26 62, 32 64 C38 62, 43 52, 43 36 C39 39, 36 39, 32 39 C28 39, 25 39, 21 36 Z" fill="url(#barbaSabia)"/>
+  <!-- Mechones y trenzado fino con sombras suaves -->
+  <path d="M25 41 C27 49, 29 57, 32 62 C35 57, 37 49, 39 41" stroke="#cbd5e1" stroke-width="0.9" fill="none"/>
+  <path d="M22 43 Q26 53 30 60" stroke="#94a3b8" stroke-width="0.6" fill="none"/>
+  <path d="M42 43 Q38 53 34 60" stroke="#94a3b8" stroke-width="0.6" fill="none"/>
 
-  <!-- Ala ancha del sombrero medieval de viaje -->
-  <ellipse cx="32" cy="24" rx="20" ry="5.5" fill="url(#sombreroAzul)" stroke="#17202a" stroke-width="0.8"/>
+  <!-- Bigote tupido y señorial que cae sobre la barba -->
+  <path d="M24 35 C28 38.5, 31 38.5, 32 37.5 C33 38.5, 36 38.5, 40 35 C37 34, 34 34, 32 35 C30 34, 27 34, 24 35 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="0.4"/>
 
-  <!-- Copa puntiaguda curva y desgastada del sombrero de mago -->
-  <path d="M22 23 C24 14, 28 8, 34 3 C36 4, 38 6, 34 10 C39 12, 41 18, 42 23 Z" fill="url(#sombreroAzul)"/>
+  <!-- Rostro venerado con arrugas de sabiduría -->
+  <ellipse cx="32" cy="32" rx="8.5" ry="7.5" fill="#fde68a"/>
+  <!-- Líneas de expresión suaves alrededor de los ojos -->
+  <path d="M25 29 Q26 31 25 33" stroke="#b45309" stroke-width="0.5" fill="none" opacity="0.6"/>
+  <path d="M39 29 Q38 31 39 33" stroke="#b45309" stroke-width="0.5" fill="none" opacity="0.6"/>
 
-  <!-- Cinta del sombrero con hebilla de plata -->
-  <path d="M22.5 22.5 C26 24, 38 24, 41.5 22.5 L41.8 24.5 C38 26, 26 26, 22.2 24.5 Z" fill="#154360"/>
-  <rect x="30" y="22" width="4" height="3" rx="0.5" fill="none" stroke="url(#hebillaPlata)" stroke-width="0.9"/>
+  <!-- Cejas pobladas y blancas de mago que sobresalen -->
+  <path d="M24 28 C27 26, 30 27, 31 29" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+  <path d="M40 28 C37 26, 34 27, 33 29" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+
+  <!-- Ojos de zafiro ancestral brillante con fulgor místico -->
+  <ellipse cx="28" cy="31" rx="2" ry="1.6" fill="#0f172a"/>
+  <circle cx="28" cy="31" r="1.3" fill="url(#ojoZafiro)"/>
+  <circle cx="28.4" cy="30.6" r="0.5" fill="#ffffff"/>
+
+  <ellipse cx="36" cy="31" rx="2" ry="1.6" fill="#0f172a"/>
+  <circle cx="36" cy="31" r="1.3" fill="url(#ojoZafiro)"/>
+  <circle cx="36.4" cy="30.6" r="0.5" fill="#ffffff"/>
+
+  <!-- Ala ancha y ondulada del sombrero de mago (Felt Wizard Hat) -->
+  <ellipse cx="32" cy="23" rx="21" ry="6" fill="url(#sombreroArcano)" stroke="#090d14" stroke-width="0.8"/>
+  <!-- Sombra bajo el ala sobre la frente -->
+  <path d="M23 25 C26 27, 38 27, 41 25 C38 28, 26 28, 23 25 Z" fill="#020617" opacity="0.45"/>
+
+  <!-- Copa cónica alta, curvada y gastada por los siglos -->
+  <path d="M22 22 C23 13, 27 6, 35 2 C37 3, 39 6, 34 9 C40 12, 42 17, 42 22 Z" fill="url(#sombreroArcano)" stroke="#090d14" stroke-width="0.7"/>
+
+  <!-- Banda de cuero noche con hebilla de plata grabada -->
+  <path d="M22.5 21.5 C26 23.5, 38 23.5, 41.5 21.5 L41.8 23.5 C38 25.5, 26 25.5, 22.2 23.5 Z" fill="#1e1b4b"/>
+  <rect x="29.5" y="21" width="5" height="3.2" rx="0.6" fill="none" stroke="url(#plataHebilla)" stroke-width="1"/>
+  <circle cx="32" cy="22.6" r="0.5" fill="#fde047"/>
+
+  <!-- Bordado estelar dorado en la copa del sombrero -->
+  <!-- Pequeña luna creciente y estrella de plata -->
+  <path d="M28 14 C27 12, 28 10, 30 9 C28.5 10, 28.5 13, 30 14 Z" fill="#fde047" opacity="0.85"/>
+  <polygon points="34,13 34.5,14 35.5,14.2 34.7,15 35,16 34,15.3 33,16 33.3,15 32.5,14.2 33.5,14" fill="#67e8f9" opacity="0.9"/>
 </svg>

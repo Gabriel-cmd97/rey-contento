@@ -1,0 +1,165 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 240" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGeneral" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4a1515"/>
+      <stop offset="50%" stop-color="#280c0c"/>
+      <stop offset="100%" stop-color="#120404"/>
+    </linearGradient>
+    <linearGradient id="bordeGeneral" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f39c12"/>
+      <stop offset="35%" stop-color="#c0392b"/>
+      <stop offset="70%" stop-color="#922b21"/>
+      <stop offset="100%" stop-color="#641e16"/>
+    </linearGradient>
+    <radialGradient id="arcoGeneral" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#5c1d1d"/>
+      <stop offset="55%" stop-color="#300d0d"/>
+      <stop offset="100%" stop-color="#140303"/>
+    </radialGradient>
+    <linearGradient id="armaduraPlacas" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="25%" stop-color="#bdc3c7"/>
+      <stop offset="65%" stop-color="#7f8c8d"/>
+      <stop offset="100%" stop-color="#2c3e50"/>
+    </linearGradient>
+    <linearGradient id="leonOro" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f9e79f"/>
+      <stop offset="40%" stop-color="#f1c40f"/>
+      <stop offset="80%" stop-color="#b7950b"/>
+      <stop offset="100%" stop-color="#7d6608"/>
+    </linearGradient>
+    <linearGradient id="espadaHoja" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#d5dbdb"/>
+      <stop offset="48%" stop-color="#ffffff"/>
+      <stop offset="52%" stop-color="#95a5a6"/>
+      <stop offset="100%" stop-color="#566573"/>
+    </linearGradient>
+    <linearGradient id="cintaGeneral" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a1515"/>
+      <stop offset="50%" stop-color="#2c0c0c"/>
+      <stop offset="100%" stop-color="#140404"/>
+    </linearGradient>
+    <filter id="sombraGeneral" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.85"/>
+    </filter>
+  </defs>
+
+  <!-- Tarjeta base -->
+  <rect width="160" height="240" rx="12" fill="url(#bgGeneral)"/>
+  
+  <!-- Marcos metálicos -->
+  <rect x="4" y="4" width="152" height="232" rx="9" fill="none" stroke="url(#bordeGeneral)" stroke-width="2.5"/>
+  <rect x="8" y="8" width="144" height="224" rx="7" fill="none" stroke="#f39c12" stroke-width="0.8" stroke-opacity="0.4" stroke-dasharray="4,2"/>
+
+  <!-- Esquinas -->
+  <path d="M12 18 L18 12 M12 12 L19 19 M12 22 L22 12" stroke="#f39c12" stroke-width="1" opacity="0.6"/>
+  <path d="M148 18 L142 12 M148 12 L141 19 M148 22 L138 12" stroke="#f39c12" stroke-width="1" opacity="0.6"/>
+  <path d="M12 222 L18 228 M12 228 L19 221 M12 218 L22 228" stroke="#f39c12" stroke-width="1" opacity="0.6"/>
+  <path d="M148 222 L142 228 M148 228 L141 221 M148 218 L138 228" stroke="#f39c12" stroke-width="1" opacity="0.6"/>
+
+  <!-- Número Superior Izquierdo -->
+  <g transform="translate(14, 14)">
+    <circle cx="10" cy="10" r="10" fill="#280c0c" stroke="url(#bordeGeneral)" stroke-width="1.5" filter="url(#sombraGeneral)"/>
+    <text x="10" y="14" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="13" fill="#f5b7b1" filter="drop-shadow(0 1px 2px #000)">8</text>
+  </g>
+
+  <!-- Número Inferior Derecho -->
+  <g transform="translate(126, 206)">
+    <circle cx="10" cy="10" r="10" fill="#280c0c" stroke="url(#bordeGeneral)" stroke-width="1.5" filter="url(#sombraGeneral)"/>
+    <text x="10" y="14" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="13" fill="#f5b7b1" filter="drop-shadow(0 1px 2px #000)">8</text>
+  </g>
+
+  <!-- Ventana Gótica Central (Retrato del General) -->
+  <path d="M22 68 Q22 28 80 28 Q138 28 138 68 L138 178 L22 178 Z" fill="url(#arcoGeneral)" filter="url(#sombraGeneral)"/>
+
+  <!-- Almenas y llamas/chispas de fondo -->
+  <path d="M25 65 L40 55 L60 70 L90 55 L120 70 L135 60 V90 H25 Z" fill="#260808" opacity="0.6"/>
+  <!-- Chispas de fuego de asedio -->
+  <circle cx="35" cy="45" r="1.2" fill="#f39c12"/>
+  <circle cx="50" cy="35" r="1" fill="#e74c3c"/>
+  <circle cx="115" cy="42" r="1.5" fill="#f39c12"/>
+  <circle cx="125" cy="32" r="1" fill="#f1c40f"/>
+
+  <!-- Capa escarlata ondeando tras los hombros -->
+  <path d="M34 178 Q30 115 55 110 Q80 108 105 110 Q130 115 126 178 Z" fill="#78281f"/>
+  <path d="M36 178 Q32 120 54 114 Q80 112 106 114 Q128 120 124 178 Z" fill="#922b21"/>
+
+  <!-- Peto de armadura de placas completa con filigrana dorada -->
+  <path d="M42 178 Q48 124 64 120 Q80 118 96 120 Q112 124 118 178 Z" fill="url(#armaduraPlacas)"/>
+  <!-- Cresta central reforzada del peto -->
+  <line x1="80" y1="120" x2="80" y2="178" stroke="#34495e" stroke-width="1.8"/>
+  <line x1="80" y1="120" x2="80" y2="178" stroke="#ffffff" stroke-width="0.8" opacity="0.6"/>
+
+  <!-- Hombreras imponentes de cabeza de león dorado -->
+  <g transform="translate(35, 120)">
+    <circle cx="12" cy="12" r="14" fill="url(#leonOro)" stroke="#7d6608" stroke-width="1.2"/>
+    <!-- Relieve de león -->
+    <circle cx="12" cy="10" r="7" fill="#b7950b"/>
+    <circle cx="9" cy="9" r="1" fill="#000"/>
+    <circle cx="15" cy="9" r="1" fill="#000"/>
+    <path d="M10 13 Q12 15 14 13" stroke="#000" stroke-width="0.8" fill="none"/>
+  </g>
+  <g transform="translate(101, 120)">
+    <circle cx="12" cy="12" r="14" fill="url(#leonOro)" stroke="#7d6608" stroke-width="1.2"/>
+    <circle cx="12" cy="10" r="7" fill="#b7950b"/>
+    <circle cx="9" cy="9" r="1" fill="#000"/>
+    <circle cx="15" cy="9" r="1" fill="#000"/>
+    <path d="M10 13 Q12 15 14 13" stroke="#000" stroke-width="0.8" fill="none"/>
+  </g>
+
+  <!-- Gola de acero y cuello -->
+  <path d="M64 112 C64 100 96 100 96 112 C96 124 64 124 64 112 Z" fill="url(#armaduraPlacas)" stroke="#34495e" stroke-width="1"/>
+
+  <!-- Rostro veterano de comandante -->
+  <path d="M68 86 C68 72 92 72 92 86 C92 98 86 106 80 106 C74 106 68 98 68 86 Z" fill="#d99873"/>
+  <!-- Pelo grisáceo y sienes plateadas -->
+  <path d="M66 84 C66 68 94 68 94 84 C95 72 65 72 66 84 Z" fill="#566573"/>
+  <path d="M65 80 Q64 92 68 96" stroke="#95a5a6" stroke-width="2.5" fill="none"/>
+  <path d="M95 80 Q96 92 92 96" stroke="#95a5a6" stroke-width="2.5" fill="none"/>
+
+  <!-- Barba militar recortada entrecana -->
+  <path d="M69 90 Q80 107 91 90 Q86 104 80 105 Q74 104 69 90 Z" fill="#7f8c8d"/>
+  <path d="M72 94 Q80 102 88 94" stroke="#bdc3c7" stroke-width="1" fill="none"/>
+
+  <!-- Mirada firme y decidida -->
+  <line x1="70" y1="82" x2="77" y2="84" stroke="#3e1f0c" stroke-width="2"/>
+  <line x1="83" y1="84" x2="90" y2="82" stroke="#3e1f0c" stroke-width="2"/>
+  <circle cx="74" cy="86" r="1.6" fill="#1b2631"/>
+  <circle cx="86" cy="86" r="1.6" fill="#1b2631"/>
+  <circle cx="74.5" cy="85.5" r="0.5" fill="#fff"/>
+  <circle cx="86.5" cy="85.5" r="0.5" fill="#fff"/>
+  
+  <!-- Cicatriz de espada en el ojo izquierdo -->
+  <line x1="73" y1="78" x2="75" y2="92" stroke="#922b21" stroke-width="1.2"/>
+
+  <!-- Nariz recta y decidida -->
+  <path d="M80 82 L78 91 L82 91" stroke="#873600" stroke-width="1" fill="none"/>
+
+  <!-- Espada de Mandoble apoyada al frente -->
+  <g transform="translate(68, 120)">
+    <!-- Hoja de acero con acanaladura central -->
+    <rect x="10" y="24" width="5" height="58" fill="url(#espadaHoja)" stroke="#34495e" stroke-width="0.8"/>
+    <line x1="12.5" y1="24" x2="12.5" y2="76" stroke="#2c3e50" stroke-width="0.8"/>
+    <!-- Gavilanes / Guarda cruzada de oro -->
+    <path d="M-2 20 Q12.5 24 27 20 Q29 23 27 25 Q12.5 23 -2 25 Q-4 23 -2 20 Z" fill="url(#leonOro)" stroke="#7d6608" stroke-width="1"/>
+    <!-- Empuñadura forrada en cuero rojo y alambre -->
+    <rect x="10" y="6" width="5" height="15" rx="1" fill="#922b21" stroke="#4a150f" stroke-width="0.8"/>
+    <!-- Pomo de oro con gema de rubí -->
+    <circle cx="12.5" cy="4" r="4.5" fill="url(#leonOro)" stroke="#7d6608" stroke-width="1"/>
+    <circle cx="12.5" cy="4" r="2" fill="#c0392b"/>
+    <!-- Manos enguantadas en acero sujetando el pomo -->
+    <ellipse cx="12.5" cy="14" rx="8" ry="5" fill="#7f8c8d" stroke="#34495e" stroke-width="1"/>
+  </g>
+
+  <!-- Marco de la Ventana Gótica -->
+  <path d="M22 68 Q22 28 80 28 Q138 28 138 68 L138 178 L22 178 Z" fill="none" stroke="url(#bordeGeneral)" stroke-width="2.5"/>
+  <path d="M26 70 Q26 33 80 33 Q134 33 134 70 L134 174 L26 174 Z" fill="none" stroke="#f39c12" stroke-width="1" opacity="0.4"/>
+
+  <!-- Pergamino / Cinta del Nombre Inferior -->
+  <g transform="translate(16, 185)" filter="url(#sombraGeneral)">
+    <path d="M0 8 L12 0 L12 24 L0 16 Z" fill="#280c0c"/>
+    <path d="M128 8 L116 0 L116 24 L128 16 Z" fill="#280c0c"/>
+    <rect x="8" y="0" width="112" height="24" rx="3" fill="url(#cintaGeneral)" stroke="url(#bordeGeneral)" stroke-width="1.5"/>
+    <text x="64" y="16" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="9.5" fill="#f5b7b1" letter-spacing="1" filter="drop-shadow(0 1px 2px #000)">8 · EL GENERAL</text>
+  </g>
+</svg>

@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 240" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGuardia" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1b2a47"/>
+      <stop offset="50%" stop-color="#101b30"/>
+      <stop offset="100%" stop-color="#090f1c"/>
+    </linearGradient>
+    <linearGradient id="bordeCobalto" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5dade2"/>
+      <stop offset="35%" stop-color="#2e86c1"/>
+      <stop offset="70%" stop-color="#1b4f72"/>
+      <stop offset="100%" stop-color="#154360"/>
+    </linearGradient>
+    <radialGradient id="arcoGuardia" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#2c3e50"/>
+      <stop offset="55%" stop-color="#1a252f"/>
+      <stop offset="100%" stop-color="#0b1015"/>
+    </radialGradient>
+    <linearGradient id="aceroCasco" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="30%" stop-color="#d5dbdb"/>
+      <stop offset="70%" stop-color="#7f8c8d"/>
+      <stop offset="100%" stop-color="#34495e"/>
+    </linearGradient>
+    <linearGradient id="cotaMalla" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7f8c8d"/>
+      <stop offset="50%" stop-color="#566573"/>
+      <stop offset="100%" stop-color="#2c3e50"/>
+    </linearGradient>
+    <linearGradient id="alabardaHoja" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="45%" stop-color="#aeb6bf"/>
+      <stop offset="100%" stop-color="#5d6d7e"/>
+    </linearGradient>
+    <linearGradient id="cintaGuardia" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1f3a60"/>
+      <stop offset="50%" stop-color="#142640"/>
+      <stop offset="100%" stop-color="#0a1422"/>
+    </linearGradient>
+    <filter id="sombraGuardia" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.85"/>
+    </filter>
+  </defs>
+
+  <!-- Tarjeta base -->
+  <rect width="160" height="240" rx="12" fill="url(#bgGuardia)"/>
+  
+  <!-- Marcos metálicos -->
+  <rect x="4" y="4" width="152" height="232" rx="9" fill="none" stroke="url(#bordeCobalto)" stroke-width="2.5"/>
+  <rect x="8" y="8" width="144" height="224" rx="7" fill="none" stroke="#5dade2" stroke-width="0.8" stroke-opacity="0.4" stroke-dasharray="4,2"/>
+
+  <!-- Esquinas -->
+  <path d="M12 18 L18 12 M12 12 L19 19 M12 22 L22 12" stroke="#5dade2" stroke-width="1" opacity="0.6"/>
+  <path d="M148 18 L142 12 M148 12 L141 19 M148 22 L138 12" stroke="#5dade2" stroke-width="1" opacity="0.6"/>
+  <path d="M12 222 L18 228 M12 228 L19 221 M12 218 L22 228" stroke="#5dade2" stroke-width="1" opacity="0.6"/>
+  <path d="M148 222 L142 228 M148 228 L141 221 M148 218 L138 228" stroke="#5dade2" stroke-width="1" opacity="0.6"/>
+
+  <!-- Número Superior Izquierdo -->
+  <g transform="translate(14, 14)">
+    <circle cx="10" cy="10" r="10" fill="#101b30" stroke="url(#bordeCobalto)" stroke-width="1.5" filter="url(#sombraGuardia)"/>
+    <text x="10" y="14" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="13" fill="#aed6f1" filter="drop-shadow(0 1px 2px #000)">4</text>
+  </g>
+
+  <!-- Número Inferior Derecho -->
+  <g transform="translate(126, 206)">
+    <circle cx="10" cy="10" r="10" fill="#101b30" stroke="url(#bordeCobalto)" stroke-width="1.5" filter="url(#sombraGuardia)"/>
+    <text x="10" y="14" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="13" fill="#aed6f1" filter="drop-shadow(0 1px 2px #000)">4</text>
+  </g>
+
+  <!-- Ventana Gótica Central (Retrato del Guardia) -->
+  <path d="M22 68 Q22 28 80 28 Q138 28 138 68 L138 178 L22 178 Z" fill="url(#arcoGuardia)" filter="url(#sombraGuardia)"/>
+
+  <!-- Almenas del castillo y cielo nocturno -->
+  <path d="M25 75 H40 V65 H55 V75 H70 V65 H85 V75 H100 V65 H115 V75 H135 V100 H25 Z" fill="#1c2833" opacity="0.7"/>
+  <!-- Pendón heráldico azul ondeando -->
+  <path d="M32 45 L32 75 L45 70 L32 60" fill="#2980b9" opacity="0.5"/>
+
+  <!-- Hombreras y armadura de placas -->
+  <path d="M38 178 Q45 130 62 122 Q80 120 98 122 Q115 130 122 178 Z" fill="#1f3a60"/>
+  <!-- Hombreras de acero laminadas -->
+  <path d="M40 145 C40 125 58 124 64 135 L55 165 Z" fill="url(#aceroCasco)"/>
+  <path d="M120 145 C120 125 102 124 96 135 L105 165 Z" fill="url(#aceroCasco)"/>
+  <!-- Remaches en hombreras -->
+  <circle cx="52" cy="135" r="1.2" fill="#f1c40f"/>
+  <circle cx="108" cy="135" r="1.2" fill="#f1c40f"/>
+
+  <!-- Cota de malla y gola protectora -->
+  <path d="M62 110 C62 95 98 95 98 110 C98 128 62 128 62 110 Z" fill="url(#cotaMalla)"/>
+  <path d="M64 114 Q80 126 96 114" stroke="#1c2833" stroke-width="1.5" fill="none" stroke-dasharray="2,2"/>
+
+  <!-- Rostro severo y bigote -->
+  <path d="M70 88 C70 76 90 76 90 88 C90 98 86 104 80 104 C74 104 70 98 70 88 Z" fill="#d99873"/>
+  <!-- Bigote castaño militar -->
+  <path d="M72 96 Q78 94 80 97 Q82 94 88 96 Q80 102 72 96 Z" fill="#4a2711"/>
+  <!-- Ojos vigilantes y cejas rectas -->
+  <line x1="71" y1="84" x2="77" y2="85" stroke="#3e1f0c" stroke-width="1.8"/>
+  <line x1="83" y1="85" x2="89" y2="84" stroke="#3e1f0c" stroke-width="1.8"/>
+  <circle cx="74" cy="88" r="1.5" fill="#1b2631"/>
+  <circle cx="86" cy="88" r="1.5" fill="#1b2631"/>
+  <!-- Cicatriz de batalla en la mejilla -->
+  <line x1="85" y1="91" x2="89" y2="95" stroke="#a93226" stroke-width="1"/>
+
+  <!-- Casco de acero (Capellina / Kettle Hat medieval) -->
+  <!-- Corona semiesférica -->
+  <ellipse cx="80" cy="74" rx="18" ry="16" fill="url(#aceroCasco)"/>
+  <!-- Ala ancha deflectora del casco -->
+  <path d="M52 78 C60 68 100 68 108 78 C115 84 45 84 52 78 Z" fill="url(#aceroCasco)" stroke="#34495e" stroke-width="1"/>
+  <!-- Cresta central de refuerzo -->
+  <path d="M79 58 L81 58 L81 78 L79 78 Z" fill="#ffffff" opacity="0.6"/>
+  <!-- Hilera de remaches del casco -->
+  <circle cx="62" cy="76" r="1" fill="#1c2833"/>
+  <circle cx="70" cy="74" r="1" fill="#1c2833"/>
+  <circle cx="80" cy="73" r="1" fill="#1c2833"/>
+  <circle cx="90" cy="74" r="1" fill="#1c2833"/>
+  <circle cx="98" cy="76" r="1" fill="#1c2833"/>
+  <!-- Barbiquejo de cuero -->
+  <path d="M68 82 Q70 102 80 102 Q90 102 92 82" stroke="#5d4037" stroke-width="1.5" fill="none"/>
+
+  <!-- Alabarda en guardia (arma de asta) -->
+  <g transform="translate(108, 48)">
+    <!-- Asta de madera oscura con refuerzos -->
+    <rect x="8" y="25" width="5" height="110" fill="#4e342e" stroke="#271c19" stroke-width="0.8"/>
+    <!-- Cuchilla de hacha de la alabarda -->
+    <path d="M8 35 C-6 28 -8 48 8 52 Z" fill="url(#alabardaHoja)" stroke="#34495e" stroke-width="0.8"/>
+    <!-- Gancho trasero para derribar jinetes -->
+    <path d="M13 45 Q22 45 20 52 Q15 48 13 47 Z" fill="url(#alabardaHoja)"/>
+    <!-- Punta de lanza superior -->
+    <polygon points="10.5,8 14,35 7,35" fill="url(#alabardaHoja)" stroke="#34495e" stroke-width="0.8"/>
+    <!-- Brillo en el filo -->
+    <line x1="8" y1="36" x2="-4" y2="38" stroke="#ffffff" stroke-width="1" opacity="0.9"/>
+  </g>
+
+  <!-- Marco de la Ventana Gótica -->
+  <path d="M22 68 Q22 28 80 28 Q138 28 138 68 L138 178 L22 178 Z" fill="none" stroke="url(#bordeCobalto)" stroke-width="2.5"/>
+  <path d="M26 70 Q26 33 80 33 Q134 33 134 70 L134 174 L26 174 Z" fill="none" stroke="#5dade2" stroke-width="1" opacity="0.4"/>
+
+  <!-- Pergamino / Cinta del Nombre Inferior -->
+  <g transform="translate(16, 185)" filter="url(#sombraGuardia)">
+    <path d="M0 8 L12 0 L12 24 L0 16 Z" fill="#101b30"/>
+    <path d="M128 8 L116 0 L116 24 L128 16 Z" fill="#101b30"/>
+    <rect x="8" y="0" width="112" height="24" rx="3" fill="url(#cintaGuardia)" stroke="url(#bordeCobalto)" stroke-width="1.5"/>
+    <text x="64" y="16" text-anchor="middle" font-family="'Cinzel', 'MedievalSharp', serif" font-weight="900" font-size="9.5" fill="#aed6f1" letter-spacing="1" filter="drop-shadow(0 1px 2px #000)">4 · EL GUARDIA</text>
+  </g>
+</svg>

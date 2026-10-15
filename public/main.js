@@ -218,9 +218,9 @@ const nombresCartas = {
 // a /iconos para no depender de un CDN externo en runtime y verse igual en todo
 // dispositivo (a diferencia de los emojis, que cada SO dibuja distinto).
 const figurasCartas = {
-    0: "/iconos/char_0.jpg", 1: "/iconos/char_1.jpg", 2: "/iconos/char_2.jpg", 3: "/iconos/char_3.jpg",
-    4: "/iconos/char_4.jpg", 5: "/iconos/char_5.jpg", 6: "/iconos/char_6.jpg", 7: "/iconos/char_7.jpg",
-    8: "/iconos/char_8.jpg", 9: "/iconos/char_9.jpg"
+    0: "/cartas/carta_0.svg", 1: "/cartas/carta_1.svg", 2: "/cartas/carta_2.svg", 3: "/cartas/carta_3.svg",
+    4: "/cartas/carta_4.svg", 5: "/cartas/carta_5.svg", 6: "/cartas/carta_6.svg", 7: "/cartas/carta_7.svg",
+    8: "/cartas/carta_8.svg", 9: "/cartas/carta_9.svg"
 };
 // <img> de la figura de una carta al tamaño dado (px). '' si no hay.
 function figuraIMG(n, px) {
@@ -235,11 +235,33 @@ function pintarCartaPrincipal(carta) {
     // Sin carta (niebla, eliminado o volviendo entre rondas): nunca pintar
     // "undefined"; la carta queda en blanco y boca abajo.
     const hay = carta !== undefined && carta !== null;
-    document.getElementById('numeroCarta').innerText = hay ? carta : '';
-    document.getElementById('figuraCarta').innerHTML = hay ? figuraIMG(carta, 34) : '';
-    document.getElementById('nombrePersonaje').innerText = hay ? (nombresCartas[carta] || '') : '';
-    document.getElementById('cartaFrente').className = "face front-character " +
-        (carta === 0 ? "carta-0" : carta === 9 ? "carta-9" : "") + (hay ? ` valor-${carta}` : '');
+    const numEl = document.getElementById('numeroCarta');
+    const figEl = document.getElementById('figuraCarta');
+    const nomEl = document.getElementById('nombrePersonaje');
+    const imgEl = document.getElementById('cartaFrenteImg');
+    const cf = document.getElementById('cartaFrente');
+
+    if (numEl) numEl.innerText = hay ? carta : '';
+    if (figEl) figEl.innerHTML = hay ? figuraIMG(carta, 34) : '';
+    if (nomEl) nomEl.innerText = hay ? (nombresCartas[carta] || '') : '';
+
+    if (imgEl) {
+        if (hay) {
+            imgEl.src = `/cartas/carta_${carta}.svg`;
+            imgEl.alt = `${carta} - ${nombresCartas[carta] || ''}`;
+            imgEl.style.display = 'block';
+        } else {
+            imgEl.src = '';
+            imgEl.alt = '';
+            imgEl.style.display = 'none';
+        }
+    }
+
+    if (cf) {
+        cf.className = "face front-character " +
+            (carta === 0 ? "carta-0" : carta === 9 ? "carta-9" : "") +
+            (hay ? ` valor-${carta} tiene-arte` : '');
+    }
 }
 
 // ==========================================
@@ -458,8 +480,8 @@ function renderizarPila() {
         el.className = `carta-en-pila ${extra}`;
         el.style.cssText = `--rot:${rot}deg; transform:rotate(${rot}deg); z-index:${i}; top:${i * 0.7}px; left:${i * 0.4}px;`;
         if (esNuevo) el.style.animation = 'cartaLlegaPila 0.4s ease forwards';
-        // Número + figura oscura (/iconos/N.svg) sobre el fondo pergamino de la pila.
-        el.innerHTML = `<span class="pila-num">${carta}</span><img src="/iconos/${carta}.svg" alt="" draggable="false" class="pila-fig">`;
+        // Carta medieval vectorizada en la pila
+        el.innerHTML = `<span class="sr-only">${carta}</span><img src="/cartas/carta_${carta}.svg" alt="${carta}" draggable="false" class="pila-arte">`;
         stack.appendChild(el);
     });
 
@@ -1816,7 +1838,7 @@ function animarChoqueDuelo(datos) {
         const c = document.createElement('div');
         const extra = j.cartaActual === 9 ? ' carta-9' : j.cartaActual === 0 ? ' carta-0' : '';
         c.className = 'carta-duelo' + extra;
-        c.innerHTML = `<b>${j.cartaActual}</b>${figuraIMG(j.cartaActual, 30)}<small>${escapeHTML(nombresCartas[j.cartaActual] || '')}</small>`;
+        c.innerHTML = `<span class="sr-only">${j.cartaActual}</span><img src="/cartas/carta_${j.cartaActual}.svg" class="carta-duelo-arte" alt="${j.cartaActual}" draggable="false">`;
         c.style.left = (ro.left + ro.width / 2) + 'px';
         c.style.top = (ro.top + ro.height / 2) + 'px';
         document.body.appendChild(c);
@@ -1946,8 +1968,8 @@ function mostrarCartaSobreMazo(carta) {
     const r = mazo?.getBoundingClientRect();
     if (!r || !r.width) return;
     const c = document.createElement('div');
-    c.className = 'carta-oraculo';
-    c.innerHTML = `<b>${carta}</b>${figuraIMG(carta, 20)}<small>${escapeHTML(nombresCartas[carta] || '')}</small>`;
+    c.className = 'carta-oraculo' + (carta === 9 ? ' carta-9' : carta === 0 ? ' carta-0' : '');
+    c.innerHTML = `<span class="sr-only">${carta}</span><img src="/cartas/carta_${carta}.svg" class="carta-oraculo-arte" alt="${carta}" draggable="false">`;
     c.style.left = (r.left + r.width / 2) + 'px';
     c.style.top = (r.top + r.height / 2) + 'px';
     document.body.appendChild(c);
@@ -2428,10 +2450,9 @@ function mostrarResumenRonda(datos) {
         const item = document.createElement('div');
         item.className = 'resumen-carta-item';
         item.innerHTML = `
-            <div class="resumen-carta-cara ${pierde ? 'pierde' : 'sobrevive'}">
-                <div style="font-size:22px;font-weight:bold;color:${color};line-height:1;">${num}</div>
-                <div style="line-height:1;margin-top:1px;">${figuraIMG(num, 16)}</div>
-                <div style="font-size:7px;color:rgba(255,255,255,0.45);margin-top:2px;padding:0 2px;line-height:1.1;">${nombresCartas[num]}</div>
+            <div class="resumen-carta-cara ${pierde ? 'pierde' : 'sobrevive'} ${num === 9 ? 'carta-9' : num === 0 ? 'carta-0' : ''}">
+                <span class="sr-only">${num}</span>
+                <img src="/cartas/carta_${num}.svg" class="resumen-carta-arte" alt="${num} - ${nombresCartas[num]}" draggable="false">
             </div>
             <div class="resumen-carta-nombre">${escapeHTML(j.nombre)}</div>
             <div style="font-size:11px;">${pierde ? icono('corazon-roto') : icono('check')} ${j.vidas > 0 ? icono('corazon').repeat(j.vidas) : icono('calavera')}</div>
@@ -2750,6 +2771,8 @@ function pintarMiLook() {
     aplicarTemaMesa();
 }
 
+let _casillaCosmAbierta = 'avatar';
+
 function pintarCosmeticosPerfil(datos, ganados, catalogoLogros, nivel = 1) {
     const caja = document.getElementById('pCosmeticos');
     if (!caja || !datos) return;
@@ -2764,9 +2787,9 @@ function pintarCosmeticosPerfil(datos, ganados, catalogoLogros, nivel = 1) {
         : c.tipo === 'marco' ? `<span class="avatar-cosm${c.id !== 'ninguno' ? ' marco-' + c.id : ''}">${contenidoAvatar(miLook, miNombreUsuario)}</span>`
         : c.tipo === 'tapete' ? `<span class="muestra-tapete tapete-${c.id}"></span>`
         : `<span class="muestra-dorso${c.id !== 'clasico' ? ' dorso-' + c.id : ''}"></span>`;
-    const titulos = { avatar: 'Avatar', marco: 'Marco', dorso: 'Dorso de tus cartas', tapete: 'Tapete de tu mesa (solo tú lo ves)' };
     const RAREZA = { comun: 'Común', raro: 'Raro', epico: 'Épico', legendario: 'Legendario' };
     const elegido = (tipo) => datos.catalogo.find(c => c.tipo === tipo && c.id === datos.elegidos[tipo]) || {};
+
     // Vitrina: cómo te ven en la mesa, en grande.
     const vitrina = `<div class="vitrina">
         <span class="avatar-cosm vitrina-avatar${claseMarco(miLook)}">${contenidoAvatar(miLook, miNombreUsuario)}</span>
@@ -2774,43 +2797,104 @@ function pintarCosmeticosPerfil(datos, ganados, catalogoLogros, nivel = 1) {
             <small>${escapeHTML(elegido('avatar').titulo || '')} · marco ${escapeHTML(elegido('marco').titulo || '')}</small>
             <span class="vitrina-cartas"><span class="muestra-dorso${claseDorso(miLook)}"></span><span class="muestra-tapete tapete-${escapeHTML(miLook?.tapete || 'verde')}"></span></span></div>
     </div>`;
-    // Primero lo que ya tienes, luego por rareza (lo más raro al final: da ganas de llegar).
+
+    const categorias = [
+        { tipo: 'avatar', titulo: 'Tu Avatar', iconoCat: '🎭' },
+        { tipo: 'marco',  titulo: 'Marco de Avatar', iconoCat: '🖼️' },
+        { tipo: 'dorso',  titulo: 'Naipe / Dorso', iconoCat: '🃏' },
+        { tipo: 'tapete', titulo: 'Tapete de Mesa', iconoCat: '🪵' }
+    ];
+
     const orden = { comun: 0, raro: 1, epico: 2, legendario: 3 };
-    caja.innerHTML = vitrina + ['avatar', 'marco', 'dorso', 'tapete'].map(tipo => `
-        <p class="perfil-cosm-tipo">${titulos[tipo]}</p>
-        <div class="perfil-cosm-fila">${datos.catalogo.filter(c => c.tipo === tipo)
-            .filter(c => !(c.tipo === 'avatar' && c.icono && c.id !== 'naipe' && c.id !== 'espadas' && datos.elegidos.avatar !== c.id)) // íconos viejos: solo si ya lo usas
-            .sort((a, b) => (orden[a.rareza] ?? 0) - (orden[b.rareza] ?? 0)).map(c => {
-            const libre = c.precio ? (datos.comprados || []).includes(`${c.tipo}:${c.id}`)
-                : (!c.logro || tengo.has(c.logro)) && (!c.nivel || nivel >= c.nivel);
-            const elegido = datos.elegidos[tipo] === c.id;
-            const rareza = c.rareza || 'comun';
 
-            let requisito = '';
-            let tooltip = c.titulo;
-            if (c.precio) {
-                const pr = parsePrecio(c.precio);
-                requisito = `Tienda · ${pr.cantidad} ${pr.etiqueta}`;
-                if (!libre) tooltip = `${c.titulo}: disponible en la Tienda (${pr.cantidad} ${pr.etiqueta})`;
-            } else if (c.nivel && nivel < c.nivel) {
-                requisito = `Nivel ${c.nivel}`;
-                if (!libre) tooltip = `${c.titulo}: se abre al llegar al nivel ${c.nivel}`;
-            } else if (c.logro) {
-                const nLogro = nombreLogro(c.logro);
-                requisito = nLogro;
-                if (!libre) tooltip = `${c.titulo}: se gana con el logro «${nLogro}»`;
-            }
+    const casillasHTML = `
+    <div class="casillas-cosm-lista">
+        ${categorias.map(cat => {
+            const elg = elegido(cat.tipo);
+            const estaAbierta = cat.tipo === _casillaCosmAbierta;
+            const items = datos.catalogo.filter(c => c.tipo === cat.tipo)
+                .filter(c => !(c.tipo === 'avatar' && c.icono && c.id !== 'naipe' && c.id !== 'espadas' && datos.elegidos.avatar !== c.id))
+                .sort((a, b) => {
+                    const libreA = a.precio ? (datos.comprados || []).includes(`${a.tipo}:${a.id}`)
+                        : (!a.logro || tengo.has(a.logro)) && (!a.nivel || nivel >= a.nivel);
+                    const libreB = b.precio ? (datos.comprados || []).includes(`${b.tipo}:${b.id}`)
+                        : (!b.logro || tengo.has(b.logro)) && (!b.nivel || nivel >= b.nivel);
+                    if (libreA !== libreB) return libreA ? -1 : 1;
+                    return (orden[a.rareza] ?? 0) - (orden[b.rareza] ?? 0);
+                });
 
-            return `<button type="button" class="cosm-opcion rareza-${rareza}${elegido ? ' elegido' : ''}${libre ? '' : ' bloqueado'}"
-                data-tipo="${tipo}" data-id="${escapeHTML(c.id)}" ${libre ? '' : 'disabled'}
-                title="${escapeHTML(tooltip)}">
-                <span class="cosm-rareza">${RAREZA[rareza]}</span>
-                ${muestra(c)}<span class="cosm-nombre">${libre ? escapeHTML(c.titulo) : icono('candado') + ' ' + escapeHTML(requisito)}</span>
-            </button>`;
-        }).join('')}</div>`).join('');
+            return `
+            <div class="casilla-cosm ${estaAbierta ? 'abierta' : ''}" data-tipo="${cat.tipo}">
+                <div class="casilla-cosm-cabecera" role="button" tabindex="0">
+                    <div class="casilla-cosm-info">
+                        <span class="casilla-cosm-icono">${cat.iconoCat}</span>
+                        <div class="casilla-cosm-textos">
+                            <span class="casilla-cosm-titulo">${cat.titulo}</span>
+                            <span class="casilla-cosm-actual">${escapeHTML(elg.titulo || 'Predeterminado')}</span>
+                        </div>
+                    </div>
+                    <div class="casilla-cosm-der">
+                        <span class="casilla-cosm-preview">${muestra(elg)}</span>
+                        <span class="casilla-cosm-flecha">▾</span>
+                    </div>
+                </div>
+                <div class="casilla-cosm-cuerpo">
+                    <div class="perfil-cosm-fila">
+                        ${items.map(c => {
+                            const libre = c.precio ? (datos.comprados || []).includes(`${c.tipo}:${c.id}`)
+                                : (!c.logro || tengo.has(c.logro)) && (!c.nivel || nivel >= c.nivel);
+                            const esElegido = datos.elegidos[cat.tipo] === c.id;
+                            const rareza = c.rareza || 'comun';
+
+                            let requisito = '';
+                            let tooltip = c.titulo;
+                            if (c.precio) {
+                                const pr = parsePrecio(c.precio);
+                                requisito = `Tienda · ${pr.cantidad} ${pr.etiqueta}`;
+                                if (!libre) tooltip = `${c.titulo}: disponible en la Tienda (${pr.cantidad} ${pr.etiqueta})`;
+                            } else if (c.nivel && nivel < c.nivel) {
+                                requisito = `Nivel ${c.nivel}`;
+                                if (!libre) tooltip = `${c.titulo}: se abre al llegar al nivel ${c.nivel}`;
+                            } else if (c.logro) {
+                                const nLogro = nombreLogro(c.logro);
+                                requisito = nLogro;
+                                if (!libre) tooltip = `${c.titulo}: se gana con el logro «${nLogro}»`;
+                            }
+
+                            return `<button type="button" class="cosm-opcion rareza-${rareza}${esElegido ? ' elegido' : ''}${libre ? '' : ' bloqueado'}"
+                                data-tipo="${cat.tipo}" data-id="${escapeHTML(c.id)}" ${libre ? '' : 'disabled'}
+                                title="${escapeHTML(tooltip)}">
+                                <span class="cosm-rareza">${RAREZA[rareza]}</span>
+                                ${muestra(c)}<span class="cosm-nombre">${libre ? (esElegido ? `✓ ${escapeHTML(c.titulo)}` : escapeHTML(c.titulo)) : icono('candado') + ' ' + escapeHTML(requisito)}</span>
+                            </button>`;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>`;
+        }).join('')}
+    </div>`;
+
+    caja.innerHTML = vitrina + casillasHTML;
     if (modalCaja && scrollPrevio > 0) modalCaja.scrollTop = scrollPrevio;
 
     caja.onclick = async (e) => {
+        // Desplegar o contraer casilla al tocar la cabecera
+        const cab = e.target.closest('.casilla-cosm-cabecera');
+        if (cab) {
+            const cas = cab.closest('.casilla-cosm');
+            if (!cas) return;
+            const estabaAbierta = cas.classList.contains('abierta');
+            caja.querySelectorAll('.casilla-cosm').forEach(c => c.classList.remove('abierta'));
+            if (!estabaAbierta) {
+                cas.classList.add('abierta');
+                _casillaCosmAbierta = cas.dataset.tipo;
+                Sonidos.pop?.();
+            } else {
+                _casillaCosmAbierta = null;
+            }
+            return;
+        }
+
         const b = e.target.closest('.cosm-opcion:not(.bloqueado)');
         if (!b || b.classList.contains('elegido')) return;
         const tipo = b.dataset.tipo;
@@ -2826,14 +2910,34 @@ function pintarCosmeticosPerfil(datos, ganados, catalogoLogros, nivel = 1) {
             pintarMiLook();
 
             // Actualización IN-SITU: mantiene la posición exacta del usuario en pantalla
-            caja.querySelectorAll(`.cosm-opcion[data-tipo="${tipo}"]`).forEach(btn => btn.classList.remove('elegido'));
+            caja.querySelectorAll(`.cosm-opcion[data-tipo="${tipo}"]`).forEach(btn => {
+                btn.classList.remove('elegido');
+                const nombreSpan = btn.querySelector('.cosm-nombre');
+                if (nombreSpan && !btn.classList.contains('bloqueado')) {
+                    nombreSpan.textContent = nombreSpan.textContent.replace(/^✓\s*/, '');
+                }
+            });
             b.classList.add('elegido');
+            const nomSel = b.querySelector('.cosm-nombre');
+            if (nomSel) nomSel.textContent = '✓ ' + nomSel.textContent.replace(/^✓\s*/, '');
+
+            // Actualizar la cabecera de la casilla
+            const itemNuevo = datos.catalogo.find(c => c.tipo === tipo && c.id === id);
+            const casActual = caja.querySelector(`.casilla-cosm[data-tipo="${tipo}"]`);
+            if (casActual && itemNuevo) {
+                const txtAct = casActual.querySelector('.casilla-cosm-actual');
+                if (txtAct) txtAct.textContent = itemNuevo.titulo;
+                const prev = casActual.querySelector('.casilla-cosm-preview');
+                if (prev) prev.innerHTML = muestra(itemNuevo);
+            }
 
             // Si cambió el avatar, refrescar previews dependientes de marcos
             if (tipo === 'avatar') {
                 caja.querySelectorAll('.cosm-opcion[data-tipo="marco"] .avatar-cosm').forEach(span => {
                     span.innerHTML = contenidoAvatar(miLook, miNombreUsuario);
                 });
+                const casMarco = caja.querySelector('.casilla-cosm[data-tipo="marco"] .casilla-cosm-preview');
+                if (casMarco) casMarco.innerHTML = muestra(elegido('marco'));
             }
 
             // Actualizar vitrina
@@ -4754,18 +4858,16 @@ function dibujarMesaCircular() {
                 let extra = (op.cartaActual === 0) ? 'mini-carta-0' : (op.cartaActual === 9) ? 'mini-carta-9' : '';
                 cartaHTML = `
                     <div class="mini-carta-frente ${extra} ${claseDanio} efecto-revelar" style="${estiloRevelar(op.id)}">
-                        <div style="font-size:34px;font-weight:bold;line-height:1;">${op.cartaActual}</div>
-                        <div style="line-height:1;margin-top:2px;">${figuraIMG(op.cartaActual, 22)}</div>
-                        <div style="font-size:11px;text-align:center;line-height:1.1;margin-top:4px;">${nombresCartas[op.cartaActual]}</div>
+                        <span class="sr-only">${op.cartaActual}</span>
+                        <img src="/cartas/carta_${op.cartaActual}.svg" class="mini-carta-arte" alt="${op.cartaActual} - ${nombresCartas[op.cartaActual]}" draggable="false">
                     </div>`;
             } else if (op.vidas > 0 && _cartasCompaneros[op.id] !== undefined) {
                 // Tu compañero: su carta, visible solo para tu equipo.
                 const n = _cartasCompaneros[op.id];
                 cartaHTML = `
                     <div class="mini-carta-frente carta-companero equipo-${op.equipo} ${n === 9 ? 'mini-carta-9' : n === 0 ? 'mini-carta-0' : ''}">
-                        <div style="font-size:34px;font-weight:bold;line-height:1;">${n}</div>
-                        <div style="line-height:1;margin-top:2px;">${figuraIMG(n, 22)}</div>
-                        <div style="font-size:11px;text-align:center;line-height:1.1;margin-top:4px;">${nombresCartas[n]}</div>
+                        <span class="sr-only">${n}</span>
+                        <img src="/cartas/carta_${n}.svg" class="mini-carta-arte" alt="${n} - ${nombresCartas[n]}" draggable="false">
                     </div>`;
             } else if (op.vidas > 0 && _espiado && _espiado.id === op.id) {
                 // Espiada: solo tú la ves, marcada con el ojo.
@@ -4773,9 +4875,8 @@ function dibujarMesaCircular() {
                 cartaHTML = `
                     <div class="mini-carta-frente carta-espiada ${n === 9 ? 'mini-carta-9' : n === 0 ? 'mini-carta-0' : ''}">
                         <span class="marca-espiada">${icono('ojo')}</span>
-                        <div style="font-size:34px;font-weight:bold;line-height:1;">${n}</div>
-                        <div style="line-height:1;margin-top:2px;">${figuraIMG(n, 22)}</div>
-                        <div style="font-size:11px;text-align:center;line-height:1.1;margin-top:4px;">${nombresCartas[n]}</div>
+                        <span class="sr-only">${n}</span>
+                        <img src="/cartas/carta_${n}.svg" class="mini-carta-arte" alt="${n} - ${nombresCartas[n]}" draggable="false">
                     </div>`;
             } else if (op.vidas > 0) {
                 const debeRevelar = ((op.cartaRevelada === true) || (modoReyActual === 'DECLARADO' && op.cartaActual === 9))
@@ -4784,9 +4885,8 @@ function dibujarMesaCircular() {
                     let extra = op.cartaActual === 9 ? 'mini-carta-9' : op.cartaActual === 0 ? 'mini-carta-0' : '';
                     cartaHTML = `
                         <div class="mini-carta-frente ${extra}" style="border:2px solid var(--oro);box-shadow:0 0 15px rgba(241,196,15,0.8);">
-                            <div style="font-size:34px;font-weight:bold;line-height:1;">${op.cartaActual}</div>
-                            <div style="line-height:1;margin-top:2px;">${figuraIMG(op.cartaActual, 22)}</div>
-                            <div style="font-size:11px;text-align:center;line-height:1.1;margin-top:4px;">${nombresCartas[op.cartaActual]}</div>
+                            <span class="sr-only">${op.cartaActual}</span>
+                            <img src="/cartas/carta_${op.cartaActual}.svg" class="mini-carta-arte" alt="${op.cartaActual} - ${nombresCartas[op.cartaActual]}" draggable="false">
                         </div>`;
                 } else {
                     // Si la carta está en vuelo (reparto escalonado), pintar el
