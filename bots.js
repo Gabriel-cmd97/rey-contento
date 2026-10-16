@@ -276,48 +276,50 @@ function planArcana(sala, bot, ctx) {
     const esDealer = ctx?.esDealer;
     const pierdeAlta = sala.evento === 'MUNDO_AL_REVES';
 
-    // 1. VELO_SOMBRAS: Si tiene una carta mortal (<= 2 en normal, o >= 7 en Mundo al Revés) y no es seguro ganar
+    // 1. VELO_SOMBRAS: Absorbe golpe mortal y otorga inmunidad total
     if (grimorio.includes('VELO_SOMBRAS')) {
-        const esMortal = pierdeAlta ? c >= 7 : c <= 2;
-        if (esMortal && (!derecha || esDealer || c === 0)) {
+        const esMortal = pierdeAlta ? c >= 7 : c <= 3;
+        if (esMortal || bot.vidas === 1) {
             return { hechizo: 'VELO_SOMBRAS' };
         }
     }
 
-    // 2. CRONORUPTURA: Si quiere cambiar pero su vecino tiene escudo o Rey declarado
+    // 2. CRONORUPTURA: Si quiere cambiar asegurando ignorar escudos o Reyes
     if (grimorio.includes('CRONORUPTURA') && !esDealer && derecha) {
         const conocida = (derecha.cartaRevelada && derecha.cartaActual !== undefined) ? derecha.cartaActual : (bot.memoria && bot.memoria[derecha.id]);
         const tiene9 = conocida === 9 && !pierdeAlta;
         const tieneEscudo = (sala.escudos || []).includes(derecha.nombre);
-        if ((tiene9 || tieneEscudo) && (pierdeAlta ? c > 4 : c <= 4)) {
+        if (tiene9 || tieneEscudo || (pierdeAlta ? c >= 6 : c <= 4)) {
             return { hechizo: 'CRONORUPTURA', accionSiguiente: 'CAMBIAR' };
         }
     }
 
-    // 3. ILUSION: Si tiene carta media o baja (ej: 3, 4 o 5) y quiere aumentarla a 5, 6, 7 para mantenerse seguro
-    if (grimorio.includes('ILUSION') && !pierdeAlta && c >= 2 && c <= 6) {
+    // 3. ILUSION: Si tiene carta media (3 a 7) y quiere potenciarla en +2 y mantener seguro
+    if (grimorio.includes('ILUSION') && !pierdeAlta && c >= 3 && c <= 7) {
         return { hechizo: 'ILUSION', accionSiguiente: 'MANTENER' };
     }
 
-    // 4. TRANSMUTACION: Si no es dealer y su vecino a la derecha tiene carta no conveniente o escudo
-    if (grimorio.includes('TRANSMUTACION') && !esDealer && (pierdeAlta ? c >= 6 : c <= 3)) {
+    // 4. TRANSMUTACION: Teletransporta su cambio a cualquier rival con carta alta o vidas
+    if (grimorio.includes('TRANSMUTACION') && !esDealer && (pierdeAlta ? c >= 6 : c <= 4)) {
         const rivales = (sala.jugadores || []).filter(j => j !== bot && j.vidas > 0);
         if (rivales.length > 0) {
-            const target = rivales[Math.floor(Math.random() * rivales.length)];
+            // Prioriza rivales humanos o rivales con vidas altas
+            rivales.sort((a, b) => (b.esBot ? 0 : 1) - (a.esBot ? 0 : 1) || b.vidas - a.vidas);
+            const target = rivales[0];
             return { hechizo: 'TRANSMUTACION', objetivoId: target.id, accionSiguiente: 'CAMBIAR' };
         }
     }
 
-    // 5. DESTIERRO: Si el vecino de la derecha tiene un Rey o carta conocida alta (o bot tiene carta baja)
+    // 5. DESTIERRO: Purga la carta del vecino mandándola al mazo y roba nueva
     if (grimorio.includes('DESTIERRO') && !esDealer && derecha) {
         const conocida = (derecha.cartaRevelada && derecha.cartaActual !== undefined) ? derecha.cartaActual : (bot.memoria && bot.memoria[derecha.id]);
-        if (conocida >= 8 || c <= 3) {
-            return { hechizo: 'DESTIERRO' };
+        if (conocida >= 7 || (pierdeAlta ? c >= 6 : c <= 3)) {
+            return { hechizo: 'DESTIERRO', accionSiguiente: 'CAMBIAR' };
         }
     }
 
-    // 6. INVERSION: Si el bot quiere invertir el sentido de turnos
-    if (grimorio.includes('INVERSION') && c <= 3 && Math.random() < 0.4) {
+    // 6. INVERSION: Invierte el sentido del flujo de turnos
+    if (grimorio.includes('INVERSION') && (c <= 4 || Math.random() < 0.55)) {
         return { hechizo: 'INVERSION' };
     }
 

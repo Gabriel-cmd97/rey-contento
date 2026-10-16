@@ -266,12 +266,22 @@ function sanitizarConfig(raw) {
     // Tres guiones (practica.js): 'basica', 'poderes' (eventos y poderes) y
     // 'fiesta' (eventos de amigos: Confesión, Venganza y Carrusel).
     const tipoPractica = raw.practica === true || raw.practica === 'basica' ? 'basica'
-        : ['poderes', 'fiesta'].includes(raw.practica) ? raw.practica : null;
+        : ['poderes', 'fiesta', 'corte', 'arcana', 'conspiracion'].includes(raw.practica) ? raw.practica : null;
     if (tipoPractica === 'corte') {
         // La Corte guiada: 2 contra 2 con 3 bots y 4 vidas (nadie queda fuera en las 2 rondas).
         return { vidas: 4, maxJugadores: 4, numBots: 3, modoJuego: 'CORTE', equipos: 2, modoRey: 'SORPRESA',
                  frecuenciaReyes: 'NORMAL', dificultadBots: 'NORMAL', tiempoTurno: 60,
                  practica: 'corte', eventos: false, poderes: false, password: null };
+    }
+    if (tipoPractica === 'arcana') {
+        return { vidas: 3, maxJugadores: 3, numBots: 2, modoJuego: 'GUERRA_ARCANA', modoRey: 'SORPRESA',
+                 frecuenciaReyes: 'NORMAL', dificultadBots: 'NORMAL', tiempoTurno: 60,
+                 practica: 'arcana', eventos: false, poderes: false, password: null };
+    }
+    if (tipoPractica === 'conspiracion') {
+        return { vidas: 3, maxJugadores: 3, numBots: 2, modoJuego: 'CONSPIRACION', modoRey: 'SORPRESA',
+                 frecuenciaReyes: 'NORMAL', dificultadBots: 'NORMAL', tiempoTurno: 60,
+                 practica: 'conspiracion', eventos: false, poderes: false, password: null };
     }
     if (tipoPractica) {
         return { vidas: 3, maxJugadores: 3, numBots: 2, modoJuego: 'CLASICO',
@@ -1832,7 +1842,7 @@ function gestionarTurnos(sala, io, esInicio = false) {
                         const resH = arcana.ejecutarHechizo(sala, jugadorActual.id, planArcana.hechizo, { objetivoId: planArcana.objetivoId }, { enviarCarta });
                         if (resH && resH.ok) {
                             io.to(sala.idSala).emit('mensajeGlobal', resH.mensajeGlobal);
-                            io.to(sala.idSala).emit('accionMesa', { tipo: 'ARCANA', icono: resH.hechizo.icono || '✨', texto: resH.mensajeGlobal });
+                            io.to(sala.idSala).emit('accionMesa', { tipo: 'ARCANA', icono: resH.hechizo.runa || resH.hechizo.icono || '✨', texto: resH.mensajeGlobal });
                             io.to(sala.idSala).emit('hechizoLanzado', {
                                 lanzadorId: jugadorActual.id,
                                 lanzadorNombre: jugadorActual.nombre,
@@ -2097,13 +2107,37 @@ function iniciarRonda(sala, io) {
     if (anunciarDuelo) sala.dueloAnunciado = true;
     // En la práctica el evento lo pone el guion; si no, se sortea.
     sala.evento = sala.config.practica ? practica.eventoDeRonda(sala) : sala.config.modoJuego === 'JEFE' ? null : eventos.elegirEvento(sala, vivos.length);
-    // Poderes que el guion de práctica regala al empezar la ronda.
+    // Poderes, grimorios y roles que el guion de práctica asigna al empezar la ronda.
     if (sala.config.practica) {
         practica.poderesDeRonda(sala).forEach(({ indice, poder }) => {
             const j = sala.jugadores[indice];
             if (!j || j.vidas <= 0) return;
             (j.poderes ||= []).push(poder);
             if (!j.esBot) io.to(j.id).emit('poderGanado', { poder: poderes.CATALOGO[poder], poderes: j.poderes });
+        });
+        practica.grimoriosDeRonda(sala).forEach(({ indice, grimorio }) => {
+            const j = sala.jugadores[indice];
+            if (!j || j.vidas <= 0) return;
+            j.arcana = {
+                grimorio: [...grimorio],
+                veloActivo: false,
+                ilusionActiva: false,
+                cronorrupturaActiva: false,
+                objetivoTeletransporte: null,
+                hechizosLanzados: []
+            };
+            if (!j.esBot) io.to(j.id).emit('tuGrimorio', j.arcana.grimorio.map(id => arcana.HECHIZOS[id]));
+        });
+        practica.rolesDeRonda(sala).forEach(({ indice, rol }) => {
+            const j = sala.jugadores[indice];
+            if (!j || j.vidas <= 0) return;
+            j.conspiracion = {
+                rol: conspiracion.ROLES[rol],
+                habilidadUsada: false,
+                interrogados: [],
+                venenoActivo: false
+            };
+            if (!j.esBot) io.to(j.id).emit('rolConspiracion', j.conspiracion.rol);
         });
     }
     // Presentaciones antes de jugar (el cliente las muestra con estos tiempos).
@@ -3399,7 +3433,7 @@ io.on('connection', (socket) => {
         if (!res.ok) return socket.emit('errorSala', res.motivo);
 
         io.to(sala.idSala).emit('mensajeGlobal', res.mensajeGlobal);
-        io.to(sala.idSala).emit('accionMesa', { tipo: 'ARCANA', icono: res.hechizo.icono || '✨', texto: res.mensajeGlobal });
+        io.to(sala.idSala).emit('accionMesa', { tipo: 'ARCANA', icono: res.hechizo.runa || res.hechizo.icono || '✨', texto: res.mensajeGlobal });
         io.to(sala.idSala).emit('hechizoLanzado', {
             lanzadorId: j.id,
             lanzadorNombre: j.nombre,

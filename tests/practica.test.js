@@ -61,3 +61,22 @@ test('práctica de poderes, ronda 3: con el escudo el cambio de B rebota y B pie
     const res = resolverCartas(mesa(r3.cartas)); // nadie cambió gracias al escudo
     assert.deepStrictEqual(res.perdedores, ['B']);
 });
+
+test('práctica de arcana: guion incluye grimorios y cartas preparadas', () => {
+    const arc1 = GUIONES.arcana[1];
+    assert.deepStrictEqual(arc1.grimorios[0], ['ILUSION']);
+    assert.strictEqual(arc1.cartas[0], 4);
+    const arc2 = GUIONES.arcana[2];
+    assert.deepStrictEqual(arc2.grimorios[0], ['VELO_SOMBRAS']);
+    assert.strictEqual(arc2.cartas[0], 1);
+});
+
+test('práctica de conspiración: guion incluye roles secretos para cada participante', () => {
+    const consp1 = GUIONES.conspiracion[1];
+    assert.strictEqual(consp1.roles[0], 'INQUISIDOR');
+    assert.strictEqual(consp1.roles[1], 'ASESINO');
+    assert.strictEqual(consp1.roles[2], 'USURPADOR');
+    const consp2 = GUIONES.conspiracion[2];
+    assert.strictEqual(consp2.roles[0], 'BUFON');
+});
+

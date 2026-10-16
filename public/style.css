@@ -701,6 +701,18 @@ body.en-mesa #pantallaJuego {
 .back-pattern {
     background: repeating-linear-gradient(45deg, #2c3e50, #2c3e50 10px, #34495e 10px, #34495e 20px);
     border: 3px solid rgba(241,196,15,0.4) !important;
+    position: relative;
+    overflow: hidden;
+}
+.back-pattern::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.22) 0%, transparent 40%, rgba(0,0,0,0.35) 100%);
+    box-shadow: inset 0 0 0 1.5px rgba(255, 230, 150, 0.4), inset 0 1px 3px rgba(255,255,255,0.35);
+    z-index: 4;
+    pointer-events: none;
 }
 .front-character {
     /* Tono de fondo oscuro elegante para albergar el arte SVG */
@@ -709,7 +721,18 @@ body.en-mesa #pantallaJuego {
     color: #2e2113;
     position: relative;
     overflow: hidden;
-    border: 2px solid rgba(241,196,15,0.4) !important;
+    border-radius: 10px;
+    border: 2px solid rgba(241,196,15,0.6) !important;
+    box-shadow: inset 0 0 12px rgba(0,0,0,0.8), 0 4px 15px rgba(0,0,0,0.5) !important;
+}
+.front-character::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    box-shadow: inset 0 0 0 1.5px rgba(255, 235, 160, 0.4), inset 0 2px 4px rgba(255,255,255,0.3);
+    z-index: 4;
+    pointer-events: none;
 }
 #numeroCarta { font-size: var(--carta-num, 60px); font-weight: bold; margin: -5px; font-family: 'Cinzel', serif; }
 /* Figura grande en la carta principal — escala junto con la carta */
@@ -867,6 +890,17 @@ body.en-mesa #pantallaJuego {
     box-shadow: 0 4px 12px rgba(0,0,0,0.8) !important;
     transition: all 0.4s ease;
     z-index: 60;
+    position: relative;
+}
+.mini-carta-frente::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 5px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.04) 30%, transparent 60%, rgba(0,0,0,0.25) 100%);
+    box-shadow: inset 0 0 0 1px rgba(255, 230, 150, 0.35), inset 0 1px 2px rgba(255,255,255,0.3);
+    pointer-events: none;
+    z-index: 5;
 }
 .mini-carta-arte {
     width: 100%;
@@ -1277,6 +1311,18 @@ body.en-mesa #pantallaJuego {
     opacity: 0.35 !important;
     filter: grayscale(60%) brightness(0.7) !important;
     transform: scale(0.95) !important;
+}
+.silla.bottom.jugador-opaco, #miSilla.jugador-opaco {
+    transform: translateX(-50%) scale(0.95) !important;
+}
+.silla.top.jugador-opaco {
+    transform: translateX(-50%) scale(0.95) !important;
+}
+.silla.left.jugador-opaco {
+    transform: translateY(-50%) scale(0.95) !important;
+}
+.silla.right.jugador-opaco {
+    transform: translateY(-50%) scale(0.95) !important;
 }
 
 /* Objetivo de intercambio: jugador a tu derecha cuando es tu turno */
@@ -2163,6 +2209,10 @@ body.en-mesa #pantallaJuego {
     padding: 24px 22px;
     width: 100%;
     max-width: 340px;
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
     box-shadow: 0 0 60px rgba(0,0,0,0.9), 0 0 20px rgba(193,150,58,0.1);
     animation: fadeSlideUp 0.3s cubic-bezier(0.175,0.885,0.32,1.275) both;
 }
@@ -2889,25 +2939,12 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
 }
 .coach-practica.hidden { display: none; }
 
-/* En la práctica: bajar la carta del jugador al fondo para dar máximo espacio en medio */
-body.en-practica .silla.bottom {
-    bottom: 14px !important;
-}
-body.en-practica .mi-perfil-esquina {
-    bottom: calc(var(--carta-h, 115px) + 24px) !important;
-}
 @media (max-width: 767px) {
     .coach-practica {
         top: 54px !important;
         padding: 10px 14px 10px !important;
         font-size: 12.5px !important;
         width: 94% !important;
-    }
-    body.en-practica .silla.bottom {
-        bottom: 10px !important;
-    }
-    body.en-practica .mi-perfil-esquina {
-        bottom: calc(var(--carta-h, 105px) + 18px) !important;
     }
 }
 .coach-header {
@@ -4714,12 +4751,8 @@ body.en-mesa.puedo-jugar::after { content: ''; position: fixed; inset: 0; z-inde
 @media (orientation: landscape) and (max-height: 600px) {
     #seccion-lobby.main-seccion-centro { max-width: 900px !important; padding-top: 6px; }
     #seccion-lobby .lobby-tabs { margin-bottom: 8px; }
-    /* Crear: rápida y aprender | crear mesa y su botón */
-    #panelConfiguracion:not(.hidden) { display: grid !important; grid-template-columns: 1fr 1fr; column-gap: 16px; align-items: start; }
-    #panelConfiguracion > :nth-child(1) { grid-column: 1; grid-row: 1; }
-    #panelConfiguracion > :nth-child(2) { grid-column: 1; grid-row: 2; }
-    #panelConfiguracion > :nth-child(3) { grid-column: 2; grid-row: 1 / span 2; }
-    #panelConfiguracion > .lobby-acciones-fijas { grid-column: 2; grid-row: 3; position: static; margin: 0; padding: 4px 0 8px; background: none; }
+    /* Crear: rápida y cajones de modos en columna limpia */
+    #panelConfiguracion:not(.hidden) { display: flex !important; flex-direction: column; width: 100%; }
     /* Sala de espera: invitar y jugadores | cómo será y botones */
     #panelJugadores:not(.hidden) { display: grid !important; grid-template-columns: 1fr 1fr; column-gap: 16px; align-items: start; grid-auto-flow: row dense; }
     #panelJugadores > * { grid-column: 1; }
@@ -5825,18 +5858,14 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
     #seccion-lobby.main-seccion-centro { max-width: 1320px !important; width: calc(100% - 48px) !important; padding: 18px 24px 0 !important; }
     #seccion-lobby:has(#lobbyTabs:not(.hidden)) { display: grid !important; grid-template-columns: minmax(0, 2.1fr) minmax(300px, 1fr); column-gap: 24px; align-content: start; }
     #seccion-lobby:has(#lobbyTabs:not(.hidden)) > #lobbyTabs { display: none !important; }
-    #seccion-lobby:has(#lobbyTabs:not(.hidden)) > #panelConfiguracion { display: grid !important; }
+    #seccion-lobby:has(#lobbyTabs:not(.hidden)) > #panelConfiguracion { display: flex !important; flex-direction: column; }
     #seccion-lobby:has(#lobbyTabs:not(.hidden)) > #panelUnirse { display: flex !important; }
     #seccion-lobby:has(#lobbyTabs:not(.hidden)) > #panelConfiguracion { grid-column: 1; }
     #seccion-lobby:has(#lobbyTabs:not(.hidden)) > #panelUnirse { grid-column: 2; flex-direction: column; padding: 16px; border-radius: 16px;
         background: rgba(0,0,0,.22); border: 1px solid rgba(241,196,15,.25); align-self: start; }
     #seccion-lobby:has(#lobbyTabs:not(.hidden)) > #panelUnirse::before { content: 'Unirse a una mesa'; font-family: var(--fuente-medieval); font-size: 18px; color: #ffe27a; margin-bottom: 8px; }
-    /* Crear: rápida y aprender | crear mesa (dos columnas dentro de su columna) */
-    #panelConfiguracion { grid-template-columns: 1fr 1fr; column-gap: 20px; align-items: start; }
-    #panelConfiguracion > :nth-child(1) { grid-column: 1; grid-row: 1; }
-    #panelConfiguracion > :nth-child(2) { grid-column: 1; grid-row: 2; }
-    #panelConfiguracion > :nth-child(3) { grid-column: 2; grid-row: 1 / span 2; }
-    #panelConfiguracion > .lobby-acciones-fijas { grid-column: 2; grid-row: 3; position: static; margin: 0; padding: 8px 0 16px; background: none; }
+    /* Crear: rápida y cajones de modos en columna limpia */
+    #panelConfiguracion { display: flex !important; flex-direction: column; width: 100%; gap: 12px; }
     .aprender-fila { grid-template-columns: 1fr 1fr !important; }
     .aprender-fila .tarjeta-aprender { padding: 12px !important; }
     /* Más opciones siempre abierto (el JS lo abre); sin el renglón para desplegar */
@@ -5937,6 +5966,10 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
     box-shadow: 0 0 40px rgba(0,0,0,0.85), inset 0 0 30px rgba(0,0,0,0.5);
     border-radius: 20px;
     max-width: 380px;
+    max-height: 88vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
     padding: 24px 20px 20px;
     text-align: center;
     color: #f4ecd8;
@@ -6031,6 +6064,10 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
     box-shadow: 0 0 50px rgba(231,76,60,0.4);
     border-radius: 20px;
     max-width: 440px;
+    max-height: 88vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
     padding: 24px 20px;
     text-align: center;
     color: #f4ecd8;
@@ -6996,6 +7033,188 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
 .casilla-cosm.abierta .casilla-cosm-cuerpo {
     display: block;
     animation: fadeIn 0.2s ease-out;
+}
+
+/* =========================================
+   MODAL DE NUEVO NIVEL Y DESBLOQUEOS
+   ========================================= */
+.modal-subio-nivel {
+    text-align: center;
+    background: radial-gradient(circle at 50% 25%, #2c1a0e 0%, #150904 85%) !important;
+    border: 2px solid #f1c40f !important;
+    box-shadow: 0 0 60px rgba(241,196,15,0.45), inset 0 0 30px rgba(0,0,0,0.8) !important;
+    animation: fadeSlideUp 0.4s cubic-bezier(0.175,0.885,0.32,1.275) both;
+    max-width: 370px;
+    padding: 26px 20px 20px;
+}
+.subio-nivel-corona {
+    font-size: 56px;
+    display: inline-block;
+    filter: drop-shadow(0 0 16px rgba(241,196,15,0.9));
+    animation: flotarCorona 2s ease-in-out infinite alternate;
+}
+@keyframes flotarCorona {
+    from { transform: translateY(0) scale(1); }
+    to   { transform: translateY(-7px) scale(1.08); }
+}
+.subio-nivel-titulo {
+    color: #ffe27a !important;
+    font-size: 24px;
+    margin: 8px 0 4px;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+}
+.subio-nivel-texto {
+    font-size: 13.5px;
+    color: rgba(255,255,255,0.85);
+    margin: 0 0 14px;
+    line-height: 1.4;
+}
+.subio-nivel-recompensas {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 12px 0 16px;
+    max-height: 48vh;
+    overflow-y: auto;
+}
+.subio-nivel-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(241,196,15,0.12);
+    border: 1px solid rgba(241,196,15,0.35);
+    border-radius: 10px;
+    padding: 10px 14px;
+    text-align: left;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.subio-nivel-item-icono {
+    font-size: 26px;
+    flex-shrink: 0;
+}
+.subio-nivel-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.subio-nivel-item-info strong {
+    color: #ffe27a;
+    font-size: 13.5px;
+    letter-spacing: 0.3px;
+}
+.subio-nivel-item-info small {
+    color: rgba(255,255,255,0.7);
+    font-size: 11.5px;
+}
+
+/* =========================================
+   EFECTOS MÁGICOS Y PARTÍCULAS (Guerra Arcana)
+   ========================================= */
+.fx-vortex-arcano {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 320px;
+    height: 320px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent, rgba(0, 210, 211, 0.4), rgba(162, 155, 254, 0.6), transparent);
+    filter: blur(8px) drop-shadow(0 0 20px #00d2d3);
+    pointer-events: none;
+    z-index: 100;
+    animation: girarVortex 1.8s ease-out forwards;
+}
+@keyframes girarVortex {
+    0%   { transform: translate(-50%, -50%) rotate(0deg) scale(0.2); opacity: 0; }
+    30%  { opacity: 1; transform: translate(-50%, -50%) rotate(180deg) scale(1.15); }
+    100% { transform: translate(-50%, -50%) rotate(540deg) scale(1.4); opacity: 0; }
+}
+
+.fx-sombras-aura {
+    position: fixed;
+    pointer-events: none;
+    z-index: 99;
+    border-radius: 50%;
+    box-shadow: 0 0 35px 12px rgba(108, 92, 231, 0.8), inset 0 0 25px rgba(0,0,0,0.9);
+    animation: pulsoSombrasFX 2s ease-out forwards;
+}
+@keyframes pulsoSombrasFX {
+    0%   { transform: scale(0.6); opacity: 0; }
+    40%  { transform: scale(1.25); opacity: 0.95; }
+    100% { transform: scale(1.4); opacity: 0; }
+}
+
+.fx-destierro-rayo {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle, rgba(253, 203, 110, 0.35) 0%, transparent 65%);
+    pointer-events: none;
+    z-index: 101;
+    animation: destelloRayo 0.65s ease-out forwards;
+}
+@keyframes destelloRayo {
+    0% { opacity: 0; }
+    15% { opacity: 1; background: radial-gradient(circle, rgba(255,255,255,0.7) 0%, rgba(253, 203, 110, 0.5) 45%, transparent 75%); }
+    100% { opacity: 0; }
+}
+
+.fx-ilusion-estrellas {
+    position: fixed;
+    pointer-events: none;
+    z-index: 102;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(162, 155, 254, 0.6) 0%, transparent 70%);
+    box-shadow: 0 0 30px rgba(162, 155, 254, 0.85);
+    animation: estallidoIlusion 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+@keyframes estallidoIlusion {
+    0% { transform: scale(0.2) rotate(0deg); opacity: 0; }
+    50% { transform: scale(1.3) rotate(90deg); opacity: 1; }
+    100% { transform: scale(1.6) rotate(180deg); opacity: 0; }
+}
+
+.fx-portal-transmutacion {
+    position: fixed;
+    pointer-events: none;
+    z-index: 100;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    border: 3px dashed #e84393;
+    box-shadow: 0 0 30px #e84393, inset 0 0 20px #e84393;
+    animation: portalGiro 1.6s ease-out forwards;
+}
+@keyframes portalGiro {
+    0% { transform: scale(0.3) rotate(0deg); opacity: 0; }
+    40% { transform: scale(1.2) rotate(180deg); opacity: 0.95; }
+    100% { transform: scale(1.4) rotate(360deg); opacity: 0; }
+}
+
+.fx-cronorruptura-onda {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    border: 3px solid #fab1a0;
+    box-shadow: 0 0 40px #fab1a0, inset 0 0 20px #fab1a0;
+    pointer-events: none;
+    z-index: 100;
+    animation: ondaCrono 1.4s ease-out forwards;
+}
+@keyframes ondaCrono {
+    0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+    50% { opacity: 0.9; }
+    100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; }
 }
 
 

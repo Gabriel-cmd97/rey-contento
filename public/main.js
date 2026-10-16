@@ -1688,7 +1688,13 @@ function mostrarCoach(html, { boton = null, alPulsar = null } = {}) {
 function terminarPractica() {
     document.body.classList.remove('en-practica');
     if (miSalaActual) socket.emit('abandonarSala', miSalaActual);
-    escribirLS({ poderes: 'reyPracticaPoderesHecha', fiesta: 'reyPracticaFiestaHecha', corte: 'reyPracticaCorteHecha' }[_practica?.tipo] || 'reyPracticaHecha', '1');
+    escribirLS({
+        poderes: 'reyPracticaPoderesHecha',
+        fiesta: 'reyPracticaFiestaHecha',
+        corte: 'reyPracticaCorteHecha',
+        arcana: 'reyPracticaArcanaHecha',
+        conspiracion: 'reyPracticaConspiracionHecha'
+    }[_practica?.tipo] || 'reyPracticaHecha', '1');
     _practica = null;
     document.getElementById('coachPractica')?.classList.add('hidden');
     mostrarLobbyLimpio();
@@ -1704,6 +1710,8 @@ function pintarBotonPractica() {
     document.getElementById('btnPracticaPoderes')?.classList.toggle('practica-nueva', !leerLS('reyPracticaPoderesHecha'));
     document.getElementById('btnPracticaFiesta')?.classList.toggle('practica-nueva', !leerLS('reyPracticaFiestaHecha'));
     document.getElementById('btnPracticaCorte')?.classList.toggle('practica-nueva', !leerLS('reyPracticaCorteHecha'));
+    document.getElementById('btnProbarArcana')?.classList.toggle('practica-nueva', !leerLS('reyPracticaArcanaHecha'));
+    document.getElementById('btnProbarConspiracion')?.classList.toggle('practica-nueva', !leerLS('reyPracticaConspiracionHecha'));
 }
 
 // Un paso del guion solo se dice una vez.
@@ -1718,6 +1726,8 @@ function practicaEvento(tipo, datos) {
     if (_practica.tipo === 'poderes') return practicaPoderesEvento(tipo, datos);
     if (_practica.tipo === 'fiesta') return practicaFiestaEvento(tipo, datos);
     if (_practica.tipo === 'corte') return practicaCorteEvento(tipo, datos);
+    if (_practica.tipo === 'arcana') return practicaArcanaEvento(tipo, datos);
+    if (_practica.tipo === 'conspiracion') return practicaConspiracionEvento(tipo, datos);
     const A = `<strong>${escapeHTML(_practica.nombreA)}</strong>`;
     const B = `<strong>${escapeHTML(_practica.nombreB)}</strong>`;
     const ronda = parseInt(document.getElementById('numRonda')?.innerText || '0', 10);
@@ -2090,6 +2100,83 @@ function practicaFiestaEvento(tipo, datos) {
             : `La más baja fue el <b>${datos.cartaMortal}</b>. La próxima vez toca el asiento de quien quieras. `)
             + `Toca <b>SIGUIENTE RONDA</b>.`);
         if (ronda >= 3) decirUnaVez('fi-f3', `<b>¡Listo para la Fiesta!</b> Con el Carrusel te llegó el ${escapeHTML(miCarta || '')} de ${nombre(2)}. En <b>modo Fiesta</b> hay evento en <b>todas</b> las rondas y, mientras ven el resumen, <b>la mesa vota</b> el de la siguiente. También está el <b>Premio real</b>: la carta más alta gana una vida. Para jugarlo con tus amigos, al crear mesa elige <b>Modo de juego: Fiesta</b>.`,
+            { boton: 'Terminar práctica', alPulsar: terminarPractica });
+    }
+}
+
+// Guion 'arcana' (practica.js): Hechizos Tácticos y Grimorio Arcano.
+function practicaArcanaEvento(tipo, datos) {
+    const ronda = parseInt(document.getElementById('numRonda')?.innerText || '0', 10);
+    const nombre = (i) => `<strong>${escapeHTML(i === 1 ? _practica.nombreA : _practica.nombreB)}</strong>`;
+    const brillar = (sel) => setTimeout(() => document.querySelector(sel)?.classList.add('practica-brilla'), 150);
+
+    if (tipo === 'ronda') {
+        const js = datos.jugadores || [];
+        if (js[1]) _practica.nombreA = js[1].nombre;
+        if (js[2]) _practica.nombreB = js[2].nombre;
+        if (datos.ronda === 1) decirUnaVez('arc-r1', `<b>¡Bienvenido a Guerra Arcana!</b> Cada jugador recibe un grimorio con <b>hechizos tácticos</b> en la barra inferior. Los hechizos alteran cartas, dan inmunidad o cambian el curso de la ronda.`);
+        if (datos.ronda === 2) decirUnaVez('arc-r2', `Ronda 2. Ahora eres el <b>dealer</b>: juegas al final. En esta ronda tienes un <b>1</b> (la más baja), pero recibiste el hechizo <b>Velo de Sombras</b>.`);
+        return;
+    }
+    if (tipo === 'turno' && datos.id === socket.id) {
+        if (ronda === 1) {
+            decirUnaVez('arc-r1-tu', `Tienes un <b>4</b> y en tu pergamino tienes <b>✨ Ilusión</b> (+2 virtual a tu carta). Toca tu pergamino de <b>Ilusión</b> abajo para que tu 4 cuente como 6, y luego toca <b>MANTENER</b>.`);
+            brillar('#barraArcana [data-hechizo-id="ILUSION"]');
+        }
+        if (ronda === 2) {
+            decirUnaVez('arc-r2-tu', `Tienes un <b>1</b>, la carta mortal. ¡Pero tienes <b>🌑 Velo de Sombras</b>! Toca tu pergamino de <b>Velo de Sombras</b> abajo: te otorgará un escudo arcano que absorbe el daño de vidas esta ronda. Luego toca <b>MANTENER</b>.`);
+            brillar('#barraArcana [data-hechizo-id="VELO_SOMBRAS"]');
+        }
+        return;
+    }
+    if (tipo === 'hechizo' || tipo === 'accion') {
+        const hId = datos.hechizo?.id || datos.hechizo;
+        const lanzador = datos.lanzadorNombre || datos.jugador;
+        if (lanzador === miNombreUsuario) {
+            if (hId === 'ILUSION') decirUnaVez('arc-h-ilu', `✨ ¡Ilusión activada! Tu carta ahora cuenta como un 6. Toca <b>MANTENER</b> para cerrar tu jugada.`);
+            if (hId === 'VELO_SOMBRAS') decirUnaVez('arc-h-velo', `🌑 ¡Velo de Sombras levantado! Absorberá la pérdida de vidas de esta ronda. Toca <b>MANTENER</b>.`);
+        }
+        return;
+    }
+    if (tipo === 'fin') {
+        if (ronda === 1) decirUnaVez('arc-f1', `Gracias a tu Ilusión, tu carta superó al 2 de ${nombre(2)} y ${nombre(2)} perdió una vida. En Guerra Arcana los hechizos cambian el destino. Toca <b>SIGUIENTE RONDA</b>.`);
+        if (ronda >= 2) decirUnaVez('arc-f2', `<b>¡Guerra Arcana dominada!</b> ✨ Hay 6 hechizos legendarios: Ilusión, Velo de Sombras, Destierro, Cronorruptura, Transmutación e Inversión. Quien cae en batalla recarga su grimorio. Para jugarlo con amigos o bots, elige <b>Modo de juego: Guerra Arcana</b>.`,
+            { boton: 'Terminar práctica', alPulsar: terminarPractica });
+    }
+}
+
+// Guion 'conspiracion' (practica.js): Roles Secretos e Interrogatorios de Corte.
+function practicaConspiracionEvento(tipo, datos) {
+    const ronda = parseInt(document.getElementById('numRonda')?.innerText || '0', 10);
+    const nombre = (i) => `<strong>${escapeHTML(i === 1 ? _practica.nombreA : _practica.nombreB)}</strong>`;
+    const brillar = (sel) => setTimeout(() => document.querySelector(sel)?.classList.add('practica-brilla'), 150);
+
+    if (tipo === 'ronda') {
+        const js = datos.jugadores || [];
+        if (js[1]) _practica.nombreA = js[1].nombre;
+        if (js[2]) _practica.nombreB = js[2].nombre;
+        if (datos.ronda === 1) decirUnaVez('consp-r1', `<b>¡Bienvenido a Conspiración en la Corte!</b> Todos tienen un <b>rol secreto</b> con misiones y tácticas ocultas (Leales, Rebeldes o Burlón). Al final de la partida se revelan las identidades.`);
+        if (datos.ronda === 2) decirUnaVez('consp-r2', `Ronda 2. Eres el dealer: juegas al final. En esta ronda eres el <b>Bufón</b> 🃏 (¡burlar a la corte y sembrar el caos!).`);
+        return;
+    }
+    if (tipo === 'turno' && datos.id === socket.id) {
+        if (ronda === 1) {
+            decirUnaVez('consp-r1-tu', `Tu rol es el <b>Inquisidor</b> 🔍 (facción Leal) y tienes un <b>6</b>. Puedes tocar la habilidad de tu rol en la barra inferior para investigar a un cortesano o mantener tu carta segura con <b>MANTENER</b>.`);
+            brillar('#btnHabilidadConspiracion');
+        }
+        if (ronda === 2) {
+            decirUnaVez('consp-r2-tu', `Tienes un <b>2</b>, pero como <b>Bufón</b> tu objetivo es burlar al reino. Activa la táctica del Bufón abajo para engañar a los demás o robar del mazo si prefieres. Luego toca <b>MANTENER</b>.`);
+            brillar('#btnHabilidadConspiracion');
+        }
+        return;
+    }
+    if (tipo === 'inquisicion' || (tipo === 'accion' && datos.tipo === 'CONSPIRACION')) {
+        decirUnaVez('consp-hab-usada', `⚖️ ¡Juicio de la corte completado! Ahora conoces pistas cruciales. Termina tu turno con <b>MANTENER</b>.`);
+        return;
+    }
+    if (tipo === 'fin') {
+        if (ronda === 1) decirUnaVez('consp-f1', `Ronda terminada. La carta más baja cayó. Recuerda que cada rol gana Blis extra cumpliendo su misión secreta. Toca <b>SIGUIENTE RONDA</b>.`);
+        if (ronda >= 2) decirUnaVez('consp-f2', `<b>¡Conspiración dominada!</b> 🎭 Hay 5 roles secretos: Inquisidor, Asesino, Usurpador, Campeón y Bufón. Nadie sabe quién es quién hasta la revelación final. Para jugarlo con amigos o bots, elige <b>Modo de juego: Conspiración</b>.`,
             { boton: 'Terminar práctica', alPulsar: terminarPractica });
     }
 }
@@ -2548,6 +2635,7 @@ function desactivarModoEspectador() {
 // forzado cuando la sala ya no existe (p. ej. tras reiniciar el servidor).
 function mostrarLobbyLimpio() {
     desactivarModoEspectador();
+    document.body.classList.remove('en-practica');
     document.getElementById('pantallaVictoria').classList.add('hidden');
     // Volver al lobby oculta explícitamente mesa y footer: así nunca quedan
     // visibles junto al lobby (ambos son hermanos dentro de pantallaJuego).
@@ -3442,8 +3530,66 @@ function animarProgreso(caja, p) {
             aviso.classList.remove('hidden');
             Sonidos.victoria(); vibrar([60, 40, 120]);
             const nv = document.getElementById('nivelTop'); if (nv) { nv.textContent = p.ahora.nivel; nv.classList.remove('hidden'); }
+            setTimeout(() => mostrarModalSubioNivel(p), 700);
         }, 900);
     }, 500);
+}
+
+function mostrarModalSubioNivel(p) {
+    const modal = document.getElementById('modalSubioNivel');
+    if (!modal || !p || !p.ahora) return;
+    const nuevoNivel = p.ahora.nivel;
+    const nivelesSubidos = Math.max(1, (p.ahora.nivel || 1) - (p.antes?.nivel || 1));
+    const bonoBlis = 50 * nivelesSubidos;
+
+    const titulo = document.getElementById('tituloSubioNivel');
+    if (titulo) titulo.textContent = `¡NIVEL ${nuevoNivel} ALCANZADO!`;
+
+    const texto = document.getElementById('subioNivelTexto');
+    if (texto) {
+        texto.textContent = `¡Tu prestigio en la corte se expande! Has ascendido al Nivel ${nuevoNivel}.`;
+    }
+
+    const contenedor = document.getElementById('subioNivelRecompensas');
+    if (contenedor) {
+        let itemsHtml = `
+            <div class="subio-nivel-item">
+                <span class="subio-nivel-item-icono">🪙</span>
+                <div class="subio-nivel-item-info">
+                    <b>+${bonoBlis} Blis del Reino</b>
+                    <small>Bonificación por ascenso real</small>
+                </div>
+            </div>
+        `;
+
+        if (Array.isArray(p.desbloqueos) && p.desbloqueos.length > 0) {
+            p.desbloqueos.forEach(desbloqueo => {
+                itemsHtml += `
+                    <div class="subio-nivel-item">
+                        <span class="subio-nivel-item-icono">🔓</span>
+                        <div class="subio-nivel-item-info">
+                            <b>${escapeHTML(desbloqueo)}</b>
+                            <small>Nuevo contenido desbloqueado</small>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        contenedor.innerHTML = itemsHtml;
+    }
+
+    modal.classList.remove('hidden');
+    Sonidos.reaccion?.('💎');
+    vibrar?.([100, 50, 150]);
+
+    const btnCerrar = document.getElementById('btnCerrarSubioNivel');
+    if (btnCerrar) {
+        btnCerrar.onclick = () => {
+            modal.classList.add('hidden');
+            Sonidos.boton?.();
+        };
+    }
 }
 
 // ==========================================
@@ -3786,7 +3932,7 @@ function pintarBarraConspiracion() {
     if (!barra) return;
     const esConspiracion = modoJuegoActual === 'CONSPIRACION';
     const miTurno = document.body.classList.contains('puedo-jugar');
-    const yo = listaJugadoresGlobal.find(j => j.id === socket?.id);
+    const yo = listaJugadoresGlobal.find(j => j.id === socket?.id || j.nombre === miNombreUsuario);
     if (!esConspiracion || !_miRolConspiracion || !miTurno || !yo || yo.vidas <= 0) {
         barra.classList.add('hidden');
         return;
@@ -3892,6 +4038,36 @@ function animarHechizoMesa(datos) {
     Sonidos.reaccion(h.id === 'DESTIERRO' ? '🔥' : '💎');
     vibrar([70, 40, 70]);
 
+    // Partículas y efectos visuales de Guerra Arcana
+    const fxMap = {
+        'INVERSION': 'fx-vortex-arcano',
+        'VELO_SOMBRAS': 'fx-sombras-aura',
+        'DESTIERRO': 'fx-destierro-rayo',
+        'ILUSION': 'fx-ilusion-estrellas',
+        'TRANSMUTACION': 'fx-portal-transmutacion',
+        'CRONORUPTURA': 'fx-cronorruptura-onda'
+    };
+    const claseFx = fxMap[h.id];
+    if (claseFx) {
+        const elemFx = document.createElement('div');
+        elemFx.className = claseFx;
+        if (['fx-sombras-aura', 'fx-ilusion-estrellas', 'fx-portal-transmutacion'].includes(claseFx)) {
+            const asiento = asientoDe(datos.lanzadorNombre);
+            if (asiento) {
+                const rect = asiento.getBoundingClientRect();
+                elemFx.style.top = `${rect.top + rect.height / 2}px`;
+                elemFx.style.left = `${rect.left + rect.width / 2}px`;
+                elemFx.style.transform = 'translate(-50%, -50%)';
+            } else {
+                elemFx.style.top = '50%';
+                elemFx.style.left = '50%';
+                elemFx.style.transform = 'translate(-50%, -50%)';
+            }
+        }
+        document.body.appendChild(elemFx);
+        setTimeout(() => elemFx.remove(), 2200);
+    }
+
     const aviso = document.createElement('div');
     aviso.className = 'aviso-hechizo-arcano';
     aviso.innerHTML = `
@@ -3913,7 +4089,7 @@ function pintarBarraArcana() {
     if (!barra) return;
     const esArcana = modoJuegoActual === 'GUERRA_ARCANA';
     const miTurno = document.body.classList.contains('puedo-jugar');
-    const yo = listaJugadoresGlobal.find(j => j.id === socket?.id);
+    const yo = listaJugadoresGlobal.find(j => j.id === socket?.id || j.nombre === miNombreUsuario);
     if (!esArcana || !yo || yo.vidas <= 0) {
         barra.classList.add('hidden');
         return;
@@ -3954,7 +4130,9 @@ function lanzarHechizoCliente(hechizoId) {
     if (h.requiereObjetivo) {
         _apuntando = 'TRANSMUTACION';
         _hechizoPendiente = hechizoId;
+        document.body.classList.add('apuntando');
         mostrarToast('🧲 Toca el asiento del jugador con quien deseas transmutar tu cambio.', 'rey', 4000);
+        setTimeout(() => { if (_apuntando === 'TRANSMUTACION') cancelarApuntar(); }, 10000);
         return;
     }
 
@@ -4299,11 +4477,13 @@ function iniciarContraBots(modoElegido) {
 
 document.getElementById('btnProbarArcana')?.addEventListener('click', () => {
     Sonidos.boton?.();
-    iniciarContraBots('GUERRA_ARCANA');
+    if (socket?.connected) empezarPractica('arcana');
+    else mostrarToast('Conectando con el servidor...', 'rey', 2000);
 });
 document.getElementById('btnProbarConspiracion')?.addEventListener('click', () => {
     Sonidos.boton?.();
-    iniciarContraBots('CONSPIRACION');
+    if (socket?.connected) empezarPractica('conspiracion');
+    else mostrarToast('Conectando con el servidor...', 'rey', 2000);
 });
 document.getElementById('btnProbarJefe')?.addEventListener('click', () => {
     Sonidos.boton?.();
@@ -6062,6 +6242,7 @@ function conectarSocket() {
         mostrarToast(`📜 Interrogatorio: ${objetivo} es ${rol.titulo} (${rol.faccion})`, 'rey', 6000);
         Sonidos.reaccion('💎');
         vibrar([60, 40, 100]);
+        practicaEvento('inquisicion', { objetivo, rol });
     });
     socket.on('revelacionConspiracion', (revelaciones) => pintarRevelacionConspiracion(revelaciones));
     socket.on('tuGrimorio', (grimorio) => alRecibirGrimorio(grimorio));
@@ -6070,7 +6251,10 @@ function conectarSocket() {
         actualizarSentidoMesa();
         actualizarGuiaTurno(document.body.classList.contains('puedo-jugar'), true);
     });
-    socket.on('hechizoLanzado', (datos) => animarHechizoMesa(datos));
+    socket.on('hechizoLanzado', (datos) => {
+        animarHechizoMesa(datos);
+        practicaEvento('hechizo', datos);
+    });
     socket.on('actualizarJugadores', (jugadores) => {
         listaJugadoresGlobal = jugadores.map(j => j.nombre === miNombreUsuario ? { ...j, id: socket.id } : j);
         dibujarMesaCircular();

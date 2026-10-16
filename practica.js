@@ -53,6 +53,22 @@ const GUIONES = {
         // acusas siendo el dealer; tu Rey (8) le gana a C (7).
         2: { cartas: [3, 7, 8, 2], mazo: 5, bots: { 1: 'PROTEGER', 2: 'MANTENER', 3: 'MANTENER' } },
     },
+    // Guerra Arcana (Grimorios y Hechizos Tácticos): 2 rondas guiadas.
+    arcana: {
+        dealer: 2, ultima: 2,
+        // Ronda 1: Tienes un 4 y el hechizo ILUSION (+2 efectivo -> 6). Bot A tiene 7, Bot B tiene 2.
+        1: { cartas: [4, 7, 2], mazo: 3, bots: { 1: 'MANTENER', 2: 'MANTENER' }, grimorios: { 0: ['ILUSION'], 1: ['INVERSION'], 2: ['VELO_SOMBRAS'] }, esperaInicio: 3000 },
+        // Ronda 2: Tienes un 1 y el hechizo VELO_SOMBRAS (inmunidad y absorbe daño). Bot A tiene 8, Bot B tiene 5.
+        2: { cartas: [1, 8, 5], mazo: 6, bots: { 1: 'MANTENER', 2: 'MANTENER' }, grimorios: { 0: ['VELO_SOMBRAS'], 1: ['DESTIERRO'], 2: ['CRONORUPTURA'] }, esperaInicio: 2000 },
+    },
+    // Conspiración en la Corte (Roles Secretos e Interrogatorio): 2 rondas guiadas.
+    conspiracion: {
+        dealer: 2, ultima: 2,
+        // Ronda 1: Eres el INQUISIDOR. Bot A es ASESINO, Bot B es USURPADOR.
+        1: { cartas: [6, 4, 2], mazo: 5, bots: { 1: 'MANTENER', 2: 'MANTENER' }, roles: { 0: 'INQUISIDOR', 1: 'ASESINO', 2: 'USURPADOR' }, esperaInicio: 3500 },
+        // Ronda 2: Eres el BUFÓN. Tienes un 2, usas Truco del Espejo (tu 2 cuenta como 7).
+        2: { cartas: [2, 8, 3], mazo: 6, bots: { 1: 'MANTENER', 2: 'MANTENER' }, roles: { 0: 'BUFON', 1: 'CAMPEON', 2: 'INQUISIDOR' }, esperaInicio: 2500 },
+    },
 };
 const ULTIMA_RONDA = 3;
 
@@ -108,7 +124,17 @@ function esperaInicio(sala) {
     return rondaDe(sala)?.esperaInicio || 0;
 }
 
+function grimoriosDeRonda(sala) {
+    const g = rondaDe(sala)?.grimorios || {};
+    return Object.entries(g).map(([i, lista]) => ({ indice: Number(i), grimorio: lista }));
+}
+
+function rolesDeRonda(sala) {
+    const r = rondaDe(sala)?.roles || {};
+    return Object.entries(r).map(([i, rol]) => ({ indice: Number(i), rol }));
+}
+
 // Compatibilidad: RONDAS es el guion básico.
 const RONDAS = GUIONES.basica;
 
-module.exports = { DEALER_INICIAL, GUIONES, RONDAS, ULTIMA_RONDA, repartirGuion, decisionBot, eventoDeRonda, poderesDeRonda, confesionDeRonda, esperaInicio, dealerInicial, ultimaRonda, reyesDeGuion };
+module.exports = { DEALER_INICIAL, GUIONES, RONDAS, ULTIMA_RONDA, repartirGuion, decisionBot, eventoDeRonda, poderesDeRonda, confesionDeRonda, grimoriosDeRonda, rolesDeRonda, esperaInicio, dealerInicial, ultimaRonda, reyesDeGuion };
