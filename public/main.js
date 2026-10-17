@@ -857,7 +857,8 @@ window.addEventListener('DOMContentLoaded', function vigilarAltoDelPie() {
     const pie = document.getElementById('panelAccionesPartida');
     if (!pie || typeof ResizeObserver === 'undefined') return;
     new ResizeObserver(() => {
-        const alto = pie.classList.contains('hidden') ? 0 : Math.ceil(pie.getBoundingClientRect().height);
+        const enHoriz = typeof esHorizontal === 'function' && esHorizontal();
+        const alto = (pie.classList.contains('hidden') || enHoriz) ? 0 : Math.ceil(pie.getBoundingClientRect().height);
         document.documentElement.style.setProperty('--alto-pie', alto + 'px');
         if (_ultimaGuia && !document.getElementById('flechaGuia')?.classList.contains('hidden')) {
             requestAnimationFrame(() => actualizarGuiaTurno(..._ultimaGuia, true));
@@ -971,10 +972,10 @@ function actualizarGuiaTurno(esMio, redibujar = false) {
 
     if (eventoActual?.id === 'MERCADO') {
         destino = mazo;
-        textoCambiar = '🃏 Mercado: si cambias, robas del mazo';
+        textoCambiar = '🃏 Mercado: robas del mazo';
     } else if (yo?.dealer) {
         destino = mazo;
-        textoCambiar = '🔄 Eres el dealer: cambias tu carta por una del mazo';
+        textoCambiar = '🔄 Dealer: robas del mazo';
     } else if (vecino) {
         destino = document.querySelector(`.silla:not(.hidden)[data-jugador-id="${CSS.escape(vecino.id)}"]`);
         const reyALaVista = eventoActual?.id !== 'MUNDO_AL_REVES' && vecino.cartaRevelada && vecino.cartaActual === 9;
@@ -982,78 +983,78 @@ function actualizarGuiaTurno(esMio, redibujar = false) {
         const rival = (miEquipo() !== undefined && miEquipo() !== null) ? ' (rival)' : '';
         const fuerzaCampeon = _miRolConspiracion?.id === 'CAMPEON' && yo?.conspiracion?.fuerzaIntercambio;
         textoCambiar = fuerzaCampeon
-            ? `🛡️ ¡Intervención Real activa! Tu cambio con ${vecino.nombre} ignorará cualquier bloqueo o escudo`
+            ? `🛡️ ¡Intervención Real! Cambio con ${vecino.nombre} ignora bloqueos`
             : vecino.escudo
-            ? `🛡️ ${vecino.nombre} tiene escudo: si cambias, rebota y te quedas con tu carta`
+            ? `🛡️ ${vecino.nombre} tiene escudo: si cambias, rebota`
             : reyALaVista
             ? `👑 ${vecino.nombre} tiene al Rey: si cambias, se bloquea`
-            : `🔄 Cambias tu carta con ${vecino.nombre}${rival}`;
+            : `🔄 Cambias con ${vecino.nombre}${rival}`;
     }
 
-    const lineas = ['✋ Te quedas con tu carta', textoCambiar];
-    if (eventoActual?.id === 'NIEBLA') lineas.push('🌫️ Niebla: decides sin ver tu carta');
-    // Qué hace cada poder que tienes, con nombres de la mesa (no si conviene usarlo).
-    if (misPoderes.length) {
-        const dosALaDerecha = (() => {
-            const vivos = listaJugadoresGlobal.filter(j => j.vidas > 0);
-            const i = vivos.findIndex(j => j.id === socket.id);
-            return i === -1 || vivos.length < 3 ? null : vivos[(i + 2) % vivos.length];
-        })();
-        const explica = {
-            ESPIAR: vecino ? `👁️ Espiar: ves la carta de ${vecino.nombre} antes de decidir` : null,
-            ORACULO: '🔮 Oráculo: ves la carta de arriba del mazo antes de decidir',
-            SALTO: dosALaDerecha ? `↪️ Salto: cambias con ${dosALaDerecha.nombre}, dos lugares a tu derecha, en vez de jugar` : null,
-            ESCUDO: '🛡️ Escudo: nadie puede cambiar contigo hasta que acabe la ronda',
-        };
-        [...new Set(misPoderes)].forEach(id => explica[id] && lineas.push(explica[id]));
-        lineas.push('✨ Tus poderes están arriba de los botones; cada uno se usa una vez');
-    }
-    const ronda = parseInt(document.getElementById('numRonda')?.innerText || '0', 10);
-    if (miEquipo() !== undefined && miEquipo() !== null && ronda <= 1) lineas.push('🤝 Ves la carta de tu compañero (los rivales no)');
-    if (eventoActual?.id === 'MUNDO_AL_REVES') lineas.push('🔄 Mundo al revés: esta ronda pierde la carta más alta');
-    if (eventoActual?.id === 'DOBLE_CASTIGO') lineas.push('⚔️ Doble castigo: quien tenga la carta más baja pierde 2 vidas');
-    if (eventoActual?.id === 'AMNISTIA') lineas.push('🕊️ Amnistía: nadie pierde vida; la más baja pierde su próximo turno');
-    const diez = _corte ? null : cuentaDiez();
-    if (diez) lineas.push(`🎯 Diez: tu equipo suma ${diez.suma}${diez.completa ? '' : ' + lo que no ves'}; la meta es ${diez.meta} sin pasarse`);
-    if (_corte) lineas.push(_corte.soyRey
-        ? '👑 Eres el Rey: solo cuenta tu carta entre los Reyes. No te delates'
-        : `🛡️ Solo cuenta la carta de tu Rey (${_corte.miRey}). Protegerlo le da tu carta, pero te delata`);
-    if (modoJuegoActual === 'CONSPIRACION' && _miRolConspiracion) {
-        const r = _miRolConspiracion;
-        lineas.push(`📜 Eres ${r.titulo} (${r.faccion}): «${r.mision}»`);
-        if (!_habilidadConspiracionUsada) {
-            lineas.push(`⚡ Táctica lista: ${r.habilidad.nombre} — ${r.habilidad.descripcion}`);
-            lineas.push('💡 Actívala sobre tus cartas o abre tu dossier (botón 📜 Rol)');
-        } else {
-            lineas.push(`⚡ Ya empleaste tu habilidad táctica única (${r.habilidad.nombre})`);
+    const extras = [];
+    if (!_practica) {
+        if (eventoActual?.id === 'NIEBLA') extras.push('🌫️ Niebla: decides sin ver tu carta');
+        if (misPoderes.length) {
+            const dosALaDerecha = (() => {
+                const vivos = listaJugadoresGlobal.filter(j => j.vidas > 0);
+                const i = vivos.findIndex(j => j.id === socket.id);
+                return i === -1 || vivos.length < 3 ? null : vivos[(i + 2) % vivos.length];
+            })();
+            const explica = {
+                ESPIAR: vecino ? `👁️ Espiar: ves la carta de ${vecino.nombre} antes de decidir` : null,
+                ORACULO: '🔮 Oráculo: ves la carta de arriba del mazo antes de decidir',
+                SALTO: dosALaDerecha ? `↪️ Salto: cambias con ${dosALaDerecha.nombre} (dos lugares a tu derecha)` : null,
+                ESCUDO: '🛡️ Escudo: nadie puede cambiar contigo esta ronda',
+            };
+            [...new Set(misPoderes)].forEach(id => explica[id] && extras.push(explica[id]));
         }
-    }
-    if (modoJuegoActual === 'GUERRA_ARCANA') {
-        if (typeof _sentidoTurnos !== 'undefined' && _sentidoTurnos === -1) {
-            lineas.push('🌀 ¡Rumbo Invertido! Los turnos y cambios van hacia tu izquierda');
+        const ronda = parseInt(document.getElementById('numRonda')?.innerText || '0', 10);
+        if (miEquipo() !== undefined && miEquipo() !== null && ronda <= 1) extras.push('🤝 Ves la carta de tu compañero (los rivales no)');
+        if (eventoActual?.id === 'MUNDO_AL_REVES') extras.push('🔄 Mundo al revés: esta ronda pierde la carta más alta');
+        if (eventoActual?.id === 'DOBLE_CASTIGO') extras.push('⚔️ Doble castigo: la carta más baja pierde 2 vidas');
+        if (eventoActual?.id === 'AMNISTIA') extras.push('🕊️ Amnistía: nadie pierde vida; la más baja pierde su próximo turno');
+        const diez = _corte ? null : cuentaDiez();
+        if (diez) extras.push(`🎯 Diez: tu equipo suma ${diez.suma}${diez.completa ? '' : ' + lo oculto'} (meta ${diez.meta} sin pasarse)`);
+        if (_corte) extras.push(_corte.soyRey
+            ? '👑 Eres el Rey: solo cuenta tu carta entre los Reyes. No te delates'
+            : `🛡️ Solo cuenta la carta de tu Rey (${_corte.miRey}). Protegerlo le da tu carta, pero te delata`);
+        if (modoJuegoActual === 'CONSPIRACION' && _miRolConspiracion) {
+            const r = _miRolConspiracion;
+            extras.push(`📜 ${r.titulo} (${r.faccion}): «${r.mision}»`);
+            if (!_habilidadConspiracionUsada) {
+                extras.push(`⚡ Táctica lista: ${r.habilidad.nombre} — ${r.habilidad.descripcion}`);
+            }
         }
-        if (Array.isArray(_miGrimorio) && _miGrimorio.length > 0) {
-            const nombresH = _miGrimorio.map(h => `${h.runa || '✨'} ${h.nombre}`).join(' · ');
-            lineas.push(`✨ Grimorio: ${nombresH}`);
-            lineas.push('💡 Toca un pergamino abajo para lanzar su magia antes de jugar');
-        } else {
-            lineas.push('✨ Tu grimorio está vacío. Si pierdes una vida, recargarás nueva magia');
+        if (modoJuegoActual === 'GUERRA_ARCANA') {
+            if (typeof _sentidoTurnos !== 'undefined' && _sentidoTurnos === -1) {
+                extras.push('🌀 ¡Rumbo Invertido! Los turnos y cambios van hacia tu izquierda');
+            }
+            if (Array.isArray(_miGrimorio) && _miGrimorio.length > 0) {
+                const nombresH = _miGrimorio.map(h => `${h.runa || '✨'} ${h.nombre}`).join(' · ');
+                extras.push(`✨ Grimorio listo: ${nombresH}`);
+            }
         }
-    }
-    if (eventoActual?.id === 'CARRUSEL') lineas.push('🎠 Carrusel: al final le pasas tu carta al de tu derecha y recibes la del de tu izquierda');
-    if (eventoActual?.id === 'PREMIO') lineas.push('👑 Premio real: quien termine con la carta más alta gana una vida');
-    if (puedoVengarme()) lineas.push('😈 Venganza: toca el asiento de cualquier jugador para cambiar con él');
-    // Los gestos se explican solo en tus primeros turnos: el panel ocupa menos.
-    if (_turnosConGuiaGestos < 3) {
-        lineas.push('👆 También con tu carta: deslízala a la derecha para cambiar, tócala dos veces para mantener');
-        if (!redibujar) _turnosConGuiaGestos++;
+        if (eventoActual?.id === 'CARRUSEL') extras.push('🎠 Carrusel: al final pasas tu carta a la derecha y recibes de la izquierda');
+        if (eventoActual?.id === 'PREMIO') extras.push('👑 Premio real: quien termine con la carta más alta gana una vida');
+        if (puedoVengarme()) extras.push('😈 Venganza: toca el asiento de cualquier jugador para cambiar con él');
+        if (_turnosConGuiaGestos < 2) {
+            extras.push('👆 Gestos: desliza tu carta a la derecha para cambiar o tócala dos veces para mantener');
+            if (!redibujar) _turnosConGuiaGestos++;
+        }
     }
     if (!redibujar) amagarCarta();
     _ultimaGuia = [esMio];
 
     const guia = document.getElementById('guiaAcciones');
     if (guia) {
-        guia.innerHTML = lineas.map(l => `<div>${escapeHTML(l)}</div>`).join('');
+        const htmlPrincipales = `<div class="guia-jugadas-principales">
+            <span class="guia-chip">✋ <b>Mantener:</b> Te quedas tu carta</span>
+            <span class="guia-chip">${escapeHTML(textoCambiar)}</span>
+        </div>`;
+        const htmlExtras = extras.length
+            ? `<div class="guia-reglas-extra">${extras.map(l => `<div class="guia-item">${escapeHTML(l)}</div>`).join('')}</div>`
+            : '';
+        guia.innerHTML = htmlPrincipales + htmlExtras;
         guia.classList.remove('hidden');
         document.body.classList.add('con-guia'); // sube los avisos para no taparla
     }
@@ -1651,9 +1652,22 @@ function terminarEsperaRapida() {
 // servidor). Un globo sobre la mesa explica cada momento. Los textos suponen
 // ese guion: si cambias las cartas allá, revisa los textos aquí.
 let _practica = null; // { tipo, nombreA, nombreB, dichos: Set } mientras dura
+let _colaCoach = [];
+let _resumenPendientePractica = null;
+
+function sincronizarEstadoLecturaGuia() {
+    if (!miSalaActual || !socket?.connected) return;
+    const coachVisible = !document.getElementById('coachPractica')?.classList.contains('hidden');
+    const modoVisible = !document.getElementById('cartaModo')?.classList.contains('hidden');
+    const rolVisible = !document.getElementById('cartaRol')?.classList.contains('hidden');
+    const leyendo = !!(coachVisible || modoVisible || rolVisible);
+    socket.emit('leyendoGuia', { idSala: miSalaActual, leyendo });
+}
 
 // tipo: 'basica' (Aprender a jugar), 'poderes' (Eventos y poderes) o 'fiesta' (Modo Fiesta).
 function empezarPractica(tipo = 'basica') {
+    _colaCoach = [];
+    _resumenPendientePractica = null;
     _practica = { tipo, nombreA: 'A', nombreB: 'B', dichos: new Set() };
     document.body.classList.add('en-practica');
     socket.emit('crearSala', { configuracion: { practica: tipo } });
@@ -1662,8 +1676,37 @@ function empezarPractica(tipo = 'basica') {
 function mostrarCoach(html, { boton = null, alPulsar = null } = {}) {
     const coach = document.getElementById('coachPractica');
     if (!coach) return;
+    if (!coach.classList.contains('hidden')) {
+        // Si ya hay un mensaje en pantalla, lo encolamos para no pisarlo antes de que termine de leerlo
+        _colaCoach.push({ html, boton, alPulsar });
+        return;
+    }
+    _aplicarCoach(html, { boton, alPulsar });
+}
+
+function _aplicarCoach(html, { boton = null, alPulsar = null } = {}) {
+    const coach = document.getElementById('coachPractica');
+    if (!coach) return;
+    coach._esBotonFinal = !!boton;
     const txt = document.getElementById('coachTexto');
     if (txt) txt.innerHTML = html;
+
+    const avanzar = () => {
+        if (_colaCoach.length > 0) {
+            const sig = _colaCoach.shift();
+            _aplicarCoach(sig.html, { boton: sig.boton, alPulsar: sig.alPulsar });
+        } else {
+            coach.classList.add('hidden');
+            sincronizarEstadoLecturaGuia();
+            if (miSalaActual) socket.emit('practicaListo', miSalaActual);
+            if (_resumenPendientePractica) {
+                const datosRes = _resumenPendientePractica;
+                _resumenPendientePractica = null;
+                mostrarResumenRonda(datosRes);
+            }
+        }
+    };
+
     const b = document.getElementById('coachBoton');
     if (b) {
         if (boton) {
@@ -1671,21 +1714,40 @@ function mostrarCoach(html, { boton = null, alPulsar = null } = {}) {
             b.onclick = alPulsar;
         } else {
             b.textContent = '¡Entendido! Continuar';
-            b.onclick = () => coach.classList.add('hidden');
+            b.onclick = avanzar;
         }
         b.classList.remove('hidden');
     }
     const x = document.getElementById('coachCerrarX');
-    if (x) x.onclick = () => coach.classList.add('hidden');
+    if (x) x.onclick = avanzar;
 
     // Al final (botón "Terminar práctica") sobra "Salir de la práctica".
     document.getElementById('coachSalir')?.classList.toggle('hidden', !!boton);
     coach.classList.remove('hidden');
+    sincronizarEstadoLecturaGuia();
     coach.animate?.([{ opacity: 0, transform: 'translateX(-50%) translateY(-10px) scale(0.96)' }, { opacity: 1, transform: 'translateX(-50%) translateY(0) scale(1)' }],
         { duration: menosMovimiento() ? 0 : 250, easing: 'ease-out' });
 }
 
+// Si el jugador ejecuta directamente la acción que el coach le estaba pidiendo
+// sin antes cerrar el cuadro, cerramos la instrucción cumplida para dar paso
+// inmediato a la respuesta del coach.
+function avanzarCoachPorAccion() {
+    if (!_practica) return;
+    const coach = document.getElementById('coachPractica');
+    if (!coach || coach.classList.contains('hidden') || coach._esBotonFinal) return;
+    if (_colaCoach.length > 0) {
+        const sig = _colaCoach.shift();
+        _aplicarCoach(sig.html, { boton: sig.boton, alPulsar: sig.alPulsar });
+    } else {
+        coach.classList.add('hidden');
+        sincronizarEstadoLecturaGuia();
+    }
+}
+
 function terminarPractica() {
+    _colaCoach = [];
+    _resumenPendientePractica = null;
     document.body.classList.remove('en-practica');
     if (miSalaActual) socket.emit('abandonarSala', miSalaActual);
     escribirLS({
@@ -1919,6 +1981,7 @@ function pintarBarraPoderes() {
         b.onclick = () => {
             if (b.disabled) return;
             b.disabled = true;
+            avanzarCoachPorAccion();
             Sonidos.boton();
             socket.emit('usarPoder', { idSala: miSalaActual, poder: b.dataset.poder });
         };
@@ -2467,7 +2530,7 @@ function sugerirReacciones(emojis, aQuien = null) {
     caja.dataset.aQuien = aQuien || '';
     caja.classList.remove('hidden');
     clearTimeout(_sugerenciaTimer);
-    _sugerenciaTimer = setTimeout(() => caja.classList.add('hidden'), 4000);
+    _sugerenciaTimer = setTimeout(() => caja.classList.add('hidden'), 7000);
 }
 document.getElementById('sugerenciaReaccion')?.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-emoji]');
@@ -2477,6 +2540,16 @@ document.getElementById('sugerenciaReaccion')?.addEventListener('click', (e) => 
     const aQuien = listaJugadoresGlobal.find(j => j.id === caja.dataset.aQuien);
     if (REACCIONES.lanzar.includes(emoji) && aQuien) lanzarA(aQuien, emoji);
     else enviarReaccion(emoji);
+});
+document.getElementById('resumenReacciones')?.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-emoji]');
+    if (!b) return;
+    const emoji = b.dataset.emoji;
+    enviarReaccion(emoji);
+    b.animate?.([
+        { transform: 'scale(1.35) rotate(-10deg)' },
+        { transform: 'scale(1) rotate(0deg)' }
+    ], { duration: 250, easing: 'ease-out' });
 });
 
 function enviarReaccion(emoji) {
@@ -2503,6 +2576,8 @@ function mostrarResumenRonda(datos) {
     const grid   = document.getElementById('resumenCartas');
     const mortal = document.getElementById('resumenCartaMortal');
     if (!panel) return;
+    document.getElementById('sugerenciaReaccion')?.classList.add('hidden');
+    clearTimeout(_sugerenciaTimer);
 
     // Parejas (Diez): en lugar de la carta mortal, la meta y la suma de cada equipo.
     const cabecera = mortal.parentElement;
@@ -2554,12 +2629,13 @@ function mostrarResumenRonda(datos) {
         explicacion.classList.toggle('hidden', !texto);
     }
 
+    const puedeAvanzar = socket.id === datos.dealerId || !!_practica;
     const btnSig = document.getElementById('btnSiguienteRondaResumen');
-    btnSig.classList.toggle('hidden', datos.juegoTerminado || socket.id !== datos.dealerId);
+    btnSig.classList.toggle('hidden', datos.juegoTerminado || !puedeAvanzar);
     // La cuenta se mide desde que el servidor resolvió la ronda, no desde que
     // aparece el resumen (sale ~1–2 s después, tras la revelación).
     const msRestantes = datos.autoSiguienteMs ? datos.autoSiguienteMs - (Date.now() - (datos._recibido || Date.now())) : 0;
-    if (msRestantes > 0) iniciarCuentaResumen(msRestantes, socket.id === datos.dealerId);
+    if (msRestantes > 0) iniciarCuentaResumen(msRestantes, puedeAvanzar);
     else detenerCuentaResumen();
 
     colorearCartas(panel);
@@ -3711,6 +3787,31 @@ const EXPLICA_MODO = {
     JEFE: ['👑 Todos contra el Rey', 'Todos juntos contra el <b>Rey Tirano</b>, que tiene muchas vidas.', 'Si <b>más de la mitad</b> tiene una carta más alta que la suya, el Tirano pierde una vida.', 'Si no, pierde quien tenga la <b>carta más baja</b>. Pásenle las cartas bajas al Tirano.'],
     PODERES: ['✨ Con poderes', 'Cada vez que pierdes una vida ganas un <b>poder</b> de un solo uso.', 'Tus poderes salen arriba de tus botones: Espiar, Oráculo, Salto y Escudo.'],
 };
+let _cartaRolPendiente = null;
+
+function _mostrarCartaRol(html, sonidoEmoji = '💎') {
+    const carta = document.getElementById('cartaRol');
+    if (!carta) return;
+    const cartaModo = document.getElementById('cartaModo');
+    if (cartaModo && !cartaModo.classList.contains('hidden')) {
+        _cartaRolPendiente = { html, sonidoEmoji };
+        return;
+    }
+    carta.innerHTML = html;
+    carta.classList.remove('hidden', 'saliendo');
+    sincronizarEstadoLecturaGuia();
+    vibrar([80, 40, 80]);
+    Sonidos.reaccion(sonidoEmoji);
+    const cerrar = () => {
+        carta.classList.add('saliendo');
+        setTimeout(() => {
+            carta.classList.add('hidden');
+            sincronizarEstadoLecturaGuia();
+        }, 350);
+    };
+    carta.querySelectorAll('.modal-cerrar-x, .btn-rol-entendido').forEach(b => b.onclick = cerrar);
+}
+
 function mostrarModoNuevo(datos) {
     if (_practica) return;
     const cfg = _configSala || {};
@@ -3731,13 +3832,25 @@ function mostrarModoNuevo(datos) {
         + nuevos.map(m => { const [t, ...l] = EXPLICA_MODO[m]; return `<b>${t}</b><ul>${l.map(x => `<li>${x}</li>`).join('')}</ul>`; }).join('')
         + '<button type="button" class="boton-oro btn-modo-entendido" style="margin-top:14px; width:100%; padding:9px 16px; font-weight:bold;">¡Entendido! Empezar</button>'
         + '<small style="margin-top:8px; display:block; opacity:0.8;">Primera vez en este modo: las guías te acompañan esta ronda.</small>';
-    // Después de lo que sale al empezar: carta del evento (~4.4 s), aviso de
-    // tu equipo (5 s) y tarjeta de tu papel en La Corte (~4.6 s).
     const hayEquipos = (datos.jugadores || []).some(j => j.equipo !== undefined && j.equipo !== null);
-    const retraso = (datos.evento || hayEquipos) ? 5300 : 600;
+    const retraso = (datos.evento || hayEquipos) ? 4600 : 600;
     setTimeout(() => {
+        const cartaRol = document.getElementById('cartaRol');
+        if (cartaRol && !cartaRol.classList.contains('hidden')) {
+            // Si ya está viendo su rol, guardamos el rol para reabrirlo o esperamos a que cierre cartaModo primero
+            cartaRol.classList.add('hidden');
+        }
         carta.classList.remove('hidden');
-        const cerrar = () => carta.classList.add('hidden');
+        sincronizarEstadoLecturaGuia();
+        const cerrar = () => {
+            carta.classList.add('hidden');
+            sincronizarEstadoLecturaGuia();
+            if (_cartaRolPendiente) {
+                const pend = _cartaRolPendiente;
+                _cartaRolPendiente = null;
+                _mostrarCartaRol(pend.html, pend.sonidoEmoji);
+            }
+        };
         carta.querySelectorAll('.modal-cerrar-x, .btn-modo-entendido').forEach(b => b.onclick = cerrar);
     }, retraso);
 }
@@ -3751,17 +3864,13 @@ let _protegiEstaRonda = false;
 function alRecibirCorte(info, anunciar) {
     const nuevo = !_corte || _corte.miRey !== info.miRey;
     _corte = info;
-    if (anunciar && nuevo) {
+    if (anunciar && nuevo && !_practica) {
         // Tarjeta grande al centro (un aviso chico se perdía entre los demás).
-        const carta = document.getElementById('cartaRol');
-        carta.innerHTML = `<button type="button" class="modal-cerrar-x" aria-label="Cerrar">✕</button>` + (info.soyRey
+        const html = `<button type="button" class="modal-cerrar-x" aria-label="Cerrar">✕</button>` + (info.soyRey
             ? `<span class="rol-icono">${icono('corona')}</span><b>Eres el REY</b><small>de ${NOMBRE_EQUIPO[info.miEquipo]}</small><p>Solo cuenta tu carta: que no sea la más baja entre los Reyes. ¡Que no te descubran!</p>`
             : `<span class="rol-icono">🛡️</span><b>Eres ESCUDERO</b><small>de ${NOMBRE_EQUIPO[info.miEquipo]}</small><p>Tu Rey es <b>${escapeHTML(info.miRey)}</b>. Protégelo cambiándole tu carta… sin delatarlo.</p>`)
             + `<button type="button" class="boton-oro btn-rol-entendido" style="margin-top:12px; width:100%; padding:8px 12px; font-weight:bold;">¡Entendido!</button>`;
-        carta.classList.remove('hidden', 'saliendo');
-        vibrar([80, 40, 80]); Sonidos.reaccion(info.soyRey ? '💎' : '🔥');
-        const cerrar = () => { carta.classList.add('saliendo'); setTimeout(() => carta.classList.add('hidden'), 350); };
-        carta.querySelectorAll('.modal-cerrar-x, .btn-rol-entendido').forEach(b => b.onclick = cerrar);
+        _mostrarCartaRol(html, info.soyRey ? '💎' : '🔥');
     }
     dibujarMesaCircular();
     pintarBarraCorte();
@@ -3790,6 +3899,7 @@ function confirmarAcusacion(j) {
     document.getElementById('btnCancelarAcusar').onclick = () => modal.classList.add('hidden');
     document.getElementById('btnConfirmarAcusar').onclick = () => {
         modal.classList.add('hidden');
+        avanzarCoachPorAccion();
         socket.emit('acusar', { idSala: miSalaActual, objetivo: j.nombre });
         Sonidos.boton();
     };
@@ -3799,6 +3909,7 @@ document.getElementById('barraCorte')?.addEventListener('click', (e) => {
     if (!b || !_corte) return;
     if (b.dataset.corte === 'proteger') {
         _protegiEstaRonda = true;
+        avanzarCoachPorAccion();
         terminarMiJugada();
         document.getElementById('barraCorte').classList.add('hidden');
         socket.emit('accionJugador', { idSala: miSalaActual, accion: 'CAMBIAR', objetivo: _corte.miRey });
@@ -3820,22 +3931,15 @@ let _habilidadConspiracionUsada = false;
 function alRecibirRolConspiracion(rol, anunciar = true) {
     const nuevo = !_miRolConspiracion || _miRolConspiracion.id !== rol.id;
     _miRolConspiracion = rol;
-    if (anunciar && nuevo) {
-        const carta = document.getElementById('cartaRol');
-        if (carta) {
-            carta.innerHTML = `<button type="button" class="modal-cerrar-x" aria-label="Cerrar">✕</button>
-                <span class="rol-icono">${icono(rol.icono || 'pergamino')}</span>
-                <b style="color:${rol.color || 'var(--oro)'}">${escapeHTML(rol.titulo)}</b>
-                <small>${escapeHTML(rol.faccion)}</small>
-                <p>«${escapeHTML(rol.lema)}»</p>
-                <p style="font-size:12px;opacity:0.9;margin-top:4px;"><b>Misión:</b> ${escapeHTML(rol.mision)}</p>
-                <button type="button" class="boton-oro btn-rol-entendido" style="margin-top:12px; width:100%; padding:8px 12px; font-weight:bold;">¡Entendido!</button>`;
-            carta.classList.remove('hidden', 'saliendo');
-            vibrar([80, 40, 80]);
-            Sonidos.reaccion('💎');
-            const cerrar = () => { carta.classList.add('saliendo'); setTimeout(() => carta.classList.add('hidden'), 350); };
-            carta.querySelectorAll('.modal-cerrar-x, .btn-rol-entendido').forEach(b => b.onclick = cerrar);
-        }
+    if (anunciar && nuevo && !_practica) {
+        const html = `<button type="button" class="modal-cerrar-x" aria-label="Cerrar">✕</button>
+            <span class="rol-icono">${icono(rol.icono || 'pergamino')}</span>
+            <b style="color:${rol.color || 'var(--oro)'}">${escapeHTML(rol.titulo)}</b>
+            <small>${escapeHTML(rol.faccion)}</small>
+            <p>«${escapeHTML(rol.lema)}»</p>
+            <p style="font-size:12px;opacity:0.9;margin-top:4px;"><b>Misión:</b> ${escapeHTML(rol.mision)}</p>
+            <button type="button" class="boton-oro btn-rol-entendido" style="margin-top:12px; width:100%; padding:8px 12px; font-weight:bold;">¡Entendido!</button>`;
+        _mostrarCartaRol(html, '💎');
         mostrarToast(`📜 Tu rol: ${rol.titulo}. Pulsa "📜 Rol" abajo para ver tu dossier y activar tu táctica.`, 'rey', 5500);
     }
     actualizarBotonDossier();
@@ -3920,6 +4024,7 @@ function usarHabilidadConspiracion() {
         return;
     }
 
+    avanzarCoachPorAccion();
     Sonidos.boton();
     socket.emit('usarHabilidadRol', { idSala: miSalaActual });
     _habilidadConspiracionUsada = true;
@@ -4136,6 +4241,7 @@ function lanzarHechizoCliente(hechizoId) {
         return;
     }
 
+    avanzarCoachPorAccion();
     Sonidos.boton();
     vibrar(40);
     socket.emit('lanzarHechizo', { idSala: miSalaActual, hechizoId });
@@ -4656,6 +4762,10 @@ function ocultarVistaQR() {
 function gestionarRelojVisual(idEnTurno, tiempoSegundos) {
     if (intervaloVisual) clearInterval(intervaloVisual);
     const cont = document.getElementById('contenedorReloj');
+    if (_practica) {
+        if (cont) cont.style.display = 'none';
+        return;
+    }
     const barra = document.getElementById('barraReloj');
     const foco = document.getElementById('focoTurno');
     foco?.classList.remove('reloj-urgente');
@@ -5596,7 +5706,7 @@ function conectarSocket() {
         }
         programarRevelacionRey(datos.jugadores, datos.introMs || 0);
         setTimeout(pintarBarraPoderes, 0); // el Escudo ya se puede usar antes del primer turno
-        setTimeout(() => practicaEvento('ronda', datos), 0);
+        setTimeout(() => practicaEvento('ronda', datos), datos.evento ? 4450 : 0);
         // Revelar la mesa ANTES de dibujar/repartir. En la ronda 1, datosMesa
         // llega antes que tuCarta (que es quien normalmente saca el lobby), así
         // que sin esto la mesa sigue oculta: #mazoFlotante y los asientos tienen
@@ -5873,6 +5983,7 @@ function conectarSocket() {
     function ejecutarAccionMantener() {
         const btn = document.getElementById('btnMantener');
         if (!btn || btn.disabled || btn.style.display === 'none') return;
+        avanzarCoachPorAccion();
         ocultarGuiaTurno();
         terminarMiJugada();
         Sonidos.boton();
@@ -5891,6 +6002,7 @@ function conectarSocket() {
     function ejecutarAccionCambiar() {
         const btn = document.getElementById('btnCambiar');
         if (!btn || btn.disabled || btn.style.display === 'none') return;
+        avanzarCoachPorAccion();
         ocultarGuiaTurno();
         terminarMiJugada();
         Sonidos.boton();
@@ -5928,6 +6040,7 @@ function conectarSocket() {
                 mostrarToast('Elige a otro cortesano con vida.', '', 2000);
                 return;
             }
+            avanzarCoachPorAccion();
             Sonidos.boton();
             socket.emit('usarHabilidadRol', { idSala: miSalaActual, objetivo: j.nombre });
             _habilidadConspiracionUsada = true;
@@ -5942,6 +6055,7 @@ function conectarSocket() {
                 mostrarToast('Elige a otro cortesano con vida.', '', 2000);
                 return;
             }
+            avanzarCoachPorAccion();
             Sonidos.boton();
             vibrar(40);
             socket.emit('lanzarHechizo', { idSala: miSalaActual, hechizoId: _hechizoPendiente, objetivo: j.nombre });
@@ -5968,6 +6082,7 @@ function conectarSocket() {
         const silla = e.target.closest('.silla[data-jugador-id]');
         const j = silla && listaJugadoresGlobal.find(x => x.id === silla.dataset.jugadorId);
         if (!j || j.id === socket.id || j.vidas <= 0) return;
+        avanzarCoachPorAccion();
         ocultarGuiaTurno();
         terminarMiJugada();
         Sonidos.boton();
@@ -5978,7 +6093,7 @@ function conectarSocket() {
 
     // --- ACCIONES EN MESA (MINI-FEED) ---
     socket.on('accionMesa', (datos) => {
-        if (datos.tipo === 'BLOQUEO' && datos.jugador === miNombreUsuario) setTimeout(() => sugerirReacciones(['😡', '🤡', '😭']), 1200);
+        if (datos.tipo === 'BLOQUEO' && datos.jugador === miNombreUsuario) setTimeout(() => sugerirReacciones(['😡', '🤡', '😭', '😈']), 1200);
         registrarJugadaFeed(datos);
         practicaEvento('accion', datos);
         if (datos.tipo === 'CAMBIO' && datos.jugador && datos.objetivo) {
@@ -6057,6 +6172,7 @@ function conectarSocket() {
     // --- FIN DE RONDA ---
     socket.on('rondaTerminada', (datos) => {
         datos._recibido = Date.now();
+        if (_practica) _resumenPendientePractica = null;
         pintarVotacion(datos.votacion);
         terminarMiJugada();
         setTimeout(() => practicaEvento('fin', datos), 1600);
@@ -6093,6 +6209,7 @@ function conectarSocket() {
         if (intervaloVisual) clearInterval(intervaloVisual);
         document.getElementById('contenedorReloj').style.display = 'none';
         document.getElementById('focoTurno')?.classList.remove('reloj-urgente');
+        if (_practica) _colaCoach = [];
 
         registrarJugadaFeed({
             tipo: 'FIN_RONDA',
@@ -6122,8 +6239,13 @@ function conectarSocket() {
             dramaCartaMortal(datos);
             // Sugerencia de reacción según cómo te fue en la ronda.
             const yoVivo = datos.jugadores.find(j => j.id === socket.id)?.vidas > 0;
-            if (datos.perdedores.includes(socket.id) && yoVivo) sugerirReacciones(['😭', '💀', '🤡']);
-            else if (yoVivo && datos.perdedores.length) sugerirReacciones(['😈', '👏', '😂']);
+            if (datos.perdedores.includes(socket.id)) {
+                sugerirReacciones(['😭', '😈', '💀', '🤡', '😡']);
+            } else if (yoVivo && datos.perdedores.length) {
+                sugerirReacciones(['😈', '👏', '😂', '🔥', '👑']);
+            } else if (yoVivo) {
+                sugerirReacciones(['😅', '👏', '🙏', '🍀']);
+            }
         }, fin);
 
         const yoMori = datos.jugadores.find(j => j.id === socket.id && j.vidas <= 0);
@@ -6149,11 +6271,23 @@ function conectarSocket() {
         // otro evento en el ínterin.
         setTimeout(() => {
             if (gen !== _renderGen) return;
+            if (_practica) {
+                const esFinalPractica = datos.autoSiguienteMs === null && !datos.juegoTerminado;
+                if (esFinalPractica) {
+                    // En la graduación final, el coach tiene el botón de terminar práctica y no debe ser tapado
+                    return;
+                }
+                const coach = document.getElementById('coachPractica');
+                if (coach && !coach.classList.contains('hidden')) {
+                    _resumenPendientePractica = datos;
+                    return;
+                }
+            }
             mostrarResumenRonda(datos);
             if (datos.juegoTerminado) {
                 mostrarToast('EL JUEGO HA TERMINADO!', 'rey', 5000);
             }
-        }, Math.max(1400, fin + 1100) + (enDuelo && !menosMovimiento() ? 1800 : 0));
+        }, Math.max(3000, fin + 2200) + (enDuelo && !menosMovimiento() ? 1800 : 0));
     });
 
     document.getElementById('btnSiguienteRonda').onclick = () => {

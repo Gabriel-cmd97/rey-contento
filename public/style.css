@@ -2495,16 +2495,49 @@ body.en-mesa #pantallaJuego {
 
 .guia-acciones {
     text-align: center;
-    font-size: 11px;
-    line-height: 1.3;
+    font-size: 11.5px;
+    line-height: 1.35;
     color: var(--pergamino);
-    background: rgba(0,0,0,0.75);
-    border: 1px dashed rgba(241,196,15,0.6);
-    border-radius: 8px;
-    padding: 4px 8px;
-    margin-bottom: 4px;
-    max-height: 48px;
+    background: rgba(14, 8, 5, 0.92);
+    border: 1px dashed rgba(241,196,15,0.7);
+    border-radius: 10px;
+    padding: 6px 8px;
+    margin-bottom: 6px;
+    max-height: 85px;
     overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+.guia-jugadas-principales {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    align-items: stretch;
+}
+.guia-chip {
+    flex: 1;
+    background: rgba(241, 196, 15, 0.12);
+    border: 1px solid rgba(241, 196, 15, 0.35);
+    border-radius: 6px;
+    padding: 4px 6px;
+    font-size: 11px;
+    color: #ffe27a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+.guia-reglas-extra {
+    margin-top: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.guia-item {
+    font-size: 10.5px;
+    color: #e5d8b8;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    padding: 2px 6px;
 }
 
 .banner-objetivo {
@@ -2945,6 +2978,15 @@ input::placeholder { color: rgba(243,230,200,0.6); opacity: 1; }
         padding: 10px 14px 10px !important;
         font-size: 12.5px !important;
         width: 94% !important;
+    }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+    .coach-practica {
+        left: calc((100vw - var(--ancho-columna, 200px)) / 2) !important;
+        transform: translateX(-50%) !important;
+        max-width: calc(100vw - var(--ancho-columna, 200px) - 24px) !important;
+        top: 8px !important;
+        max-height: calc(100vh - 16px) !important;
     }
 }
 .coach-header {
@@ -4819,28 +4861,117 @@ body.apuntando .silla:not(.hidden) .perfil-oponente { cursor: crosshair; outline
     animation: corazon-sube 1.2s ease-out forwards; }
 @keyframes corazon-sube { to { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.6); opacity: 0; } }
 
-/* Sugerencia en el momento: arriba del panel, al centro */
-.sugerencia-reaccion { position: fixed; left: 50%; bottom: calc(var(--alto-pie, 90px) + 12px); transform: translateX(-50%); z-index: 75;
-    display: flex; gap: 6px; padding: 6px 8px; border-radius: 999px; background: rgba(20,12,8,.95); border: 1px solid rgba(241,196,15,.5);
-    box-shadow: 0 6px 18px rgba(0,0,0,.55); animation: chip-entra .25s ease-out both; }
-.sugerencia-reaccion.hidden { display: none; }
-.sugerencia-reaccion button { width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.07);
-    font-size: 22px; line-height: 1; cursor: pointer; }
+/* Sugerencia en el momento: visible, accesible y con alta prioridad */
+.sugerencia-reaccion {
+    position: fixed;
+    left: 50%;
+    top: 23%;
+    bottom: auto;
+    transform: translateX(-50%);
+    z-index: 350 !important; /* Por encima de cualquier overlay o resumen */
+    display: flex;
+    gap: 8px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(30,18,12,0.96) 0%, rgba(14,7,4,0.98) 100%);
+    border: 1.5px solid #f1c40f;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.85), 0 0 18px rgba(241,196,15,0.45);
+    animation: chip-entra .25s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+.sugerencia-reaccion.hidden { display: none !important; }
+.sugerencia-reaccion button {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.1);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform 0.15s ease, filter 0.15s ease, background 0.15s ease;
+}
+.sugerencia-reaccion button:hover, .sugerencia-reaccion button:active {
+    transform: scale(1.22);
+    background: rgba(241,196,15,0.3);
+    border-color: #ffe27a;
+}
 @media (prefers-reduced-motion: reduce) { .impacto, .corazon-impacto, .impacto::after { animation-duration: .01s !important; } }
 
-/* Horizontal: el panel sale a la izquierda de la columna de la derecha */
-@media (orientation: landscape) and (max-height: 600px) {
-    body.en-mesa #barraReacciones.abierta { position: fixed !important; left: auto; right: calc(var(--ancho-columna) + 8px); bottom: 8px; width: min(330px, 60vw); }
-    .sugerencia-reaccion { bottom: 12px; left: calc(50% - var(--ancho-columna) / 2); }
+/* Fila de reacciones dentro del Resumen de Ronda */
+.resumen-reacciones-fila {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 8px 0 10px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(241,196,15,0.25);
 }
-/* Ajustes tras probar: la sugerencia no debe tapar tu carta ni los indicadores */
-.sugerencia-reaccion { bottom: auto !important; top: 24%; }
+.resumen-reac-label {
+    font-family: var(--fuente-medieval);
+    font-size: 11px;
+    color: var(--oro);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-right: 2px;
+}
+.btn-reac-resumen {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.08);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+.btn-reac-resumen:hover, .btn-reac-resumen:active {
+    transform: scale(1.22);
+    background: rgba(241,196,15,0.25);
+    border-color: var(--oro);
+}
+
+/* En pantalla horizontal: aprovechar el espacio lateral derecho para reacciones y controles */
 @media (orientation: landscape) and (max-height: 600px) {
-    body.en-mesa #barraReacciones.abierta { max-height: calc(100dvh - 16px); overflow-y: auto; }
-    body.en-mesa #barraReacciones.abierta .reac-grid { grid-template-columns: repeat(7, 1fr); }
-    body.en-mesa #barraReacciones.abierta .btn-reaccion { height: 34px !important; font-size: 19px !important; }
-    /* En horizontal va en la columna de la derecha, en vertical */
-    .sugerencia-reaccion { top: 50% !important; left: auto !important; right: calc((var(--ancho-columna) - 58px) / 2); transform: translateY(-50%) !important; flex-direction: column; border-radius: 30px; }
+    /* Barra de reacciones integrada permanentemente dentro de la columna derecha */
+    body.en-mesa #barraReacciones {
+        display: flex !important;
+        position: static !important;
+        width: 100% !important;
+        max-height: calc(100vh - 110px);
+        overflow-y: auto;
+        background: rgba(20, 12, 8, 0.95) !important;
+        border: 1px solid rgba(241, 196, 15, 0.45) !important;
+        border-radius: 12px !important;
+        padding: 6px 6px !important;
+        margin-bottom: 6px !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.6) !important;
+    }
+    body.en-mesa #barraReacciones .reac-grid {
+        grid-template-columns: repeat(5, 1fr) !important;
+        gap: 3px !important;
+    }
+    body.en-mesa #barraReacciones .btn-reaccion {
+        height: 32px !important;
+        font-size: 18px !important;
+        border-radius: 8px;
+    }
+    /* Ocultar botón flotante redundante de abrir reacciones en horizontal */
+    body.en-mesa .btn-abrir-reacciones {
+        display: none !important;
+    }
+    /* Sugerencia de reacción en horizontal: cómoda, horizontal y centrada sobre el tapete */
+    .sugerencia-reaccion {
+        top: 14px !important;
+        bottom: auto !important;
+        left: calc((100vw - var(--ancho-columna, 200px)) / 2) !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        flex-direction: row !important;
+    }
 }
 
 /* =========================================

@@ -31,7 +31,7 @@ const GUIONES = {
         2: { cartas: [3, 7, 4], mazo: 8, bots: { 1: 'MANTENER', 2: 'MANTENER' }, poderes: { 0: ['ORACULO'] } },
         // Tienes un 8; B (tu izquierda) juega primero e intenta quitártelo.
         // Con el Escudo arriba su cambio rebota y B pierde con su 2.
-        3: { cartas: [8, 5, 2], mazo: 6, bots: { 1: 'MANTENER', 2: 'CAMBIAR' }, poderes: { 0: ['ESCUDO'] }, esperaInicio: 8000 },
+        3: { cartas: [8, 5, 2], mazo: 6, bots: { 1: 'MANTENER', 2: 'CAMBIAR' }, poderes: { 0: ['ESCUDO'] }, esperaInicio: 6500 },
     },
     // Modo Fiesta: los eventos de amigos.
     fiesta: {
@@ -57,17 +57,17 @@ const GUIONES = {
     arcana: {
         dealer: 2, ultima: 2,
         // Ronda 1: Tienes un 4 y el hechizo ILUSION (+2 efectivo -> 6). Bot A tiene 7, Bot B tiene 2.
-        1: { cartas: [4, 7, 2], mazo: 3, bots: { 1: 'MANTENER', 2: 'MANTENER' }, grimorios: { 0: ['ILUSION'], 1: ['INVERSION'], 2: ['VELO_SOMBRAS'] }, esperaInicio: 3000 },
+        1: { cartas: [4, 7, 2], mazo: 3, bots: { 1: 'MANTENER', 2: 'MANTENER' }, grimorios: { 0: ['ILUSION'], 1: ['INVERSION'], 2: ['VELO_SOMBRAS'] } },
         // Ronda 2: Tienes un 1 y el hechizo VELO_SOMBRAS (inmunidad y absorbe daño). Bot A tiene 8, Bot B tiene 5.
-        2: { cartas: [1, 8, 5], mazo: 6, bots: { 1: 'MANTENER', 2: 'MANTENER' }, grimorios: { 0: ['VELO_SOMBRAS'], 1: ['DESTIERRO'], 2: ['CRONORUPTURA'] }, esperaInicio: 2000 },
+        2: { cartas: [1, 8, 5], mazo: 6, bots: { 1: 'MANTENER', 2: 'MANTENER' }, grimorios: { 0: ['VELO_SOMBRAS'], 1: ['DESTIERRO'], 2: ['CRONORUPTURA'] } },
     },
     // Conspiración en la Corte (Roles Secretos e Interrogatorio): 2 rondas guiadas.
     conspiracion: {
         dealer: 2, ultima: 2,
         // Ronda 1: Eres el INQUISIDOR. Bot A es ASESINO, Bot B es USURPADOR.
-        1: { cartas: [6, 4, 2], mazo: 5, bots: { 1: 'MANTENER', 2: 'MANTENER' }, roles: { 0: 'INQUISIDOR', 1: 'ASESINO', 2: 'USURPADOR' }, esperaInicio: 3500 },
+        1: { cartas: [6, 4, 2], mazo: 5, bots: { 1: 'MANTENER', 2: 'MANTENER' }, roles: { 0: 'INQUISIDOR', 1: 'ASESINO', 2: 'USURPADOR' } },
         // Ronda 2: Eres el BUFÓN. Tienes un 2, usas Truco del Espejo (tu 2 cuenta como 7).
-        2: { cartas: [2, 8, 3], mazo: 6, bots: { 1: 'MANTENER', 2: 'MANTENER' }, roles: { 0: 'BUFON', 1: 'CAMPEON', 2: 'INQUISIDOR' }, esperaInicio: 2500 },
+        2: { cartas: [2, 8, 3], mazo: 6, bots: { 1: 'MANTENER', 2: 'MANTENER' }, roles: { 0: 'BUFON', 1: 'CAMPEON', 2: 'INQUISIDOR' } },
     },
 };
 const ULTIMA_RONDA = 3;

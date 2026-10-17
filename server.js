@@ -397,7 +397,10 @@ function devolverDineroPendiente(sala) {
 function limpiarSala(idSala) {
     const sala = estadoSalas[idSala];
     if (!sala) return;
-    devolverDineroPendiente(sala);
+    if (sala.timerInicioTurnos) {
+        clearTimeout(sala.timerInicioTurnos);
+        sala.timerInicioTurnos = null;
+    }
     if (temporizadores[idSala]) {
         clearTimeout(temporizadores[idSala]);
         delete temporizadores[idSala];
@@ -1585,8 +1588,8 @@ function resolverRonda(sala, io) {
     const finDePractica = sala.config.practica && sala.rondaActual >= practica.ultimaRonda(sala);
     if (finDePractica) sala.jugadores.filter(j => !j.esBot).forEach(j => otorgarLogro(sala, j.nombre, 'aprendiz'));
     const dealerEsBot = sala.jugadores[sala.dealerIndex].esBot;
-    // En la práctica hay que dar tiempo a leer las explicaciones.
-    const pausaBot = sala.config.practica ? 12000 : MS_PAUSA_BOT;
+    // En la práctica hay que dar tiempo a leer las explicaciones y que el jugador avance cuando quiera.
+    const pausaBot = sala.config.practica ? 60000 : MS_PAUSA_BOT;
     const pausaHumano = sala.config.practica ? 60 : SEG_AUTO_SIGUIENTE_RONDA;
     // Milisegundos hasta que la siguiente ronda empiece sola (null: no hay).
     // Se manda al cliente para que muestre la cuenta regresiva en el resumen.
@@ -1763,7 +1766,7 @@ function gestionarTurnos(sala, io, esInicio = false) {
         // cortaría el turno con ~1s todavía visible en pantalla. Sumamos ese
         // colchón SOLO al timer real (`tiempo` que ve el cliente queda igual) para
         // que el cronómetro real y el reloj visual lleguen a 0 a la vez.
-        const SEG_EXTRA_PRIMER_TURNO = 1;
+        const SEG_EXTRA_PRIMER_TURNO = sala.rondaActual === 1 ? 5 : 1;
         const tiempoReloj = esInicio ? tiempoTurno + SEG_EXTRA_PRIMER_TURNO : tiempoTurno;
 
         const payloadTurno = {
@@ -1780,12 +1783,17 @@ function gestionarTurnos(sala, io, esInicio = false) {
 
         if (reyOculto) {
             // Mantiene tras una pausa como la de cualquier jugador que piensa.
-            setTimeout(() => {
+            const ejecutarReyOculto = () => {
                 const salaActual = estadoSalas[sala.idSala];
                 if (!salaActual || salaActual.estadoActual !== "TURNOS_INTERCAMBIO") return;
                 if (salaActual.jugadores[salaActual.turnoActualIndex]?.id !== jugadorActual.id) return;
+                if (salaActual.leyendoGuia?.size > 0) {
+                    salaActual.esperandoGuiaParaBot = ejecutarReyOculto;
+                    return;
+                }
                 ejecutarAccion(sala.idSala, 'MANTENER', io, jugadorActual.id);
-            }, bots.retrasoBot());
+            };
+            setTimeout(ejecutarReyOculto, bots.retrasoBot());
             return;
         }
 
@@ -1803,8 +1811,22 @@ function gestionarTurnos(sala, io, esInicio = false) {
                 return salaActual && salaActual.estadoActual === "TURNOS_INTERCAMBIO"
                     && salaActual.jugadores[salaActual.turnoActualIndex]?.id === jugadorActual.id && jugadorActual.vidas > 0;
             };
-            setTimeout(() => {
+            const ejecutarTurnoBot = () => {
                 if (!sigueSuTurno()) return;
+                if (sala.leyendoGuia?.size > 0) {
+                    sala.esperandoGuiaParaBot = ejecutarTurnoBot;
+                    clearTimeout(sala.timerEsperaGuiaBot);
+                    sala.timerEsperaGuiaBot = setTimeout(() => {
+                        if (sala.esperandoGuiaParaBot === ejecutarTurnoBot) {
+                            sala.esperandoGuiaParaBot = null;
+                            if (sala.leyendoGuia) sala.leyendoGuia.clear();
+                            ejecutarTurnoBot();
+                        }
+                    }, 45000);
+                    return;
+                }
+                sala.esperandoGuiaParaBot = null;
+                clearTimeout(sala.timerEsperaGuiaBot);
                 // Modo con poderes: el bot puede usar uno antes de jugar.
                 const pierdeLaMasAlta = sala.evento === 'MUNDO_AL_REVES';
                 const poder = sala.config.poderes && !sala.config.practica ? poderes.poderParaBot(jugadorActual, {
@@ -1877,7 +1899,8 @@ function gestionarTurnos(sala, io, esInicio = false) {
                 const accionBot = corte !== null || objetivo !== null ? 'CAMBIAR' : decision;
                 const opcionesBot = corte !== null ? { objetivoIndex: corte, proteger: true } : objetivo !== null ? { objetivoIndex: objetivo, venganza: true } : {};
                 setTimeout(() => { if (sigueSuTurno()) ejecutarAccion(sala.idSala, accionBot, io, jugadorActual.id, false, opcionesBot); }, (poder && !r.error) || planConspiracion || planArcana ? 900 : 0);
-            }, sala.config.practica ? 5500 : bots.retrasoBot());
+            };
+            setTimeout(ejecutarTurnoBot, sala.config.practica ? 2200 : bots.retrasoBot());
             return;
         }
 
@@ -2143,9 +2166,14 @@ function iniciarRonda(sala, io) {
     // Presentaciones antes de jugar (el cliente las muestra con estos tiempos).
     // El evento se muestra MS_CARTA_EVENTO en el cliente (4 s para leerlo con calma) + 400 ms de salida.
     const MS_INTRO_DUELO = 2800, MS_INTRO_EVENTO = 4400;
-    const MS_INTRO_CONSPIRACION = (sala.rondaActual === 1 && sala.config.modoJuego === 'CONSPIRACION') ? 4500 : 0;
-    const MS_INTRO_ARCANA = (sala.rondaActual === 1 && sala.config.modoJuego === 'GUERRA_ARCANA') ? 2500 : 0;
-    const introMs = (anunciarDuelo ? MS_INTRO_DUELO : 0) + (sala.evento ? MS_INTRO_EVENTO : 0) + MS_INTRO_CONSPIRACION + MS_INTRO_ARCANA;
+    const MS_INTRO_CONSPIRACION = (sala.rondaActual === 1 && !sala.config.practica && sala.config.modoJuego === 'CONSPIRACION') ? 6500 : 0;
+    const MS_INTRO_ARCANA = (sala.rondaActual === 1 && !sala.config.practica && sala.config.modoJuego === 'GUERRA_ARCANA') ? 5000 : 0;
+    const MS_INTRO_CORTE = (sala.rondaActual === 1 && !sala.config.practica && sala.config.modoJuego === 'CORTE') ? 5500 : 0;
+    const MS_INTRO_JEFE = (sala.rondaActual === 1 && !sala.config.practica && sala.config.modoJuego === 'JEFE') ? 5000 : 0;
+    const MS_INTRO_EQUIPOS = (sala.rondaActual === 1 && !sala.config.practica && sala.config.equipos) ? 4500 : 0;
+    const MS_INTRO_RONDA1 = (sala.rondaActual === 1 && !sala.config.practica && !sala.evento && !sala.config.equipos && sala.config.modoJuego === 'CLASICO') ? 3500 : 0;
+    const introMs = (anunciarDuelo ? MS_INTRO_DUELO : 0) + (sala.evento ? MS_INTRO_EVENTO : 0)
+        + MS_INTRO_CONSPIRACION + MS_INTRO_ARCANA + MS_INTRO_CORTE + MS_INTRO_JEFE + MS_INTRO_EQUIPOS + MS_INTRO_RONDA1;
     if (sala.evento) {
         const ev = eventos.CATALOGO[sala.evento];
         io.to(sala.idSala).emit('accionMesa', { tipo: 'EVENTO', icono: '✨', texto: `Evento: ${ev.titulo}` });
@@ -2206,10 +2234,15 @@ function iniciarRonda(sala, io) {
         }, introMs + MS_REVELAR_REY);
     }
 
-    const esperaGuion = sala.config.practica ? practica.esperaInicio(sala) : 0; // tiempo para leer en la práctica
+    const esperaGuion = sala.config.practica ? practica.esperaInicio(sala) : 0; // pausa extra solo si hay acción previa al 1er turno
     // Con Rey declarado, el cliente hace la gran revelación (~2.6 s) antes del primer turno.
     const MS_GRAN_REY = 2800;
-    setTimeout(() => { gestionarTurnos(sala, io, true); }, introMs + esperaGuion + (hayReyDeclarado ? MS_REVELAR_REY + MS_GRAN_REY : 500));
+    const delayInicio = introMs + esperaGuion + (hayReyDeclarado ? MS_REVELAR_REY + MS_GRAN_REY : 500);
+    clearTimeout(sala.timerInicioTurnos);
+    sala.timerInicioTurnos = setTimeout(() => {
+        sala.timerInicioTurnos = null;
+        gestionarTurnos(sala, io, true);
+    }, delayInicio);
 }
 
 // Arranca la partida de una sala en LOBBY (la llaman "Empezar juego" y el
@@ -3106,7 +3139,7 @@ io.on('connection', (socket) => {
         if (!permitir(socket.id, 'siguienteRonda', 300)) return;
         if (!esIdSalaValido(id)) return;
         const sala = estadoSalas[id];
-        if (!sala || sala.jugadores[sala.dealerIndex].nombre !== nombreUsuarioLogueado || sala.estadoActual !== "REVELACION") return;
+        if (!sala || (sala.jugadores[sala.dealerIndex].nombre !== nombreUsuarioLogueado && !sala.config.practica) || sala.estadoActual !== "REVELACION") return;
 
         sala.estadoActual = "PREPARANDO_NUEVA_RONDA";
         let vivos = sala.jugadores.filter(j => j.vidas > 0);
@@ -3449,6 +3482,49 @@ io.on('connection', (socket) => {
         io.to(sala.idSala).emit('actualizarJugadores', jugadoresPublicos(sala));
     });
 
+    socket.on('practicaListo', (idSala) => {
+        const sala = estadoSalas[idSala];
+        if (!sala || !sala.config.practica || sala.estadoActual !== "TURNOS_INTERCAMBIO") return;
+        if (sala.leyendoGuia) sala.leyendoGuia.delete(nombreUsuarioLogueado);
+        if (sala.timerInicioTurnos) {
+            clearTimeout(sala.timerInicioTurnos);
+            sala.timerInicioTurnos = null;
+            gestionarTurnos(sala, io, true);
+        } else if (sala.esperandoGuiaParaBot && (!sala.leyendoGuia || sala.leyendoGuia.size === 0)) {
+            const fn = sala.esperandoGuiaParaBot;
+            sala.esperandoGuiaParaBot = null;
+            clearTimeout(sala.timerEsperaGuiaBot);
+            setTimeout(() => fn(), 1400);
+        }
+    });
+
+    socket.on('leyendoGuia', (payload) => {
+        if (!payload || typeof payload !== 'object') return;
+        const { idSala, leyendo } = payload;
+        if (!esIdSalaValido(idSala)) return;
+        const sala = estadoSalas[idSala];
+        if (!sala) return;
+        sala.leyendoGuia ||= new Set();
+        if (leyendo) {
+            sala.leyendoGuia.add(nombreUsuarioLogueado);
+        } else {
+            sala.leyendoGuia.delete(nombreUsuarioLogueado);
+            if (sala.leyendoGuia.size === 0 && sala.esperandoGuiaParaBot) {
+                const fn = sala.esperandoGuiaParaBot;
+                sala.esperandoGuiaParaBot = null;
+                clearTimeout(sala.timerEsperaGuiaBot);
+                setTimeout(() => fn(), 1400);
+            }
+            // Si es el turno de este jugador en partida normal, reiniciar su reloj para que leer no le robe tiempo
+            const jugadorActual = sala.jugadores[sala.turnoActualIndex];
+            if (sala.estadoActual === "TURNOS_INTERCAMBIO" && jugadorActual && !jugadorActual.esBot && jugadorActual.nombre === nombreUsuarioLogueado) {
+                const tiempoSala = sala.config.practica ? 180 : (sala.config.tiempoTurno || TIEMPO_TURNO);
+                sala.inicioTurno = Date.now();
+                iniciarReloj(sala.idSala, io, tiempoSala);
+            }
+        }
+    });
+
     socket.on('disconnect', () => {
         // Limpiar entradas del rate limiter para este socket
         for (const key of Object.keys(_socketRates)) {
@@ -3459,6 +3535,7 @@ io.on('connection', (socket) => {
             let idx = sala.jugadores.findIndex(j => j.id === socket.id);
             if (idx !== -1) {
                 const jugador = sala.jugadores[idx];
+                if (sala.leyendoGuia) sala.leyendoGuia.delete(jugador.nombre);
                 if (sala.estadoActual === "LOBBY") {
                     sala.jugadores.splice(idx, 1);
                     if (sala.jugadores.length === 0) {
@@ -3628,7 +3705,7 @@ const ESTADOS_GUARDABLES = new Set(["LOBBY", "TURNOS_INTERCAMBIO", "REVELACION",
 function guardarSalas() {
     const salas = Object.values(estadoSalas)
         .filter(s => ESTADOS_GUARDABLES.has(s.estadoActual) && s.jugadores.some(j => !j.esBot))
-        .map(({ votosRevancha, ...s }) => s); // el Set no se serializa y solo sirve al final
+        .map(({ votosRevancha, leyendoGuia, esperandoGuiaParaBot, timerInicioTurnos, timerEsperaGuiaBot, ...s }) => s); // Sets y timers no se serializan
     const tmp = ARCHIVO_SALAS + '.tmp';
     fs.writeFileSync(tmp, JSON.stringify({ guardado: Date.now(), salas }));
     fs.renameSync(tmp, ARCHIVO_SALAS); // nunca queda un archivo a medias
